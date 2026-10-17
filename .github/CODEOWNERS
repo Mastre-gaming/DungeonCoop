@@ -1,0 +1,35 @@
+# CODEOWNERS (brouillon) : qui GitHub appelle pour relire une PR, selon les fichiers touchés.
+# La dernière ligne qui correspond gagne. Un nom ici = la personne qui a le dernier mot sur cet aspect.
+#
+# AVANT DE POUSSER : remplacer chaque @A_REMPLIR_… par un vrai pseudo GitHub, ou laisser la ligne en commentaire.
+# Un pseudo inconnu ou sans accès en écriture fait afficher une erreur par GitHub.
+# Les dossiers sous content/ sont provisoires : les règles de contenu (docs/REGLES_CONTENU.md, étape 2) les fixent.
+#
+# Tant que la règle sur main n'exige pas l'accord des responsables (recommandé au début), ce fichier
+# DEMANDE une relecture, il ne BLOQUE pas la fusion.
+
+# Les équipes de l'organisation marchent aussi : @Mastre-gaming/equipe (elle doit avoir l'écriture sur le dépôt).
+
+# Par défaut : le propriétaire du jeu
+*                               @A_REMPLIR_PSEUDO_PROPRIETAIRE
+
+# Chapitres et événements : Paolitus (KICKOFF, réponses des amis)
+/content/chapters/              @A_REMPLIR_PSEUDO_PAOLITUS
+/content/events/                @A_REMPLIR_PSEUDO_PAOLITUS
+
+# Pixel art : volontaire Fraps, responsable pas encore choisi(e)
+# /public/art/                  @A_REMPLIR_RESPONSABLE_PIXEL_ART
+
+# Salles et carte : pas encore choisi(e) (Paolitus et Fraps intéressés)
+# /content/rooms/               @A_REMPLIR_RESPONSABLE_SALLES
+
+# Menus et écrans : pas encore choisi(e) (Paolitus et Fraps intéressés)
+# /src/ui/                      @A_REMPLIR_RESPONSABLE_MENUS
+
+# Combats et combos (l'aspect principal) : le propriétaire tant que personne d'autre n'est choisi
+# /src/combat/                  @A_REMPLIR_PSEUDO_PROPRIETAIRE
+
+# Les règles de travail elles-mêmes : le propriétaire
+/.github/                       @A_REMPLIR_PSEUDO_PROPRIETAIRE
+/CLAUDE.md                      @A_REMPLIR_PSEUDO_PROPRIETAIRE
+/docs/                          @A_REMPLIR_PSEUDO_PROPRIETAIRE

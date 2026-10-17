@@ -1,0 +1,30 @@
+# Fins de ligne : LF dans le dépôt pour tout le monde (Windows, Mac, Linux).
+# Sans ça, Windows réécrit chaque ligne et chaque fichier a l'air entièrement modifié.
+* text=auto eol=lf
+
+# Scripts Windows : restent en CRLF
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Images, sons, polices, archives : binaires (jamais fusionnés ligne à ligne, jamais modifiés)
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.aseprite binary
+*.ase   binary
+*.ogg   binary
+*.mp3   binary
+*.wav   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.zip   binary
+*.glb   binary
+*.glbz  binary
+
+# Le fichier de verrouillage npm : en cas de conflit, on le régénère (npm install) au lieu de le fusionner à la main
+package-lock.json  -diff linguist-generated

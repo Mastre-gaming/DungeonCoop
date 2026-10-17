@@ -1,0 +1,29 @@
+# Généré par npm et par le build : se refait à partir du code
+node_modules/
+dist/
+
+# Téléchargements bruts (on ne met que ce qui sert, dans public/, avec sa licence)
+dl/
+
+# Secrets : jamais dans le dépôt (manuel §8, règle permanente)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets/
+*.secret.*
+
+# Sorties des tests et des captures (se refont à chaque test)
+shots/
+test-results/
+
+# Réglages perso de Claude Code (le .claude/settings.json partagé, lui, est dans le dépôt)
+.claude/settings.local.json
+
+# Fichiers que l'ordinateur crée tout seul
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+npm-debug.log*

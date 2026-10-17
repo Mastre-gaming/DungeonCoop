@@ -1,0 +1,76 @@
+# Les vérifications automatiques : elles tournent sur chaque pull request et sur main.
+# Une PR ne peut être fusionnée que si le job « tests » est vert (règle sur main : docs/MISE_EN_PLACE.md, étape D).
+# Le nom du job (« tests ») est celui qu'on coche dans la règle de GitHub : ne pas le renommer sans changer la règle.
+#
+# Avant l'étape 1 (pas encore de package.json), les étapes npm sont sautées et le job passe : le dépôt
+# peut exister et la règle être posée avant qu'il y ait du code.
+#
+# À l'étape 1, le Claude du propriétaire ajoute dans package.json :
+#   "test:ci": "node tools/ci_test.mjs"
+# ci_test.mjs sert dist/, ouvre index.html?test dans Chrome sans écran (tools/shots.mjs de game-core,
+# avec software: true, car les machines de GitHub n'ont pas de carte graphique), attend
+# <html data-test="passés/total"> et sort en erreur si passés ≠ total ou si la page a levé une erreur.
+
+name: Verifications
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verifications-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tests:
+    name: tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Rien d'interdit dans le dépôt (dl/, secrets, node_modules, dist)
+        run: |
+          bad=$(git ls-files | grep -E '^(dl|node_modules|dist|secrets)/|(^|/)\.env($|\.)|\.(key|pem)$' | grep -v '\.env\.example$' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::Ces fichiers ne doivent pas être dans le dépôt (voir .gitignore) :"
+            echo "$bad"
+            exit 1
+          fi
+
+      - name: Pas de ligne co-auteur dans les commits (règle permanente 12)
+        if: github.event_name == 'pull_request'
+        run: |
+          if git log --format=%B "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" | grep -qi '^co-authored-by:'; then
+            echo "::error::Un commit de cette PR contient une ligne « Co-authored-by: ». La règle 12 l'interdit (elle a cassé les builds de l'hébergeur). Voir docs/GUIDE_EQUIPE.md, « Une vérification est rouge »."
+            exit 1
+          fi
+
+      - name: Y a-t-il déjà du code ?
+        id: code
+        run: |
+          if [ -f package.json ]; then echo "present=yes" >> "$GITHUB_OUTPUT"; else echo "present=no" >> "$GITHUB_OUTPUT"; echo "::notice::Pas encore de package.json : build et ?test sautés (avant l'étape 1)."; fi
+
+      - uses: actions/setup-node@v4
+        if: steps.code.outputs.present == 'yes'
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Installer (npm ci)
+        if: steps.code.outputs.present == 'yes'
+        run: npm ci
+
+      - name: Construire (npm run build, refuse toute erreur de syntaxe)
+        if: steps.code.outputs.present == 'yes'
+        run: npm run build
+
+      - name: Tests du jeu (?test sans écran)
+        if: steps.code.outputs.present == 'yes'
+        run: npm run test:ci
