@@ -96,7 +96,8 @@ The file format is set in `docs/REGLES_CONTENU.md` at M2. A beat holds:
 ## 8. The camp
 - **Between runs the team meets in a living camp** that grows as the campaign moves on: people who join it, places that open, lines that change with the flags. Reference: Darkest Dungeon's hamlet (Paolitus's reference).
 - It is where **the game draws the next chapter**, sees **the End boss's wear**, and opens **the journal**.
-- **Ideally it grows both ways:** the story (people, places, lines) and the fights (upgrades). The details come in a second phase. **It is a big piece:** it is built after the first run (M4), first as a plain camp, then grown one piece at a time (gate T).
+- **Ideally it grows both ways:** the story (people, places, lines) and the fights (upgrades). The details come in a second phase.
+- **Changed on 18 Oct (the owner): the camp comes first, as milestone M1.** Before any run, it grows with **the team's missions**: building the game is already the game. One place per creation axis, and each closed mission grows its own. All of it is in `CAMP.fr.md`. Its people, lines and final places come once the story axis has an owner; runs leave from it at M4 (gate T: one piece at a time).
 
 ## 9. The journal
 - **Every beat played goes into the campaign journal**, with its date and who was there. Choices show what the group voted.
@@ -110,7 +111,7 @@ The file format is set in `docs/REGLES_CONTENU.md` at M2. A beat holds:
 | Question | Who answers |
 |---|---|
 | Does Paolitus agree with this frame? | Paolitus |
-| The camp's details: what grows, and which upgrades change the fights (ideally both; second phase) | the owner, Paolitus |
+| The camp's details: what grows, and which upgrades change the fights (ideally both; second phase). First: the team's missions grow one place per axis (18 Oct, `CAMP.fr.md`) | the owner, the story axis's owner |
 | The template for a new arc: how many chapters, how its End boss and wear plug in | at M4, in `docs/REGLES_CONTENU.md` |
 | How much wear a run gives, and how much more the harder boss gives (the score's scale) | the first runs |
 | Does the team ever fight the End boss directly (a fight it never wins, the damage dealt adds to the score)? | the owner, Paolitus |

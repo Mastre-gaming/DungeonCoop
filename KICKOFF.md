@@ -84,4 +84,4 @@ Standing calls this game takes on: 14 (a game for friends).
 - **Deadline, if any:** none: "Quality over deadline, building it is half the fun". The first gate is a score: the milestone 3 fight at 5/10 or more for "is it fun with four?" before runs are built.
 - **Unattended runs allowed:** none until a build scores 5/10; then only under gate N.
 
-**Signed off by the owner on:** _(date, once the four friends' answers are folded in)_ → Claude may start.
+**Signed off by the owner on:** 18 Oct 2026, before every friend's answers were in (the owner's call: the camp is built first, and the remaining answers can still change the design files) → Claude may start.
