@@ -128,6 +128,7 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 18 Oct | **Building the game is part of the game.** The living camp comes first, as M1 (it replaces "four heroes on a grid room"); the dashboard's work board feeds it: missions are the game's issues, and each closed mission grows its axis's place. Free movement in the camp; camera follows the hero with a dead zone, medium zoom, a whole-camp view on the dashboard | owner: "coder un jeu représente une bonne partie du fun de l'aventure" (`CAMP.fr.md`) | reverses "a living camp after M4" (17 Oct) |
 | 18 Oct | KICKOFF.md signed before every friend answered | owner | |
 | 18 Oct | Axis 1 (story) has no owner for now; owners are spread once the camp has taken shape | owner | |
+| 18 Oct | **The builder's renown** (`RENOMMEE.fr.md`): closed missions give each assignee renown (S 1, M 3, L 8, +50 % when done with others, +5 per finished phase). It grows their tent, gives a title, and a podium per plan phase (reset each phase) puts the winner's statue in the camp. Cosmetic and social only: nothing in it changes fights or runs | owner | replaces "no number per person" from `CAMP.fr.md` for people; the camp's places stay the team's |
 
 ## How it works (the reference part)
 See the design files listed at the top. Controls: mouse cursor on a square grid; click a square to move, an ability (or 1–9) then a target; hover shows range, the chance of each result and what a combo would do; Space ends the turn. The manual's locked-mouse look and 3D defaults don't apply to this game.
