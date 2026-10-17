@@ -96,7 +96,8 @@ Le format du fichier sera fixé dans `docs/REGLES_CONTENU.md` à l'étape M2. Un
 ## 8. Le camp
 - **Entre deux parties, l'équipe se retrouve dans un camp vivant** qui grandit avec la campagne : des gens qui le rejoignent, des lieux qui s'ouvrent, des répliques qui changent avec les drapeaux. Référence : le hameau de Darkest Dungeon (la référence de Paolitus).
 - C'est là que **le jeu tire le chapitre suivant**, voit **l'usure du Boss final** et ouvre **le journal**.
-- **Idéalement, il grandit des deux côtés :** l'histoire (gens, lieux, répliques) et les combats (améliorations). Les détails viendront dans un deuxième temps. **C'est un gros morceau :** on le construit après la première partie complète (M4), d'abord en camp simple, puis on l'agrandit pièce par pièce (porte T).
+- **Idéalement, il grandit des deux côtés :** l'histoire (gens, lieux, répliques) et les combats (améliorations). Les détails viendront dans un deuxième temps.
+- **Changé le 18 oct (le propriétaire) : le camp vient en premier, au jalon M1.** Avant même les parties, il grandit avec **les missions de l'équipe** : construire le jeu, c'est déjà le jeu. Un lieu par axe de création, et chaque mission rentrée fait grandir le sien. Tout est dans `CAMP.fr.md`. Les gens, les répliques et les lieux définitifs viendront quand l'axe Histoire aura un responsable ; le départ des runs, à M4 (porte T : une pièce à la fois).
 
 ## 9. Le journal
 - **Chaque moment joué va dans le journal de campagne**, avec la date et qui était là. Pour les choix, on voit ce que le groupe a voté.
@@ -110,7 +111,7 @@ Le format du fichier sera fixé dans `docs/REGLES_CONTENU.md` à l'étape M2. Un
 | Question | Qui répond |
 |---|---|
 | Paolitus est-il d'accord avec ce cadre ? | Paolitus |
-| Les détails du camp : ce qui grandit, et quelles améliorations changent les combats (idéalement les deux ; deuxième temps) | le propriétaire, Paolitus |
+| Les détails du camp : ce qui grandit, et quelles améliorations changent les combats (idéalement les deux ; deuxième temps). D'abord : les missions de l'équipe font grandir un lieu par axe (18 oct, `CAMP.fr.md`) | le propriétaire, le responsable de l'axe Histoire |
 | Le modèle d'un nouvel arc : combien de chapitres, comment son Boss final et son usure se branchent | à M4, dans `docs/REGLES_CONTENU.md` |
 | Combien d'usure donne une partie, et combien de plus avec le boss le plus dur (l'échelle du score) | les premières parties |
 | L'équipe affronte-t-elle un jour le Boss final directement (un combat qu'on ne gagne jamais, les dégâts s'ajoutent au score) ? | le propriétaire, Paolitus |

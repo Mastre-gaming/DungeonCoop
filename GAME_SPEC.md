@@ -5,7 +5,8 @@ The plan and the actual state, kept in step. Claude updates it the same day anyt
 **The design lives in its own files:** `CORE_LOOP.md`, `FIGHT_RULES.md`, `LEVEL_STRUCTURE.md`, `STORY_STRUCTURE.md` (+ `.fr`), `CLASS_TEMPLATE.md` (+ `.fr`), `PAPER_FIGHT_KIT.md`. The friends' answers are in `FRIENDS.md`. This file points to them and doesn't repeat them.
 
 ## Now
-- **Current stage:** D, the design stage (before M1). No game code yet (gate K: KICKOFF.md not signed off).
+- **Current stage:** D, the design stage, and M1 "the camp" starts (KICKOFF.md signed off 18 Oct). First code: the camp prototype v0 (`CAMP.fr.md` §7).
+- **Live link:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, 18 Oct): rebuilt on every merge to `main`, a preview per PR. Empty until the camp's first code lands.
 - **Current score of the focus aspect:** none yet. The paper fight gives the first one.
 - **Waiting on the owner's check (gate F):** nothing.
 
@@ -50,7 +51,7 @@ Nothing goes in the game without a line here. Credits also go in the game's `CRE
 | Rules and monsters (adapted) | D&D 5e SRD 5.1 | CC BY 4.0; the SRD's credit line; no "D&D" in the name | | |
 
 ## Milestones
-Each ends in something played on the live link (or, in stage D, on paper) and scored. M1 is the asset proof (gate A).
+Each ends in something played on the live link (or, in stage D, on paper) and scored. M1 is the asset proof (gate A), shown in the camp.
 
 | # | Result you play | Check, and the score that passes | Status (date) |
 |---|---|---|---|
@@ -58,7 +59,7 @@ Each ends in something played on the live link (or, in stage D, on paper) and sc
 | **D2** | **Each friend's class** on the template, the group picks the first four | four sheets within budget, each with a combo hook into another class | not started |
 | **D3** | **The world sheet**, written by the team (the owner scrapped the suggested hooks) | one page the group agrees on; chapter 1's place, enemies and two bosses named | not started |
 | **D4** | **One hero sprite** in Sprite Painter, scored | the owner's score of 7/10 or more (gate A brought forward) | not started |
-| M1 | The table is set: repo and live link, four heroes on a grid room, host and join with a code, move in turn | two browsers join, move, leave; the heroes scored 7/10 or more; score in `../game-studio/SCOREBOARD.md` (gate S) | not started |
+| M1 | **The camp** (`CAMP.fr.md`): repo and live link, the pixel-art camp with one place per creation axis, four heroes walking freely, host and join with a code; closed missions (the game's issues) grow the places live; the camp shown on the dashboard | a hero walks the whole camp without getting stuck; two browsers join, move, leave; a mission closed on the dashboard grows its place on both within 5 s; the heroes and the camp scored 7/10 or more; score in `../game-studio/SCOREBOARD.md` (gate S) | started (18 Oct) |
 | M2 | Roll for it: turn order, d20 with stats and the exact chance of each result, enemies with habits, content rules v1 | a seeded fight replays in `?test`; the chances shown match 10,000 simulated rolls; "turns read clearly" 6/10 or more | not started |
 | M3 | First playable: the four chosen classes, statuses, surfaces, shoves, a team move, revives, a leader and a small boss | the four of you win with a combo; "fun with four" 5/10 or more, **or the fight rules change before anything is built on them** | not started |
 | M4 | The first run: 9 rooms, rewards, the wipe roll, levels that persist, a choice of two bosses | three runs of the same chapter feel different | not started |
@@ -71,12 +72,13 @@ Each milestone has at most 5 items and fits one session. Items are broken down w
 | Loop, saves, `?test`, screenshots | M1 | not started | | `game-core` |
 | Online play (host, join, rejoin) | M1 | not started | | `party-net` (adapted) |
 | Heroes from LPC pieces | D4, M1 | not started | | `lpc-sprite-mods` |
-| Grid, line of sight, pathing | M1 | not started | | `grid-building` (logic only) |
+| Grid, line of sight, pathing | M2 (the camp in M1 has free movement, no grid) | not started | | `grid-building` (logic only) |
 | Fight rules, d20, stats | M2 | not started | | built fresh (focus) |
 | Combos: statuses, surfaces, shoves, team moves | M3 | not started | | built fresh (focus) |
 | Rewards, levels, wipe roll | M4 | not started | | `run-progression` |
 | Shared saved characters and the shared story campaign | M4 (the campaign); characters later | not started | | `edge-leaderboard` (adapted) |
-| The living camp and the campaign journal | after M4: a plain camp first, grown one piece at a time | not started | | built fresh |
+| The living camp | M1: the camp, grown by the team's missions (`CAMP.fr.md`); its people and story once axis 1 has an owner; runs leave from it at M4 | started (18 Oct) | | built fresh |
+| The campaign journal | after M4 | not started | | built fresh |
 | Team workflow (repo, checks, previews) | before M1 | guides and drafts written, nothing pushed | | `docs/` |
 
 ## Parking lot (gate P)
@@ -101,7 +103,7 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 17 Oct | The story frame (`STORY_STRUCTURE.md`): does Paolitus agree? | Paolitus | |
 | 17 Oct | The End boss: what counts as wear, how much, when its fight opens, a floor | the owner, Paolitus | the End boss is never beaten: the wear is the team's score. Every finished run adds wear, more for the harder boss. How much: the first runs. A direct fight against it: still open (17 Oct) |
 | 17 Oct | Chapters in any order: who picks (group or draw), and difficulty that follows the heroes' level rather than the chapter number | the owner, Paolitus | the game draws the next chapter (owner, 17 Oct); difficulty follows the heroes' level, not the chapter number (owner, 17 Oct; FIGHT_RULES.md) |
-| 17 Oct | The living camp: what grows there, and does it change fights or only the story? | the owner, Paolitus | ideally both; details in a second phase (owner, 17 Oct) |
+| 17 Oct | The living camp: what grows there, and does it change fights or only the story? | the owner, Paolitus | ideally both; details in a second phase (owner, 17 Oct). First, it grows with the team's missions: one place per creation axis (owner, 18 Oct; `CAMP.fr.md`) |
 | 17 Oct | After the End boss | the owner | an epilogue once the 3 chapters' chains are finished, then the friends add new arcs and chapters as content, like builds (owner, 17 Oct) |
 | 17 Oct | Story archetypes: their own list or the four roles; how many | the team | their own list, work in progress: Fighter, Support, Ranged, Mage (owner, 17 Oct) |
 | 17 Oct | The game's name | the group | |
@@ -123,6 +125,9 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 17 Oct | Content goes live as soon as its owner merges it | owner | |
 | 17 Oct | Story frame (draft, awaits Paolitus): Hades-style flags that survive wipes; run bosses set flags and every run wears down one End boss; classes fall under story archetypes and the story names the hero; event choices by timed group vote. Then: every finished run wears the End boss (more for the harder boss); it is never beaten and its wear is the team's score; the epilogue plays once the 3 chains are finished; archetypes Fighter, Support, Ranged, Mage (WIP); one shared campaign kept online, whoever hosts; chapters modular (any order); a living camp between runs (after M4); an epilogue, then play goes on; a campaign journal for friends who missed an evening | owner, in the story-structure session | |
 | 17 Oct | The repo is **public**: github.com/Mastre-gaming/DungeonCoop, friends' answers included | owner: "the repo being public is fine" | |
+| 18 Oct | **Building the game is part of the game.** The living camp comes first, as M1 (it replaces "four heroes on a grid room"); the dashboard's work board feeds it: missions are the game's issues, and each closed mission grows its axis's place. Free movement in the camp; camera follows the hero with a dead zone, medium zoom, a whole-camp view on the dashboard | owner: "coder un jeu représente une bonne partie du fun de l'aventure" (`CAMP.fr.md`) | reverses "a living camp after M4" (17 Oct) |
+| 18 Oct | KICKOFF.md signed before every friend answered | owner | |
+| 18 Oct | Axis 1 (story) has no owner for now; owners are spread once the camp has taken shape | owner | |
 
 ## How it works (the reference part)
 See the design files listed at the top. Controls: mouse cursor on a square grid; click a square to move, an ability (or 1–9) then a target; hover shows range, the chance of each result and what a combo would do; Space ends the turn. The manual's locked-mouse look and 3D defaults don't apply to this game.

@@ -13,7 +13,7 @@ The two files imported above are the owner's standing calls and what failed befo
 - **The design:** CORE_LOOP.md, FIGHT_RULES.md, LEVEL_STRUCTURE.md, STORY_STRUCTURE.md, CLASS_TEMPLATE.md. Change a rule there first, then in code.
 - **Out of scope:** real-time action, PvP, a phone version, in-game chat, open world. New ideas go in GAME_SPEC.md's parking lot.
 - **(if it fits) calls this game takes on:** 14 (a game for friends) only. **Overrides of the manual:** 2D, not 3D; a mouse cursor, not locked-mouse look; heroes come from the LPC generator through `lpc-sprite-mods`, not the Blender MCP; the story is the team's to write, never Claude's.
-- **Players:** co-op for 1 to 4; the party is always four heroes · **Live build:** _(created at M1)_ · **The owner's route:** live link → Host → share the five-letter code → friends join → the fight.
+- **Players:** co-op for 1 to 4; the party is always four heroes · **Live build:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, Workers Builds from `main`, a preview per PR) · **The owner's route:** live link → Host → share the five-letter code → friends join → the fight.
 
 ## Before anything
 - **`KICKOFF.md` must be signed off.** No code until it is (gate K).
