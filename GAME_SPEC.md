@@ -6,6 +6,7 @@ The plan and the actual state, kept in step. Claude updates it the same day anyt
 
 ## Now
 - **Current stage:** D, the design stage, and M1 "the camp" starts (KICKOFF.md signed off 18 Oct). First code: the camp prototype v0 (`CAMP.fr.md` §7).
+- **Live link:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, 18 Oct): rebuilt on every merge to `main`, a preview per PR. Empty until the camp's first code lands.
 - **Current score of the focus aspect:** none yet. The paper fight gives the first one.
 - **Waiting on the owner's check (gate F):** nothing.
 
