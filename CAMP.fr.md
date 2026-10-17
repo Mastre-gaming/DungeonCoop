@@ -21,7 +21,7 @@ On est des apprentis développeurs de jeux vidéo, et **coder le jeu est une gra
 |---|---|
 | **le camp vivant du jeu** (`STORY_STRUCTURE.fr.md` §8), le même qu'on retrouvera entre deux runs | un décor à part, fait seulement pour le dashboard |
 | une scène en **pixel art LPC**, où 1 à 4 héros **marchent librement** | un combat : pas de tours, pas d'ennemis, pas de dés |
-| un lieu qui **montre l'avancée du projet** : chaque axe de création a son bâtiment | un classement : on voit ce que l'**équipe** a construit, jamais qui en a fait le plus |
+| un lieu qui **montre l'avancée du projet** : chaque axe de création a son bâtiment | un classement des lieux : ils montrent ce que l'**équipe** a construit. Les personnes sont récompensées à part, par la renommée du bâtisseur (`RENOMMEE.fr.md`) |
 | visible **dans le dashboard** et sur le **lien du jeu** | un écran pour gérer les missions : les missions se prennent et se ferment dans le tableau de travail du dashboard |
 
 ---
@@ -101,7 +101,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 3 | 15 | un vrai bâtiment |
   | 4 | 35 | le bâtiment décoré, avec de la lumière et de la vie autour |
 
-- **Le feu de camp, au centre, n'appartient à aucun axe : il montre l'équipe entière :** la somme de tous les points. Plus le camp avance, plus il est grand et lumineux. C'est la seule jauge commune ; il n'y a aucun chiffre par personne.
+- **Le feu de camp, au centre, n'appartient à aucun axe : il montre l'équipe entière :** la somme de tous les points. Plus le camp avance, plus il est grand et lumineux. C'est la jauge de l'équipe. Ce que chaque personne a construit se voit à part, avec la renommée du bâtisseur (`RENOMMEE.fr.md`) : sa tente, son titre, les statues.
 - **Le calcul est une fonction pure,** `progression(missions) → niveaux`, testée dans `?test` avec des missions inventées.
 
 ---
