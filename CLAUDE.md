@@ -10,7 +10,7 @@ The two files imported above are the owner's standing calls and what failed befo
 - **Focus aspect:** co-op combos in turn-based fights (then repeat runs, once combos reach 9/10).
 - **9/10 for it looks like:** the four friends beat the boss with a combo between two players, previewed before anyone committed. Reference: Baldur's Gate 3, Grease then Fire Bolt.
 - **The slice:** one room on a grid, four heroes, a few enemies and a leader; in the first round two heroes can set up and finish a combo.
-- **The design:** CORE_LOOP.md, FIGHT_RULES.md, LEVEL_STRUCTURE.md, CLASS_TEMPLATE.md. Change a rule there first, then in code.
+- **The design:** CORE_LOOP.md, FIGHT_RULES.md, LEVEL_STRUCTURE.md, STORY_STRUCTURE.md, CLASS_TEMPLATE.md. Change a rule there first, then in code.
 - **Out of scope:** real-time action, PvP, a phone version, in-game chat, open world. New ideas go in GAME_SPEC.md's parking lot.
 - **(if it fits) calls this game takes on:** 14 (a game for friends) only. **Overrides of the manual:** 2D, not 3D; a mouse cursor, not locked-mouse look; heroes come from the LPC generator through `lpc-sprite-mods`, not the Blender MCP; the story is the team's to write, never Claude's.
 - **Players:** co-op for 1 to 4; the party is always four heroes · **Live build:** _(created at M1)_ · **The owner's route:** live link → Host → share the five-letter code → friends join → the fight.
