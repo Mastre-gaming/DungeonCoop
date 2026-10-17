@@ -2,7 +2,7 @@
 
 **En une phrase :** le camp est le lieu du jeu où l'équipe se retrouve entre deux missions. Au début, les missions, c'est **construire le jeu lui-même** : chaque mission accomplie fait grandir le camp.
 
-**Statut :** concept, à valider par le propriétaire (18 oct). Remplace le jalon M1 « la table est mise » et avance le camp vivant de `STORY_STRUCTURE.fr.md` §8, qui était prévu après M4.
+**Statut :** concept validé, design en cours (18 oct). Remplace le jalon M1 « la table est mise » et avance le camp vivant de `STORY_STRUCTURE.fr.md` §8, qui était prévu après M4. Validés : le plan des clairières, le panneau des missions, le panneau-carte, le héros de départ, la sentinelle au spawn (§4, §5 et §10). La maquette jouable (héros, tableau, feu) est une page privée du propriétaire sur claude.ai.
 
 ## 0. Pourquoi : construire le jeu, c'est déjà le jeu
 
@@ -89,6 +89,28 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | 7. Interface et UX | le tableau d'affichage | les missions, au cœur du camp |
 | 8. Son et musique | l'estrade | la musique du camp |
 
+### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
+- **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
+- **Trois clairières de deux lieux, séparées par des bois,** chacune regroupant des axes qui vont ensemble :
+  - le monde : le coin des récits et la table des cartes ;
+  - les héros : le terrain d'entraînement et l'armurerie ;
+  - l'atelier : l'atelier et l'estrade.
+- **La porte du camp (les runs)** est seule, à l'entrée sud.
+- **Chaque lieu réserve dès le départ son emprise du niveau 4 (6 × 5 cases),** avec une case de marge : il grandit sans écraser son voisin. Les façades sont tournées vers le bas (vue trois-quarts LPC) et chaque sentier arrive devant la porte.
+- **Vérifié par un contrôle automatique :** aucun chevauchement, aucun sentier qui traverse un lieu, et jamais plus de 2 lieux entiers dans le cadre de la caméra au zoom moyen.
+- Écartés : « le carré » (des rangées autour d'une place, trop lotissement) et « le chemin » (une longue rue, trop longue à parcourir et petite dans le dashboard).
+
+| Lieu | Porte (case) | Clairière |
+|---|---|---|
+| tableau d'affichage | 27, 16 | le centre, à côté du feu (20, 14) |
+| coin des récits | 5, 8 | le monde (nord-ouest) |
+| table des cartes | 13, 8 | le monde (nord-ouest) |
+| terrain d'entraînement | 27, 7 | les héros (nord-est) |
+| armurerie | 35, 7 | les héros (nord-est) |
+| estrade | 25, 24 | l'atelier (sud-est) |
+| atelier | 33, 23 | l'atelier (sud-est) |
+| porte du camp | 8, 24 | l'entrée (sud-ouest) |
+
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
 - **Les niveaux :**
@@ -101,8 +123,28 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 3 | 15 | un vrai bâtiment |
   | 4 | 35 | le bâtiment décoré, avec de la lumière et de la vie autour |
 
-- **Le feu de camp, au centre, n'appartient à aucun axe : il montre l'équipe entière :** la somme de tous les points. Plus le camp avance, plus il est grand et lumineux. C'est la seule jauge commune ; il n'y a aucun chiffre par personne.
 - **Le calcul est une fonction pure,** `progression(missions) → niveaux`, testée dans `?test` avec des missions inventées.
+- **Premier lieu dessiné en pièces LPC :** le tableau d'affichage, du niveau 0 au niveau 4 (corde et pancarte, panneau de parchemins, panneaux couverts et enseigne, kiosque à auvent rayé, cabane avec lanterne et bannière). Depuis, son apparence dans le décor est devenue le panneau-carte (plus bas) ; ses niveaux sont à redessiner sur ce modèle.
+
+### Le feu de camp
+Il n'appartient à aucun lieu : **il montre l'équipe entière**, avec la somme de tous les points. C'est la seule jauge commune ; il n'y a aucun chiffre par personne. **Il brûle dès le premier jour,** pour que le camp soit vivant même vide.
+
+| Taille | Points de l'équipe | Ce qu'on voit (pièces LPC) |
+|---|---|---|
+| 0 | 0 | un petit feu (1 × 2 cases), une souche pour s'asseoir |
+| 1 | 10 | des pierres autour, deux souches, un tas de bois |
+| 2 | 40 | le grand feu (2 × 2 cases), trois souches |
+| 3 | 100 | deux bancs, le chaudron sur son trépied |
+| 4 | 200 | les bannières de toutes les zones autour du feu, des tabourets |
+
+Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus nombreuses quand il grandit. Pour comparer : les 8 lieux au niveau 4 font 280 points.
+
+### Le tableau d'affichage dans le décor : le panneau-carte
+- **D'après la référence du propriétaire (18 oct) :** deux poteaux, une traverse aux bouts biseautés, et un parchemin encadré qui montre **la carte du camp** (la forêt, les clairières, les sentiers, le feu au centre). Environ 3 × 2,5 cases (96 × 80 px).
+- **La carte vit avec le jeu :** une zone grise est à construire ; une zone rentrée prend sa couleur et grandit sur la carte. La légende à droite, une ligne par zone, s'allonge avec le niveau. On voit d'un coup d'œil, depuis le camp, ce qui reste à construire.
+- **Le tableau appelle :** tant qu'il y a des missions à prendre, et surtout à la première connexion, **des étoiles scintillent dessus**. Ce sont de petites croix dorées en pixels (sans flou) qui naissent, s'ouvrent en croix à quatre branches avec un cœur blanc, puis s'éteignent, en moins d'une seconde, 3 à 4 à la fois, sur la traverse, le haut des poteaux, le cadre et la carte.
+- **Dessiné pixel par pixel dans le style LPC,** puisqu'aucune pièce LPC ne lui ressemble : contour sombre, lumière en haut à gauche, rampe de bois prise sur les planches LPC (`#2b1c1d #573726 #85581b #986a20 #b78c41 #ccbd7b`).
+- **À faire ensuite :** ses niveaux de 0 à 4 (c'est aussi le lieu de l'axe Interface), par exemple un toit, une lanterne, des fanions.
 
 ---
 
@@ -114,6 +156,40 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   - **Visiter**, seul, c'est ce que montre le dashboard ;
   - **Héberger**, c'est donner un code à cinq lettres, que les amis tapent pour **rejoindre** (skill `party-net`, sans serveur à nous). Chacun voit les autres marcher.
 - **S'approcher d'un lieu** affiche son axe, son niveau, ses points, et les missions de cet axe (ouvertes et récentes). Un lien mène au tableau de travail pour en prendre une.
+
+### Le héros de départ (validé le 18 oct)
+- **Un humain de base du générateur LPC :** peau claire, tête d'homme humain, expression neutre, cheveux simples châtain foncé, tee-shirt blanc, pantalon et bottes marron. Le lien du générateur est dans `dl/lpc/heros/credits.txt`.
+- **Les vraies animations LPC, dans les 4 directions :** marche en 8 images, à environ 2,3 cases par seconde ; course en 8 images, à environ 4,3 cases par seconde. Au repos, il garde la pose debout dans la dernière direction prise.
+- **Commandes :** flèches ou ZQSD pour marcher, Maj pour courir, ou un clic maintenu pour marcher vers le pointeur. Les poteaux du tableau et le feu bloquent le passage.
+
+### La sentinelle au spawn (validée le 18 oct)
+- **Ce qu'elle fait :** à la toute première arrivée, elle arrête le héros et lui demande son **nom de dev**. Le camp sait alors qui rentre quelle mission.
+- **Son apparence :** un chevalier du générateur LPC, en armure de plaques acier, grand heaume, gantelets et bottes d'armure, cape rouge, épée et bouclier à croix. Pas de retouche : le panache bleu proposé a été abandonné. Le lien du générateur est dans `dl/lpc/sentinelle/credits.txt`.
+- **Ses animations (vraies images LPC) :** debout, elle garde la première image de la marche (celle qui a le bouclier ; l'animation de repos du générateur n'en a pas). Pour la « halte » puis le salut, elle lève la main avec la rangée « sort » (images 0 à 5, la main levée tenue). Pour s'écarter, elle marche sur le côté. La rangée « emote » n'est pas utilisée : le générateur n'y dessine ni la cape ni l'armure.
+- **La scène, la première fois :**
+  1. le héros apparaît et monte vers elle ;
+  2. elle lève la main, et un « ! » doré apparaît au-dessus d'elle ;
+  3. une boîte de dialogue s'ouvre en bas de l'écran, dans le style du panneau des missions (cadre en bois, parchemin), avec son portrait (sa tête, prise sur sa planche), une réplique, le champ « Ton nom de dev » et le bouton « C'est moi ». Un nom vide est refusé avec un message ;
+  4. elle salue, puis s'écarte d'une case et demie, et le tableau d'affichage se met à scintiller.
+- **Le nom, relié au pseudo GitHub :** par `equipe.json`, le même fichier que l'entrée du dashboard (repo du dashboard). On cherche le nom tapé dans le nom affiché ou dans le pseudo GitHub, sans tenir compte des majuscules ni des accents : « paul » devient Paul, `@PCrrfng`. Un nom inconnu entre quand même, comme **visiteur**, et le camp ne lui attribue pas de mission. Pour être reconnu, on s'ajoute à `equipe.json`.
+- **Les fois suivantes :** le nom est gardé dans ce navigateur. Elle lève la main, salue (« Rebonjour, Paul ») et s'écarte, sans rien demander.
+- **Ses répliques sont provisoires,** marquées « texte provisoire » à l'écran : les textes du jeu sont à l'équipe (l'axe Histoire).
+
+### Le panneau des missions (ce qui s'ouvre au tableau d'affichage)
+Le propriétaire l'aime tel quel (`LIKED.md`). On l'ouvre en s'approchant du tableau (bulle « E : consulter »).
+- **Un cadre en bois,** avec en tête le total du camp (« 18 points, le feu : taille 1 »).
+- **À gauche, les 8 zones à construire :** pour chacune, son lieu et son axe, son niveau, une barre d'avancée, « encore 1 point pour le niveau 2 », et le nombre de missions à prendre.
+- **À droite, la zone choisie :** la carte du tableau, où la zone clignote ; son niveau et ce qui manque pour le suivant ; ses missions sur des parchemins épinglés, rangées en « à prendre », « en cours » et « rentrées ».
+- **Chaque parchemin :** le numéro de l'issue, le titre, la taille et ses points (« M · 3 pts »), le jalon, qui s'en occupe ou qui l'a rentrée, et **comment la rentrer : « une PR qui contient `Ferme #33`, fusionnée »**. C'est le lien entre coder et voir le monde grandir.
+- **En pied :** prendre une mission se fait dans le tableau de travail du dashboard (« Je prends »), avec un lien vers lui. En v0, le camp ne fait que lire.
+
+### La première connexion
+Il faut comprendre tout de suite que **ce monde ne grandit que si l'équipe le construit**, en codant, en dessinant, en écrivant, puis en commitant.
+1. **La sentinelle :** au spawn, elle arrête le héros et lui demande son nom de dev (plus haut). Elle s'écarte une fois qu'il a répondu.
+2. **Un camp vide :** on entre près du feu, au milieu de huit terrains vides (piquets et pancartes). Sur le tableau, la carte est toute grise.
+3. **Le tableau appelle :** des étoiles scintillent dessus, et une seule bulle s'affiche : « Ce camp, c'est vous qui le construisez. » (texte provisoire). Puis on laisse jouer.
+4. **Les zones à construire :** on ouvre le tableau ; les huit zones sont au niveau 0, chacune avec ses premières missions et la façon de les rentrer.
+5. **On commit, la zone pousse :** la PR qui contient « Ferme #n » est fusionnée, GitHub ferme la mission, et la zone grandit dans le camp de tout le monde. Elle prend aussi sa couleur sur la carte du tableau, et le parchemin porte le nom de qui l'a rentrée.
 
 ### Les premières fois du dev : l'équipement de ton héros (à définir plus tard)
 L'idée : chaque « première fois » de dev (premier commit, première PR fusionnée, première relecture…) ajoute une pièce d'équipement à ton héros, sans classement, et tout le monde peut tout obtenir. **Le détail sera défini plus tard** (décision du propriétaire, 18 oct) ; rien n'est construit avant.
@@ -166,13 +242,28 @@ L'idée : chaque « première fois » de dev (premier commit, première PR fusio
 - **La caméra (validée par le propriétaire le 18 oct, porte Q) :**
   - **vue de dessus « trois-quarts »**, celle des sprites LPC (on voit le dessus du sol et la façade des bâtiments), avec des cases de 32 px ;
   - **en mode joueur,** elle suit ton héros avec une **zone morte** au centre (30 % de l'écran) : le héros bouge dedans sans que l'image bouge, puis la caméra le rattrape en douceur. Elle s'arrête aux bords du camp ;
-  - **zoom « moyen » par défaut :** environ 20 × 11 cases visibles sur un camp de 36 × 24. On découvre le camp en marchant, avec un ou deux lieux à l'écran à la fois ;
+  - **zoom « moyen » par défaut :** environ 20 × 11 cases visibles sur un camp de 42 × 28 (le plan des clairières). On découvre le camp en marchant, avec un ou deux lieux à l'écran à la fois ;
   - **en mode visite** (la carte du dashboard), il n'y a pas de héros : tout le camp tient dans le cadre ;
   - la position de la caméra est arrondie au pixel près, pour que le pixel art ne scintille pas en mouvement.
 - **Le moteur :** le skill `game-core` (boucle, `?test`, `window.dbg`, captures), avec une caméra de dessus en 2D.
 - **Le réseau :** `party-net`, isolé dans son propre module.
 - **Les données :** les issues, lues par le Worker « direct » de Paul (CORS ouvert, déjà branché sur les webhooks du jeu), et sinon directement chez GitHub.
-- **Mis en ligne :** comme un site statique, sur le lien du jeu. Le dashboard l'affiche dans un cadre ; le jeu doit donc autoriser l'affichage depuis l'adresse du dashboard.
+- **Mis en ligne :** comme un site statique, sur le lien du jeu (https://dungeoncoop.0xbaba-eth.workers.dev). Le dashboard l'affiche dans un cadre ; le jeu doit donc autoriser l'affichage depuis l'adresse du dashboard.
+- **L'herbe :** la case d'herbe pleine de LPC Base Assets, éclaircie légèrement (une retouche de couleur, permise par la licence) pour un camp lumineux.
+
+### Les pièces LPC (téléchargées le 18 oct dans `dl/`, jamais commité)
+Toutes sont en « share-alike » : ce qu'on retouche reste sous CC-BY-SA, et le jeu affiche un écran de crédits. Quand une pièce entre dans le jeu (`public/`), sa ligne va dans `CREDITS.md`, avec le fichier de crédits du pack.
+
+| Pack | Auteurs | Licence | Ce qu'on en prend |
+|---|---|---|---|
+| [[LPC] Medieval Village Decorations](https://opengameart.org/content/lpc-medieval-village-decorations) | bluecarrot16, Lanea Zimmerman (Sharm), Reemax et 17 autres (`CREDITS-decorations-medieval.txt`) | CC-BY-SA 3.0 et 4.0 | panneaux, lanternes, bannières, étals, caisses, souches, tas de bois, bancs, trépied et chaudron, petit feu animé, grande tente, palissade |
+| [[LPC] Thatched-roof Cottage](https://opengameart.org/content/lpc-thatched-roof-cottage) | bluecarrot16, d'après Sharm, Daniel Armstrong (HughSpectrum), Casper Nilsson | CC-BY-SA 3.0 ou GPL 3.0 | murs à colombages et toits de chaume (niveaux 3 et 4 des lieux) |
+| [LPC Base Assets](https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles) | Lanea Zimmerman (Sharm) et les auteurs de `CREDITS.TXT` | CC-BY-SA 3.0 ou GPL 3.0 | herbe, terre, pierres, tonneau |
+| [Camp Fire Animation for RPGs](https://opengameart.org/content/camp-fire-animation-for-rpgs-finished) | Zabin et Jetrel | CC-BY-SA 3.0 | le grand feu animé (2 × 2 cases) |
+| [Générateur LPC](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/) : le héros de départ | une liste par pièce dans `dl/lpc/heros/credits.txt` (bluecarrot16, JaidynReiman, Eliza Wyatt, Redshrike…) | OGA-BY 3.0, CC-BY-SA 3.0 ou GPL 3.0 selon la pièce | la planche complète du héros, dont la marche et la course |
+| [Générateur LPC](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/) : la sentinelle | une liste par pièce dans `dl/lpc/sentinelle/credits.txt` | OGA-BY 3.0, CC-BY-SA 3.0 ou GPL 3.0 selon la pièce | sa planche complète ; on utilise la marche et la rangée « sort » (deux fichiers manquent sur le site du générateur : la course des jambes d'armure et l'escalade de la cape, sans effet ici) |
+
+Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengameart.org/content/lpc-terrains) (9,2 Mo, CC-BY-SA), pas téléchargé.
 
 ---
 
@@ -187,9 +278,20 @@ L'idée : chaque « première fois » de dev (premier commit, première PR fusio
 | 18 oct | La caméra : suivi du héros avec zone morte, zoom moyen par défaut, vue visite (tout le camp) dans le dashboard | le propriétaire |
 | 18 oct | Construire le jeu fait partie du jeu : on gamifie la création elle-même, et on récompense l'apprentissage de chacun | le propriétaire |
 | 18 oct | L'axe 1 (Histoire) n'a plus de responsable pour l'instant ; on répartira quand le camp aura pris forme | le propriétaire |
+| 18 oct | KICKOFF.md signé ; le lien en ligne du jeu est sur le compte Cloudflare du propriétaire | le propriétaire |
+| 18 oct | Le plan du camp : les clairières (42 × 28) ; le détail du plan est remis à plus tard | le propriétaire |
+| 18 oct | Le tableau des missions est le cœur du camp : les zones à construire, puis leurs missions | le propriétaire |
+| 18 oct | À la première connexion, on doit comprendre qu'on fait grandir le monde en codant et en commitant | le propriétaire |
+| 18 oct | Le tableau dans le décor : un panneau-carte (deux poteaux, une traverse, la carte du camp), d'après sa référence ; des étoiles scintillent dessus quand il appelle | le propriétaire |
+| 18 oct | Le panneau des missions qui s'ouvre est gardé tel quel | le propriétaire |
+| 18 oct | Le héros de départ : un humain LPC de base, avec la marche et la course | le propriétaire |
+| 18 oct | La sentinelle au spawn : un chevalier LPC sans retouche qui demande le nom de dev à la première arrivée, relié au pseudo GitHub par `equipe.json` ; un nom inconnu entre comme visiteur | le propriétaire |
+| 18 oct | « Les premières fois du dev » (l'équipement des héros) : à définir plus tard | le propriétaire |
 
 | Question | Qui répond |
 |---|---|
-| Signer KICKOFF.md (porte K) pour que le code du camp puisse commencer, même si toutes les réponses des amis ne sont pas encore là | le propriétaire |
-| Sur quel compte mettre le lien en ligne du jeu (Cloudflare Pages : celui du propriétaire, ou celui de Paul comme le dashboard) | le propriétaire, Paul |
-| Les pièces LPC du camp (tuiles, tentes, bâtiments) : lesquelles, et leurs licences dans `CREDITS.md` | Claude propose, le propriétaire choisit |
+| Valider le feu de camp et ses 5 tailles (seuils 0, 10, 40, 100, 200 points) | le propriétaire |
+| Les 5 niveaux du tableau d'affichage sur le modèle du panneau-carte | Claude propose, le propriétaire choisit |
+| Les sept autres lieux, un par un, sur le modèle validé (porte T) | Claude propose, le propriétaire choisit |
+| Les noms définitifs des lieux et le texte de la bulle d'arrivée | le responsable de l'axe Histoire, quand il y en aura un |
+| Les crédits : un écran de crédits dans le jeu, à partir de `CREDITS.md` et des fichiers de crédits des packs | le propriétaire |
