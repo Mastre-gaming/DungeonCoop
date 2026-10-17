@@ -1,0 +1,8 @@
+{"lieu":"tableau d'affichage",
+ "niveaux":[
+  {"pieces":[["decorations-medieval",6,6,3,1,1.5,3.7],["decorations-medieval",6,4,1,1,2.5,3.3]]},
+  {"pieces":[["decorations-medieval",7,5,1,1,2.5,3.4],["decorations-medieval",6,4,1,1,1.6,3.2],["barrel",0,0,1,1,3.6,3.5]]},
+  {"pieces":[["decorations-medieval",8,5,2,1,1.2,3.2],["decorations-medieval",7,5,1,1,3.2,3.4],["decorations-medieval",11,0,1,2,5.0,2.2],["decorations-medieval",6,1,1,1,4.0,2.2],["barrel",0,0,1,1,0.2,3.6]]},
+  {"pieces":[["decorations-medieval",5,25,3,5,1.5,-0.2],["decorations-medieval",7,5,1,1,0.4,3.3],["decorations-medieval",8,5,1,1,0.4,2.4],["decorations-medieval",7,5,1,1,4.6,3.3],["decorations-medieval",9,5,1,1,4.6,2.4],["barrel",0,0,1,1,5.0,4.0]]},
+  {"pieces":[["decorations-medieval",11,11,2,3,0.0,0.8],["decorations-medieval",13,0,1,2,2.0,1.3],["decorations-medieval",5,25,3,5,2.9,-0.2],["decorations-medieval",1,38,1,2,5.15,0.7],["decorations-medieval",7,5,1,1,2.1,3.4],["decorations-medieval",8,5,1,1,2.1,2.6],["barrel",0,0,1,1,0.1,3.8],["barrel",0,0,1,1,0.9,3.95]]}
+ ]}
