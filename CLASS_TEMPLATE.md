@@ -19,6 +19,7 @@ Remade from the owner's answers on 17 Oct 2026. Anyone can design **as many clas
 - **In one line, who are they?**
 - **Main role:** tank · damage · support · control
 - **The twist:** (what makes this class not just its role)
+- **Story archetype:** one from the team's list: Fighter · Support · Ranged · Mage (work in progress, `STORY_STRUCTURE.md` §4). The story speaks to your hero through it.
 
 ## 2. Stats (27 points, 5e point buy)
 Each stat starts at 8. Raising it costs: 9 = 1 point, 10 = 2, 11 = 3, 12 = 4, 13 = 5, 14 = 7, 15 = 9. A stat can't go above 15 at level 1.

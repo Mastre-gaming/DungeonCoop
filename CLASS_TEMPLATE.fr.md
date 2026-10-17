@@ -19,6 +19,7 @@ Refaite à partir des réponses du 17 oct. 2026. Chacun peut créer **autant de 
 - **En une phrase, c'est qui ?**
 - **Rôle principal :** tank · dégâts · soutien · contrôle
 - **La particularité :** (ce qui fait que cette classe n'est pas juste son rôle)
+- **Archétype d'histoire :** un seul, pris dans la liste de l'équipe : Combattant · Soutien · À distance · Mage (en cours, `STORY_STRUCTURE.fr.md` §4). C'est par lui que l'histoire parle à ton héros.
 
 ## 2. Caractéristiques (27 points, achat de points de la 5e)
 Chaque caractéristique commence à 8. Monter coûte : 9 = 1 point, 10 = 2, 11 = 3, 12 = 4, 13 = 5, 14 = 7, 15 = 9. Pas plus de 15 au niveau 1.

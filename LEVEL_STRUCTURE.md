@@ -1,6 +1,6 @@
 # LEVEL STRUCTURE (design draft)
 
-From the owner's answers on 17 Oct 2026. The story, and what a chapter means story-wise, belong to the team and are decided later. This file only sets the shape of a run.
+From the owner's answers on 17 Oct 2026. The story belongs to the team. This file only sets the shape of a run; where story sits in it, and how it moves from run to run, is in `STORY_STRUCTURE.md`.
 
 ## Decided
 | Question | Answer |
@@ -10,9 +10,9 @@ From the owner's answers on 17 Oct 2026. The story, and what a chapter means sto
 | Room types | fight, elite fight, story event, rest, shop, treasure, turn-based training mini-game, puzzle or trap |
 | Rooms per run | 9 |
 | End of a chapter | the group picks one of two bosses |
-| Getting harder | more enemies, tougher types, nastier rooms (hazards, surfaces), enemies with new tricks |
+| Getting harder | within a run: more enemies, tougher types, nastier rooms (hazards, surfaces), enemies with new tricks. Across chapters: enemies follow the heroes' level, since chapters play in any order |
 | Whole party down | back to the last rest room |
-| Chapters in the first full version | 3 |
+| Chapters in the first full version | 3, modular: playable in any order (owner, 17 Oct; `STORY_STRUCTURE.md`) |
 
 ## A run, as a first layout to test
 Rooms 1 to 9 go left to right. Where the line splits, the group votes (CORE_LOOP.md).

@@ -2,7 +2,7 @@
 
 The plan and the actual state, kept in step. Claude updates it the same day anything changes; the owner reads "Now" before every round. The game belongs to all the friends ("This game should feel like everyone's, not mine only"). Why this file exists: findings F1 and F2.
 
-**The design lives in its own files:** `CORE_LOOP.md`, `FIGHT_RULES.md`, `LEVEL_STRUCTURE.md`, `CLASS_TEMPLATE.md` (+ `.fr`), `PAPER_FIGHT_KIT.md`. The friends' answers are in `FRIENDS.md`. This file points to them and doesn't repeat them.
+**The design lives in its own files:** `CORE_LOOP.md`, `FIGHT_RULES.md`, `LEVEL_STRUCTURE.md`, `STORY_STRUCTURE.md` (+ `.fr`), `CLASS_TEMPLATE.md` (+ `.fr`), `PAPER_FIGHT_KIT.md`. The friends' answers are in `FRIENDS.md`. This file points to them and doesn't repeat them.
 
 ## Now
 - **Current stage:** D, the design stage (before M1). No game code yet (gate K: KICKOFF.md not signed off).
@@ -75,7 +75,8 @@ Each milestone has at most 5 items and fits one session. Items are broken down w
 | Fight rules, d20, stats | M2 | not started | | built fresh (focus) |
 | Combos: statuses, surfaces, shoves, team moves | M3 | not started | | built fresh (focus) |
 | Rewards, levels, wipe roll | M4 | not started | | `run-progression` |
-| Shared saved characters | later | not started | | `edge-leaderboard` (adapted) |
+| Shared saved characters and the shared story campaign | M4 (the campaign); characters later | not started | | `edge-leaderboard` (adapted) |
+| The living camp and the campaign journal | after M4: a plain camp first, grown one piece at a time | not started | | built fresh |
 | Team workflow (repo, checks, previews) | before M1 | guides and drafts written, nothing pushed | | `docs/` |
 
 ## Parking lot (gate P)
@@ -97,6 +98,12 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 17 Oct | Should a third wipe end a run? | the first runs | |
 | 17 Oct | Who owns: fight rules, classes, monsters, rooms and the map, pixel art | the group | |
 | 17 Oct | The world and the story | the team (D3) | |
+| 17 Oct | The story frame (`STORY_STRUCTURE.md`): does Paolitus agree? | Paolitus | |
+| 17 Oct | The End boss: what counts as wear, how much, when its fight opens, a floor | the owner, Paolitus | the End boss is never beaten: the wear is the team's score. Every finished run adds wear, more for the harder boss. How much: the first runs. A direct fight against it: still open (17 Oct) |
+| 17 Oct | Chapters in any order: who picks (group or draw), and difficulty that follows the heroes' level rather than the chapter number | the owner, Paolitus | the game draws the next chapter (owner, 17 Oct); difficulty follows the heroes' level, not the chapter number (owner, 17 Oct; FIGHT_RULES.md) |
+| 17 Oct | The living camp: what grows there, and does it change fights or only the story? | the owner, Paolitus | ideally both; details in a second phase (owner, 17 Oct) |
+| 17 Oct | After the End boss | the owner | an epilogue once the 3 chapters' chains are finished, then the friends add new arcs and chapters as content, like builds (owner, 17 Oct) |
+| 17 Oct | Story archetypes: their own list or the four roles; how many | the team | their own list, work in progress: Fighter, Support, Ranged, Mage (owner, 17 Oct) |
 | 17 Oct | The game's name | the group | |
 | 17 Oct | The answers still missing from the remaining friends | the friends | |
 | 17 Oct | The GitHub plan for enforcing checks on a private repo | the owner | the repo is public, so the main-branch rule is free (17 Oct) |
@@ -114,6 +121,7 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 17 Oct | Classes: six D&D stats (27 points), 10 class points, 3 starting abilities, a weakness, a subclass at 3, no starting gear | owner's class answers | |
 | 17 Oct | The story is written by the team; the suggested hooks are scrapped | owner | |
 | 17 Oct | Content goes live as soon as its owner merges it | owner | |
+| 17 Oct | Story frame (draft, awaits Paolitus): Hades-style flags that survive wipes; run bosses set flags and every run wears down one End boss; classes fall under story archetypes and the story names the hero; event choices by timed group vote. Then: every finished run wears the End boss (more for the harder boss); it is never beaten and its wear is the team's score; the epilogue plays once the 3 chains are finished; archetypes Fighter, Support, Ranged, Mage (WIP); one shared campaign kept online, whoever hosts; chapters modular (any order); a living camp between runs (after M4); an epilogue, then play goes on; a campaign journal for friends who missed an evening | owner, in the story-structure session | |
 | 17 Oct | The repo is **public**: github.com/Mastre-gaming/DungeonCoop, friends' answers included | owner: "the repo being public is fine" | |
 
 ## How it works (the reference part)

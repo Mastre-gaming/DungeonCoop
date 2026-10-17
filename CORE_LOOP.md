@@ -26,7 +26,7 @@ From the owner's answers on 17 Oct 2026. Targets are checked in the paper fight 
 | Question | Answer | Status |
 |---|---|---|
 | What carries over | heroes level up permanently | decided; see tension 2 |
-| Home base and story | the team writes the story; the three hooks in the pitch are scrapped | the team's to create |
+| Home base and story | the team writes the story; the three hooks in the pitch are scrapped. The frame (flags, End boss, archetypes, a living camp between runs, the journal) is in `STORY_STRUCTURE.md` | content: the team's to create; frame: draft, awaits Paolitus |
 
 ## 5. The builder loop
 | Question | Answer | Status |

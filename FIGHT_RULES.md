@@ -28,7 +28,7 @@ From the owner's answers on 17 Oct 2026, plus CORE_LOOP.md. Every number is a st
 ## Resources and stats
 Each class picks one resource from the shared list in `CLASS_TEMPLATE.md` (Rage, Mana, Focus, Faith, Energy, Momentum). A new one is added only if the group agrees. Heroes have the six D&D stats, bought with 27 points. Constitution adds health; the other stats add to rolls and damage.
 
-**Scaling to level 20:** heroes gain about 5 health and better abilities per level, so enemy health and damage must grow along each chapter. The paper fight only tests level 1.
+**Scaling to level 20:** heroes gain about 5 health and better abilities per level, so enemy health and damage **follow the heroes' level, not the chapter number** (owner, 17 Oct: chapters play in any order, `STORY_STRUCTURE.md`). The paper fight only tests level 1.
 
 ## Combos (all four kinds are in)
 **Statuses** (on a creature):
