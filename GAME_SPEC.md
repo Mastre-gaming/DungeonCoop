@@ -7,12 +7,13 @@ The plan and the actual state, kept in step. Claude updates it the same day anyt
 ## Now
 - **Current stage:** D, the design stage, and M1 "the camp" starts (KICKOFF.md signed off 18 Oct). First code: the camp prototype v0 (`CAMP.fr.md` §7).
 - **Live link:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, 18 Oct): rebuilt on every merge to `main`, a preview per PR. Empty until the camp's first code lands.
+- **Camp v0, step 1 of 5 (18 Oct, branch `donbabaa/camp-v0`, not committed):** the empty camp in LPC tiles (42 x 28, the clearings plan), the 8 places at level 0, the small fire, the map board, the starting hero walking and running, the dead-zone camera, `?visite`, named screenshots in `shots/`. Then, on the owner's note: the map board twinkles (missions to take, or a first visit in this browser) and opens the missions panel on a click or E, with the dashboard work board's tasks read live from Paul's Worker. `?test` 60/60 (visit 5/5). Waits for the owner's look and score.
 - **Current score of the focus aspect:** none yet. The paper fight gives the first one.
 - **Waiting on the owner's check (gate F):** nothing.
 
 | Item | Fixed on | Route to check it | Owner: confirmed / reopened / waived |
 |---|---|---|---|
-| | | | |
+| The map board twinkles and opens the missions panel (click or E) with the work board's tasks | 18 Oct | live link → walk to the map board right of the fire → click it, or E in front of it | confirmed (18 Oct: « tout marche ») |
 
 ## The focus aspect
 - **The aspect:** co-op combos in turn-based fights. Repeat runs become the focus once combos reach 9/10.
@@ -46,7 +47,8 @@ Nothing goes in the game without a line here. Credits also go in the game's `CRE
 
 | Asset | Source (URL) | License | Credit written | In the game since |
 |---|---|---|---|---|
-| Heroes (gate A) | Universal LPC Spritesheet Character Generator, modified in Sprite Painter (`lpc-sprite-mods`) | per piece: CC0, CC-BY, CC-BY-SA, OGA-BY, GPL | from the generator's credits export | |
+| Heroes (gate A) | Universal LPC Spritesheet Character Generator, modified in Sprite Painter (`lpc-sprite-mods`) | per piece: CC0, CC-BY, CC-BY-SA, OGA-BY, GPL | from the generator's credits export | the starting hero and the sentinel, 18 Oct (`CREDITS.md`) |
+| Camp tiles and decorations | LPC Base Assets, [LPC] Medieval Village Decorations, Camp Fire Animation (OpenGameArt) | CC-BY-SA 3.0 / 4.0, GPL 3.0 | `CREDITS.md`, `public/assets/credits/` | 18 Oct |
 | Tiles, monsters | OpenGameArt LPC sets | checked per set | | |
 | Rules and monsters (adapted) | D&D 5e SRD 5.1 | CC BY 4.0; the SRD's credit line; no "D&D" in the name | | |
 
@@ -69,7 +71,7 @@ Each milestone has at most 5 items and fits one session. Items are broken down w
 ## Progress: systems, plan against state
 | System | Planned | State | Owner's last score | Skill used or extracted |
 |---|---|---|---|---|
-| Loop, saves, `?test`, screenshots | M1 | not started | | `game-core` |
+| Loop, saves, `?test`, screenshots | M1 | started (18 Oct): `?test`, `window.dbg`, named screenshots, build stamp | | `game-core` |
 | Online play (host, join, rejoin) | M1 | not started | | `party-net` (adapted) |
 | Heroes from LPC pieces | D4, M1 | not started | | `lpc-sprite-mods` |
 | Grid, line of sight, pathing | M2 (the camp in M1 has free movement, no grid) | not started | | `grid-building` (logic only) |
@@ -129,6 +131,9 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 18 Oct | KICKOFF.md signed before every friend answered | owner | |
 | 18 Oct | Axis 1 (story) has no owner for now; owners are spread once the camp has taken shape | owner | |
 | 18 Oct | Camp design (`CAMP.fr.md` §4, §5, §9): the clearings layout (42 × 28); the missions board is the heart of the camp (zones to build, then their missions, each closed by a merged PR containing "Ferme #n"); the first login makes clear the team grows the world by coding and committing; the board in the scenery is a map board with twinkling stars; the starting hero is a basic LPC human with walk and run; a spawn sentinel (LPC knight) asks the dev name on first arrival, linked to the GitHub username through the dashboard's `equipe.json`; LPC packs downloaded into `dl/` with their licences | owner, in the camp design session; the missions panel and the hero are in `LIKED.md` | |
+| 18 Oct | Camp v0 answers: the sentinel keeps the design's text (« Halte. Avant d'entrer au camp : quel est ton nom de dev ? », a name box, « C'est moi »), not RENOMMEE §1 bis's buttons; each player types their own name on arrival (empty names in `equipe.json` are fine); one character design for now, 1 to 4 players; the axes (8 in CAMP, 6 in the dashboard) and the places' level art are decided later | owner, camp v0 session | |
+| 18 Oct | Camp v0, Claude's calls to check (2): until the axes are decided, `src/data/axes.json` files each dashboard label under the camp place that looks closest (menus → board, combats → training ground, pixel art → workshop, salles → map table, histoire → story corner); `axe: technique` and tasks with no axis show under « Sans lieu »; a closed task with no `taille:` label grows nothing | Claude; owner to confirm when the axes are decided | |
+| 18 Oct | Camp v0, Claude's calls to check: the four clearings stay grass (all-dirt clearings were too brown in LPC tiles), with a small dirt yard in front of each place; forest trunks start 2 rows inside each clump and the bottom tree line stands just outside the camp, so no canopy hides a hero in front of a place | Claude, from the screenshots; owner to confirm | |
 
 ## How it works (the reference part)
 See the design files listed at the top. Controls: mouse cursor on a square grid; click a square to move, an ability (or 1–9) then a target; hover shows range, the chance of each result and what a combo would do; Space ends the turn. The manual's locked-mouse look and 3D defaults don't apply to this game.

@@ -1,0 +1,109 @@
+// Le héros de départ (CAMP §5, aimé : LIKED.md) : un humain du générateur LPC, marche et course LPC dans les 4 directions.
+//   flèches ou ZQSD (touches physiques : WASD en QWERTY) pour marcher, Maj pour courir,
+//   un clic pour aller quelque part (en contournant ce qui bloque), ou un clic maintenu pour suivre le pointeur.
+// Au repos, il garde la pose debout dans la dernière direction prise.
+// Le déplacement se fait par pas fixes (step), l'animation à chaque image (update).
+import { PIED } from './05_collision.js';
+
+export const name = 'heros';
+
+const LIGNES = { haut: 0, gauche: 1, bas: 2, droite: 3 };   // l'ordre des directions dans une planche LPC
+const MARCHE = 8, COURSE = 38;                            // les rangées de la marche et de la course dans la planche
+const DEFAUTS = { marche: 74, course: 138, imagesMarche: 10, imagesCourse: 14 };   // px/s : ~2,3 et ~4,3 cases par seconde
+
+let game, cfg, rendu, collision, sprite, ombre, canvas;
+const heros = { x: 0, y: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0 };
+const doigt = { tenu: false, x: 0, y: 0, recalcule: 0 };
+
+export function init(g, options) {
+  game = g; cfg = { ...DEFAUTS, ...options.config };
+  ({ rendu, collision, canvas } = options);
+  heros.x = options.x; heros.y = options.y;
+  ombre = rendu.ombre(18, 4);
+  sprite = rendu.sprite(options.images.heros, 'heros', 64, 64);
+
+  const versMonde = (e) => rendu.versMonde(e.clientX, e.clientY);
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    try { canvas.setPointerCapture(e.pointerId); } catch {}
+    doigt.tenu = true; Object.assign(doigt, versMonde(e)); doigt.recalcule = 0;
+    allerA(doigt.x, doigt.y);
+  });
+  canvas.addEventListener('pointermove', (e) => { if (doigt.tenu) Object.assign(doigt, versMonde(e)); });
+  const lacher = () => { doigt.tenu = false; };
+  canvas.addEventListener('pointerup', lacher);
+  canvas.addEventListener('pointercancel', lacher);
+  return api;
+}
+
+// Aller à pied jusqu'à (x, y), en contournant les obstacles. Renvoie false si l'endroit est hors d'atteinte.
+function allerA(x, y) {
+  const r = collision.chemin(heros.x, heros.y, x, y);
+  heros.route = r && r.length ? r : null;
+  heros.bloqueDepuis = 0;
+  return !!heros.route;
+}
+
+function deplacer(dx, dy, v) {
+  const nx = heros.x + dx * v, ny = heros.y + dy * v;
+  if (!collision.bloque(nx, ny)) { heros.x = nx; heros.y = ny; return true; }
+  // on glisse le long de ce qui bloque
+  if (dx && !collision.bloque(nx, heros.y)) { heros.x = nx; return true; }
+  if (dy && !collision.bloque(heros.x, ny)) { heros.y = ny; return true; }
+  // l'aide aux coins : on frôle un coin de quelques pixels, on est poussé sur le côté libre au lieu de rester bloqué
+  const ax = Math.abs(dx) >= Math.abs(dy);
+  for (let k = 1; k <= 10; k++) {
+    for (const s of [-1, 1]) {
+      const ox = ax ? 0 : s * k, oy = ax ? s * k : 0;
+      if (!collision.bloque(heros.x + ox + (ax ? Math.sign(dx) * v : 0), heros.y + oy + (ax ? 0 : Math.sign(dy) * v)) &&
+          !collision.bloque(heros.x + Math.sign(ox) * v, heros.y + Math.sign(oy) * v)) {
+        heros.x += Math.sign(ox) * v; heros.y += Math.sign(oy) * v;
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+export function step(h) {
+  const inp = game.input;
+  let dx = inp.axis('gauche', 'droite'), dy = inp.axis('haut', 'bas');
+  if (dx || dy) heros.route = null;                       // le clavier reprend la main
+  else if (heros.route) {
+    const [tx, ty] = heros.route[0], vx = tx - heros.x, vy = ty - heros.y, d = Math.hypot(vx, vy);
+    if (d < 2) { heros.route.shift(); if (!heros.route.length) heros.route = null; }
+    else { dx = vx / d; dy = vy / d; }
+  }
+  const n = Math.hypot(dx, dy);
+  heros.bouge = n > 0;
+  heros.court = heros.bouge && inp.held('courir');
+  if (!heros.bouge) return;
+  dx /= n; dy /= n;
+  heros.dir = Math.abs(dx) > Math.abs(dy) + 0.01 ? (dx < 0 ? 'gauche' : 'droite') : (dy < 0 ? 'haut' : 'bas');
+  const v = (heros.court ? cfg.course : cfg.marche) * h;
+  // un clic sur la route : on avance au plus jusqu'au point visé
+  const reste = heros.route ? Math.hypot(heros.route[0][0] - heros.x, heros.route[0][1] - heros.y) : Infinity;
+  const ok = deplacer(dx, dy, Math.min(v, reste));
+  if (!ok && heros.route && (heros.bloqueDepuis += h) > 0.4) heros.route = null;   // coincé sur une route : on abandonne
+}
+
+export function update(dt) {
+  if (doigt.tenu && (doigt.recalcule -= dt) <= 0) { doigt.recalcule = 0.15; allerA(doigt.x, doigt.y); }
+  if (heros.bouge) heros.t += dt; else heros.t = 0;
+  const ligne = LIGNES[heros.dir];
+  let rang = MARCHE + ligne, col = 0;
+  if (heros.bouge && heros.court) { rang = COURSE + ligne; col = Math.floor(heros.t * cfg.imagesCourse) % 8; }
+  else if (heros.bouge) col = 1 + Math.floor(heros.t * cfg.imagesMarche) % 8;
+  sprite.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
+  ombre.poser(heros.x, heros.y - 1);
+}
+
+export function dispose() {}
+
+export const api = {
+  heros,
+  allerA,
+  placer(x, y, dir = heros.dir) { Object.assign(heros, { x, y, dir, route: null, bouge: false }); update(0); },
+  cacher(oui = true) { sprite.cacher(oui); ombre.cacher(oui); },
+  pied: PIED,
+};
