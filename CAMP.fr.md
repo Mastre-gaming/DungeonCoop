@@ -175,6 +175,19 @@ Il n'appartient à aucun lieu : **il montre l'équipe entière**, avec la somme 
 
 Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus nombreuses quand il grandit. Pour comparer : les 8 lieux au niveau 4 font 280 points.
 
+**La place du village (validée le 18 oct, dans le jeu) : le feu devient le centre du village.** Les 5 tailles du feu sont 5 niveaux de la place, dans la pierre blanche de la muraille (pavés décalés de la route du pont, étendards dorés aux couleurs des axes, braseros). **Elle est livrée au niveau 2** ; avec les vraies missions, elle prend tout de suite la taille du feu de l'équipe (3 au 19 oct).
+
+| Niveau | Ce qu'on voit |
+|---|---|
+| 0 · le feu de bivouac | le petit feu et sa souche, l'herbe sauvage |
+| 1 · la place du village | le grand feu dans un foyer de pierres blanches, trois bancs autour, le chaudron sur son trépied, un tonneau, une souche, le panneau d'annonces, un réverbère ; un premier rond de pavés |
+| 2 · la fontaine | une fontaine de pierre blanche au milieu, les braseros (le feu de l'équipe brûle toujours) au bout du banc du nord, un banc à l'est et à l'ouest tournés vers elle, deux réverbères ; les sentiers commencent à se paver, l'herbe autour est tondue |
+| 3 · le cœur du village | une fontaine à deux coupes, deux bancs au nord, des étendards, trois réverbères, un buis ; la terre battue recule devant une pelouse rayée et fleurie |
+| 4 · le centre du village | la grande fontaine à trois coupes et son dôme de cuivre, la pierre des bâtisseurs au sud entre deux buis, la couronne d'étendards, une haie basse taillée ; tous les sentiers pavés et bordés |
+
+- **Rien ne gêne le passage** : les objets sont rangés entre les quatre sentiers (jamais dans leurs couloirs), voisins collés ou bien écartés (pas de fente où un pied se coince). Le barde et son enceinte (ouest), la boîte aux lettres (est) et l'arrêt du tour (sud) gardent leur place. `design/camp/outils/place_niveaux.py` le vérifie à pied pour chaque niveau.
+- **Comment c'est fait** : `place_niveaux.py` dessine la place (aperçu `pieces/place_apercu.png`) ; `place_jeu.py` en tire un calque de sol par niveau (`place_sols.png`), les objets et leurs images d'animation (`place_objets.png` : l'eau, les braseros, les étendards, les lanternes) et `src/data/place.json` ; `src/36_place.js` les pose et remplace le petit feu.
+
 ### Le barde et la radio Deadlock (mission #94, 18 oct.)
 - **Près du feu, à l'ouest, un barde** est assis sur une souche, une lyre médiévale sur les genoux, avec **une enceinte** à côté de lui. Il diffuse DEADLOCK RECORDS RADIO, la station de Mastres Racing : les morceaux de Deadlock Records, l'animateur et les jingles, comme un petit poste.
 - **La radio est en direct :** on l'entend partout, plus fort en s'approchant de l'enceinte. Elle démarre au premier geste du joueur, et continue quand on quitte l'onglet. À plusieurs, tout le groupe entend la radio de l'hôte, au même instant.
@@ -359,6 +372,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 18 oct | La sentinelle au spawn : un chevalier LPC sans retouche qui demande le nom de dev à la première arrivée, relié au pseudo GitHub par `equipe.json` ; un nom inconnu entre comme visiteur | le propriétaire |
 | 18 oct | « Les premières fois du dev » (l'équipement des héros) : à définir plus tard | le propriétaire |
 | 18 oct | L'armurerie : tente, tente et abri de forge, puis un atelier de pierre (pas une petite maison), des dalles qui gagnent le sol ; livrée au niveau 2 | le propriétaire |
+| 18 oct | La place du village : le feu devient le centre du village dans la pierre de la muraille (sans flou), une fontaine dès le niveau 2, les sentiers qui se pavent, l'herbe qui se dompte, et rien qui gêne le passage ; livrée au niveau 2 | le propriétaire |
 | 18 oct | Après le nom, la sentinelle presse le joueur et lui fait faire le tour du camp : le feu, le tableau, un terrain vide, un rat | le propriétaire |
 
 | Question | Qui répond |
