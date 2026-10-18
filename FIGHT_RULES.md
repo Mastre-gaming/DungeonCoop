@@ -6,6 +6,7 @@ From the owner's answers on 17 Oct 2026, plus CORE_LOOP.md. Every number is a st
 - **Move** up to 5 squares (1 square = 1.5 m), then an **action** and a **bonus action**, in any order.
 - **Who acts when:** initiative order, or the team turn. Both are tested on paper (CORE_LOOP.md).
 - **Reactions:** only abilities that say "Reaction" can be used outside your turn, at most one per round.
+- **Playing together** (the training ground, #80): each player plays only their own heroes, in any order with the others. The heroes' phase ends when everyone who has a hero standing in it has said "ready" (playing again takes the "ready" back). A move can't be undone then: the others may already have played after it.
 
 ## Attacks always hit; the d20 decides how well
 | d20 | Result | Damage |

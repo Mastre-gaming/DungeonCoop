@@ -276,3 +276,7 @@
 /* L'entrée du terrain d'entraînement (src/23_terrain.js) : la bulle se clique aussi */
 .bulle-terrain { pointer-events: auto; cursor: pointer; text-decoration: none; }
 .bulle-terrain:hover { filter: brightness(1.05); }
+/* À plusieurs, le groupe part ensemble au terrain (#80) : l'annonce, en haut au milieu */
+.annonce-terrain { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 30; margin: 0; padding: 8px 16px;
+  background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce); border-radius: 4px; font: 700 1rem var(--titre); box-shadow: 0 3px 0 rgba(0,0,0,.3); }
+.annonce-terrain[hidden] { display: none; }

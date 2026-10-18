@@ -160,6 +160,7 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
 - **Seul ou à plusieurs :**
   - **Visiter**, seul, c'est ce que montre le dashboard ;
   - **Héberger**, c'est donner un code à cinq lettres, que les amis tapent pour **rejoindre** (skill `party-net`, sans serveur à nous). Chacun voit les autres marcher.
+  - **Au terrain d'entraînement, ensemble (#80) :** en groupe, E devant le terrain emmène tout le groupe dans son lobby (n'importe qui peut le demander : l'hôte emmène tout le monde). Au retour, le groupe se refait au camp avec le même code.
 - **S'approcher d'un lieu** affiche son axe, son niveau, ses points, et les missions de cet axe (ouvertes et récentes). Un lien mène au tableau de travail pour en prendre une.
 
 ### Le héros de départ (validé le 18 oct)

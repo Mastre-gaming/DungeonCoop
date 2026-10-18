@@ -4,6 +4,8 @@
 //   autres ; un onglet qui cale revient tout seul ; si l'hôte part, on continue seul.
 // Le camp n'a pas de « monde » à partager pour l'instant : les missions, chacun les lit lui-même sur GitHub.
 // Le nom affiché vient de la sentinelle (le nom de dev) ; en ?visite, rien de tout ça.
+// En revenant du terrain d'entraînement à plusieurs (#80) : ?hote=ABCDE rouvre le groupe avec le même code, ?code=ABCDE
+// le rejoint ; on réessaie un moment (l'hôte n'est peut-être pas encore revenu, son ancien code pas encore libéré).
 import * as partyNet from './skills/party-net/module/03_skill.js';
 
 export const name = 'reseau';
@@ -25,7 +27,7 @@ const FRANCAIS = {
   'That room is full': 'Le groupe est complet (4 au plus)',
   'The host closed the room': 'L’hôte a fermé le groupe : tu continues seul',
 };
-const fr = (s) => FRANCAIS[s] ?? s ?? '';
+export const fr = (s) => FRANCAIS[s] ?? s ?? '';
 
 function el(tag, attrs = {}, ...enfants) {
   const n = document.createElement(tag);
@@ -38,6 +40,8 @@ function el(tag, attrs = {}, ...enfants) {
 }
 
 let game, party, rendu, heros, images, sentinelle, visite, panneau, noms, statut = '', copie = 0;
+let attente = null;          // { sorte: 'hote' | 'invite', code, essais } : un groupe qu'on réessaie d'ouvrir ou de rejoindre
+const RATE = { hote: 'That code is taken, try again', invite: 'No room with that code' };
 const copies = new Map();   // id → { sprite, ombre, etiquette, t }
 let monEtiquette = null;
 
@@ -52,7 +56,7 @@ function creerParty(transport) {
     settings: { snap: 320 },   // (en pixels : au-delà de 10 cases d'écart, la copie saute au lieu de glisser)
     ...(api.horloge ? { now: api.horloge } : {}),
     on: (type, d) => {
-      if (type === 'status') { statut = fr(d.status); dessiner(); }
+      if (type === 'status') { statut = fr(d.status); reessayer(d.status); dessiner(); }
       if (type === 'join' || type === 'leave' || type === 'welcome') dessiner();
       game.bus.emit(`party:${type}`, d);
     },
@@ -73,18 +77,37 @@ export function init(g, options) {
   noms.append(monEtiquette);
   dessiner();
   // ?code=ABCDE dans l'adresse : on rejoint ce groupe tout de suite
-  const code = new URLSearchParams(location.search).get('code');
-  if (code && !game.query.has('test')) rejoindre(code);
+  // ?hote=ABCDE : on revient du terrain d'entraînement en hôte, on rouvre le même groupe
+  const q = new URLSearchParams(location.search), code = q.get('code'), hote = q.get('hote');
+  if (hote && !game.query.has('test')) heberger(hote, { attendre: true });
+  else if (code && !game.query.has('test')) rejoindre(code, { attendre: !!q.get('spot') });
   return api;
 }
 
-function heberger() { party.host(); dessiner(); }
-function rejoindre(code) {
-  const c = String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const nettoyer = (code) => String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function heberger(code, { attendre = false } = {}) {
+  const c = nettoyer(code);
+  attente = attendre && c.length === 5 ? { sorte: 'hote', code: c, essais: 8 } : null;
+  if (c.length === 5) party.host(c); else party.host();
+  dessiner();
+}
+function rejoindre(code, { attendre = false } = {}) {
+  const c = nettoyer(code);
   if (c.length !== 5) { statut = 'Le code a cinq lettres'; dessiner(); return false; }
+  attente = attendre ? { sorte: 'invite', code: c, essais: 45 } : null;
   party.join(c); dessiner(); return true;
 }
-function quitter() { party.leave(party.hosting ? 'Tu as fermé le groupe' : 'Tu as quitté le groupe'); statut = fr(party.status); dessiner(); }
+// Un essai raté pendant qu'on attend : on réessaie dans 2 s (ouvert ou rejoint : on n'attend plus).
+function reessayer(status) {
+  const a = attente;
+  if (!a) return;
+  if (status === 'Give your friends the code' || status === 'Joined') { attente = null; return; }
+  if (status !== RATE[a.sorte]) return;
+  if (--a.essais <= 0) { attente = null; return; }
+  statut = a.sorte === 'hote' ? 'Le groupe se rouvre…' : 'En attente de l’hôte du groupe…';
+  setTimeout(() => { if (attente === a && !party.active) (a.sorte === 'hote' ? party.host(a.code) : party.join(a.code)); }, 2000);
+}
+function quitter() { attente = null; party.leave(party.hosting ? 'Tu as fermé le groupe' : 'Tu as quitté le groupe'); statut = fr(party.status); dessiner(); }
 const lien = () => `${location.origin}${location.pathname}?code=${party.code}`;
 
 // Le panneau « Jouer à plusieurs », en haut à gauche, dans le style du jeu.
@@ -95,7 +118,7 @@ function dessiner() {
     const champ = el('input', { 'aria-label': 'Code du groupe', placeholder: 'CODE', maxlength: '5', autocomplete: 'off', spellcheck: 'false', class: 'code-champ' });
     champ.addEventListener('input', () => { champ.value = champ.value.toUpperCase(); });
     enfants.push(
-      el('div', { class: 'ligne' }, el('button', { class: 'bouton-jeu', type: 'button', onclick: heberger }, 'Héberger')),
+      el('div', { class: 'ligne' }, el('button', { class: 'bouton-jeu', type: 'button', onclick: () => heberger() }, 'Héberger')),
       el('form', { class: 'ligne', onsubmit: (e) => { e.preventDefault(); rejoindre(champ.value); } },
         champ, el('button', { class: 'bouton-jeu discret', type: 'submit' }, 'Rejoindre')));
   } else {
@@ -159,7 +182,7 @@ export const api = {
   party: null,
   copies,
   horloge: null,
-  heberger, rejoindre, quitter,
+  heberger, rejoindre, quitter, nom: nomAffiche,
   get statut() { return statut; },
   get panneau() { return panneau; },
   // Pour les tests : le même camp sur un fil « loopback » (party-net), avec son horloge.

@@ -447,12 +447,13 @@ function testsRats(t, game) {
 
 // À plusieurs : le camp de cette page et des amis simulés, sur le fil « loopback » de party-net (pas de réseau).
 function testsReseau(t, game) {
-  const { reseau, heros, sentinelle } = ctx, h = heros.heros;
+  const { reseau, heros, sentinelle, terrain } = ctx, h = heros.heros;
   const hub = createLoopback({ latency: 0.03, jitter: 0.01 });
   const pas = 1 / 60;
   const ami = (nom) => {
-    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 } };
-    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 } });
+    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 }, recus: [] };
+    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 },
+      on: (type, d) => { if (type === 'game') P.recus.push(d.m); } });
     return P;
   };
   const amis = [];
@@ -489,6 +490,18 @@ function testsReseau(t, game) {
   // Ana revient
   const ana2 = ami('Ana'); amis.push(ana2); ana2.party.join(party.code); jouer(0.5);
   t.ok(party.others.size === 2 && reseau.copies.size === 2, 'Ana revient avec le même code');
+  // le groupe part ensemble au terrain d'entraînement (#80) : E devant la porte emmène tout le monde
+  const allees = [], porte = { x: h.x, y: h.y };
+  terrain.testerNavigation((u) => allees.push(u));
+  heros.placer(27.5 * T, 8.2 * T, 'haut'); h.controle = true; jouer(0.1);
+  t.ok(!terrain.bulle.hidden && terrain.bulle.textContent.includes('emmener le groupe'), 'en groupe, devant le terrain : « E : emmener le groupe au terrain d’entraînement »');
+  ben.party.toHost({ type: 'terrain' }); jouer(0.3);
+  const vers = ben.recus.find((m) => m.type === 'terrain');
+  t.ok(vers?.code === party.code && ana2.recus.some((m) => m.type === 'terrain'), 'Ben le demande : l’hôte prévient tout le groupe, avec le code');
+  t.eq(allees.pop(), `./entrainement.html?groupe=${party.code}&hote`, 'et y va en hôte du terrain (les amis le rejoignent avec le même code)');
+  t.ok(!terrain.annonce.hidden && terrain.annonce.textContent.includes('Ben'), `l’annonce dit qui emmène le groupe (« ${terrain.annonce.textContent} »)`);
+  terrain.testerNavigation(null);
+  heros.placer(porte.x, porte.y);
   // l'hôte ferme : les amis sont prévenus ; puis Paul rejoint un groupe hébergé ailleurs
   reseau.quitter(); jouer(0.5);
   t.ok(!party.active && reseau.copies.size === 0 && !ben.party.active, 'Paul ferme le groupe : les copies partent, les amis sont prévenus');
