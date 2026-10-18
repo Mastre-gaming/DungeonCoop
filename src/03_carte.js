@@ -4,6 +4,7 @@
 //   obstacle { x, y, w, h }                        un rectangle où un pied ne peut pas entrer (pixels du monde)
 import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, terre } from './01_plan.js';
 import POS from './data/carte_zones.json';
+import ENTREE from './data/muraille.json';
 
 const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;
 
@@ -32,6 +33,8 @@ export function composerSol(im) {
       else if (m) tuile(...BORD[m]);
     }
   }
+  // l'entrée (#123) : le parement au pied de la muraille, les douves, le pont-levis abaissé et la route pavée
+  g.drawImage(im.douves, 0, ENTREE.douves.y);
   return c;
 }
 
@@ -147,5 +150,9 @@ export function composerCamp() {
   objets.push(souche);
   obstacles.push({ x: souche.x + 6, y: souche.pied - 10, w: 20, h: 8 });
 
-  return { objets, obstacles, bloquees, lieux, feu };
+  // Les deux braseros au bout du pont (#123) : animés par la muraille (32_muraille.js) ; leur pied bloque.
+  const braseros = ENTREE.braseros.map(([x, y]) => ({ x: x - 8, y, pied: y + 38 }));
+  for (const b of braseros) obstacles.push({ x: b.x + 2, y: b.pied - 6, w: 12, h: 6 });
+
+  return { objets, obstacles, bloquees, lieux, feu, braseros };
 }
