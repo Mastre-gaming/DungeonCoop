@@ -11,7 +11,8 @@
     "test": "node tools/test.mjs",
     "test:ci": "node tools/test.mjs --visite",
     "shots": "node tools/captures.mjs",
-    "deploy": "wrangler deploy"
+    "deploy": "wrangler deploy",
+    "radio:scan": "npx tsx tools/radio-scan.mjs"
   },
   "dependencies": {
     "peerjs": "1.5.5",
