@@ -149,6 +149,17 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 4 | 35 | le bâtiment décoré, avec de la lumière et de la vie autour |
 
 - **Le calcul est une fonction pure,** `progression(missions) → niveaux`, testée dans `?test` avec des missions inventées.
+- **L'armurerie (validée le 18 oct) : le camp du forgeron, qui se civilise.** Chaque niveau est une composition entière (rien ne s'empile d'un niveau à l'autre), en pièces LPC, et des dalles de pierre gagnent le sol à partir du niveau 2. Les décorations peuvent dépasser d'une case du cadre de 6 × 5. Elle est **livrée au niveau 2** (demande du propriétaire) ; les missions de l'axe Classes la font monter aux niveaux 3 et 4.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 | la tente du forgeron, une forge en plein air (un feu, l'enclume sur sa souche), les premières épées |
+  | 2 | la tente reste ; à côté, une cabane en bois abrite la forge ; les premières dalles au seuil |
+  | 3 | le grand atelier de pierre seul : toit de chaume brun, le feu dans sa gueule, l'enclume et le baquet devant, le bois contre le mur, l'enseigne au marteau et aux tenailles, son bras tourné vers l'extérieur ; un parvis de dalles |
+  | 4 | l'appentis des armes s'accole à l'atelier (arcs et lames dessous), le grand tas de bois derrière lui, la grande enclume, deux torches de part et d'autre du foyer ; une cour pavée |
+
+  Le design : `design/camp/outils/armurerie.json` (aperçu `pieces/arm_apercu.png`). `armurerie_jeu.py` en tire la planche du jeu (`public/assets/lpc/armurerie.png` : mur, toit, gueule du foyer, poteau retourné, dalles) et les niveaux (`src/data/armurerie.json`), que dessine `src/14_lieux.js`.
 - **Premier lieu dessiné en pièces LPC :** le tableau d'affichage, du niveau 0 au niveau 4 (corde et pancarte, panneau de parchemins, panneaux couverts et enseigne, kiosque à auvent rayé, cabane avec lanterne et bannière). Depuis, son apparence dans le décor est devenue le panneau-carte (plus bas) ; ses niveaux sont à redessiner sur ce modèle.
 
 ### Le feu de camp
@@ -347,6 +358,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 18 oct | Le héros de départ : un humain LPC de base, avec la marche et la course | le propriétaire |
 | 18 oct | La sentinelle au spawn : un chevalier LPC sans retouche qui demande le nom de dev à la première arrivée, relié au pseudo GitHub par `equipe.json` ; un nom inconnu entre comme visiteur | le propriétaire |
 | 18 oct | « Les premières fois du dev » (l'équipement des héros) : à définir plus tard | le propriétaire |
+| 18 oct | L'armurerie : tente, tente et abri de forge, puis un atelier de pierre (pas une petite maison), des dalles qui gagnent le sol ; livrée au niveau 2 | le propriétaire |
 | 18 oct | Après le nom, la sentinelle presse le joueur et lui fait faire le tour du camp : le feu, le tableau, un terrain vide, un rat | le propriétaire |
 
 | Question | Qui répond |

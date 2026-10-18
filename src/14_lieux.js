@@ -4,6 +4,7 @@
 // le passage (sa base). Quand un lieu monte de niveau en direct, il s'illumine un instant.
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
 import { T, LIEUX, emprise } from './01_plan.js';
+import ARMURERIE from './data/armurerie.json';
 
 export const name = 'lieux';
 export const always = true;
@@ -47,6 +48,15 @@ export const NIVEAUX = {
   ],
 };
 
+// L'armurerie (validée par le propriétaire le 18 oct, design/camp/outils/armurerie.json) : chaque niveau est une
+// composition entière (piquets, tente, tente et abri de forge, atelier de pierre, grand atelier), pas une pièce de plus.
+// Ses pièces viennent de deux planches (img : deco, ou armurerie pour le mur, le toit, la gueule du foyer, l'enseigne) ;
+// ses dalles de pierre, de plus en plus nombreuses, se posent sous tout le reste. Fabriqué par armurerie_jeu.py.
+export const COMPLETS = { classes: ARMURERIE.niveaux };
+// Le niveau d'office (demande du propriétaire, 18 oct) : l'armurerie est livrée au niveau 2, la tente et son abri de forge.
+export const PLANCHERS = { classes: 2 };
+const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
+
 let game, rendu, images, collision, missions, decor;
 const etat = {};            // id → { niveau, sprites: [], obstacles: [], eclat }
 const forces = {};          // dbg : un niveau imposé, pour voir et faire voir
@@ -66,18 +76,29 @@ function construire(lieu, niveau) {
   retirer(lieu.id);
   const e = (etat[lieu.id] ??= { niveau: 0, sprites: [], obstacles: [], eclat: 0 });
   e.niveau = niveau;
+  const o = empriseDe(lieu);
+  const poserPiece = (p) => {
+    const x = o.x + p.dx * T, y = o.y + p.dy * T, w = p.w * T, h = p.h * T;
+    const pied = p.pied != null ? o.y + p.pied * T : y + h, img = p.img ?? 'deco';
+    const sprite = rendu.sprite(images[img], img, w, h);
+    e.sprites.push({ sprite, p, x, y, pied });
+    if (p.bloque) { const ob = { x: x + 6, y: y + h - 9, w: w - 12, h: 8 }; collision.ajouter(ob); e.obstacles.push(ob); }
+  };
+  const complet = COMPLETS[lieu.id];
+  if (complet) {
+    const n = complet[Math.min(niveau, complet.length - 1)];
+    for (const [i, j] of n.dalles) {   // une variante de dalle par case, toujours la même
+      const v = ((i + 3) * 7 + (j + 3) * 13) % 8;
+      const sprite = rendu.sprite(images.armurerie, 'armurerie', T, T);
+      e.sprites.push({ sprite, p: { sx: v, sy: 6 }, x: o.x + i * T, y: o.y + j * T, pied: DALLES });
+    }
+    n.pieces.forEach(poserPiece);
+    poser(e);
+    return;
+  }
   const liste = NIVEAUX[lieu.id];
   if (!liste) return;
-  const o = empriseDe(lieu);
-  for (let n = 1; n <= Math.min(niveau, liste.length - 1); n++) {
-    for (const p of liste[n]) {
-      const x = o.x + p.dx * T, y = o.y + p.dy * T, w = p.w * T, h = p.h * T;
-      const pied = p.pied != null ? o.y + p.pied * T : y + h;
-      const sprite = rendu.sprite(images.deco, 'deco', w, h);
-      e.sprites.push({ sprite, p, x, y, pied });
-      if (p.bloque) { const ob = { x: x + 6, y: y + h - 9, w: w - 12, h: 8 }; collision.ajouter(ob); e.obstacles.push(ob); }
-    }
-  }
+  for (let n = 1; n <= Math.min(niveau, liste.length - 1); n++) liste[n].forEach(poserPiece);
   poser(e);
 }
 
@@ -90,6 +111,7 @@ function poser(e) {
 
 function niveauxVoulus() {
   const n = { ...(missions?.resume().niveaux ?? {}) };
+  for (const [id, v] of Object.entries(PLANCHERS)) n[id] = Math.max(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(forces)) n[id] = v;
   return n;
 }
@@ -97,7 +119,7 @@ function niveauxVoulus() {
 export function init(g, options) {
   game = g;
   ({ rendu, images, collision, missions, decor } = options);
-  for (const l of LIEUX) construire(l, 0);
+  for (const l of LIEUX) construire(l, PLANCHERS[l.id] ?? 0);
   return api;
 }
 
@@ -119,7 +141,7 @@ export function update(dt) {
 export function dispose() { for (const id of Object.keys(etat)) retirer(id); }
 
 export const api = {
-  etat, NIVEAUX,
+  etat, NIVEAUX, COMPLETS, PLANCHERS,
   // dbg.lieux.forcer('interface', 3) : voir un niveau sans mission ; forcer('interface', null) : revenir aux vraies
   forcer(id, n) { if (n == null) delete forces[id]; else forces[id] = n; update(0); },
   niveau: (id) => etat[id]?.niveau ?? 0,

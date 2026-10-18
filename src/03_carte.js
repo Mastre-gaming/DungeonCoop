@@ -135,6 +135,8 @@ export function composerCamp() {
     } else if (l.id === 'combat') {
       enclos(objets, obstacles);
       lieux[l.id] = { ...l };
+    } else if (l.id === 'classes') {
+      lieux[l.id] = { ...l };                                // l'armurerie : 14_lieux.js la dessine en entier, à chaque niveau
     } else {
       emplacement(objets, obstacles, l.porte);
       lieux[l.id] = { ...l };

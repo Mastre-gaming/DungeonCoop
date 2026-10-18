@@ -5,6 +5,7 @@ import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, MURAILLE, empri
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 import { LIEUX_AXES } from './10_missions.js';
 import { testsHudEpique } from './34_tests_hud.js';
+import { testsArmurerie } from './35_tests_armurerie.js';
 
 export const name = 'camp';
 let ctx;
@@ -240,6 +241,7 @@ export async function selfTest(t, game) {
   testsHud(t, game);
   testsHudEpique(t, ctx, game);   // le HUD épique (DESIGN.fr.md) : src/34_tests_hud.js
   testsBoite(t, game);
+  testsArmurerie(t, ctx);   // l'armurerie et ses 5 niveaux : src/35_tests_armurerie.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);
   await testsParties(t, game);
