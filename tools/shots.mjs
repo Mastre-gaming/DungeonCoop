@@ -50,23 +50,37 @@ export function address(target, query = '') {
 }
 
 export async function openPage(url, { size = '1600x900', software = false, timeout = 30000 } = {}) {
-  const [width, height] = size.split('x').map(Number), profile = fs.mkdtempSync(path.join(os.tmpdir(), 'shots-'));
-  const child = spawn(browserPath(), [
-    '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, `--window-size=${width},${height}`,
-    '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions', '--autoplay-policy=no-user-gesture-required', '--allow-file-access-from-files',
-    ...(software ? ['--disable-gpu', '--enable-unsafe-swiftshader'] : process.platform === 'win32' ? ['--use-angle=d3d11'] : []),
-    // (Dungeon Co-op) Sur les machines Linux de GitHub, Chrome n'a pas le droit de créer son bac à sable et se ferme aussitôt.
-    ...(process.env.CI && process.platform === 'linux' ? ['--no-sandbox'] : []),
-    'about:blank',
-  ], { stdio: ['ignore', 'ignore', 'pipe'] });
-
-  // The browser says where to reach it on its error output.
-  const endpoint = await new Promise((resolve, reject) => {
-    let text = '';
-    const timer = setTimeout(() => reject(new Error('The browser did not start')), timeout);
-    child.stderr.on('data', (d) => { text += d; const m = /DevTools listening on (ws:\/\/\S+)/.exec(text); if (m) { clearTimeout(timer); resolve(m[1]); } });
-    child.on('exit', () => { clearTimeout(timer); reject(new Error('The browser closed before it could be reached')); });
-  });
+  const [width, height] = size.split('x').map(Number);
+  let profile, child;
+  const launch = () => {
+    profile = fs.mkdtempSync(path.join(os.tmpdir(), 'shots-'));
+    child = spawn(browserPath(), [
+      '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, `--window-size=${width},${height}`,
+      '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions', '--autoplay-policy=no-user-gesture-required', '--allow-file-access-from-files',
+      ...(software ? ['--disable-gpu', '--enable-unsafe-swiftshader'] : process.platform === 'win32' ? ['--use-angle=d3d11'] : []),
+      // (Dungeon Co-op) Sur les machines Linux de GitHub, Chrome n'a pas le droit de créer son bac à sable et se ferme aussitôt.
+      ...(process.env.CI && process.platform === 'linux' ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
+      'about:blank',
+    ], { stdio: ['ignore', 'ignore', 'pipe'] });
+    // The browser says where to reach it on its error output.
+    return new Promise((resolve, reject) => {
+      let text = '';
+      const fail = (why) => { clearTimeout(timer); reject(new Error(`${why}${text.trim() ? `; it said:\n${text.trim().split('\n').slice(-15).join('\n')}` : ' (it said nothing)'}`)); };
+      const timer = setTimeout(() => fail('The browser did not start'), timeout);
+      child.stderr.on('data', (d) => { text += d; const m = /DevTools listening on (ws:\/\/\S+)/.exec(text); if (m) { clearTimeout(timer); resolve(m[1]); } });
+      child.on('exit', () => fail('The browser closed before it could be reached'));
+    });
+  };
+  // (Dungeon Co-op) Sur les machines de GitHub, Chrome reste parfois figé au démarrage : on le relance, deux fois au plus.
+  let endpoint;
+  for (let attempt = 1; ; attempt++) {
+    try { endpoint = await launch(); break; } catch (e) {
+      try { child.kill('SIGKILL'); } catch {}
+      try { fs.rmSync(profile, { recursive: true, force: true }); } catch {}
+      if (attempt === 3) throw e;
+      console.warn(`${e.message}\n(attempt ${attempt} of 3, trying again)`);
+    }
+  }
   const ws = new WebSocket(endpoint);
   await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = () => reject(new Error('Could not connect to the browser')); });
 

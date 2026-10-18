@@ -2,6 +2,7 @@
 // au pixel près), les marques de jeu (où l'on peut marcher, le chemin et sa longueur, la portée, les cibles, les zones),
 // la caméra (molette : zoom, clic droit glissé : déplacer la vue), et la file des événements du combat, jouée dans
 // l'ordre : une marche, une attaque et son d20 en grand (la remarque de la partie D1), des dégâts, un KO…
+// Les barres de vie au-dessus des têtes, avec le nom : V pour les ennemis, Maj+V pour les alliés (gardé dans ce navigateur).
 import * as THREE from 'three';
 import { T } from '../01_plan.js';
 import PERSOS from './persos.json';
@@ -29,6 +30,9 @@ let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
 const cam = { s: 2, cx: 0, cy: 0, cible: null, glisse: null };
 let marques = {};                      // ce que l'interface demande de montrer (voir dessinerMarques)
+const CLE_PLAQUES = 'dungeoncoop:plaques-terrain';
+const plaques = { e: false, h: false }; // les barres de vie montrées : des ennemis (e), des alliés (h)
+let calquePlaques = null;
 
 export function init(g, options) {
   game = g;
@@ -47,20 +51,12 @@ export function init(g, options) {
   };
   [fondSurfaces, ctxSurfaces, texSurfaces] = plan(-90, 'surfaces');
   [fondMarques, ctxMarques, texMarques] = plan(-80, 'marques');
+  calquePlaques = Object.assign(document.createElement('div'), { className: 'plaques-terrain' });
+  calquePlaques.setAttribute('aria-hidden', 'true');
+  document.body.append(calquePlaques);
+  try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); plaques.e = !!lu?.e; plaques.h = !!lu?.h; } catch {}
 
-  for (const u of combat.S.unites) {
-    const img = images[`perso_${u.type === 'brt' ? 'brute-ennemie' : u.type}`];
-    const meta = PERSOS[u.type === 'brt' ? 'brute-ennemie' : u.type];
-    const nomTex = `perso-${u.type}`;
-    const s64 = rendu.sprite(img, nomTex, 64, 64);
-    const grand = meta.attaque ? rendu.sprite(img, nomTex, meta.attaque.taille, meta.attaque.taille) : null;
-    grand?.cacher(true);
-    aff.set(u.id, {
-      id: u.id, type: u.type, camp: u.camp, x: u.x * T, y: u.y * T, dir: u.camp === 'h' ? 'droite' : 'gauche', anim: 'repos', t: Math.random(),
-      pv: u.pv, ko: false, mort: false, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20, 5),
-    });
-  }
-  for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
+  peupler();
 
   // la caméra : molette (zoom entier), clic droit glissé (déplacer la vue)
   canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomer(e.deltaY < 0 ? 1 : -1, e.clientX, e.clientY); }, { passive: false });
@@ -77,6 +73,35 @@ export function init(g, options) {
   ajusterCamera(true);
   redessinerSurfaces();
   return api;
+}
+
+// Les personnages et les tonneaux du combat, en sprites LPC.
+function peupler() {
+  for (const u of combat.S.unites) {
+    const img = images[`perso_${u.type === 'brt' ? 'brute-ennemie' : u.type}`];
+    const meta = PERSOS[u.type === 'brt' ? 'brute-ennemie' : u.type];
+    const nomTex = `perso-${u.type}`;
+    const s64 = rendu.sprite(img, nomTex, 64, 64);
+    const grand = meta.attaque ? rendu.sprite(img, nomTex, meta.attaque.taille, meta.attaque.taille) : null;
+    grand?.cacher(true);
+    aff.set(u.id, {
+      id: u.id, type: u.type, camp: u.camp, x: u.x * T, y: u.y * T, dir: u.camp === 'h' ? 'droite' : 'gauche', anim: 'repos', t: Math.random(),
+      pv: u.pv, ko: u.ko, mort: u.mort, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20, 5),
+      pvMax: u.pvMax, plaque: creerPlaque(u),
+    });
+  }
+  for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
+}
+
+// Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
+export function remplacer(nouveau) {
+  for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
+  for (const b of tonneaux.values()) b.s.retirer();
+  aff.clear(); tonneaux.clear(); file = []; courant = null;
+  combat = nouveau;
+  peupler();
+  redessinerSurfaces();
+  dessinerMarques({});
 }
 
 // --- La caméra -------------------------------------------------------------------------------------------------
@@ -265,11 +290,47 @@ function flottant(a, texte, genre) {
   if (!a) return;
   const el = Object.assign(document.createElement('div'), { className: `flottant ${genre}`, textContent: texte });
   document.body.append(el);
-  flottants.push({ el, x: a.x, y: a.y - 58, t: 0 });
+  flottants.push({ el, x: a.x, y: a.y - (a.plaque && plaqueVisible(a) ? 70 : 58), t: 0 });   // (au-dessus de la barre de vie)
 }
 export function versEcran(x, y) {
   const r = canvas.getBoundingClientRect();
   return { x: r.left + ((x - rendu.cam.x) / rendu.vue.w) * r.width, y: r.top + ((y - rendu.cam.y) / rendu.vue.h) * r.height };
+}
+
+// --- Les barres de vie ------------------------------------------------------------------------------------------
+function creerPlaque(u) {
+  const el = Object.assign(document.createElement('div'), { className: `plaque-vie ${u.camp === 'h' ? 'allie' : 'ennemi'}`, hidden: true });
+  const nom = Object.assign(document.createElement('span'), { className: 'pv-nom', textContent: u.nom });
+  const barre = Object.assign(document.createElement('span'), { className: 'pv-barre' }), plein = document.createElement('span');
+  const chiffre = Object.assign(document.createElement('span'), { className: 'pv-chiffre' });
+  barre.append(plein);
+  el.append(nom, barre, chiffre);
+  el.dataset.id = u.id;
+  calquePlaques.append(el);
+  return { el, plein, chiffre, pv: null, ko: null };
+}
+const plaqueVisible = (a) => plaques[a.camp] && !a.cache && !a.mort;
+function poserPlaque(a) {
+  const p = a.plaque, voir = plaqueVisible(a);
+  if (p.el.hidden === voir) p.el.hidden = !voir;
+  if (!voir) return;
+  if (p.pv !== a.pv || p.ko !== a.ko) {
+    p.pv = a.pv; p.ko = a.ko;
+    const k = Math.max(0, Math.min(1, a.pv / a.pvMax));
+    p.plein.style.width = `${Math.round(k * 100)}%`;
+    p.el.classList.toggle('bas', k <= 0.3);
+    p.el.classList.toggle('ko', a.ko);
+    p.chiffre.textContent = a.ko ? 'KO' : String(Math.max(0, a.pv));
+  }
+  // juste au-dessus de la tête (une tête LPC est à 46 px des pieds), un peu plus petite au zoom 1, plus grande de près
+  const e = versEcran(a.x, a.y - 48 + a.enfonce * 26), k = Math.max(0.75, Math.min(1.25, 0.5 + cam.s / 4));
+  p.el.style.transform = `translate(${Math.round(e.x)}px, ${Math.round(e.y)}px) translate(-50%, -100%) scale(${k})`;
+}
+// V, Maj+V (l'interface) : montrer ou cacher les barres d'un camp ; ce navigateur s'en souvient.
+export function basculerPlaques(camp, oui = !plaques[camp]) {
+  plaques[camp] = !!oui;
+  try { localStorage.setItem(CLE_PLAQUES, JSON.stringify(plaques)); } catch {}
+  return plaques[camp];
 }
 
 // --- Chaque image ----------------------------------------------------------------------------------------------
@@ -298,6 +359,7 @@ export function update(dt) {
   for (const a of aff.values()) {
     a.t += dt;
     poserPerso(a);
+    poserPlaque(a);
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
   for (let k = flottants.length - 1; k >= 0; k--) {
@@ -356,11 +418,12 @@ export function portrait(type, taille = 64) {
   return c;
 }
 
-export function dispose() { for (const f of flottants) f.el.remove(); }
+export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); }
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces,
+  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces, remplacer, basculerPlaques,
+  get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },
   // la créature (ou le tonneau) sous un point du monde (en cases) : on touche son corps, des pieds à la tête

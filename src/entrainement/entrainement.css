@@ -118,3 +118,37 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .place-heros .role, .place-heros .liste-capacites { color: var(--parchemin-encre); }
 .place-heros .faiblesse { color: #8a3d12; font-size: 11px; }
 @media (max-width: 720px) { .places-accueil { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* À plusieurs (#80) : le lobby (le groupe, le joueur de chaque place), les fiches des amis, leurs pointeurs */
+.groupe-lobby { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 6px 8px; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 4px; font-size: 13px; }
+.groupe-lobby .joueur { font: 700 .85rem var(--titre); padding: 0 6px; border-radius: 3px; border-left: 5px solid var(--couleur, var(--bois)); background: #f3e6c8; }
+.groupe-lobby .statut { color: #8a3d12; }
+.place-heros.mienne, .place-heros.prise { border-color: var(--couleur, var(--bois-clair)); box-shadow: inset 0 0 0 2px var(--couleur, transparent); }
+.place-heros.libre { border-style: dashed; }
+.place-heros .fleche:disabled { opacity: .35; cursor: default; }
+.joueur-place { display: flex; gap: 6px; align-items: center; min-height: 26px; font: 700 .85rem var(--titre); color: var(--bois-fonce); }
+.cadre-terrain .bouton-jeu.petit { font-size: .78rem; padding: 1px 8px; }
+.attente-lobby { margin: 0; color: var(--parchemin-doux); font-size: 13px; }
+.fiche-heros .fh-joueur { justify-self: start; font: 700 .72rem var(--titre); color: #fff7e6; background: var(--couleur, var(--bois)); border-radius: 3px; padding: 0 5px; }
+.fiche-heros.ami { cursor: default; }
+#fin-phase.pret { background: #4f7a2e; }
+.curseurs-amis { position: fixed; inset: 0; pointer-events: none; z-index: 7; overflow: hidden; }
+.curseur-ami { position: absolute; left: 0; top: 0; white-space: nowrap; font: 700 12px var(--titre); color: #fff; padding: 1px 6px 1px 12px;
+  background: color-mix(in srgb, var(--couleur, #7ce0ff) 78%, #000); border-radius: 0 4px 4px 4px; text-shadow: 0 1px 0 rgba(0,0,0,.5); }
+.curseur-ami::before { content: ''; position: absolute; left: -2px; top: -2px; border: 6px solid transparent; border-top-color: var(--couleur, #7ce0ff); border-left-color: var(--couleur, #7ce0ff); }
+/* (hidden l'emporte toujours : les boutons du jeu ont leur propre display) */
+body [hidden] { display: none !important; }
+.fiche-heros .fh-joueur.libre { background: none; color: var(--parchemin-doux); padding: 0; }
+
+/* Les barres de vie (V : les ennemis, Maj+V : les alliés), au-dessus des têtes */
+.plaques-terrain { position: fixed; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
+.plaque-vie { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; display: grid; grid-template-columns: auto auto; align-items: center; gap: 0 4px; justify-items: center;
+  padding: 1px 4px 2px; background: rgba(32, 22, 14, .78); border: 1px solid rgba(0,0,0,.6); border-radius: 3px; color: #fff7e6; font: 700 11px/1.1 var(--titre); white-space: nowrap; }
+.plaque-vie .pv-nom { grid-column: 1 / -1; text-shadow: 0 1px 0 #000; }
+.plaque-vie .pv-barre { width: 46px; height: 5px; background: #3a1712; border: 1px solid #000; border-radius: 1px; overflow: hidden; }
+.plaque-vie .pv-barre > span { display: block; height: 100%; background: #d8402c; transition: width .25s; }
+.plaque-vie.allie .pv-barre > span { background: #59b33c; }
+.plaque-vie.bas .pv-barre > span { background: #ff8a2a; }
+.plaque-vie .pv-chiffre { font: 600 10px ui-monospace, Consolas, monospace; color: #f3e6c8; }
+.plaque-vie.ennemi .pv-nom { color: #ffd0c4; }
+.plaque-vie.ko { opacity: .7; }

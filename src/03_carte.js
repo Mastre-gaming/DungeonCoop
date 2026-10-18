@@ -2,7 +2,7 @@
 // Ce module ne dessine pas à l'écran : il compose le sol dans un canevas et fait la liste des objets et des obstacles.
 //   objet    { img, sx, sy, sw, sh, x, y, pied }   une image découpée dans une planche, posée en (x, y) ; `pied` sert au tri
 //   obstacle { x, y, w, h }                        un rectangle où un pied ne peut pas entrer (pixels du monde)
-import { T, W, H, LIEUX, ARBRES, BOIS, FEU, terre } from './01_plan.js';
+import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, terre } from './01_plan.js';
 import POS from './data/carte_zones.json';
 
 const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;
@@ -62,6 +62,40 @@ function emplacement(objets, obstacles, [px, py]) {
   obstacles.push({ x: sx + 11, y: sy + 24, w: 8, h: 6 });
 }
 
+// L'enclos du terrain d'entraînement (#77) : les mêmes cordes et poteaux que la salle du combat d'entraînement.
+// Au nord une corde d'un poteau d'angle à l'autre ; à l'ouest et à l'est des poteaux tous les 3 cases ; au sud deux
+// cordes jusqu'aux poteaux de l'entrée. Les cordes passent à mi-hauteur des poteaux (0,7 case au-dessus de leurs pieds).
+// La pancarte reste à gauche de l'entrée. Ce qui bloque : la ligne des pieds, sauf l'entrée.
+const enPx = (c) => Math.round(c * T);
+function enclos(objets, obstacles) {
+  const { ouest, est, nord, sud, entree: [g, d] } = ENCLOS;
+  // une corde (la planche la dessine à 0,27 case du haut de sa case), triée sur la ligne des pieds `pied`
+  const corde = (sy, x0, x1, pied) => {
+    for (let x = x0; x < x1 - 0.01; x += 4) {
+      const w = Math.min(4, x1 - x);
+      objets.push({ img: 'deco', sx: 0, sy: sy * T, sw: enPx(w), sh: T, x: enPx(x), y: enPx(pied - 0.7 - 0.27), pied: enPx(pied) });
+    }
+  };
+  // un poteau (le bois va de 0,19 à 2,64 cases dans sa pièce de 3 cases), le pied sur la ligne
+  const poteau = (x, pied) => objets.push({ img: 'deco', sx: 11 * T, sy: 6 * T, sw: T, sh: 3 * T, x: enPx(x - 0.5), y: enPx(pied - 2.64), pied: enPx(pied) + 1 });
+  corde(11, ouest, est, nord);
+  corde(12, ouest, g, sud);
+  corde(12, d, est, sud);
+  for (const x of [ouest, est]) for (let y = nord; y <= sud + 0.01; y += 3) poteau(x, y);
+  poteau(g, sud); poteau(d, sud);
+  const e = 0.22;   // (une demi-épaisseur de clôture)
+  obstacles.push(
+    { x: enPx(ouest - e), y: enPx(nord - e), w: enPx(est - ouest + 2 * e), h: enPx(2 * e) },
+    { x: enPx(ouest - e), y: enPx(nord - e), w: enPx(2 * e), h: enPx(sud - nord + 2 * e) },
+    { x: enPx(est - e), y: enPx(nord - e), w: enPx(2 * e), h: enPx(sud - nord + 2 * e) },
+    { x: enPx(ouest - e), y: enPx(sud - e), w: enPx(g - ouest + e), h: enPx(2 * e) },
+    { x: enPx(d), y: enPx(sud - e), w: enPx(est - d + e), h: enPx(2 * e) },
+  );
+  const pancarte = deco(6, 4, 1, 1, enPx(g - 1.6), enPx(sud - 0.2));
+  objets.push(pancarte);
+  obstacles.push({ x: pancarte.x + 11, y: pancarte.y + 24, w: 8, h: 6 });
+}
+
 // Le panneau-carte (CAMP §4) : dessiné à part, parce qu'il change avec les niveaux et qu'il scintille.
 export const COULEURS = { interface: '#2f68b8', combat: '#c2412f', classes: '#d9822b', art: '#c25a8a', histoire: '#8e5cc2', level: '#2f7d6d', technique: '#5b6e2f', son: '#7a6a5a' };
 const ORDRE = ['interface', 'combat', 'classes', 'art', 'histoire', 'level', 'technique', 'son'];
@@ -95,6 +129,9 @@ export function composerCamp() {
       const x = (px - 0.5) * T, bas = Math.round((py + 0.6) * T), y = bas - 80;
       lieux[l.id] = { ...l, panneau: { x, y, w: 96, h: 80, pied: bas } };
       obstacles.push({ x: x + 8, y: bas - 9, w: 9, h: 8 }, { x: x + 77, y: bas - 9, w: 9, h: 8 });
+    } else if (l.id === 'combat') {
+      enclos(objets, obstacles);
+      lieux[l.id] = { ...l };
     } else {
       emplacement(objets, obstacles, l.porte);
       lieux[l.id] = { ...l };

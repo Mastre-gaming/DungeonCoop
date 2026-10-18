@@ -8,11 +8,12 @@ def segments(ch):
         for k in range(n+1):
             t=k/n; yield (x0+(x1-x0)*t+.5, y0+(y1-y0)*t+.5)
 for nom,pl in p.plans.items():
-    W,H=pl['taille']; L=pl['lieux']; pb=[]
-    E={n:emprise(*xy) for n,xy in L.items()}
+    W,H=pl['taille']; L=pl['lieux']; pb=[]; P=pl.get('emprises',{})   # P : les lieux qui ont leur emprise à eux
+    E={n:P.get(n) or emprise(*xy) for n,xy in L.items()}
     for a in L:
         for b in L:
-            if a<b and inter(emprise(*L[a],marge=1),E[b]): pb.append(f'{a} et {b} trop proches')
+            ea=E[a]
+            if a<b and inter((ea[0]-1,ea[1]-1,ea[2]+1,ea[3]+1),E[b]): pb.append(f'{a} et {b} trop proches')
         x0,y0,x1,y1=E[a]
         if x0<1 or y0<1 or x1>W-1 or y1>H-1: pb.append(f'{a} touche le bord')
         fx,fy=pl['feu']

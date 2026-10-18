@@ -2,6 +2,8 @@
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis } from './regles.js';
 import { adresseEquipe } from './interface.js';
+import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
+import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
 
 export const name = 'terrain';
@@ -245,7 +247,7 @@ export async function selfTest(t, game) {
   t.eq(ihm.ui.choix[0], 'mage', '▶ change la classe du héros 1 (Brute → Mage)');
   document.querySelector('#au-hasard').click();
   t.ok(new Set(ihm.ui.choix).size === 4 && places().some((p) => p.querySelector('.essai')) === ihm.ui.choix.some((c) => HEROS[c].essai), '« Au hasard » : 4 classes différentes ; les classes d’essai sont marquées « essai »');
-  t.eq(adresseEquipe(['chevalier', 'druide', 'barde', 'eclaireuse'], 'initiative'), '?equipe=chevalier,druide,barde,eclaireuse&mode=initiative&go', 'une autre équipe se lance par l’adresse (le terrain se recharge avec elle)');
+  t.eq(adresseEquipe(['chevalier', 'druide', 'barde', 'eclaireuse'], 'initiative'), '?equipe=chevalier,druide,barde,eclaireuse&mode=initiative&go', 'une équipe peut aussi se lancer par l’adresse');
   [...document.querySelectorAll('.cadre-terrain .boutons button')].find((b) => b.textContent === 'Le kit D1').click();
   t.eq(ihm.ui.choix, ['brute', 'mage', 'voleur', 'gardien'], '« Le kit D1 » remet les 4 héros du kit');
   document.querySelector('#commencer').click();
@@ -284,4 +286,171 @@ export async function selfTest(t, game) {
   t.ok(!ihm.dom.fin.hidden && ihm.dom.fiche.textContent.includes('sans cases') && ihm.dom.fiche.textContent.includes('Phase des héros par round'), 'la fiche de mesure, comme dans la Salle d’essai');
   ihm.dom.fin.hidden = true;
   await pause(0);
+
+  // --- Rejouer, une autre équipe : un nouveau combat sans recharger la page ----------------------------------------
+  t.group('rejouer, changer d’équipe, sans recharger');
+  const CLE = 'dungeoncoop:equipe-entrainement';
+  let choixAvant = null; try { choixAvant = localStorage.getItem(CLE); } catch {}
+  ihm.rejouer();
+  t.ok(!ihm.dom.accueil.hidden && game.dbg.combat !== combat && game.dbg.combat.S.phase === 'preparation', 'Rejouer : l’accueil revient, avec un combat neuf');
+  ihm.ui.choix = ['chevalier', 'druide', 'barde', 'eclaireuse'];
+  document.querySelector('#commencer').click();
+  jouerFile();
+  const C2 = game.dbg.combat;
+  t.ok(ihm.dom.accueil.hidden && C2.S.equipe.join() === 'chevalier,druide,barde,eclaireuse' && C2.S.phase === 'heros', 'une autre équipe : le combat commence avec elle, sans recharger');
+  t.ok([...V.aff.values()].filter((a) => a.camp === 'h').map((a) => a.type).join() === 'chevalier,druide,barde,eclaireuse' && V.aff.size === C2.S.unites.length,
+    'la vue montre les nouveaux héros (les anciens sont retirés)');
+  try { if (choixAvant === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, choixAvant); } catch {}
+
+  // --- Les barres de vie : V (les ennemis), Maj+V (les alliés) ------------------------------------------------------
+  t.group('les barres de vie (V, Maj+V)');
+  {
+    const avant = V.plaques;
+    V.basculerPlaques('e', false); V.basculerPlaques('h', false);
+    const touche = (shiftKey) => { window.dispatchEvent(new KeyboardEvent('keydown', { key: shiftKey ? 'V' : 'v', code: 'KeyV', shiftKey, bubbles: true })); game.dbg.advance(0.05); };
+    const vues = (camp) => [...document.querySelectorAll(`.plaque-vie.${camp}`)].filter((p) => !p.hidden);
+    game.dbg.advance(0.05);
+    t.ok(!vues('ennemi').length && !vues('allie').length, 'au départ (ou si on les a cachées) : pas de barres');
+    touche(false);
+    t.ok(vues('ennemi').length === C2.ennemisVivants().length && !vues('allie').length && vues('ennemi').some((p) => p.textContent.includes('Sbire 1')),
+      `V : la barre et le nom de chaque ennemi (${vues('ennemi').length}), pas des alliés`);
+    const s1 = C2.U('s1'), a1 = V.aff.get('s1'), plaque = document.querySelector('.plaque-vie[data-id="s1"]');
+    const pied = V.versEcran(a1.x, a1.y), boite = plaque.getBoundingClientRect();
+    t.ok(boite.bottom < pied.y - 20 && Math.abs((boite.left + boite.right) / 2 - pied.x) < 4, 'elle flotte au-dessus de sa tête, centrée');
+    s1.pv = Math.round(s1.pvMax * 0.25); game.dbg.advance(0.05);
+    t.ok(plaque.querySelector('.pv-barre > span').style.width === `${Math.round((s1.pv / s1.pvMax) * 100)}%` && plaque.classList.contains('bas') && plaque.textContent.includes(String(s1.pv)),
+      `elle suit ses PV (${s1.pv}/${s1.pvMax} : la barre raccourcit et devient orange)`);
+    touche(true);
+    t.ok(vues('allie').length === 4 && vues('allie')[0].textContent.includes(C2.U('h1').nom), 'Maj+V : celles des 4 alliés aussi');
+    touche(false);
+    t.ok(!vues('ennemi').length && vues('allie').length === 4, 'V de nouveau : les ennemis seulement se cachent');
+    t.ok(JSON.parse(localStorage.getItem('dungeoncoop:plaques-terrain'))?.h === true, 'le choix est gardé dans ce navigateur');
+    V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
+  }
+
+  // --- À plusieurs (#80) : les règles du lobby, puis cette page en hôte, puis chez un ami ------------------------
+  t.group('à plusieurs : les règles du lobby');
+  {
+    const L = nouveauLobby(['brute', 'mage', 'voleur', 'gardien']);
+    arrivee(L, 'host'); arrivee(L, 'ana'); arrivee(L, 'ben');
+    t.eq(L.proprio, ['host', 'ana', 'ben', null], 'chacun qui arrive prend la première place libre');
+    t.ok(!regler(L, 'ana', { t: 'prendre', k: 0 }) && regler(L, 'ana', { t: 'prendre', k: 3 }) && L.proprio[3] === 'ana', 'une place prise ne se prend pas ; une libre, si (Ana en joue deux)');
+    t.ok(regler(L, 'ana', { t: 'classe', k: 1, type: 'druide' }) && !regler(L, 'ana', { t: 'classe', k: 0, type: 'barde' }) && !regler(L, 'ana', { t: 'classe', k: 1, type: 'dragon' }),
+      'chacun change la classe de ses places, pas celle des autres, et seulement pour une classe qui existe');
+    t.ok(!regler(L, 'ana', { t: 'mode', mode: 'initiative' }) && regler(L, 'host', { t: 'mode', mode: 'initiative' }), 'le mode de tour : l’hôte seulement');
+    depart(L, 'ben');
+    t.eq(L.proprio[2], null, 'au lobby, la place de celui qui part se libère');
+    L.phase = 'combat'; L.proprio[2] = 'host';
+    depart(L, 'ana');
+    t.ok(L.proprio[1] === 'host' && L.proprio[3] === 'host', 'en combat, l’hôte joue les héros de celle qui part…');
+    arrivee(L, 'ana');
+    t.ok(L.proprio[1] === 'ana' && L.proprio[3] === 'ana', '… et ils lui reviennent quand elle revient');
+    const C = neuf({ equipe: L.equipe }); C.commencer();
+    t.eq(attendus(L, C).sort(), ['ana', 'host'], 'on attend pour finir la phase ceux qui ont un héros debout qui joue');
+    const h2 = C.U('h2');
+    t.ok(!arbitrer(C, L, 'host', { type: 'marche', id: 'h2', x: h2.x + 1, y: h2.y }) && arbitrer(C, L, 'ana', { type: 'marche', id: 'h2', x: h2.x + 1, y: h2.y }),
+      'l’hôte vérifie chaque action : le héros d’Ana, Ana seulement');
+    t.ok(!arbitrer(C, L, 'ana', { type: 'capacite', id: 'h2', cap: 'foudre', cible: { id: 's1' } }) && !arbitrer(C, L, 'ana', { type: 'marche', id: 'h2', x: 'loin', y: 3 }),
+      'une capacité qui n’est pas la sienne, une action mal formée : refusées');
+  }
+
+  const hub = createLoopback({ latency: 0.02 });
+  const pas = 1 / 60, amis = [], allees = [];
+  const ami = (nom) => {
+    const A = { recus: [], pointeur: { x: -1, y: -1, h: 0, c: 0, v: 0 } };
+    A.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'h', 'c', 'v'], me: () => A.pointeur, name: () => nom, now: () => hub.time,
+      on: (type, d) => { if (type === 'game') A.recus.push(d.m); } });
+    A.dernier = (type) => [...A.recus].reverse().find((m) => m.t === type);
+    amis.push(A);
+    return A;
+  };
+  const jouer = (sec) => { for (let k = 0; k < Math.round(sec / pas); k++) { hub.advance(pas); game.dbg.advance(pas); for (const a of amis) a.party.update(pas); } };
+  const place = (k) => document.querySelector(`.place-heros[data-place="${k}"]`);
+  const { multi } = ctx;
+
+  t.group('à plusieurs : cette page en hôte');
+  ihm.rejouer();
+  const party = multi.brancherTest(hub, { comme: 'hote', avec: 'KXQZB', aller: (u) => allees.push(u) });
+  jouer(0.1);
+  t.ok(party.hosting && party.code === 'KXQZB' && multi.L.proprio[0] === 'host', 'l’hôte ouvre le terrain avec le code du groupe du camp, et prend la place 1');
+  const ana = ami('Ana'); ana.party.join('KXQZB'); jouer(0.4);
+  t.eq(multi.L.proprio[1], ana.party.id, 'Ana arrive : la place 2 est à elle');
+  t.ok(ana.dernier('salon')?.L.proprio[1] === ana.party.id, 'elle reçoit le lobby');
+  t.ok(ihm.dom.groupe.textContent.includes('Ana') && ihm.dom.groupe.textContent.includes('KXQZB'), 'le lobby montre le groupe et son code');
+  t.ok(place(1).textContent.includes('Ana') && place(1).querySelector('.fleche').disabled && !place(0).querySelector('.fleche').disabled,
+    'la place d’Ana porte son nom ; chez l’hôte ses flèches sont grisées, pas les siennes');
+  ana.party.toHost({ t: 'classe', k: 1, type: 'druide' }); ana.party.toHost({ t: 'classe', k: 0, type: 'barde' }); jouer(0.3);
+  t.ok(multi.L.equipe[1] === 'druide' && multi.L.equipe[0] !== 'barde' && place(1).dataset.classe === 'druide', 'Ana fait de sa place un Druide (pas de celle de l’hôte) ; l’hôte le voit');
+  place(2).querySelector('.prendre').click(); jouer(0.2);
+  t.eq(multi.L.proprio[2], 'host', '« Prendre » : l’hôte prend aussi la place 3');
+  t.ok(ihm.dom.attente.textContent.includes('sans joueur sera joué par toi'), 'la place 4 sans joueur : l’hôte la jouera');
+
+  t.group('à plusieurs : le combat, l’hôte arbitre');
+  document.querySelector('#commencer').click(); jouer(0.3); jouerFile();
+  const CM = game.dbg.combat;
+  t.ok(CM.S.phase === 'heros' && multi.L.phase === 'combat' && multi.L.proprio[3] === 'host' && CM.S.equipe[1] === 'druide', 'Commencer : le combat avec l’équipe du lobby ; la place 4 est à l’hôte');
+  const debut = ana.dernier('debut');
+  const CA = debut ? neuf({ equipe: debut.L.equipe }) : null; CA?.restaurer(debut.copie);
+  t.ok(CA && CA.S.unites.map((u) => `${u.id}${u.x},${u.y},${u.pv}`).join() === CM.S.unites.map((u) => `${u.id}${u.x},${u.y},${u.pv}`).join(), 'Ana reçoit le début : le même combat des deux côtés');
+  t.ok(!ihm.choisirHeros('h2') && ihm.choisirHeros('h1'), 'l’hôte ne choisit pas le Druide d’Ana, son héros si');
+  t.eq(document.querySelector('.fiche-heros[data-heros="h2"] .fh-joueur')?.textContent, 'Ana', 'la fiche du Druide dit qu’Ana le joue');
+  const d0 = { x: CM.U('h2').x, y: CM.U('h2').y };
+  ana.party.toHost({ t: 'action', a: { type: 'marche', id: 'h2', x: d0.x + 2, y: d0.y } }); jouer(0.3);
+  t.ok(Math.abs(CM.U('h2').x - (d0.x + 2)) < 0.3 && ana.dernier('etat')?.evs.some((e) => e.type === 'marche' && e.id === 'h2'), 'Ana marche : l’hôte joue son déplacement et lui renvoie l’état, avec la marche à montrer');
+  jouerFile();
+  t.ok(Math.abs(V.aff.get('h2').x / 32 - CM.U('h2').x) < 0.05, 'l’hôte la voit marcher');
+  const h1 = CM.U('h1'), x1 = h1.x;
+  ihm.cliquer({ x: x1 + 1.5, y: h1.y }); jouer(0.3); jouerFile();
+  t.ok(Math.abs(CM.U('h1').x - (x1 + 1.5)) < 0.3 && ana.dernier('etat')?.evs.some((e) => e.type === 'marche' && e.id === 'h1'), 'l’hôte marche (un clic) : Ana le voit aussi');
+  ana.recus.length = 0;
+  ana.party.toHost({ t: 'action', a: { type: 'marche', id: 'h1', x: CM.U('h1').x + 1, y: CM.U('h1').y } }); jouer(0.3);
+  t.ok(ana.dernier('refus') && !ana.dernier('etat'), 'Ana veut bouger le héros de l’hôte : refusé');
+  ana.pointeur = { x: 12, y: 9, h: 2, c: 1, v: CM.S.unites.findIndex((u) => u.id === 's1') + 1 }; jouer(0.4);
+  const curseur = [...document.querySelectorAll('.curseur-ami')].find((c) => !c.hidden);
+  t.eq(curseur?.textContent, `Ana : ${CAPACITES[HEROS.druide.capacites[0]].nom} → ${CM.U('s1').nom}`, 'on voit le pointeur d’Ana, et ce qu’elle prépare');
+  t.ok(ihm.dom.finPhase.textContent.includes('Je suis prêt (0/2)') && ihm.dom.annuler.hidden, '« Fin de la phase » devient « Je suis prêt (0/2) » ; pas d’annulation à plusieurs');
+  ihm.dom.finPhase.click(); jouer(0.2);
+  t.ok(CM.S.phase === 'heros' && multi.L.pret.includes('host') && ihm.dom.finPhase.textContent.includes('Prêt ✓ (1/2)'), 'l’hôte est prêt : on attend Ana');
+  ana.party.toHost({ t: 'pret', oui: true }); jouer(0.3); jouerFile();
+  t.ok(CM.S.round === 2 && CM.S.phase === 'heros' && !multi.L.pret.length && ana.dernier('etat')?.evs.some((e) => e.type === 'round' && e.r === 2), 'Ana aussi : les ennemis jouent, puis le round 2, chez les deux');
+  ana.party.leave(); amis.splice(amis.indexOf(ana), 1); jouer(0.4);
+  t.ok(multi.L.proprio[1] === 'host' && multi.attendus().join() === 'host' && !document.querySelector('.curseur-ami:not([hidden])'), 'Ana part : l’hôte joue son Druide, son pointeur disparaît');
+  ihm.montrerFin(true); ihm.dom.rejouer.click(); jouer(0.2);
+  t.ok(multi.L.phase === 'lobby' && !ihm.dom.accueil.hidden && game.dbg.combat.S.phase === 'preparation', 'Rejouer (l’hôte) : retour au lobby, pour tout le groupe');
+  document.querySelector('a.retour-camp').click(); jouer(0.1);
+  t.eq(allees.pop(), './index.html?spot=combat&hote=KXQZB', '« Retour au camp » : l’hôte rouvre le groupe du camp avec le même code');
+
+  t.group('à plusieurs : chez un ami');
+  multi.debrancherTest();
+  const cy = ami('Cy'); cy.party.host('QWERT'); jouer(0.1);
+  const p2 = multi.brancherTest(hub, { comme: 'invite', avec: 'QWERT', aller: (u) => allees.push(u) }); jouer(0.4);
+  t.ok(p2.active && !p2.hosting && cy.party.others.size === 1, 'cette page rejoint le terrain de Cy');
+  const moi = p2.id, L2 = { phase: 'lobby', equipe: ['brute', 'mage', 'voleur', 'gardien'], proprio: ['host', moi, null, null], mode: 'equipe', pret: [], absents: {} };
+  cy.party.toAll({ t: 'salon', L: L2 }); jouer(0.2);
+  t.ok(place(1).classList.contains('mienne') && !place(1).querySelector('.fleche').disabled && place(0).querySelector('.fleche').disabled && document.querySelector('#commencer').hidden,
+    'sa place est à lui (la Mage), celle de Cy non ; c’est Cy qui commence');
+  place(1).querySelector('.fleche:last-child').click(); jouer(0.2);
+  t.ok(cy.dernier('classe')?.k === 1 && cy.dernier('classe')?.type === 'voleur', '▶ : la demande part chez l’hôte (la Mage devient Voleur)');
+  const CH = neuf({ equipe: L2.equipe }); CH.commencer();
+  const L3 = { ...L2, phase: 'combat', proprio: ['host', moi, 'host', 'host'] };
+  cy.party.toAll({ t: 'debut', L: L3, copie: CH.instantane(), evs: CH.S.evenements.splice(0) }); jouer(0.2); jouerFile();
+  const CG = game.dbg.combat;
+  t.ok(ihm.dom.accueil.hidden && CG.S.phase === 'heros' && ihm.selection === 'h2', 'le combat de Cy commence ici, la Mage (son héros) choisie');
+  const m0 = { x: CG.U('h2').x, y: CG.U('h2').y };
+  ihm.cliquer({ x: m0.x + 2, y: m0.y }); jouer(0.2);
+  const act = cy.dernier('action');
+  t.ok(act?.a.type === 'marche' && act.a.id === 'h2' && Math.abs(CG.U('h2').x - m0.x) < 0.01, 'un clic : l’action part chez l’hôte, rien ne bouge avant sa réponse');
+  CH.deplacer(CH.U('h2'), act.a.x, act.a.y, CH.portee(CH.U('h2')));
+  cy.party.toAll({ t: 'etat', L: L3, copie: CH.instantane(), evs: CH.S.evenements.splice(0) }); jouer(0.2); jouerFile();
+  t.ok(Math.abs(CG.U('h2').x - (m0.x + 2)) < 0.3 && Math.abs(V.aff.get('h2').x / 32 - CG.U('h2').x) < 0.05, 'l’état de Cy arrive : on voit la Mage marcher');
+  ihm.dom.finPhase.click(); jouer(0.2);
+  t.ok(cy.dernier('pret')?.oui === true, '« Je suis prêt » part chez l’hôte');
+  cy.party.toAll({ t: 'camp' }); jouer(0.2);
+  t.eq(allees.pop(), './index.html?spot=combat&code=QWERT', 'Cy retourne au camp : on le suit, dans le même groupe');
+  cy.party.leave(); jouer(0.4);
+  t.ok(!multi.actif && !ihm.reseau && ihm.choisirHeros('h1'), 'Cy s’en va : on continue seul, tous les héros sont à nous');
+  ihm.dom.finPhase.click(); jouerFile();
+  t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
+  multi.debrancherTest();
+  ihm.rejouer();
 }

@@ -1,7 +1,7 @@
 // Les vérifications du camp (?test) : elles jouent comme un joueur (le manuel §3).
 // Le test de marche part de l'apparition et va à pied jusqu'à chaque lieu puis au feu, en tenant les touches
 // (de vrais événements clavier, comme un joueur) ; il donne les coordonnées exactes de tout endroit où le héros reste coincé.
-import { T, W, H, LIEUX, BOIS, FEU, APPARITION, emprise } from './01_plan.js';
+import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, emprise } from './01_plan.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 import { LIEUX_AXES } from './10_missions.js';
 
@@ -48,16 +48,36 @@ function marcherVers(bx, by, { courir = false, limite = 40 } = {}) {
 export const devant = (l) => [(l.porte[0] + 1) * T, (l.porte[1] + 1.4) * T];
 export const devantFeu = () => [FEU[0] * T, FEU[1] * T + 2 * T];
 
-export function selfTest(t, game) {
+export async function selfTest(t, game) {
   const { heros, collision, camera, rendu, visite, camp } = ctx, h = heros.heros;
   game.dbg.freeze(true);
 
   t.group('le plan');
-  const E = Object.fromEntries(LIEUX.map((l) => [l.id, emprise(l.porte)]));
+  const E = Object.fromEntries(LIEUX.map((l) => [l.id, emprise(l)]));
   const inter = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const marge = ([x0, y0, x1, y1]) => [x0 - 1, y0 - 1, x1 + 1, y1 + 1];
   let chevauche = [];
-  for (const a of LIEUX) for (const b of LIEUX) if (a.id < b.id && inter(E[a.id], E[b.id])) chevauche.push(`${a.id}/${b.id}`);
-  t.eq(chevauche, [], 'aucune emprise de niveau 4 ne chevauche une autre');
+  for (const a of LIEUX) for (const b of LIEUX) if (a.id < b.id && inter(marge(E[a.id]), E[b.id])) chevauche.push(`${a.id}/${b.id}`);
+  t.eq(chevauche, [], 'aucune emprise de niveau 4 ne chevauche une autre, même à une case près');
+  t.eq(E.combat, [24, 2, 32, 10], 'le terrain d’entraînement a son emprise à lui : l’enclos de 8 x 8 cases (#77)');
+  // (comme design/camp/plans/verifier.py) un sentier ne passe pas dans un lieu, sauf le bout qui mène à sa porte ;
+  // le bas de l'emprise (1,3 case) est le devant du lieu, où les sentiers passent
+  const traverse = [];
+  CHEMINS.forEach((ch, k) => {
+    const fin = ch[ch.length - 1];
+    for (let s = 0; s + 1 < ch.length; s++) {
+      const [x0, y0] = ch[s], [x1, y1] = ch[s + 1], n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 4) + 1;
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + ((x1 - x0) * i) / n + 0.5, y = y0 + ((y1 - y0) * i) / n + 0.5;
+        for (const l of LIEUX) {
+          if (Math.abs(l.porte[0] + 0.5 - fin[0]) < 1 && Math.abs(l.porte[1] - fin[1]) < 1) continue;
+          const e = E[l.id];
+          if (e[0] + 0.3 < x && x < e[2] - 0.3 && e[1] + 0.3 < y && y < e[3] - 1.3 && !traverse.includes(`${k}/${l.id}`)) traverse.push(`${k}/${l.id}`);
+        }
+      }
+    }
+  });
+  t.eq(traverse, [], 'aucun sentier ne traverse un lieu');
   const surArbre = LIEUX.filter((l) => BOIS.some(([i, j]) => inter(E[l.id], [i, j, i + 1, j + 1]))).map((l) => l.id);
   t.eq(surArbre, [], 'aucun arbre dans une emprise de lieu');
   t.eq([collision.largeur, collision.hauteur], [W * T, H * T], 'le camp fait 42 x 28 cases');
@@ -132,6 +152,20 @@ export function selfTest(t, game) {
   }
   api.rapportMarche = rapport;
 
+  t.group('l’enclos du terrain d’entraînement (#77)');
+  const { ouest, est, nord, sud, entree: [g, d] } = ENCLOS;
+  const dedans = [((g + d) / 2) * T, (nord + 3) * T];
+  heros.placer(...devant(LIEUX.find((l) => l.id === 'combat')), 'haut'); camera.snap();
+  const entrer = marcherVers(...dedans);
+  t.ok(entrer.arrive && !entrer.traverse, `depuis le sentier, on entre dans l’enclos par l’entrée${entrer.arrive ? ` (${entrer.temps.toFixed(1)} s)` : ''}`);
+  t.ok([[g - 0.6, sud], [d + 0.6, sud], [ouest, nord + 1.5], [est, nord + 4.5], [(ouest + est) / 2, nord]].every(([x, y]) => collision.bloque(x * T, y * T)),
+    'la clôture bloque partout ailleurs (au sud de part et d’autre de l’entrée, à l’ouest, à l’est, au nord)');
+  t.ok(!collision.bloque((g + 1) * T, sud * T) && !collision.bloque((g + 1) * T, (sud + 0.8) * T), 'l’entrée est ouverte, 2 cases de large');
+  heros.placer(dedans[0], dedans[1], 'bas'); camera.snap();
+  tenir(['ArrowLeft']); game.dbg.advance(4); tenir([]);
+  t.ok(h.x / T > ouest, `vers l’ouest, la clôture arrête le héros (x ${(h.x / T).toFixed(1)})`);
+  heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
+
   t.group('le clic');
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas');
   const but = devant(LIEUX.find((l) => l.id === 'classes'));
@@ -156,6 +190,7 @@ export function selfTest(t, game) {
   testsRenommee(t, game);
   testsHud(t, game);
   testsBoite(t, game);
+  await testsDirect(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -243,7 +278,7 @@ function testsMissions(t, game) {
   panneau.marquerVu(etaitVu);
 }
 
-export const api = { marcherVers, rapportMarche: null };
+export const api = { marcherVers, rapportMarche: null, fauxWorker: () => fauxWorker(), JETON_TEST: 'v1.9999999999999.QmFiYQ.signature-de-test' };   // (le faux Worker : aussi pour les captures)
 
 // La sentinelle : la scène de la première arrivée, le nom relié à GitHub, le retour, changer de nom.
 function testsSentinelle(t, game) {
@@ -447,12 +482,13 @@ function testsRats(t, game) {
 
 // À plusieurs : le camp de cette page et des amis simulés, sur le fil « loopback » de party-net (pas de réseau).
 function testsReseau(t, game) {
-  const { reseau, heros, sentinelle } = ctx, h = heros.heros;
+  const { reseau, heros, sentinelle, terrain } = ctx, h = heros.heros;
   const hub = createLoopback({ latency: 0.03, jitter: 0.01 });
   const pas = 1 / 60;
   const ami = (nom) => {
-    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 } };
-    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 } });
+    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 }, recus: [] };
+    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 },
+      on: (type, d) => { if (type === 'game') P.recus.push(d.m); } });
     return P;
   };
   const amis = [];
@@ -489,6 +525,19 @@ function testsReseau(t, game) {
   // Ana revient
   const ana2 = ami('Ana'); amis.push(ana2); ana2.party.join(party.code); jouer(0.5);
   t.ok(party.others.size === 2 && reseau.copies.size === 2, 'Ana revient avec le même code');
+  // le groupe part ensemble au terrain d'entraînement (#80) : E devant la porte emmène tout le monde
+  const allees = [], porte = { x: h.x, y: h.y };
+  terrain.testerNavigation((u) => allees.push(u));
+  const [px, py] = LIEUX.find((l) => l.id === 'combat').porte;   // (devant sa porte, où qu'elle soit : l'enclos de #77 la déplace)
+  heros.placer((px + 0.5) * T, (py + 1.2) * T, 'haut'); h.controle = true; jouer(0.1);
+  t.ok(!terrain.bulle.hidden && terrain.bulle.textContent.includes('emmener le groupe'), 'en groupe, devant le terrain : « E : emmener le groupe au terrain d’entraînement »');
+  ben.party.toHost({ type: 'terrain' }); jouer(0.3);
+  const vers = ben.recus.find((m) => m.type === 'terrain');
+  t.ok(vers?.code === party.code && ana2.recus.some((m) => m.type === 'terrain'), 'Ben le demande : l’hôte prévient tout le groupe, avec le code');
+  t.eq(allees.pop(), `./entrainement.html?groupe=${party.code}&hote`, 'et y va en hôte du terrain (les amis le rejoignent avec le même code)');
+  t.ok(!terrain.annonce.hidden && terrain.annonce.textContent.includes('Ben'), `l’annonce dit qui emmène le groupe (« ${terrain.annonce.textContent} »)`);
+  terrain.testerNavigation(null);
+  heros.placer(porte.x, porte.y);
   // l'hôte ferme : les amis sont prévenus ; puis Paul rejoint un groupe hébergé ailleurs
   reseau.quitter(); jouer(0.5);
   t.ok(!party.active && reseau.copies.size === 0 && !ben.party.active, 'Paul ferme le groupe : les copies partent, les amis sont prévenus');
@@ -686,7 +735,7 @@ function testsHud(t, game) {
   const quiAvant = sentinelle.etat.qui; sentinelle.etat.qui = { nom: 'Baba', github: 'DonBabaa', saisie: 'Baba' };
   messagerie.laissezPasser(null);
   touche('KeyM');
-  t.ok(messagerie.ouvert && messagerie.boite.textContent.includes('Jouer au camp'), 'M ouvre la messagerie ; sans laissez-passer, elle dit comment l’obtenir (par le dashboard)');
+  t.ok(messagerie.ouvert && messagerie.boite.querySelector('.laissez-passer:not([hidden]) a.bouton-jeu')?.href.includes('#camp='), 'M ouvre la messagerie ; sans laissez-passer, elle dit comment l’obtenir (par le dashboard)');
   t.ok(!messagerie.envoyer('bonjour') && envoyes.length === 0, 'sans laissez-passer, rien ne part');
   messagerie.laissezPasser('v1.test.jeton');
   t.eq(envoyes[envoyes.length - 1], { type: 'jeton', jeton: 'v1.test.jeton' }, 'avec un laissez-passer, le jeu le présente au Worker');
@@ -751,4 +800,127 @@ function testsBoite(t, game) {
   messagerie.fermer();
   game.bus.emit('messagerie:nonlus', { n: 0 }); game.dbg.advance(0.05);
   t.ok(!boite.drapeauLeve && boite.excl.hidden, 'les messages lus : le drapeau redescend');
+}
+// --- Le camp branché sur un faux Worker direct : la messagerie liée au dashboard et la renommée en direct ------
+// Le faux serveur parle comme le vrai (dashboard/worker/src/index.js et messagerie.js) : GET /api/…, GET /profils,
+// et le WebSocket /direct (maj, jeton → bienvenue avec l'historique, envoyer → envoye + message à toutes les pages
+// entrées). Rien ne part sur le réseau.
+const JETON_TEST = 'v1.9999999999999.QmFiYQ.signature-de-test';
+function fauxWorker() {
+  const srv = { issues: [], messages: [], profils: [], pages: new Set(), appels: [], id: 0 };
+  const repondre = (corps) => ({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(corps)) });
+  const rien = () => ({ ok: false, status: 404, json: async () => ({}) });
+  srv.fetch = async (url) => {
+    srv.appels.push(String(url));
+    const u = new URL(url);
+    if (u.host !== 'faux-worker.test') return rien();
+    if (u.pathname.startsWith('/api/repos/') && u.pathname.endsWith('/issues')) return repondre(srv.issues);
+    if (u.pathname === '/profils') return repondre(srv.profils);
+    return rien();
+  };
+  const plusTard = (f) => setTimeout(f, 5);
+  const diffuser = (o) => { for (const p of srv.pages) if (p.entree) p.recevoir(o); };
+  srv.WebSocket = class FauxSocket {
+    constructor(url) { this.url = url; this.readyState = 0; this.entree = false; srv.pages.add(this); plusTard(() => { if (this.readyState === 0) { this.readyState = 1; this.onopen?.(); } }); }
+    send(d) {
+      if (this.readyState !== 1) throw new Error('fermé');
+      if (d === 'ping') return;
+      const m = JSON.parse(d);
+      plusTard(() => {
+        if (m.type === 'jeton') {
+          if (m.jeton !== JETON_TEST) return this.recevoir({ type: 'refuse', raison: 'Laissez-passer refusé.' });
+          this.entree = true; this.nom = 'Baba';
+          this.recevoir({ type: 'bienvenue', nom: this.nom, messages: srv.messages.slice(-100) });
+        } else if (m.type === 'envoyer') {
+          if (!this.entree) return this.recevoir({ type: 'erreur', ref: m.ref, erreur: 'Il faut être entré avec le mot de passe pour écrire.' });
+          const message = { id: ++srv.id, auteur: this.nom, texte: m.texte, t: Date.now() };
+          srv.messages.push(message);
+          this.recevoir({ type: 'envoye', ref: m.ref, id: message.id });
+          diffuser({ type: 'message', message });
+        }
+      });
+    }
+    close() { if (this.readyState === 3) return; this.readyState = 3; srv.pages.delete(this); plusTard(() => this.onclose?.()); }
+    recevoir(o) { if (this.readyState === 1) this.onmessage?.({ data: JSON.stringify(o) }); }
+  };
+  // un message écrit dans le dashboard : le Worker le garde, et le diffuse aux pages entrées
+  srv.depuisDashboard = (auteur, texte, { direct = true } = {}) => {
+    const message = { id: ++srv.id, auteur, texte, t: Date.now() };
+    srv.messages.push(message);
+    if (direct) diffuser({ type: 'message', message });
+  };
+  // un webhook GitHub : le Worker prévient toutes les pages
+  srv.maj = (sujets) => { for (const p of srv.pages) p.recevoir({ type: 'maj', sujets, messages: [] }); };
+  // le Worker redémarre (un déploiement, une coupure) : toutes les connexions tombent
+  srv.couper = () => { for (const p of [...srv.pages]) p.close(); };
+  return srv;
+}
+// On compte les tours (de 10 ms au moins), pas l'heure : sur les machines de GitHub (rendu logiciel), la page se fige
+// parfois de longues secondes, et un délai à l'horloge expirait avant que le faux Worker ait pu répondre une seule fois.
+const attendre = async (cond, ms = 4000) => {
+  for (let tour = 0; !cond(); tour++) { if (tour * 10 > ms) return false; await new Promise((r) => setTimeout(r, 10)); }
+  return true;
+};
+
+async function testsDirect(t, game) {
+  const { missions, messagerie, renommee: R, sentinelle, boite } = ctx;
+  const srv = fauxWorker();
+  const quiAvant = sentinelle.etat.qui;
+  sentinelle.etat.qui = { nom: 'Baba', github: 'DonBabaa', saisie: 'Baba' };
+  srv.messages = [1, 2, 3].map((k) => ({ id: k, auteur: 'Paul', texte: `Message du dashboard n° ${k}`, t: Date.now() - (4 - k) * 60_000 }));
+  srv.id = 3;
+  srv.issues = [{ ...issue(90, ['axe: menus', 'taille: M'], { qui: ['DonBabaa'] }), milestone: null }];
+  let nonLus = null;
+  game.bus.on('messagerie:nonlus', (d) => { nonLus = d.n; });
+  const total = () => R.resultat?.parPersonne?.DonBabaa ?? 0;
+  const fil = () => [...messagerie.boite.querySelectorAll('.msg .texte')].map((p) => p.textContent);
+
+  t.group('la messagerie liée au dashboard (faux Worker)');
+  t.eq(messagerie.extraireJeton(`{"nom":"Baba","jeton":"${JETON_TEST}"}`), JETON_TEST, 'coller la réponse de /session du dashboard : le jeu y trouve le laissez-passer');
+  t.ok(messagerie.extraireJeton('bonjour') === null, 'autre chose n’est pas un laissez-passer');
+  messagerie.laissezPasser(JETON_TEST);
+  missions.relier({ fetch: srv.fetch, WebSocket: srv.WebSocket, worker: 'https://faux-worker.test' });
+  t.ok(await attendre(() => messagerie.etat.statut === 'ouverte'), 'le camp se branche au Worker et y entre avec le laissez-passer');
+  messagerie.ouvrir();
+  t.eq(fil(), ['Message du dashboard n° 1', 'Message du dashboard n° 2', 'Message du dashboard n° 3'], 'à l’ouverture, l’historique du dashboard est là');
+  // une page du dashboard, ouverte en même temps
+  const dash = new srv.WebSocket('wss://faux-worker.test/direct'), recuDash = [];
+  await attendre(() => dash.readyState === 1);
+  dash.onmessage = (m) => recuDash.push(JSON.parse(m.data));
+  dash.send(JSON.stringify({ type: 'jeton', jeton: JETON_TEST }));
+  await attendre(() => dash.entree);
+  t.ok(messagerie.envoyer('Écrit depuis le camp'), 'écrire dans le camp');
+  t.ok(await attendre(() => recuDash.some((m) => m.type === 'message' && m.message.texte === 'Écrit depuis le camp')), 'le message écrit au camp arrive dans le dashboard, en direct');
+  t.ok(await attendre(() => fil().includes('Écrit depuis le camp')) && ![...messagerie.etat.enAttente.values()].includes('Écrit depuis le camp'), 'et dans le fil du camp, confirmé par le Worker');
+  messagerie.fermer();
+  srv.depuisDashboard('Paul', 'Réponse écrite dans le dashboard');
+  t.ok(await attendre(() => fil().includes('Réponse écrite dans le dashboard')), 'un message écrit dans le dashboard apparaît au camp, en direct');
+  t.ok(nonLus === 1 && boite.drapeauLeve, `panneau fermé : il compte comme non lu, et le drapeau de la boîte aux lettres se lève (${nonLus})`);
+
+  t.group('la renommée en direct (faux Worker)');
+  await attendre(() => R.resultat && missions.etat.source === 'worker');
+  t.eq(total(), 0, 'la mission #90 de Baba est en cours : pas encore de renommée');
+  srv.issues = [{ ...srv.issues[0], state: 'closed' }];
+  srv.maj(['issues']);
+  t.ok(await attendre(() => total() === 3), 'le Worker annonce que les issues ont changé (#90 rentrée) : la renommée passe à 3 toute seule');
+  t.ok(R.plaque.textContent.includes('✦ 3'), `la plaque du HUD le montre (« ${R.plaque.textContent.slice(0, 60)} »)`);
+  t.ok([...R.annonces.children].some((a) => a.textContent.includes('#90')), 'avec l’annonce dorée « #90 rentrée »');
+
+  t.group('le direct coupé puis rouvert (faux Worker)');
+  srv.couper();
+  t.ok(await attendre(() => messagerie.etat.statut === 'coupee'), 'le direct tombe : la messagerie le dit (« Connexion perdue »)');
+  // pendant la coupure : une autre mission rentre, et Paul écrit dans le dashboard (le camp n'est prévenu de rien)
+  srv.issues = [...srv.issues, { ...issue(91, ['axe: son', 'taille: S'], { qui: ['DonBabaa'], state: 'closed' }), milestone: null }];
+  srv.depuisDashboard('Paul', 'Écrit pendant la coupure', { direct: false });
+  t.ok(await attendre(() => missions.directOuvert && messagerie.etat.statut === 'ouverte', 5000), 'le camp se reconnecte seul (en 1 s) et rentre dans la messagerie');
+  t.ok(await attendre(() => total() === 4), `à la reconnexion, les issues sont relues : la mission rentrée pendant la coupure compte (${total()})`);
+  t.ok(await attendre(() => fil().includes('Écrit pendant la coupure')), 'et le message écrit pendant la coupure est là');
+  t.ok(srv.appels.length > 0 && srv.appels.every((u) => u.startsWith('https://faux-worker.test/') || u.includes('equipe.json')), `toutes les lectures passent par le faux Worker (${srv.appels.length})`);
+
+  missions.delier();
+  try { dash.close(); } catch {}
+  messagerie.laissezPasser(null);
+  missions.charger([]);
+  sentinelle.etat.qui = quiAvant;
+  game.bus.emit('messagerie:nonlus', { n: 0 });
 }

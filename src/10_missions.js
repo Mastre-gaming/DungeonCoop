@@ -2,7 +2,7 @@
 // Mêmes règles que le dashboard (src/widgets/travail.js) : une tâche est une issue (pas une PR), et une idée n'en est
 // une que si quelqu'un l'a prise. Fermée = rentrée ; quelqu'un d'assigné = en cours ; sinon = à prendre.
 // Lecture : le Worker « direct » de Paul (CORS ouvert), sinon GitHub sans jeton, relu au plus toutes les 5 minutes.
-// En direct : le WebSocket du Worker dit quand les issues changent ; on relit alors tout de suite.
+// En direct : le WebSocket du Worker dit quand les issues changent ; on relit alors tout de suite, et à chaque reconnexion.
 // L'équipe : equipe.json, où le pseudo choisi dans le dashboard (Worker, GET /profils) remplace le nom ; le
 // WebSocket prévient aussi quand un pseudo change. Le camp lit les pseudos, il ne les écrit pas.
 // En ?test, rien ne part sur le réseau : les vérifications donnent leurs propres missions.
@@ -62,11 +62,15 @@ export function progression(issues) {
 }
 
 // --- La lecture --------------------------------------------------------------------------------
-let game, horsLigne = false, ws = null, ping = 0, relance = 0;
+// Le réseau (fetch, WebSocket, l'adresse du Worker) : celui du navigateur, ou un faux serveur en ?test (api.relier).
+const RESEAU = { fetch: (...a) => fetch(...a), WebSocket: globalThis.WebSocket, worker: WORKER };
+let game, horsLigne = false, reseau = RESEAU, ws = null, ping = 0, relance = 0, attente = 1000, dejaOuvert = false;
 const etat = { issues: [], equipe: [], equipeFichier: [], profils: [], source: null, lueA: 0, erreur: null };
+const RELIRE_DIRECT = 2 * 60_000;   // direct ouvert : une relecture de secours (le cache du Worker la sert)
+const RELIRE_SEUL = 5 * 60_000;     // sans le direct : GitHub, 60 appels par heure sans jeton
 
 async function lireJson(url) {
-  const r = await fetch(url, { headers: { accept: 'application/vnd.github+json' } });
+  const r = await reseau.fetch(url, { headers: { accept: 'application/vnd.github+json' } });
   if (!r.ok) throw new Error(`${r.status} sur ${url}`);
   return r.json();
 }
@@ -74,8 +78,9 @@ async function lireJson(url) {
 async function lire() {
   if (horsLigne) return;
   const chemin = `/repos/${DEPOT}/issues?state=all&per_page=100`;
+  etat.lueA = Date.now();
   try {
-    etat.issues = await lireJson(`${WORKER}/api${chemin}`); etat.source = 'worker'; etat.erreur = null;
+    etat.issues = await lireJson(`${reseau.worker}/api${chemin}`); etat.source = 'worker'; etat.erreur = null;
   } catch (e) {
     try { etat.issues = await lireJson(`${GITHUB}${chemin}`); etat.source = 'github'; etat.erreur = null; }
     catch (e2) { etat.erreur = 'Les missions ne se lisent pas pour l’instant.'; console.warn(e, e2); }
@@ -83,45 +88,86 @@ async function lire() {
   etat.lueA = Date.now();
   game.bus.emit('missions:maj', api.resume());
 }
+const lireProfils = () => lireJson(`${reseau.worker}/profils`).then((p) => api.profils(p)).catch(() => {});
 
+// Le direct. Comme celui du dashboard (son src/direct.js) : reconnexion en 1 s, puis 2, 4… jusqu'à 30 s, et tout de
+// suite quand l'onglet revient au premier plan. À chaque reconnexion, on relit les issues et les pseudos : ce qui a
+// changé pendant la coupure (une mission rentrée, une renommée gagnée) n'a pas été annoncé par le Worker.
 function brancherDirect() {
-  try {
-    ws = new WebSocket(WORKER.replace(/^http/, 'ws') + '/direct');
-    ws.onmessage = (m) => {
-      try {
-        const d = JSON.parse(m.data);
-        if (d?.type === 'maj' && (d.sujets ?? []).includes('issues')) lire();
-        if (d?.type === 'profils') api.profils(d.profils);
-        game.bus.emit('direct:message', d);   // (les autres modules écoutent aussi : les push, la messagerie)
-      } catch {}
-    };
-    ws.onopen = () => { clearInterval(ping); ping = setInterval(() => { try { ws.send('ping'); } catch {} }, 30000); game.bus.emit('direct:ouvert'); };
-    ws.onclose = () => { clearInterval(ping); ws = null; clearTimeout(relance); relance = setTimeout(brancherDirect, 15000); };
-  } catch { relance = setTimeout(brancherDirect, 15000); }
+  clearTimeout(relance);
+  if (horsLigne || ws) return;
+  let s;
+  try { s = ws = new reseau.WebSocket(reseau.worker.replace(/^http/, 'ws') + '/direct'); } catch { ws = null; return plusTard(); }
+  s.onmessage = (m) => {
+    if (s !== ws || m.data === 'pong') return;
+    try {
+      const d = JSON.parse(m.data);
+      if (d?.type === 'maj' && (d.sujets ?? []).includes('issues')) lire();
+      if (d?.type === 'profils') api.profils(d.profils);
+      game.bus.emit('direct:message', d);   // (les autres modules écoutent aussi : les push, la messagerie)
+    } catch {}
+  };
+  s.onopen = () => {
+    if (s !== ws) return;
+    attente = 1000;
+    clearInterval(ping); ping = setInterval(() => { try { s.send('ping'); } catch {} }, 30000);
+    if (dejaOuvert) { lire(); lireProfils(); }
+    dejaOuvert = true;
+    game.bus.emit('direct:ouvert');
+  };
+  s.onclose = () => {
+    if (s !== ws) return;
+    clearInterval(ping); ws = null;
+    game.bus.emit('direct:ferme');
+    plusTard();
+  };
+}
+function plusTard() {
+  clearTimeout(relance);
+  if (horsLigne) return;
+  relance = setTimeout(brancherDirect, attente);
+  attente = Math.min(attente * 2, 30_000);
+}
+function auPremierPlan() {
+  if (document.visibilityState !== 'visible' || horsLigne || ws) return;
+  attente = 1000; brancherDirect();
+}
+function debrancher() {
+  clearInterval(ping); clearTimeout(relance);
+  const s = ws; ws = null;
+  try { s?.close(); } catch {}
+}
+function demarrer() {
+  lire();
+  lireJson(EQUIPE).then((e) => { etat.equipeFichier = Array.isArray(e) ? e : []; api.profils(etat.profils); }).catch(() => {});
+  lireProfils();
+  brancherDirect();
 }
 
 export function init(g, { horsLigne: hl = false } = {}) {
   game = g; horsLigne = hl;
-  if (!horsLigne) {
-    lire();
-    lireJson(EQUIPE).then((e) => { etat.equipeFichier = Array.isArray(e) ? e : []; api.profils(etat.profils); }).catch(() => {});
-    lireJson(`${WORKER}/profils`).then((p) => api.profils(p)).catch(() => {});
-    brancherDirect();
-  }
+  document.addEventListener('visibilitychange', auPremierPlan);
+  if (!horsLigne) demarrer();
   return api;
 }
 
 export function update() {
-  // secours : sans le direct, on relit au plus toutes les 5 minutes (GitHub : 60 appels par heure sans jeton)
-  if (!horsLigne && !ws && Date.now() - etat.lueA > 5 * 60_000) { etat.lueA = Date.now(); lire(); }
+  // secours : le direct ouvert, on relit toutes les 2 minutes (servi par le cache du Worker) ; sans lui, toutes les 5
+  if (horsLigne) return;
+  const ouvert = ws?.readyState === 1;
+  if (Date.now() - etat.lueA > (ouvert ? RELIRE_DIRECT : RELIRE_SEUL)) lire();
 }
 
-export function dispose() { clearInterval(ping); clearTimeout(relance); try { ws?.close(); } catch {} }
+export function dispose() { document.removeEventListener('visibilitychange', auPremierPlan); debrancher(); }
 
 export const api = {
   // Envoyer au Worker direct, sur la même connexion (la messagerie) ; false si elle n'est pas ouverte.
   envoyerDirect(objet) { if (ws?.readyState !== 1) return false; try { ws.send(JSON.stringify(objet)); return true; } catch { return false; } },
   get directOuvert() { return ws?.readyState === 1; },
+  // Pour les tests : brancher le camp sur un faux serveur ({ fetch, WebSocket, worker }) comme s'il était en ligne,
+  // puis délier pour revenir hors ligne. Rien ne part sur le réseau.
+  relier(faux) { debrancher(); reseau = { ...RESEAU, ...faux }; horsLigne = false; attente = 1000; dejaOuvert = false; demarrer(); },
+  delier() { debrancher(); reseau = RESEAU; horsLigne = true; dejaOuvert = false; game.bus.emit('direct:ferme'); },
   etat,
   lire,
   regles: { progression, etatDe, lieuDe, tailleDe, estTache },

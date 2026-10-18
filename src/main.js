@@ -68,8 +68,8 @@ async function demarrer() {
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee });
-  const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite });   // E devant le terrain : le combat d'entraînement
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
+  const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite, reseau });   // E devant le terrain : le combat d'entraînement (à plusieurs : tout le groupe)
   // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
   const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
   const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
@@ -87,7 +87,7 @@ async function demarrer() {
   hud.brancher('lettres', messagerie);
   const boite = game.use(boiteSkill, { rendu, heros, collision, visite, ouvrirMessages: () => { if (!messagerie.ouvert) hud.activer('lettres'); } });
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, terrain });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
