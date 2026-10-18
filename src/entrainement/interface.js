@@ -12,6 +12,7 @@ import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIP
 import { CONTACT, metres } from './geometrie.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
 import { curseurCss } from './armes.js';
+import { etatsActifs } from './etats.js';
 
 export const name = 'interface';
 export const always = true;
@@ -389,11 +390,19 @@ function dessinerFiche(h) {
 
 // La carte de la créature survolée : avec une attaque choisie, ses chances et ses dégâts ; sinon, qui elle est.
 const etatsDe = (u) => Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean).concat(u.expose && !u.st.expose ? ['Exposé'] : []);
+// les états d'une créature, dans la carte : l'icône, le nom et les tours qui restent, puis ce que l'état fait
+function listeEtats(u) {
+  const liste = etatsActifs(u);
+  if (!liste.length) return null;
+  return el('ul', { class: 'cc-etats' }, liste.map((e) => el('li', { class: e.genre, dataset: { etat: e.id } },
+    el('img', { src: e.src, alt: '' }),
+    el('span', { class: 'cc-etat-nom' }, e.nom, e.n != null ? el('small', {}, ` · encore ${e.n} tour${e.n > 1 ? 's' : ''}`) : null),
+    el('span', { class: 'cc-etat-effet' }, e.effet))));
+}
 function dessinerInfo(info) {
   const d = ui.survol && !vue.occupe() ? vue.sous(ui.survol.x, ui.survol.y) : null, u = d ? combat.U(d) : null;
   if (!u) { dom.info.hidden = true; return; }
   const tete = el('div', { class: 'cc-tete' }, el('strong', {}, u.nom), el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`));
-  const etats = etatsDe(u);
   if (info) {
     const cap = CAPACITES[ui.cap];
     dom.info.replaceChildren(tete,
@@ -402,12 +411,13 @@ function dessinerInfo(info) {
       el('div', { class: 'fc-effets' },
         info.av ? el('span', { class: `effet ${info.av > 0 ? 'magie' : 'feu'}` }, info.av > 0 ? 'Avantage : deux d20, le meilleur' : 'Désavantage : deux d20, le pire') : null,
         info.notes.map((n) => el('span', { class: `effet ${effets({ ds: n })[0]?.genre ?? ''}` }, n[0].toUpperCase() + n.slice(1))),
-        etats.length ? el('span', { class: 'effet' }, etats.join(' · ')) : null),
+      ),
+      listeEtats(u),
       el('span', { class: 'cc-cap' }, el('img', { src: icone(ui.cap), alt: '' }), cap.nom));
   } else {
     dom.info.replaceChildren(tete,
       el('div', { class: 'cc-jauge' }, el('span', { class: u.camp === 'e' ? 'ennemi' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
-      etats.length ? el('div', { class: 'fc-effets' }, el('span', { class: 'effet' }, etats.join(' · '))) : null,
+      listeEtats(u),
       el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : HEROS[u.type].role));
   }
   dom.info.hidden = false;

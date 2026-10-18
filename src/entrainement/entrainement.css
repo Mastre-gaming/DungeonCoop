@@ -228,13 +228,28 @@ body [hidden] { display: none !important; }
 
 /* Les barres de vie (V : les ennemis, Maj+V : les alliés), au-dessus des têtes */
 .plaques-terrain { position: fixed; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
-.plaque-vie { position: absolute; left: 0; top: 0; transform-origin: 50% 100%; display: grid; grid-template-columns: auto auto; align-items: center; gap: 0 4px; justify-items: center;
-  padding: 1px 4px 2px; background: rgba(32, 22, 14, .78); border: 1px solid rgba(0,0,0,.6); border-radius: 3px; color: #fff7e6; font: 700 11px/1.1 var(--titre); white-space: nowrap; }
-.plaque-vie .pv-nom { grid-column: 1 / -1; text-shadow: 0 1px 0 #000; }
-.plaque-vie .pv-barre { width: 46px; height: 5px; background: #3a1712; border: 1px solid #000; border-radius: 1px; overflow: hidden; }
-.plaque-vie .pv-barre > span { display: block; height: 100%; background: #d8402c; transition: width .25s; }
-.plaque-vie.allie .pv-barre > span { background: #59b33c; }
-.plaque-vie.bas .pv-barre > span { background: #ff8a2a; }
-.plaque-vie .pv-chiffre { font: 600 10px ui-monospace, Consolas, monospace; color: #f3e6c8; }
-.plaque-vie.ennemi .pv-nom { color: #ffd0c4; }
+/* sous les pieds : la jauge (sans cadre derrière, sans nom), puis les icônes des états ; le détail est dans la carte de survol */
+.plaque-vie { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; --px: 1; }
+.plaque-vie.pres { --px: 2; gap: 3px; }
+.plaque-vie .pv-barre { position: relative; display: block; width: 36px; height: 5px; background: var(--bois-nuit, #1e130c); border: 1px solid #000; box-shadow: 0 0 0 1px rgba(133, 88, 27, .7); overflow: hidden; }
+.plaque-vie.pres .pv-barre { width: 58px; height: 11px; }
+.plaque-vie .pv-plein { display: block; height: 100%; background: #c8352a; transition: width .25s; }
+.plaque-vie.allie .pv-plein { background: #4f9a33; }
+.plaque-vie.bas .pv-plein { background: #e8792a; }
+.plaque-vie .pv-chiffre { display: none; position: absolute; inset: 0; text-align: center; font: 700 10px/11px var(--titre); color: #fff7e6; text-shadow: 1px 1px 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
+.plaque-vie.pres .pv-chiffre { display: block; }
 .plaque-vie.ko { opacity: .7; }
+.plaque-vie .pv-etats { display: flex; gap: calc(var(--px) * 2px); }
+.plaque-vie .pv-etats:empty { display: none; }
+.etat-icone { position: relative; display: block; line-height: 0; }
+.etat-icone img { width: calc(var(--w, 10) * var(--px) * 1px); height: calc(var(--h, 10) * var(--px) * 1px); image-rendering: pixelated; }
+.etat-icone b { position: absolute; right: -4px; bottom: -3px; font: 700 10px/1 var(--titre); color: #fff7e6; text-shadow: 1px 1px 0 #000, -1px 0 0 #000, 0 -1px 0 #000, 1px 0 0 #000; }
+.plaque-vie.pres .etat-icone b { font-size: 12px; right: -5px; bottom: -4px; }
+/* la carte de survol : chaque état, son icône et ce qu'il fait */
+.cc-etats { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.cc-etats li { display: grid; grid-template-columns: 22px 1fr; column-gap: 6px; align-items: center; }
+.cc-etats img { grid-row: span 2; width: 20px; image-rendering: pixelated; justify-self: center; }
+.cc-etat-nom { font: 700 12.5px var(--titre); color: #ff9a7a; }
+.cc-etats li.bonus .cc-etat-nom { color: #9fe28f; }
+.cc-etat-nom small { font-weight: 500; color: #e9d3ad; }
+.cc-etat-effet { font: 12px/1.3 var(--texte); color: #e9d3ad; }
