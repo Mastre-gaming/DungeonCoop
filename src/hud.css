@@ -63,7 +63,10 @@
   position: static; inset: auto; width: 100%; max-height: none; box-sizing: border-box; padding: 4px 6px; }
 .colonne-gauche .groupe-jeu { width: 268px; }
 .colonne-gauche .cadres-groupe, .colonne-gauche .chronique-camp { flex: 0 1 auto; min-height: 0; overflow: auto; }
-.colonne-gauche .messagerie-jeu { flex: 1 1 auto; min-height: 220px; }
+/* les messages : une colonne souple, le fil prend la place qui reste (quel que soit le nombre de rangées, onglets compris) */
+.colonne-gauche .messagerie-jeu { flex: 1 1 auto; min-height: 220px; display: flex; flex-direction: column; gap: 6px; }
+.colonne-gauche .messagerie-jeu > * { flex: none; }
+.colonne-gauche .messagerie-jeu > .fil-messages { flex: 1 1 auto; min-height: 60px; }
 .colonne-gauche > [hidden] { display: none; }
 
 /* --- À droite : la renommée, le suivi des quêtes en or (sans cadre), les annonces --------------------------------------- */

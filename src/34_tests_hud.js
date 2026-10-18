@@ -135,6 +135,16 @@ export function testsHudEpique(t, ctx, game) {
   hud.activer('groupe'); game.dbg.advance(0.02);
   t.ok(document.querySelector('#groupe-cadres')?.parentNode === gauche, 'le groupe (P) s’ouvre à gauche, sous « Jouer à plusieurs »');
   hud.activer('groupe');
+  // un panneau de gauche ne déborde pas de son cadre : son dernier enfant visible tient dedans
+  const debordent = [];
+  for (const id of ['groupe', 'chronique', 'lettres']) {
+    hud.activer(id); game.dbg.advance(0.02);
+    const p = [...gauche.children].find((n) => n !== ch && n.id !== 'groupe' && visible(n));
+    const dernier = p && [...p.children].filter(visible).pop();
+    if (p && dernier && boite(dernier).bottom > boite(p).bottom - 4) debordent.push(id);
+    hud.activer(id); game.dbg.advance(0.02);
+  }
+  t.eq(debordent, [], 'les panneaux de gauche tiennent dans leur cadre (rien ne dépasse en bas)');
 
   t.group('le HUD épique : polices et couleurs (DESIGN §2, §3)');
   const permises = /^"?(Pixelify Sans|Source Sans 3|ui-monospace)"?/;
