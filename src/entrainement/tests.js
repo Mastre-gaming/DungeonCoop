@@ -376,29 +376,46 @@ export async function selfTest(t, game) {
     'la vue montre les nouveaux héros (les anciens sont retirés)');
   try { if (choixAvant === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, choixAvant); } catch {}
 
-  // --- Les barres de vie : V (les ennemis), Maj+V (les alliés) ------------------------------------------------------
-  t.group('les barres de vie (V, Maj+V)');
+  // --- Les barres de vie sous les pieds, et les icônes des états (buffs, debuffs) ; V (ennemis), Maj+V (alliés) --------
+  t.group('les barres de vie et les états');
   {
     const avant = V.plaques;
-    V.basculerPlaques('e', false); V.basculerPlaques('h', false);
+    V.basculerPlaques('e', true); V.basculerPlaques('h', true);
     const touche = (shiftKey) => { window.dispatchEvent(new KeyboardEvent('keydown', { key: shiftKey ? 'V' : 'v', code: 'KeyV', shiftKey, bubbles: true })); game.dbg.advance(0.05); };
-    const vues = (camp) => [...document.querySelectorAll(`.plaque-vie.${camp}`)].filter((p) => !p.hidden);
-    game.dbg.advance(0.05);
-    t.ok(!vues('ennemi').length && !vues('allie').length, 'au départ (ou si on les a cachées) : pas de barres');
-    touche(false);
-    t.ok(vues('ennemi').length === C2.ennemisVivants().length && !vues('allie').length && vues('ennemi').some((p) => p.textContent.includes('Sbire 1')),
-      `V : la barre et le nom de chaque ennemi (${vues('ennemi').length}), pas des alliés`);
+    const barres = (camp) => [...document.querySelectorAll(`.plaque-vie.${camp}`)].filter((p) => !p.hidden && !p.querySelector('.pv-barre').hidden);
+    jouerFile(); game.dbg.advance(0.05);
+    t.ok(barres('ennemi').length === C2.ennemisVivants().length && barres('allie').length === 4, `par défaut : une barre sous chaque ennemi (${barres('ennemi').length}) et chaque allié`);
     const s1 = C2.U('s1'), a1 = V.aff.get('s1'), plaque = document.querySelector('.plaque-vie[data-id="s1"]');
-    const pied = V.versEcran(a1.x, a1.y), boite = plaque.getBoundingClientRect();
-    t.ok(boite.bottom < pied.y - 20 && Math.abs((boite.left + boite.right) / 2 - pied.x) < 4, 'elle flotte au-dessus de sa tête, centrée');
+    const pied = V.versEcran(a1.x, a1.y), boite = plaque.querySelector('.pv-barre').getBoundingClientRect();
+    t.ok(boite.top > pied.y && boite.top < pied.y + 40 && Math.abs((boite.left + boite.right) / 2 - pied.x) < 4, 'la barre est sous ses pieds, centrée (plus au-dessus de la tête)');
+    t.ok(!plaque.textContent.includes(s1.nom) && getComputedStyle(plaque).backgroundColor === 'rgba(0, 0, 0, 0)', 'ni nom, ni cadre derrière la barre');
     s1.pv = Math.round(s1.pvMax * 0.25); game.dbg.advance(0.05);
-    t.ok(plaque.querySelector('.pv-barre > span').style.width === `${Math.round((s1.pv / s1.pvMax) * 100)}%` && plaque.classList.contains('bas') && plaque.textContent.includes(String(s1.pv)),
-      `elle suit ses PV (${s1.pv}/${s1.pvMax} : la barre raccourcit et devient orange)`);
-    touche(true);
-    t.ok(vues('allie').length === 4 && vues('allie')[0].textContent.includes(C2.U('h1').nom), 'Maj+V : celles des 4 alliés aussi');
+    t.ok(plaque.querySelector('.pv-plein').style.width === `${Math.round((s1.pv / s1.pvMax) * 100)}%` && plaque.classList.contains('bas') && plaque.querySelector('.pv-chiffre').textContent === `${s1.pv}/${s1.pvMax}`,
+      `elle suit ses PV, écrits dedans (${s1.pv}/${s1.pvMax} : la barre raccourcit et devient orange)`);
+    // les états : une icône chacun, sous la barre, les tours qui restent en chiffre
+    t.ok(!plaque.querySelector('.etat-icone'), 'sans état : pas d’icône');
+    s1.st.trempe = { ttl: 3, par: null }; s1.expose = true; game.dbg.advance(0.05);
+    const icones = () => [...plaque.querySelectorAll('.etat-icone')].map((i) => `${i.dataset.etat}${i.querySelector('b')?.textContent ?? ''}`);
+    t.eq(icones(), ['expose', 'trempe3'], 'Trempé et Exposé : deux icônes sous la barre, Trempé avec ses 3 tours');
+    const ic = plaque.querySelector('.etat-icone[data-etat="trempe"]'), img = ic.querySelector('img');
+    t.ok(img.getAttribute('src').endsWith('etats/trempe.png') && ic.getBoundingClientRect().top >= boite.bottom - 1, 'l’icône (la goutte, en pixel art) est sous la barre');
+    await new Promise((ok) => (img.complete ? ok() : img.addEventListener('load', ok, { once: true })));
+    const px = plaque.classList.contains('pres') ? 2 : 1;
+    t.ok(Math.round(img.getBoundingClientRect().width) === img.naturalWidth * px, `à l’échelle entière du pixel art (×${px})`);
+    // le détail au survol : la carte dit ce que fait chaque état
+    survoler(a1.x / 32, a1.y / 32 - 0.8); game.dbg.advance(0.05);
+    const carte = ihm.dom.info;
+    t.ok(!carte.hidden && carte.querySelector('.cc-etats li[data-etat="trempe"]')?.textContent.includes('encore 3 tours') && carte.textContent.includes('La foudre lui fait ×2'),
+      'survoler le sbire : la carte montre chaque état, son icône, ses tours et ce qu’il fait');
+    // V cache les barres des ennemis, pas leurs états
     touche(false);
-    t.ok(!vues('ennemi').length && vues('allie').length === 4, 'V de nouveau : les ennemis seulement se cachent');
-    t.ok(JSON.parse(localStorage.getItem('dungeoncoop:plaques-terrain'))?.h === true, 'le choix est gardé dans ce navigateur');
+    t.ok(!barres('ennemi').length && barres('allie').length === 4 && !plaque.hidden && plaque.querySelectorAll('.etat-icone').length === 2, 'V : les barres des ennemis se cachent, leurs états restent visibles');
+    touche(true);
+    t.ok(!barres('allie').length, 'Maj+V : celles des alliés aussi');
+    t.ok(JSON.parse(localStorage.getItem('dungeoncoop:barres-terrain'))?.h === false, 'le choix est gardé dans ce navigateur');
+    delete s1.st.trempe; s1.expose = false; game.dbg.advance(0.05);
+    t.ok(plaque.hidden, 'sans barre ni état : rien sous le sbire');
+    canvas.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true })); game.dbg.advance(0.05);
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
   }
 

@@ -2,13 +2,16 @@
 // au pixel près), les marques de jeu (où l'on peut marcher, le chemin et sa longueur, la portée, les cibles, les zones),
 // la caméra (molette : zoom fin et animé, clic droit glissé : déplacer la vue), et la file des événements du combat, jouée dans
 // l'ordre : une marche, une attaque et son d20 en grand (la remarque de la partie D1), des dégâts, un KO…
-// Les barres de vie au-dessus des têtes, avec le nom : V pour les ennemis, Maj+V pour les alliés (gardé dans ce navigateur).
+// Les barres de vie sous les pieds, sans cadre ni nom, et dessous les icônes des états (buffs et debuffs, avec les tours
+// qui restent : etats.js) ; le détail est dans la carte de survol. V cache ou montre les barres des ennemis, Maj+V celles
+// des alliés (gardé dans ce navigateur) ; les icônes des états restent toujours visibles.
 // Les effets des capacités (projectiles, impacts, foudre, soins) et les états en boucle sur les créatures : effets.js (#134).
 import * as THREE from 'three';
 import { T } from '../01_plan.js';
 import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
+import { etatsActifs } from './etats.js';
 
 export const name = 'vue';
 export const always = true;
@@ -31,14 +34,16 @@ let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
 let fx = null, etatsVus = new Map();   // les effets joués, et les états montrés (relus quand la file est vide)
+let etatsPlaques = new Map();         // id → les états sous sa barre (etats.js), relus aussi quand la file est vide
 export const effets = () => fx;
 // La caméra : son centre (cx, cy), l'échelle affichée (s) qui glisse vers celle des crans (base × 2^(crans/4), #122),
 // le point de l'écran qui reste sous la souris pendant le zoom (ancre), la molette pas encore comptée (des petits pas).
 const cam = { s: 2, base: 2, crans: 0, ancre: null, molette: 0, cx: 0, cy: 0, cible: null, glisse: null };
 const CRANS = 4, MOLETTE = 100, ZOOM_MAX = 5, DOUCEUR_ZOOM = 12;
 let marques = {};                      // ce que l'interface demande de montrer (voir dessinerMarques)
-const CLE_PLAQUES = 'dungeoncoop:plaques-terrain';
-const plaques = { e: false, h: false }; // les barres de vie montrées : des ennemis (e), des alliés (h)
+// (une clé neuve : les barres sont maintenant montrées par défaut, sous les pieds ; l'ancien choix « cachées » ne compte plus)
+const CLE_PLAQUES = 'dungeoncoop:barres-terrain';
+const plaques = { e: true, h: true }; // les barres de vie montrées : des ennemis (e), des alliés (h)
 let calquePlaques = null;
 
 export function init(g, options) {
@@ -61,7 +66,7 @@ export function init(g, options) {
   calquePlaques = Object.assign(document.createElement('div'), { className: 'plaques-terrain' });
   calquePlaques.setAttribute('aria-hidden', 'true');
   document.body.append(calquePlaques);
-  try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); plaques.e = !!lu?.e; plaques.h = !!lu?.h; } catch {}
+  try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); if (lu) { plaques.e = !!lu.e; plaques.h = !!lu.h; } } catch {}
 
   fx = creerEffets(rendu, images);
   peupler();
@@ -110,7 +115,7 @@ function peupler() {
 export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
-  aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map();
+  aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
   peupler();
   redessinerSurfaces();
@@ -339,7 +344,7 @@ function flottant(a, texte, genre) {
   if (!a) return;
   const el = Object.assign(document.createElement('div'), { className: `flottant ${genre}`, textContent: texte });
   document.body.append(el);
-  flottants.push({ el, x: a.x, y: a.y - (a.plaque && plaqueVisible(a) ? 70 : 58), t: 0 });   // (au-dessus de la barre de vie)
+  flottants.push({ el, x: a.x, y: a.y - 58, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
 }
 export function versEcran(x, y) {
   const r = canvas.getBoundingClientRect();
@@ -347,33 +352,49 @@ export function versEcran(x, y) {
 }
 
 // --- Les barres de vie ------------------------------------------------------------------------------------------
+// Une barre : la jauge (les PV écrits dedans), et dessous une rangée d'icônes d'états. Pas de cadre, pas de nom.
 function creerPlaque(u) {
   const el = Object.assign(document.createElement('div'), { className: `plaque-vie ${u.camp === 'h' ? 'allie' : 'ennemi'}`, hidden: true });
-  const nom = Object.assign(document.createElement('span'), { className: 'pv-nom', textContent: u.nom });
-  const barre = Object.assign(document.createElement('span'), { className: 'pv-barre' }), plein = document.createElement('span');
+  const barre = Object.assign(document.createElement('span'), { className: 'pv-barre' }), plein = Object.assign(document.createElement('span'), { className: 'pv-plein' });
   const chiffre = Object.assign(document.createElement('span'), { className: 'pv-chiffre' });
-  barre.append(plein);
-  el.append(nom, barre, chiffre);
+  const etats = Object.assign(document.createElement('span'), { className: 'pv-etats' });
+  barre.append(plein, chiffre);
+  el.append(barre, etats);
   el.dataset.id = u.id;
   calquePlaques.append(el);
-  return { el, plein, chiffre, pv: null, ko: null };
+  return { el, barre, plein, chiffre, etats, pv: null, ko: null, cle: '' };
 }
 const plaqueVisible = (a) => plaques[a.camp] && !a.cache && !a.mort;
+// Une icône d'état : à l'échelle entière du pixel art (×2 de près, ×1 de loin), les tours qui restent en bas à droite.
+function iconeEtat(e) {
+  const box = Object.assign(document.createElement('span'), { className: `etat-icone ${e.genre}` });
+  box.dataset.etat = e.id;
+  const img = Object.assign(document.createElement('img'), { src: e.src, alt: '' });
+  img.addEventListener('load', () => { img.style.setProperty('--w', img.naturalWidth); img.style.setProperty('--h', img.naturalHeight); });
+  box.append(img);
+  if (e.n != null) box.append(Object.assign(document.createElement('b'), { textContent: e.n }));
+  return box;
+}
 function poserPlaque(a) {
-  const p = a.plaque, voir = plaqueVisible(a);
+  const p = a.plaque, etats = a.cache || a.mort ? [] : etatsPlaques.get(a.id) ?? [];
+  const barre = plaqueVisible(a), voir = barre || etats.length > 0;
   if (p.el.hidden === voir) p.el.hidden = !voir;
   if (!voir) return;
+  if (p.barre.hidden === barre) p.barre.hidden = !barre;
   if (p.pv !== a.pv || p.ko !== a.ko) {
     p.pv = a.pv; p.ko = a.ko;
     const k = Math.max(0, Math.min(1, a.pv / a.pvMax));
     p.plein.style.width = `${Math.round(k * 100)}%`;
     p.el.classList.toggle('bas', k <= 0.3);
     p.el.classList.toggle('ko', a.ko);
-    p.chiffre.textContent = a.ko ? 'KO' : String(Math.max(0, a.pv));
+    p.chiffre.textContent = a.ko ? 'KO' : `${Math.max(0, a.pv)}/${a.pvMax}`;
   }
-  // juste au-dessus de la tête (une tête LPC est à 46 px des pieds), un peu plus petite au zoom 1, plus grande de près
-  const e = versEcran(a.x, a.y - 48 + a.enfonce * 26), k = Math.max(0.75, Math.min(1.25, 0.5 + cam.s / 4));
-  p.el.style.transform = `translate(${Math.round(e.x)}px, ${Math.round(e.y)}px) translate(-50%, -100%) scale(${k})`;
+  const cle = etats.map((e) => `${e.id}${e.n ?? ''}`).join(',');
+  if (cle !== p.cle) { p.cle = cle; p.etats.replaceChildren(...etats.map(iconeEtat)); }
+  // sous les pieds, au-delà de l'ombre ; de près (zoom 2 et plus) les icônes ×2 et les PV écrits dans la barre
+  p.el.classList.toggle('pres', cam.s >= 2);
+  const e = versEcran(a.x, a.y + 2);
+  p.el.style.transform = `translate(${Math.round(e.x)}px, ${Math.round(e.y)}px) translate(-50%, 0)`;
 }
 // V, Maj+V (l'interface) : montrer ou cacher les barres d'un camp ; ce navigateur s'en souvient.
 export function basculerPlaques(camp, oui = !plaques[camp]) {
@@ -405,6 +426,8 @@ export function update(dt) {
   if (cam.cible && !cam.glisse) { cam.cx += (cam.cible.x - cam.cx) * Math.min(1, dt * 5); cam.cy += (cam.cible.y - cam.cy) * Math.min(1, dt * 5); }
   bornerCamera();
   rendu.viser(cam.cx - rendu.vue.w / 2, cam.cy - rendu.vue.h / 2);
+  // les états sous les barres : relus quand la file est vide (ils apparaissent quand le coup a porté)
+  if (!occupe()) etatsPlaques = new Map(combat.S.unites.map((u) => [u.id, etatsActifs(u)]));
   // les personnages
   for (const a of aff.values()) {
     a.t += dt;
