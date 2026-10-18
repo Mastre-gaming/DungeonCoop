@@ -79,6 +79,188 @@
 @media (prefers-reduced-motion: reduce) { .annonce-renommee { animation: none; transition: none; } }
 .renommee-jeu .visiteur { display: grid; gap: 6px; }
 .renommee-jeu .visiteur .bouton-jeu { font-size: .85rem; padding: 4px 8px; text-decoration: none; text-align: center; }
+
+/* La colonne de droite : la renommée, le suivi de quêtes, les annonces, empilés (CAMP §8 bis) */
+.colonne-droite { position: fixed; right: 10px; top: 10px; z-index: 8; width: 240px; display: grid; gap: 8px; justify-items: end; pointer-events: none; }
+.colonne-droite > * { pointer-events: auto; }
+.colonne-droite .renommee-jeu, .colonne-droite .annonces { position: static; width: 100%; }
+.colonne-droite .renommee-jeu.repliee { width: auto; }
+.colonne-droite .annonces { pointer-events: none; }
+.suivi-quetes { width: 100%; box-sizing: border-box; display: grid; gap: 4px; background: rgba(43, 28, 29, .82); border: 2px solid var(--bois-clair); border-radius: 4px; padding: 6px 10px; color: #fff3dc; font: 13px/1.35 var(--texte); }
+.suivi-quetes[hidden] { display: none; }
+.suivi-quetes h2 { margin: 0; font: 700 .9rem var(--titre); color: #ffd35a; }
+.suivi-quetes ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.suivi-quetes li { display: grid; grid-template-columns: auto 1fr; gap: 0 6px; }
+.suivi-quetes .num { font: 500 .8rem var(--titre); color: var(--creme-doux); }
+.suivi-quetes .titre-q { overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.suivi-quetes .taille { grid-column: 2; font: 500 .78rem var(--titre); color: #ffd35a; }
+.suivi-quetes .petit { margin: 0; font-size: .8rem; color: var(--creme-doux); }
+
+/* La barre d'action, en bas au centre */
+.barre-action { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); z-index: 9; display: flex; gap: 4px; padding: 5px;
+  background: var(--bois); border: 4px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 2px var(--bois-clair), 0 4px 0 rgba(0,0,0,.25); }
+.barre-action[hidden] { display: none; }
+.barre-action .case { position: relative; width: 48px; height: 48px; padding: 0; display: grid; place-items: center; cursor: pointer;
+  background: #3b2716; border: 2px solid #1e130c; border-radius: 4px; box-shadow: inset 0 2px 0 rgba(255,255,255,.08), inset 0 -3px 0 rgba(0,0,0,.35); }
+.barre-action .case .icone { width: 32px; height: 32px; image-rendering: pixelated; }
+.barre-action .case kbd { position: absolute; right: 2px; bottom: 1px; font: 700 10px var(--titre); color: #ffe2a8; text-shadow: 0 1px 0 #000; background: none; border: 0; padding: 0; }
+.barre-action .case:hover { border-color: #ffd35a; }
+.barre-action .case.active { border-color: #ffd35a; box-shadow: 0 0 0 2px #ffd35a, inset 0 -3px 0 rgba(0,0,0,.35); }
+.barre-action .case.bientot { cursor: default; }
+.barre-action .case.bientot .icone { filter: grayscale(1) brightness(.55); }
+.barre-action .case.bientot:hover { border-color: #1e130c; }
+.barre-action .case:focus-visible { outline: 3px solid #ffd35a; outline-offset: 2px; }
+#aide { max-width: 330px; }
+@media (max-width: 1100px) { #aide { display: none; } }
+@media (max-width: 640px) { .colonne-droite { top: auto; bottom: 70px; width: 200px; } .barre-action .case { width: 40px; height: 40px; } }
+
+/* Le groupe (P) : les cadres de portrait, à gauche, sous « Jouer à plusieurs » */
+.cadres-groupe { position: fixed; left: 10px; top: 190px; z-index: 8; width: 270px; max-height: calc(100vh - 290px); overflow: auto; box-sizing: border-box; display: grid; gap: 6px;
+  background: var(--bois); border: 4px solid var(--bois-fonce); border-radius: 5px; box-shadow: inset 0 0 0 2px var(--bois-clair); padding: 8px; color: #fff3dc; font: 13px/1.35 var(--texte); }
+.cadres-groupe[hidden] { display: none; }
+.cadres-groupe header { display: flex; align-items: center; justify-content: space-between; }
+.cadres-groupe h2 { margin: 0; font: 700 1rem var(--titre); color: var(--creme); }
+.cadres-groupe .fermer { background: none; border: 0; color: var(--creme); font: 700 1rem var(--titre); cursor: pointer; }
+.cadres-groupe .liste { display: grid; gap: 6px; }
+.cadres-groupe .cadre { display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: start; background: #3b2716; border: 2px solid #1e130c; border-radius: 4px; padding: 5px; }
+.cadres-groupe .cadre.present { border-color: #ffd35a; box-shadow: 0 0 0 1px #ffd35a; }
+.cadres-groupe .portrait { width: 40px; height: 40px; image-rendering: pixelated; background: var(--parchemin); border: 2px solid var(--bois-fonce); border-radius: 3px; box-sizing: border-box; }
+.cadres-groupe .portrait.vide { display: grid; place-items: center; font: 700 1.1rem var(--titre); color: var(--parchemin-doux); }
+.cadres-groupe .cadre-corps { display: block; min-width: 0; }
+.cadres-groupe .cadre-corps p { margin: 0; }
+.cadres-groupe .nom { font: 700 .92rem var(--titre); color: var(--creme); }
+.cadres-groupe .titre { font: 500 .8rem var(--titre); color: var(--creme-doux); }
+.cadres-groupe .renom { font: 500 .8rem var(--titre); color: #ffd35a; }
+.cadres-groupe .etat { font-size: .78rem; color: #ffd35a; }
+.cadres-groupe ul { margin: 2px 0 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.cadres-groupe li { font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cadres-groupe .num, .cadres-groupe .taille { font: 500 .75rem var(--titre); color: var(--creme-doux); }
+.cadres-groupe .libre, .cadres-groupe .plus { font-size: .78rem; color: var(--creme-doux); font-style: italic; }
+.cadres-groupe .bouton-jeu { margin-top: 4px; font-size: .8rem; padding: 3px 8px; }
+@media (max-width: 640px) { .cadres-groupe { top: 10px; left: 10px; right: 10px; width: auto; max-height: 60vh; } }
+
+/* La barre de campagne, juste au-dessus de la barre d'action, comme une barre d'expérience */
+.barre-campagne { position: fixed; left: 50%; bottom: 82px; transform: translateX(-50%); z-index: 9; width: 372px; height: 16px; box-sizing: border-box; overflow: hidden; cursor: pointer;
+  background: #1e130c; border: 2px solid var(--bois-fonce); border-radius: 3px; box-shadow: 0 0 0 1px var(--bois-clair); }
+.barre-campagne[hidden] { display: none; }
+.barre-campagne .rempli { position: absolute; inset: 0 auto 0 0; background: linear-gradient(#ffe08a, #d9a22b); }
+.barre-campagne .texte { position: relative; display: block; text-align: center; font: 500 10px/12px var(--titre); color: #fff7e6; text-shadow: 0 1px 0 #000, 1px 0 0 #000; white-space: nowrap; }
+.barre-campagne:focus-visible { outline: 3px solid #ffd35a; outline-offset: 2px; }
+
+/* La carte de campagne (C) : les jalons comme des étapes sur un chemin */
+.carte-campagne { position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%); z-index: 10; width: min(640px, calc(100vw - 32px)); box-sizing: border-box; display: grid; gap: 10px;
+  background: var(--parchemin); color: var(--parchemin-encre); border: 5px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 2px #cdb68c, 0 6px 0 rgba(0,0,0,.25); padding: 12px 14px; font: 14px/1.45 var(--texte); }
+.carte-campagne[hidden] { display: none; }
+.carte-campagne header { display: flex; align-items: baseline; gap: 10px; }
+.carte-campagne h2 { margin: 0 auto 0 0; font: 700 1.1rem var(--titre); }
+.carte-campagne .compte { font: 500 .85rem var(--titre); color: var(--parchemin-doux); }
+.carte-campagne .fermer { background: none; border: 0; font: 700 1rem var(--titre); color: var(--parchemin-encre); cursor: pointer; }
+.carte-campagne .chemin { margin: 0; padding: 6px 0; list-style: none; display: flex; justify-content: space-between; position: relative; }
+.carte-campagne .chemin::before { content: ''; position: absolute; left: 18px; right: 18px; top: 26px; border-top: 3px dashed #9b8a6a; }
+.carte-campagne .etape { position: relative; display: grid; justify-items: center; gap: 2px; background: none; border: 0; cursor: pointer; padding: 0; font: inherit; color: inherit; }
+.carte-campagne .drapeau { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; background: #e4d4ac; border: 3px solid #9b8a6a; font: 700 1.1rem var(--titre); color: #6f5a3e; }
+.carte-campagne .etape.fait .drapeau { background: #ffe08a; border-color: #b8892a; color: #7a3b10; }
+.carte-campagne .etape.courant .drapeau { background: #fff3c4; border-color: #c4621f; box-shadow: 0 0 0 3px #ffd35a; color: #c4621f; }
+.carte-campagne .etape.choisi .drapeau { outline: 2px solid var(--parchemin-encre); outline-offset: 2px; }
+.carte-campagne .etape .id { font: 700 .85rem var(--titre); }
+.carte-campagne .etape .pct { font-size: .75rem; color: var(--parchemin-doux); }
+.carte-campagne .etape:focus-visible .drapeau { outline: 3px solid #c4621f; }
+.carte-campagne .detail-jalon { display: grid; gap: 4px; background: #efe2c2; border-radius: 3px; padding: 8px 10px; }
+.carte-campagne .detail-jalon h3, .carte-campagne .detail-jalon p { margin: 0; }
+.carte-campagne .detail-jalon h3 { font: 700 1rem var(--titre); display: flex; gap: 8px; align-items: center; }
+.carte-campagne .maintenant { font: 500 .72rem var(--titre); background: #ffd36b; border-radius: 3px; padding: 0 6px; }
+.carte-campagne .jauge { height: 8px; background: #d8c9a4; border-radius: 4px; overflow: hidden; }
+.carte-campagne .jauge span { display: block; height: 100%; background: #d9a22b; }
+.carte-campagne .statut { font-size: .8rem; color: var(--parchemin-doux); }
+.carte-campagne a { color: #7a3b10; }
+
+/* La chronique du camp (N) : l'historique à gauche, et le crieur en bas à gauche quand un push arrive */
+.chronique-camp { position: fixed; left: 10px; top: 190px; z-index: 8; width: 320px; max-height: calc(100vh - 300px); overflow: auto; box-sizing: border-box; display: grid; gap: 6px;
+  background: var(--parchemin); color: var(--parchemin-encre); border: 4px solid var(--bois-fonce); border-radius: 5px; box-shadow: inset 0 0 0 2px #cdb68c; padding: 8px 10px; font: 13px/1.4 var(--texte); }
+.chronique-camp[hidden] { display: none; }
+.chronique-camp header { display: flex; align-items: center; justify-content: space-between; }
+.chronique-camp h2 { margin: 0; font: 700 1rem var(--titre); }
+.chronique-camp .fermer { background: none; border: 0; font: 700 1rem var(--titre); color: var(--parchemin-encre); cursor: pointer; }
+.chronique-camp ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.chronique-camp li { border-left: 3px solid #b8892a; padding-left: 8px; }
+.chronique-camp li.pr_merge, .chronique-camp li.merge_queue_merge { border-left-color: #2f6b2a; }
+.chronique-camp li.branch_deletion { border-left-color: #9b8a6a; }
+.chronique-camp p { margin: 0; }
+.chronique-camp code { font: 600 .78rem ui-monospace, Consolas, monospace; background: #e8d9b4; padding: 0 3px; border-radius: 2px; }
+.chronique-camp .depot, .chronique-camp .quand, .chronique-camp .pied, .chronique-camp .vide { font-size: .78rem; color: var(--parchemin-doux); }
+.chronique-camp .message { font-style: italic; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chronique-camp a { color: #7a3b10; }
+.crieur { position: fixed; left: 10px; bottom: 100px; z-index: 9; display: grid; gap: 6px; max-width: min(520px, calc(100vw - 20px)); pointer-events: none; }
+.crieur .cri { margin: 0; background: var(--bois); color: #fff3dc; border: 3px solid var(--bois-fonce); box-shadow: inset 0 0 0 1px var(--bois-clair); border-radius: 4px; padding: 4px 10px;
+  font: 13px/1.35 var(--texte); animation: arrive .4s ease-out; transition: opacity .8s, transform .8s; }
+.crieur .cri b { font-family: var(--titre); color: var(--creme); }
+.crieur .cri code { font: 600 .78rem ui-monospace, Consolas, monospace; color: #ffd35a; }
+.crieur .cri.part { opacity: 0; transform: translateY(8px); }
+
+/* La sacoche (I) : un inventaire, un objet par lien */
+.sacoche, .rumeurs { position: fixed; left: 50%; bottom: 110px; transform: translateX(-50%); z-index: 10; width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 140px); overflow: auto; box-sizing: border-box; display: grid; gap: 8px;
+  background: var(--bois); border: 5px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 2px var(--bois-clair), 0 6px 0 rgba(0,0,0,.25); padding: 10px 12px; color: #fff3dc; font: 13px/1.4 var(--texte); }
+.sacoche[hidden], .rumeurs[hidden] { display: none; }
+.sacoche header, .rumeurs header { display: flex; align-items: center; justify-content: space-between; }
+.sacoche h2, .rumeurs h2 { margin: 0; font: 700 1.05rem var(--titre); color: var(--creme); }
+.sacoche .fermer, .rumeurs .fermer { background: none; border: 0; color: var(--creme); font: 700 1rem var(--titre); cursor: pointer; }
+.sacoche .inventaire { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; }
+.sacoche .case-objet { display: grid; gap: 2px; justify-items: center; text-align: center; height: 100%; box-sizing: border-box; padding: 8px 6px; text-decoration: none; color: #fff3dc;
+  background: #3b2716; border: 2px solid #1e130c; border-radius: 4px; box-shadow: inset 0 2px 0 rgba(255,255,255,.06), inset 0 -3px 0 rgba(0,0,0,.35); }
+.sacoche a.case-objet:hover, .sacoche a.case-objet:focus-visible { border-color: #ffd35a; outline: none; }
+.sacoche .case-objet.vide { opacity: .55; border-style: dashed; }
+.sacoche .objet { font-size: 1.6rem; line-height: 1; }
+.sacoche .nom { font: 700 .82rem var(--titre); color: var(--creme); }
+.sacoche .note { font-size: .72rem; color: var(--creme-doux); }
+.sacoche .pied, .rumeurs .pied { margin: 0; font-size: .8rem; color: var(--creme-doux); }
+.sacoche a, .rumeurs .pied a:not(.bouton-jeu) { color: var(--creme); }
+.sacoche .vide, .rumeurs .vide { margin: 0; font-style: italic; color: var(--creme-doux); }
+
+/* Les rumeurs de la taverne (R) : les idées par jalon */
+.rumeurs .groupes { display: grid; gap: 8px; }
+.rumeurs .groupe-rumeurs { background: #4a311c; border-radius: 4px; padding: 6px 8px; }
+.rumeurs h3 { margin: 0 0 4px; font: 700 .9rem var(--titre); color: #ffd35a; }
+.rumeurs .compte { color: var(--creme-doux); font-weight: 500; }
+.rumeurs ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.rumeurs .rumeur { display: grid; background: var(--parchemin); color: var(--parchemin-encre); border-radius: 2px; padding: 5px 8px; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+.rumeurs .rumeur a { color: var(--parchemin-encre); font-weight: 600; text-decoration: none; }
+.rumeurs .rumeur a:hover { text-decoration: underline; }
+.rumeurs .meta { font-size: .78rem; color: var(--parchemin-doux); }
+.rumeurs .bouton-jeu { text-decoration: none; font-size: .85rem; padding: 4px 10px; }
+
+/* La messagerie (M), à gauche ; la pastille des non-lus sur la case de la barre */
+.messagerie-jeu { position: fixed; left: 10px; top: 190px; bottom: 110px; z-index: 8; width: 340px; box-sizing: border-box; display: grid; grid-template-rows: auto 1fr auto auto auto; gap: 6px;
+  background: var(--bois); border: 4px solid var(--bois-fonce); border-radius: 5px; box-shadow: inset 0 0 0 2px var(--bois-clair); padding: 8px; color: #fff3dc; font: 13px/1.4 var(--texte); }
+.messagerie-jeu[hidden] { display: none; }
+.messagerie-jeu header { display: flex; align-items: center; gap: 6px; }
+.messagerie-jeu h2 { margin: 0; font: 700 1rem var(--titre); color: var(--creme); }
+.messagerie-jeu .statut { margin-right: auto; font: 500 .8rem var(--titre); color: var(--creme-doux); }
+.messagerie-jeu .fermer { background: none; border: 0; color: var(--creme); font: 700 1rem var(--titre); cursor: pointer; }
+.messagerie-jeu .fil-messages { margin: 0; padding: 6px; list-style: none; overflow: auto; display: grid; align-content: start; gap: 6px; background: #3b2716; border-radius: 3px; min-height: 120px; }
+.messagerie-jeu .msg { background: var(--parchemin); color: var(--parchemin-encre); border-radius: 3px; padding: 4px 8px; margin-right: 24px; }
+.messagerie-jeu .msg.mien { background: #e9d9a8; margin: 0 0 0 24px; }
+.messagerie-jeu .msg p { margin: 0; overflow-wrap: anywhere; }
+.messagerie-jeu .qui b { font: 700 .82rem var(--titre); }
+.messagerie-jeu .quand { font-size: .72rem; color: var(--parchemin-doux); }
+.messagerie-jeu .ref, .messagerie-jeu .msg a { color: #7a3b10; font-weight: 600; }
+.messagerie-jeu .mention { color: #2f68b8; font-weight: 600; }
+.messagerie-jeu .mention.moi { background: #ffd36b; color: var(--parchemin-encre); border-radius: 2px; padding: 0 2px; }
+.messagerie-jeu .vide { color: var(--creme-doux); font-style: italic; }
+.messagerie-jeu .info, .messagerie-jeu .erreur-envoi { margin: 0; font-size: .82rem; color: var(--creme-doux); }
+.messagerie-jeu .info a { color: var(--creme); }
+.messagerie-jeu .erreur-envoi { color: #ffb4a8; font-weight: 600; }
+.messagerie-jeu .info[hidden], .messagerie-jeu .erreur-envoi[hidden] { display: none; }
+.messagerie-jeu .ecrire { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end; margin: 0; }
+.messagerie-jeu textarea { resize: none; font: 13px/1.35 var(--texte); padding: 5px 7px; border: 2px solid var(--bois-clair); border-radius: 3px; background: #fffaf0; color: var(--parchemin-encre); }
+.messagerie-jeu textarea:disabled { opacity: .6; }
+.messagerie-jeu .bouton-jeu { font-size: .85rem; padding: 5px 10px; }
+.barre-action .case .pastille { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: #b8322a; border: 2px solid #1e130c;
+  color: #fff; font: 700 11px/14px var(--titre); text-align: center; animation: pastille 1.2s ease-in-out infinite; }
+.barre-action .case .pastille[hidden] { display: none; }
+@keyframes pastille { 50% { transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .barre-action .case .pastille { animation: none; } }
+@media (max-width: 640px) { .messagerie-jeu { top: 10px; right: 10px; width: auto; bottom: 120px; } }
+
 /* Le tour du camp : les boutons de la boîte de dialogue (« Je te suis », « Passer le tour », « Suivant ») */
 .dial-boutons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin: 0; }
 .dial-boutons[hidden], .bouton-jeu[hidden] { display: none; }

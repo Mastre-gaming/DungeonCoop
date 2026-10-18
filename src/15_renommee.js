@@ -92,8 +92,15 @@ function majDonnees() {
   dessiner();
 }
 
+// Le nom d'une personne : le mien, celui que j'ai donné à la sentinelle ; les autres, celui du dashboard (ou leur pseudo).
+function nomDe(login) {
+  const moi = sentinelle?.qui;
+  if (moi?.github && moi.github.toLowerCase() === String(login).toLowerCase() && moi.nom) return moi.nom;
+  return missions.nomDe(login);
+}
+
 function annoncer(numero, g) {
-  const noms = g.qui.map((q) => missions.nomDe(q));
+  const noms = g.qui.map(nomDe);
   const liste = noms.length > 1 ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}` : noms[0];
   const a = el('p', { class: 'annonce-renommee' }, `✦ +${g.chacun} pour ${liste} : #${numero} rentrée${g.aPlusieurs ? ` à ${noms.length}` : ''}`);
   annonces.append(a);
@@ -124,7 +131,7 @@ function dessiner() {
   if (visite || !repliee) {
     enfants.push(el('h2', {}, phase ? phase.titre : 'La phase en cours'));
     if (!podium.length) enfants.push(el('p', { class: 'petit' }, 'Personne sur le podium : la première mission rentrée y monte.'));
-    else enfants.push(el('ol', { class: 'podium' }, podium.map((e) => el('li', { class: login === e.qui ? 'toi' : null }, el('span', { class: 'rang' }, `${e.rang}.`), el('span', { class: 'nom' }, missions.nomDe(e.qui)), el('span', { class: 'n' }, `✦ ${e.n}`)))));
+    else enfants.push(el('ol', { class: 'podium' }, podium.map((e) => el('li', { class: login === e.qui ? 'toi' : null }, el('span', { class: 'rang' }, `${e.rang}.`), el('span', { class: 'nom' }, nomDe(e.qui)), el('span', { class: 'n' }, `✦ ${e.n}`)))));
     if (!visite && login && !podium.some((e) => e.qui === login)) enfants.push(el('p', { class: 'petit' }, `Toi, cette phase : ✦ ${r.parPhase[r.phaseEnCours]?.[login] ?? 0}`));
   }
   plaque.classList.toggle('repliee', repliee && !visite);
