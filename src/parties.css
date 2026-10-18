@@ -1,0 +1,17 @@
+/* Les parties dans la messagerie (28_parties.js) : les onglets, la liste, le bouton « Rejoindre », et la bulle. */
+.messagerie-jeu { grid-template-rows: auto auto 1fr auto auto auto auto; }
+.messagerie-jeu .fil-messages[hidden], .messagerie-jeu .liste-parties[hidden], .messagerie-jeu .ecrire[hidden] { display: none; }
+.messagerie-jeu .onglets { display: flex; gap: 4px; }
+.messagerie-jeu .onglet { font: 500 .8rem var(--titre); color: var(--creme-doux); background: #3b2716; border: 2px solid var(--bois-clair); border-bottom: 0; border-radius: 4px 4px 0 0; padding: 2px 10px; cursor: pointer; }
+.messagerie-jeu .onglet[aria-selected="true"] { color: var(--parchemin-encre); background: var(--parchemin); border-color: var(--parchemin); }
+.messagerie-jeu .liste-parties { margin: 0; padding: 6px; list-style: none; overflow: auto; display: grid; align-content: start; gap: 6px; background: #3b2716; border-radius: 3px; min-height: 120px; }
+.messagerie-jeu .partie { display: flex; align-items: center; gap: 8px; justify-content: space-between; background: var(--parchemin); color: var(--parchemin-encre); border-radius: 3px; padding: 6px 8px; }
+.messagerie-jeu .partie .petit { font-size: .78rem; color: var(--parchemin-doux); }
+.messagerie-jeu .msg .rejoindre { margin-top: 4px; }
+.messagerie-jeu .rejoindre { font-size: .8rem; padding: 2px 10px; }
+
+.bulle-partie { position: fixed; z-index: 9; left: 50%; top: 14px; transform: translateX(-50%); display: flex; align-items: center; gap: 10px;
+  background: var(--parchemin, #f3e7c9); color: var(--parchemin-encre, #3a2c1a); border: 4px solid var(--bois-fonce, #3b2716); border-radius: 5px;
+  box-shadow: inset 0 0 0 2px #c9a86a, 0 6px 0 rgba(0,0,0,.25); padding: 6px 10px; font: 600 .95rem var(--titre, monospace); }
+.bulle-partie[hidden] { display: none; }
+.bulle-partie .plus-tard { background: none; border: 0; color: var(--parchemin-doux, #6f5a3e); font: 700 1rem var(--titre, monospace); cursor: pointer; }

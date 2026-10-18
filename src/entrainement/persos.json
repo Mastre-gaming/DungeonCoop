@@ -2,6 +2,7 @@
   "brute": {
     "nom": "Brute",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hat=Barbarian_iron&clothes=Sleeveless_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Waraxe_waraxe",
+    "curseur": [5, 1],
     "attaque": {
       "nom": "slash_oversize",
       "taille": 192,
@@ -12,6 +13,7 @@
   "mage": {
     "nom": "Mage des tempêtes",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_light&head=Human_Female_light&expression=Neutral_light&hat=Hood_navy&clothes=Robe_blue&shoes=Basic_Shoes_brown&weapon=Gnarled_staff_medium",
+    "curseur": [0, 2],
     "attaque": {
       "nom": "thrust_oversize",
       "taille": 192,
@@ -22,21 +24,25 @@
   "voleur": {
     "nom": "Voleur",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_olive&head=Human_Female_olive&expression=Neutral_olive&hat=Hood_forest&clothes=Longsleeve_forest&legs=Leggings_charcoal&shoes=Basic_Boots_black&weapon=Normal_medium",
+    "curseur": [1, 0],
     "attaque": null
   },
   "gardien": {
     "nom": "Gardien",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_amber&head=Human_Male_amber&expression=Neutral_amber&hair=Plain_chestnut&clothes=Longsleeve_white&legs=Pants_white&shoes=Basic_Boots_brown&weapon=Simple_staff_simple",
+    "curseur": [2, 0],
     "attaque": null
   },
   "eclaireuse": {
     "nom": "Éclaireuse",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_amber&head=Human_Female_amber&expression=Neutral_amber&hat=Leather_Cap_leather&clothes=Longsleeve_brown&legs=Pants_leather&shoes=Basic_Boots_brown&weapon=Recurve_light",
+    "curseur": [0, 0],
     "attaque": null
   },
   "chevalier": {
     "nom": "Chevalier",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&armour=Plate_steel&legs=Armour_steel&shoes=Armour_steel&arms=Armour_steel&gloves=Gloves_steel&hat=Greathelm_steel&cape=Solid_blue&weapon=Arming_Sword_steel&shield=Crusader_shield_crusader",
+    "curseur": [0, 0],
     "attaque": {
       "nom": "slash_128",
       "taille": 128,
@@ -47,6 +53,7 @@
   "druide": {
     "nom": "Druide",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_olive&head=Human_Male_olive&expression=Neutral_olive&hair=Plain_white&beard=Winter_Beard_white&clothes=Longsleeve_forest&legs=Pants_brown&shoes=Sandals_brown&weapon=Loop_staff_light",
+    "curseur": [3, 0],
     "attaque": {
       "nom": "thrust_oversize",
       "taille": 192,
@@ -57,6 +64,7 @@
   "barde": {
     "nom": "Barde",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_brown&head=Human_Female_brown&expression=Neutral_brown&hat=Cavalier_red&clothes=Blouse_red&legs=Pants_black&shoes=Basic_Boots_black&weapon=Dagger_dagger",
+    "curseur": [1, 0],
     "attaque": null
   },
   "sbire": {

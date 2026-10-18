@@ -272,6 +272,8 @@ export async function selfTest(t, game) {
   jouerFile();
   t.ok(ihm.dom.accueil.hidden && combat.S.phase === 'heros' && ihm.selection === trouver(combat, 'brute').id, 'Commencer : la phase des héros, la Brute choisie');
   game.dbg.advance(0.05);
+  t.ok(canvas.style.cursor.includes('armes/brute.png') && /png"?\) \d+ \d+, crosshair/.test(canvas.style.cursor), 'le curseur est la hache de la Brute, son bout comme point chaud (sans nom écrit)');
+  game.dbg.advance(0.05);
   const marques = document.querySelector('canvas') && V.marques;
   t.ok(marques.portee && marques.mv === 5, 'la zone où la Brute peut marcher est dessinée');
   const b = trouver(combat, 'brute'), x0 = b.x;
@@ -288,6 +290,8 @@ export async function selfTest(t, game) {
   const s1 = combat.U('s1'), mage = trouver(combat, 'mage'); s1.x = mage.x + 4; s1.y = mage.y; jouerFile();
   clic(mage.x, mage.y - 0.8);
   t.eq(ihm.selection, trouver(combat, 'mage').id, 'un clic sur la Mage la choisit');
+  game.dbg.advance(0.05);
+  t.ok(canvas.style.cursor.includes('armes/mage.png'), 'le curseur devient le bâton de la Mage');
   window.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
   t.eq(ihm.ui.cap, 'etincelle', 'la touche 1 : sa première capacité, Étincelle');
   game.dbg.advance(0.05);
@@ -481,7 +485,13 @@ export async function selfTest(t, game) {
   t.ok(ana.dernier('refus') && !ana.dernier('etat'), 'Ana veut bouger le héros de l’hôte : refusé');
   ana.pointeur = { x: 12, y: 9, h: 2, c: 1, v: CM.S.unites.findIndex((u) => u.id === 's1') + 1 }; jouer(0.4);
   const curseur = [...document.querySelectorAll('.curseur-ami')].find((c) => !c.hidden);
-  t.eq(curseur?.textContent, `Ana : ${CAPACITES[HEROS.druide.capacites[0]].nom} → ${CM.U('s1').nom}`, 'on voit le pointeur d’Ana, et ce qu’elle prépare');
+  t.eq(curseur?.textContent, `${CAPACITES[HEROS.druide.capacites[0]].nom} → ${CM.U('s1').nom}`, 'on voit ce qu’Ana prépare, sans son nom');
+  t.ok(curseur?.querySelector('.arme-ami')?.getAttribute('src').endsWith('armes/druide.png') && !curseur.classList.contains('sans-arme'), 'son pointeur est le bâton de son Druide');
+  t.ok(curseur?.style.getPropertyValue('--couleur') === multi.couleurDe(ana.party.id), 'cerné de la couleur d’Ana');
+  ana.pointeur = { ...ana.pointeur, c: 0, v: 0 }; jouer(0.4);
+  t.ok(curseur.querySelector('.intention-ami').hidden && !curseur.querySelector('.arme-ami').hidden, 'sans capacité choisie : l’arme seule, rien d’écrit');
+  ana.pointeur = { ...ana.pointeur, h: 0 }; jouer(0.4);
+  t.ok(curseur.querySelector('.arme-ami').getAttribute('src').endsWith('armes/druide.png'), 'sans héros choisi : l’arme du héros qu’elle joue');
   t.ok(ihm.dom.finPhase.textContent.includes('Je suis prêt (0/2)') && ihm.dom.annuler.hidden, '« Fin de la phase » devient « Je suis prêt (0/2) » ; pas d’annulation à plusieurs');
   ihm.dom.finPhase.click(); jouer(0.2);
   t.ok(CM.S.phase === 'heros' && multi.L.pret.includes('host') && ihm.dom.finPhase.textContent.includes('Prêt ✓ (1/2)'), 'l’hôte est prêt : on attend Ana');
