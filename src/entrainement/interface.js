@@ -56,14 +56,19 @@ function construire() {
     dom.etat = el('span', { class: 'etat-terrain' }, 'Prêt'),
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
-    el('span', { class: 'boutons-phase' },
-      dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
-      dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros')),
     dom.boutonFiche = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => montrerFin(true) }, 'Fiche'),
     el('a', { class: 'bouton-jeu retour-camp', id: 'retour-camp', href: RETOUR_CAMP }, 'Retour au camp'));
   dom.equipe = el('aside', { class: 'equipe-terrain', 'aria-label': 'Les héros' });
+  // le journal, en haut à droite : les dernières lignes ; « Tout » le déplie
   dom.droite = el('aside', { class: 'droite-terrain' },
-    el('section', { class: 'journal-terrain plaque' }, el('h2', {}, 'Journal'), dom.journal = el('ol', {})));
+    dom.journalCadre = el('section', { class: 'journal-terrain plaque' },
+      el('header', {}, el('h2', {}, 'Journal'),
+        dom.journalTout = el('button', { type: 'button', class: 'bouton-jeu discret petit', 'aria-expanded': 'false', onclick: basculerJournal }, 'Tout')),
+      dom.journal = el('ol', {})));
+  // en bas à droite : finir la phase (« Je suis prêt » à plusieurs), et annuler le dernier déplacement
+  dom.coin = el('div', { class: 'coin-phase bois' },
+    dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
+    dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
   // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
   dom.bas = el('div', { class: 'bas-terrain' },
     dom.ficheCap = el('section', { class: 'fiche-capacite bois', hidden: true, 'aria-live': 'polite' }),
@@ -104,7 +109,7 @@ function construire() {
       dom.continuer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { dom.fin.hidden = true; } }, 'Revenir au combat'),
       dom.rejouer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: rejouer }, 'Rejouer'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
-  document.body.append(dom.haut, dom.equipe, dom.droite, dom.bas, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
+  document.body.append(dom.haut, dom.equipe, dom.droite, dom.bas, dom.coin, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
   // à plusieurs, « Retour au camp » passe par multi.js : l'hôte y emmène tout le groupe
   document.addEventListener('click', (e) => { const a = e.target.closest?.('a.retour-camp'); if (a && reseau) { e.preventDefault(); reseau.partirAuCamp(); } });
   dessinerPlaces();
@@ -446,8 +451,16 @@ function dessinerTout() {
     dom.finPhase.textContent = S.phase !== 'heros' ? 'Fin de la phase des héros' : !moi ? `Les autres jouent (${prets}/${attendus.length} prêts)`
       : reseau.estPret() ? `Prêt ✓ (${prets}/${attendus.length}) : je rejoue` : `Je suis prêt (${prets}/${attendus.length})`;
   }
-  // le journal
-  dom.journal.replaceChildren(...S.journal.slice(0, 60).map((l) => el('li', { class: l.c }, l.t)));
+  // le journal : les 6 dernières lignes, ou les 60 dernières une fois déplié
+  dom.journal.replaceChildren(...S.journal.slice(0, ui.journalTout ? 60 : 6).map((l) => el('li', { class: l.c }, l.t)));
+  dom.coin.hidden = S.phase === 'preparation';
+}
+function basculerJournal() {
+  ui.journalTout = !ui.journalTout;
+  dom.journalCadre.classList.toggle('deplie', ui.journalTout);
+  dom.journalTout.textContent = ui.journalTout ? 'Moins' : 'Tout';
+  dom.journalTout.setAttribute('aria-expanded', String(ui.journalTout));
+  ui.sale = true;
 }
 
 // --- Le d20 en grand, les bannières, la fin ------------------------------------------------------------------------
