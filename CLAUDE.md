@@ -20,6 +20,16 @@ The two files imported above are the owner's standing calls and what failed befo
 - **Use the `mission-camp` skill** (`.claude/skills/mission-camp/SKILL.md`, loaded automatically in this repo) for anything built, drawn or written for DungeonCoop: find or create the mission (an issue with an `axe` and a `taille`), take it (`--add-assignee @me`), then a PR with « Ferme #n ». The reference copy is in the dashboard repo (`skills/mission-camp/`); the checks warn when the two differ.
 - **Only what lands on `main` counts** for the builders' renown. The workflow `missions-auto.yml` runs on every push to `main`: it closes the missions the PR names, assigns them to the author and sizes them if nobody did; a PR or direct push with no mission becomes a mission, closed, sized by lines changed (S under 150, M under 600, L above).
 
+## Every new asset goes into the Archives du camp
+The camp's archives (`archives.html`, the tent west of the fire) show every asset of the project. **A new character, class, spell or animation is not done until it has its card there, in the same PR.**
+- **Put it where the archives already read** (`src/archives/catalogue.js`), and it appears on its own:
+  - Characters: `src/entrainement/persos.json` (training ground) or the camp list in `personnages()` of `catalogue.js`.
+  - Classes: `src/entrainement/regles.js` (`HEROS`) or `content/classes/*.json`.
+  - Spells: `CAPACITES` in `src/entrainement/regles.js`, with their icon and sheet (`src/entrainement/fiches.js`).
+  - Animations: Fraps's scenes in `design/animations/esquisses/` (then `node index-esquisses.mjs` from `design/animations/outil/`), combat bricks in `src/entrainement/effets.json`.
+- **Anything else** (a new kind of asset, a sheet kept somewhere new): add it to `catalogue.js` with its name, group, sheet, animations, credits and one line saying what it is, and add a check in `src/archives/tests.js`.
+- **Prove it in the PR:** the link to its card (`archives.html?onglet=<rayon>&id=<id>`), `archives.html?test` green, and its source and license in `CREDITS.md`.
+
 ## Before anything
 - **`KICKOFF.md` must be signed off.** No code until it is (gate K).
 - **`GAME_SPEC.md`** holds the plan and the state; update it the same day anything changes.
