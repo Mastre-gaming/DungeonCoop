@@ -1,9 +1,9 @@
 // Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7) : le camp, le héros, la caméra, le panneau des missions,
-// la sentinelle de l'entrée et le jeu à plusieurs.
+// la sentinelle de l'entrée et son tour du camp, les rats des PR à résoudre, et le jeu à plusieurs.
 //   ?code=ABCDE rejoindre ce groupe
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
-//   ?spot=feu aller à un point nommé (apparition, feu, visite, et chaque lieu : interface, histoire, level, combat…)
+//   ?spot=feu aller à un point nommé (apparition, feu, visite, sentinelle, tour, rats, et chaque lieu : interface, histoire, level, combat…)
 import { createGame } from './skills/core/module/06_game.js';
 import { T, W, H, LIEUX, APPARITION } from './01_plan.js';
 import { chargerImages } from './02_images.js';
@@ -20,6 +20,8 @@ import * as sentinelleSkill from './12_sentinelle.js';
 import * as reseauSkill from './13_reseau.js';
 import * as lieuxSkill from './14_lieux.js';
 import * as renommeeSkill from './15_renommee.js';
+import * as ratsSkill from './30_rats.js';
+import * as tourSkill from './31_tour.js';
 import './jeu.css';
 
 const query = new URLSearchParams(location.search);
@@ -58,8 +60,11 @@ async function demarrer() {
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
+  // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
+  const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
+  const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, rats, tour, lieux });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -67,8 +72,20 @@ async function demarrer() {
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, rats, tour, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
+  // le tour : depuis la sentinelle à son poste, le héros devant elle
+  game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
+  // les rats d'exemple, autour du héros devant le feu : le premier est à toi
+  game.dbg.spot('rats', () => {
+    aller(...tests.devantFeu(), 'haut')();
+    const moi = sentinelle.qui?.github ?? 'DonBabaa';
+    rats.accorder([
+      { cle: 'ex-12', espece: 0, pr: { numero: 12, titre: 'Ajoute l’événement de la taverne', url: 'https://github.com/Mastre-gaming/DungeonCoop/pulls', depot: 'jeu', auteur: moi }, chasse: true },
+      { cle: 'ex-14', espece: 1, pr: { numero: 14, titre: 'Sprite du chevalier : couronne et cape', url: 'https://github.com/Mastre-gaming/DungeonCoop/pulls', depot: 'jeu', auteur: 'PCrrfng-autre' } },
+      { cle: 'ex-3', espece: 2, pr: { numero: 3, titre: 'Widget des idées : trier par votes', url: 'https://github.com/Mastre-gaming/DungeonCoop-dashboard/pulls', depot: 'dashboard', auteur: 'quelqu’un' } },
+    ], { force: true });
+  });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
 
   document.documentElement.dataset.pret = '1';

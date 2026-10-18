@@ -151,6 +151,7 @@ export function selfTest(t, game) {
 
   testsMissions(t, game);
   testsSentinelle(t, game);
+  testsRats(t, game);
   testsReseau(t, game);
   testsRenommee(t, game);
 
@@ -266,10 +267,16 @@ function testsSentinelle(t, game) {
   t.eq(sentinelle.reconnaitre('Zorg', equipe), { nom: 'Zorg', github: null, saisie: 'Zorg' }, 'un nom inconnu entre comme visiteur');
   t.eq(sentinelle.reconnaitre('donbabaa', equipe).nom, 'donbabaa', 'un membre sans nom dans equipe.json garde le nom qu’il tape');
   const x0 = S.x;
-  game.dbg.advance(3);
-  t.ok(S.phase === 'libre' && h.controle, 'elle salue, s’écarte, et le joueur a la main');
-  t.near(x0 - S.x, 48, 1, 'elle s’est écartée d’une case et demie');
-  t.ok(!ctx.collision.bloque(h.x, h.y - 40), 'le sentier est libre là où elle se tenait');
+  game.dbg.advance(2.6);
+  t.eq(S.phase, 'presse', 'elle salue, puis presse le joueur');
+  t.ok(!sentinelle.dialogue.hidden && /Magne-toi ! Suis-moi, je te fais faire le tour\./.test(S.phrase) && getComputedStyle(sentinelle.dialogue.querySelector('.dial-saisie')).display === 'none', `« Magne-toi ! Suis-moi, je te fais faire le tour. » (« ${sentinelle.texte.slice(0, 40)}… »)`);
+  t.ok(!sentinelle.suite.hidden && sentinelle.suite.textContent === 'Je te suis' && !h.controle, 'avec le bouton « Je te suis », et le joueur n’a pas encore la main');
+  testsTour(t, game);
+  t.group('la sentinelle');
+  t.ok(S.phase === 'libre' && h.controle, 'après le tour, elle est à son poste et le joueur a la main');
+  t.near(x0 - S.x, 48, 1, 'son poste : une case et demie à côté du sentier');
+  t.ok(!ctx.collision.bloque(x0, S.y + 2), 'le sentier est libre là où elle se tenait');
+  t.ok(ctx.collision.bloque(S.x, S.y + 2), 'et à son poste, elle bloque de nouveau le passage');
   t.eq(sentinelle.lireNom()?.nom, 'Paul', 'le nom est gardé dans ce navigateur');
   sentinelle.demarrer(); game.dbg.advance(2.4);
   t.ok(S.phase !== 'question' && sentinelle.dialogue.hidden && document.querySelector('.bulle-perso').textContent === 'Rebonjour, Paul.', 'la fois suivante, pas de question : « Rebonjour, Paul. »');
@@ -280,22 +287,159 @@ function testsSentinelle(t, game) {
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); game.dbg.advance(0.7); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
   t.eq(S.phase, 'question', 'devant elle, E : elle repose sa question (pour changer de nom)');
   sentinelle.repondre('Zorg'); game.dbg.advance(2);
-  t.ok(S.phase === 'libre' && sentinelle.qui.nom === 'Zorg' && Math.abs(S.x - x0 + 48) < 1, 'nouveau nom, et elle reste où elle est');
-  // le pseudo choisi dans le dashboard (le Worker l'envoie au camp) remplace le nom d'equipe.json
-  missions.etat.equipeFichier = equipe;
-  missions.profils([{ github: 'PCrrfng', nom: 'Mastre' }]);
-  t.eq(missions.nomDe('PCrrfng'), 'Mastre', 'un pseudo du dashboard remplace le nom d’equipe.json');
-  t.eq(sentinelle.reconnaitre('paul', missions.etat.equipe), { nom: 'Mastre', github: 'PCrrfng', saisie: 'paul' }, 'l’ancien nom « paul » est encore reconnu, et devient Mastre');
-  t.eq(sentinelle.reconnaitre('MASTRE', missions.etat.equipe).github, 'PCrrfng', 'le pseudo lui-même est reconnu');
-  S.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'paul' }; game.dbg.advance(0.05);
-  t.eq(sentinelle.qui.nom, 'Mastre', 'déjà entré comme Paul : son nom (au-dessus de sa tête aussi) suit le pseudo, tout seul');
-  missions.profils([]); game.dbg.advance(0.05);
-  t.eq(sentinelle.qui.nom, 'Paul', 'pseudo retiré : il reprend le nom d’equipe.json');
-  missions.profils([{ github: 'DonBabaa', nom: 'BABA' }]); S.qui = sentinelle.reconnaitre('donbabaa', missions.etat.equipe);
-  missions.profils([]); game.dbg.advance(0.05);
-  t.eq(sentinelle.qui.nom, 'donbabaa', 'sans nom dans equipe.json, il reprend le nom qu’il avait tapé');
+  t.ok(S.phase === 'libre' && sentinelle.qui.nom === 'Zorg' && Math.abs(S.x - x0 + 48) < 1 && !ctx.tour.etat.actif, 'nouveau nom, elle reste où elle est, et pas de tour');
+  // refaire le tour plus tard : lui parler, puis « Refaire le tour » ; Échap le passe
+  heros.placer(S.x, S.y + 30, 'haut'); game.dbg.advance(0.05);
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); game.dbg.advance(0.7); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
+  const refaire = [...sentinelle.dialogue.querySelectorAll('button')].find((b) => b.textContent === 'Refaire le tour');
+  t.ok(refaire && !refaire.hidden, 'quand elle te connaît, sa boîte propose « Refaire le tour »');
+  refaire?.click(); game.dbg.advance(2.5);
+  t.ok(ctx.tour.etat.actif && ctx.tour.etat.phase === 'marche', 'le tour recommence');
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' })); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Escape' }));
+  t.ok(h.controle && ctx.tour.etat.phase === 'retour' && ctx.tour.dialogue.hidden && !ctx.camera.cadre, 'Échap passe le tour : le joueur a la main tout de suite');
+  for (let k = 0; k < 60 && ctx.tour.etat.actif; k++) game.dbg.advance(0.5);
+  t.ok(!ctx.tour.etat.actif && S.phase === 'libre' && Math.abs(S.x - x0 + 48) < 1, 'et elle retourne à son poste');
   try { garde ? localStorage.setItem('dungeoncoop:nom-dev', garde) : localStorage.removeItem('dungeoncoop:nom-dev'); } catch {}
   sentinelle.etat.qui = sentinelle.lireNom();
+}
+
+// Le tour du camp, depuis « Je te suis » : on le parcourt image par image, en marchant (le héros suit la sentinelle par
+// ses routes, comme un joueur à pied ; rien n'est téléporté), et à chaque arrêt on regarde le cadre de la caméra.
+function testsTour(t, game) {
+  const { heros, sentinelle, tour, camera, rendu, collision, decor, rats } = ctx, h = heros.heros, S = sentinelle.etat, V = tour.etat;
+  t.group('le tour du camp (à pied, derrière la sentinelle)');
+  // le tableau au niveau 4 : ses pièces (posées après coup) bloquent, et le héros doit les contourner
+  ctx.lieux.forcer('interface', 4);
+  sentinelle.suite.querySelector('button').click();
+  t.ok(V.actif && V.phase === 'appel' && S.phase === 'guide' && sentinelle.dialogue.hidden, '« Je te suis » : le tour commence');
+  game.dbg.advance(0.3);
+  t.ok(!document.querySelector('.excl').hidden, 'elle lève la main, avec son « ! »');
+  const pas = 1 / 30, arrets = {}, morsures0 = rats.etat.morsures;
+  let saut = 0, traverse = null, couru = false, temps = 0, ecart = 0, ratTour = null;
+  while (V.actif && V.phase !== 'retour' && temps < 150) {
+    const x0 = h.x, y0 = h.y;
+    game.dbg.advance(pas); temps += pas;
+    saut = Math.max(saut, Math.hypot(h.x - x0, h.y - y0));
+    if (!traverse && collision.bloque(h.x, h.y)) traverse = [Math.round(h.x), Math.round(h.y)];
+    if (h.court) couru = true;
+    if (V.phase === 'marche' && V.chemin.length) ecart = Math.max(ecart, Math.hypot(h.x - S.x, h.y - S.y));
+    if (V.phase !== 'parle') continue;
+    const a = V.arrets[V.etape];
+    if (!arrets[a.id]) {
+      const pres = Math.round(Math.hypot(h.x - a.heros[0], h.y - a.heros[1]));
+      if (a.rat) ratTour = rats.rats.find((r) => r.cle === 'tour');
+      const phaseRat = ratTour?.phase;
+      for (let k = 0; k < 75; k++) { game.dbg.advance(pas); temps += pas; }   // la caméra arrive sur ce qu'elle montre
+      const cr = rendu.renderer.domElement.getBoundingClientRect(), vy = cr.top + ((a.vue[1] - rendu.cam.y) / rendu.vue.h) * cr.height;
+      arrets[a.id] = { pres, vue: Math.round(vy), haut: Math.round(tour.dialogue.getBoundingClientRect().top), texte: tour.phrase, bouton: tour.bouton.textContent,
+        etoiles: decor.appel && decor.nbEtoiles > 0, cadre: !!camera.cadre };
+      if (a.rat) { arrets[a.id].rat = phaseRat; for (let k = 0; k < 90; k++) game.dbg.advance(pas); }
+      if (window.__arretTour) window.__arretTour(a.id);   // les captures s'arrêtent là
+    }
+    tour.suite();   // la première fois finit la phrase, la seconde passe à la suite
+    tour.suite();
+  }
+  const ids = Object.keys(arrets);
+  t.eq(ids, ['feu', 'tableau', 'terrain', 'rat', 'fin'], 'elle s’arrête au feu, au tableau, au terrain vide, au rat, puis la fin');
+  t.ok(saut < 138 * pas + 6, `le héros marche ou court, jamais téléporté (le plus grand pas : ${saut.toFixed(1)} px par image)`);
+  t.ok(!traverse, `il ne traverse rien${traverse ? ` (en ${traverse})` : ''}`);
+  t.ok(couru, 'il court quand elle prend de l’avance');
+  t.ok(ecart < 140, `il reste derrière elle pendant qu’elle marche (au plus ${Math.round(ecart)} px)`);
+  for (const id of ids) {
+    const a = arrets[id];
+    t.ok(a.pres < 24, `${id} : le héros est arrivé à pied à côté d’elle (à ${a.pres} px de sa place)`);
+    t.ok(a.cadre && a.vue < a.haut - 20 && a.vue > 0, `${id} : la caméra cadre ce qu’elle montre au-dessus de la boîte (à ${a.vue} px, la boîte commence à ${a.haut} px)`);
+  }
+  t.ok(arrets.feu?.texte.includes('il fait pitié') && arrets.tableau?.texte.includes('scintille') && arrets.terrain?.texte.includes('Ferme #12') && arrets.rat?.texte.includes('Clique dessus'), 'chaque arrêt a sa réplique (textes provisoires)');
+  t.ok(arrets.tableau?.etoiles, 'au tableau, ses étoiles s’allument');
+  const lot = V.arrets.find((a) => a.id === 'terrain');
+  t.ok(lot && ctx.lieux.niveau(lot.lieu) === 0, `le terrain montré est vide (${lot?.lieu}, niveau 0)`);
+  t.ok(arrets.rat?.rat === 'alerte' && rats.etat.morsures > morsures0, `un rat d’exemple surgit avec son « ! » et lui court après (il le mord) [${arrets.rat?.rat}, ${rats.etat.morsures - morsures0} morsures, rat ${ratTour && [Math.round(ratTour.x), Math.round(ratTour.y), ratTour.phase]}, héros ${[Math.round(h.x), Math.round(h.y)]}]`);
+  t.eq(arrets.fin?.bouton, 'Au travail !', 'la fin : « Au travail ! »');
+  t.ok(h.controle && !camera.cadre && tour.dialogue.hidden && ratTour?.phase === 'fuite', '« Au travail ! » : le rat détale, le joueur a la main, la caméra le suit de nouveau');
+  for (let k = 0; k < 60 && V.actif; k++) game.dbg.advance(0.5);
+  t.ok(!V.actif, 'elle est retournée à son poste');
+  t.ok(!rats.rats.some((r) => r.cle === 'tour'), 'le rat d’exemple est parti');
+  ctx.lieux.forcer('interface', null);
+}
+
+// Les rats : une PR qui attend quelque chose = un rat ; il chasse l'auteur, rôde pour les autres ; la morsure ; le clic.
+function testsRats(t, game) {
+  const { heros, rats, camera, collision, sentinelle, rendu } = ctx, h = heros.heros;
+  t.group('les rats : quel animal (le plus grave décide)');
+  const e = rats.especeDe;
+  t.eq(e({ draft: true, requested_reviewers: [{}] }, { mergeable: false }), -1, 'un brouillon ne fait pas de rat');
+  t.eq(e({}, { mergeable: false }, { check_runs: [{ conclusion: 'failure' }] }), 0, 'conflit et tests rouges : le rat gris (le conflit)');
+  t.eq(e({}, { mergeable_state: 'dirty' }), 0, 'conflit à régler : le rat gris');
+  t.eq(e({ requested_reviewers: [{}] }, {}, { check_runs: [{ conclusion: 'timed_out' }] }), 1, 'tests rouges : le rat vert');
+  t.eq(e({ requested_reviewers: [{ login: 'Paul' }] }, {}, { check_runs: [{ conclusion: 'success' }] }), 2, 'relecture attendue : la souris');
+  t.eq(e({}, { mergeable: true }, { check_runs: [] }), -1, 'rien n’attend : pas de rat');
+
+  t.group('les rats dans le camp');
+  const garde = sentinelle.etat.qui;
+  sentinelle.etat.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'Paul' };
+  const [fx, fy] = devantFeu();
+  heros.placer(fx, fy + 20, 'bas'); camera.snap();
+  const pr = (n, espece, auteur) => ({ cle: `jeu#${n}`, espece, pr: { numero: n, titre: `PR ${n}`, url: `https://github.com/Mastre-gaming/DungeonCoop/pull/${n}`, depot: 'jeu', auteur } });
+  heros.controle(false);
+  rats.accorder([pr(41, 0, 'PCrrfng')]);
+  t.eq(rats.rats.length, 0, 'pendant une scène, la PR attend : pas de rat tout de suite');
+  heros.controle(true); game.dbg.advance(0.05);
+  const r = rats.rats.find((x) => x.cle === 'jeu#41');
+  const vue = rendu.vue, c = rendu.cam;
+  t.ok(r && r.phase === 'alerte' && r.signe.mesh.visible, 'le joueur a la main : le rat apparaît, avec son « ! »');
+  t.ok(r && r.x >= c.x - 1 && r.x <= c.x + vue.w + 1 && r.y >= c.y - 1 && r.y <= c.y + vue.h + 1 && Math.min(r.x - c.x, c.x + vue.w - r.x, r.y - c.y, c.y + vue.h - r.y) < 3 * T, 'au bord de ce qu’on voit');
+  t.ok(r && !collision.bloque(r.x, r.y), 'sur une place libre');
+  t.ok(r && rats.vise(r), 'c’est la PR de Paul : il le chasse');
+  // la morsure : on regarde le héros juste avant et juste après
+  let vu = null, x0 = h.x, y0 = h.y;
+  const ecoute = () => { if (!vu) vu = { rouge: heros.rouge, secousse: camera.secousse, ampleur: camera.ampleur, recul: Math.hypot(h.x - x0, h.y - y0), degats: rats.degats.length }; };
+  game.bus.on('rat:morsure', ecoute);
+  for (let k = 0; k < 450 && !vu; k++) { x0 = h.x; y0 = h.y; game.dbg.advance(1 / 30); }
+  t.ok(vu, 'il le rattrape et le mord');
+  t.ok(vu && vu.rouge > 0 && vu.rouge <= 0.12, 'la morsure : un éclair rouge sur le héros');
+  t.ok(vu && Math.abs(vu.recul - 5) < 0.6, `un recul de 5 px (${vu?.recul.toFixed(1)} px)`);
+  t.ok(vu && vu.degats > 0, 'un « −1 » en pixels au-dessus de lui');
+  t.ok(vu && Math.abs(vu.secousse - 0.16) < 0.02 && vu.ampleur === 2, `une secousse de 2 px pendant 0,16 s (${vu?.ampleur} px, ${vu?.secousse.toFixed(2)} s)`);
+  const d = rats.degats[0], y1 = d?.y;
+  game.dbg.advance(0.3);
+  t.ok(d && d.y < y1, 'le « −1 » monte');
+  game.dbg.advance(0.7);
+  t.ok(!rats.degats.includes(d) && camera.secousse === 0, 'puis il s’efface, et l’image ne bouge plus');
+  t.ok(r && Math.hypot(r.x - h.x, r.y - h.y) < 48, 'il reste à ses talons');
+  t.ok(r && r.sprite.mesh.visible, 'on le voit');
+  // un clic sur le rat ouvre sa PR, et ne fait pas marcher le héros
+  const cv = rendu.renderer.domElement;
+  game.dbg.advance(0.02);
+  const p = rats.ecran(r.x, r.y - 10);
+  cv.dispatchEvent(new PointerEvent('pointermove', { clientX: p.x, clientY: p.y, bubbles: true }));
+  game.dbg.advance(0.02);
+  t.ok(rats.survole === r && !rats.bulle.hidden && rats.bulle.textContent.includes('#41') && rats.bulle.textContent.includes('conflit à régler'), `au survol, une bulle dit quelle PR (« ${rats.bulle.textContent} »)`);
+  const avant = rats.etat.ouvertes.length, q = rats.ecran(r.x, r.y - 10);
+  cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: q.x, clientY: q.y, button: 0, bubbles: true, pointerId: 1 }));
+  cv.dispatchEvent(new PointerEvent('pointerup', { clientX: q.x, clientY: q.y, button: 0, bubbles: true, pointerId: 1 }));
+  t.eq(rats.etat.ouvertes.slice(avant), ['https://github.com/Mastre-gaming/DungeonCoop/pull/41'], 'un clic sur le rat ouvre sa PR');
+  t.ok(!h.route, 'et le héros ne part pas là où on a cliqué');
+  cv.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true }));
+  // la PR de quelqu'un d'autre : il rôde autour de là où il est apparu
+  rats.accorder([pr(41, 0, 'PCrrfng'), pr(42, 2, 'quelquun')]);
+  const autre = rats.rats.find((x) => x.cle === 'jeu#42');
+  t.ok(autre && !rats.vise(autre), 'la PR de quelqu’un d’autre : il ne chasse pas Paul');
+  rats.fuir(r);
+  const loinX = autre.ancre[0] + 9 * T > collision.largeur - 2 * T ? autre.ancre[0] - 9 * T : autre.ancre[0] + 9 * T;
+  const place = collision.bloque(loinX, autre.ancre[1]) ? [fx, fy] : [loinX, autre.ancre[1]];
+  heros.placer(...place, 'bas');
+  const m0 = rats.etat.morsures; let loin = 0;
+  for (let k = 0; k < 20; k++) { game.dbg.advance(0.5); loin = Math.max(loin, Math.hypot(autre.x - autre.ancre[0], autre.y - autre.ancre[1])); }
+  t.ok(loin < 4 * T, `il rôde autour de là où il est apparu (au plus ${Math.round(loin)} px)`);
+  t.eq(rats.etat.morsures, m0, 'et il ne mord pas qui passe loin de lui');
+  // une PR résolue : son rat détale, puis s'en va
+  rats.accorder([]);
+  t.ok(autre.phase === 'fuite', 'la PR est résolue : le rat détale');
+  game.dbg.advance(3);
+  t.eq(rats.rats.length, 0, 'puis il est parti');
+  sentinelle.etat.qui = garde;
+  heros.placer(fx, fy, 'haut'); camera.snap();
 }
 
 // À plusieurs : le camp de cette page et des amis simulés, sur le fil « loopback » de party-net (pas de réseau).

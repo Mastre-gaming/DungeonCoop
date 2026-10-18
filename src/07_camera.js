@@ -6,14 +6,16 @@
 // le pixel art reste net ; le héros garde sa place à l'écran ; le choix est gardé dans ce navigateur. Pas en visite :
 // dans le dashboard, la molette doit faire défiler la page.
 // La position est arrondie au pixel d'écran par le rendu (rien ne scintille en mouvement).
+// Pendant que la sentinelle parle (le tour du camp), elle cadre ce qu'elle montre dans le haut de la vue, au-dessus de
+// la boîte de dialogue (cadrer). Une morsure de rat la secoue de 2 px pendant 0,16 s (secouer).
 import { ECHELLE_MAX } from './04_rendu.js';
 
 export const name = 'camera';
 export const always = true;
 
-const DEFAUTS = { zoom: { w: 20, h: 11 }, zoneMorte: 0.3, douceur: 7, pauseMolette: 0.12 };
+const DEFAUTS = { zoom: { w: 20, h: 11 }, zoneMorte: 0.3, douceur: 7, pauseMolette: 0.12, hautCadre: 0.35, douceurCadre: 5 };
 const CLE_ZOOM = 'dungeoncoop:zoom';
-let game, cfg, rendu, cible, monde, visite, ecart = 0, attente = 0, molette = 0;
+let game, cfg, rendu, cible, monde, visite, ecart = 0, attente = 0, molette = 0, cadre = null, secousse = 0, ampleur = 0;
 const cam = { x: 0, y: 0 };
 
 const lireEcart = () => { try { return Math.max(-8, Math.min(8, Math.round(Number(localStorage.getItem(CLE_ZOOM)) || 0))); } catch { return 0; } };
@@ -64,7 +66,11 @@ export function update(dt) {
   molette = 0;
 
   const vue = rendu.vue;
-  if (!visite && cible) {
+  if (!visite && cadre) {
+    const tx = borner(cadre.x - vue.w / 2, monde.w, vue.w), ty = borner(cadre.y - vue.h * cfg.hautCadre, monde.h, vue.h);
+    const k = 1 - Math.exp(-cfg.douceurCadre * dt);
+    cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
+  } else if (!visite && cible) {
     const { x, y } = cible(), hy = y - 24;   // on vise le milieu du corps, pas les pieds
     const zw = vue.w * cfg.zoneMorte, zh = vue.h * cfg.zoneMorte;
     const zx = cam.x + (vue.w - zw) / 2, zy = cam.y + (vue.h - zh) / 2;
@@ -75,7 +81,9 @@ export function update(dt) {
     const k = 1 - Math.exp(-cfg.douceur * dt);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
-  rendu.viser(cam.x, cam.y);
+  secousse = Math.max(0, secousse - dt);
+  const sx = secousse > 0 ? Math.round((Math.random() * 2 - 1) * ampleur) : 0, sy = secousse > 0 ? Math.round((Math.random() * 2 - 1) * ampleur) : 0;
+  rendu.viser(cam.x + sx, cam.y + sy);
 }
 
 export function dispose() {}
@@ -84,6 +92,13 @@ export const api = {
   cam,
   zoomer,
   get ecart() { return ecart; },
+  // Cadrer un point du monde dans le haut de la vue (null : revenir au héros).
+  cadrer(p) { cadre = p ? { x: p[0] ?? p.x, y: p[1] ?? p.y } : null; },
+  get cadre() { return cadre; },
+  // Secouer l'image : `px` pixels du monde au plus, pendant `duree` secondes.
+  secouer(duree = 0.16, px = 2) { secousse = duree; ampleur = px; },
+  get secousse() { return secousse; },
+  get ampleur() { return ampleur; },
   // Revient au zoom moyen (et l'oublie).
   zoomMoyen() { ecart = 0; ecrireEcart(0); appliquer(); api.snap(); },
   // Recentre d'un coup (après une téléportation de test, au démarrage).
