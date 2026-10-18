@@ -228,7 +228,12 @@ export async function selfTest(t, game) {
   t.ok(vu.every((v, i) => i === 0 || (v.o > vu[i - 1].o && v.f <= vu[i - 1].f)), `plus près de la muraille, plus visible et moins floue (${vu.map((v) => `${v.d} cases : ${Math.round(v.o * 100)} %, flou ${v.f}`).join(' ; ')})`);
   t.ok(vu[3].o > 0.5 && vu[3].o < 0.9 && vu[3].f <= 0.8, 'collée à la muraille, sous la voûte : presque nette, un peu transparente (le héros reste visible)');
   t.ok(vu[0].o < 0.15 && vu[0].f >= 2.6, 'à 8 cases : très floue, presque disparue');
-  heros.placer(...route, 'haut'); game.dbg.advance(2);
+  // en ressortant, elle redevient pleine en douceur, sans à-coup à la fin
+  heros.placer(...route, 'haut');
+  const sortie = [muraille.opacite];
+  for (let n = 0; n < 60; n++) { game.dbg.advance(1 / 30); sortie.push(muraille.opacite); }
+  const saut = Math.max(...sortie.slice(1).map((o, n) => Math.abs(o - sortie[n])));
+  t.ok(saut < 0.12 && sortie.every((o, n) => n === 0 || o >= sortie[n - 1] - 1e-6), `en ressortant, la muraille revient en douceur (plus grand saut d’une image à l’autre : ${Math.round(saut * 100)} %)`);
   t.ok(pleine(), 'ressorti : la muraille redevient pleine');
   heros.placer(15 * T, (H - 0.2) * T, 'bas'); camera.snap();
   tenir(['ArrowDown']); game.dbg.advance(1.5); tenir([]);

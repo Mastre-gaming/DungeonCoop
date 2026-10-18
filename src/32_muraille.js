@@ -18,6 +18,7 @@ const DOUCEUR = 6;                     // la vitesse à laquelle elle suit le h�
 const PAS_FLAMME = 0.14;
 
 let rendu, heros, visite, couches = [], braseros = [], temps = 0, k = 0;   // k : 0 pleine (dehors), 1 disparue
+let voile = 0;   // 1 dedans (la muraille un peu transparente), 0 dehors : d'un coup en entrant, en douceur en sortant
 
 // Le héros est dedans dès que ses pieds passent au nord du pied de la muraille (il entre sous la voûte).
 export const dedans = (y) => y < MURAILLE.pied * T;
@@ -44,6 +45,7 @@ export function init(game, options) {
   });
   braseros = options.camp.braseros.map((b) => ({ ...b, sprite: rendu.sprite(options.images.brasero, 'brasero', 16, 40) }));
   k = cible();
+  voile = k > 0 ? 1 : 0;
   appliquer();
   update(0);
   return api;
@@ -51,14 +53,15 @@ export function init(game, options) {
 
 const cible = () => (!visite && heros ? estompe(heros.heros.y) : 0);
 
-// k = 0 : la muraille nette et opaque (comme tout le décor). Sinon : l'opacité baisse de PRES à 0, et le flou monte
-// d'une couche à l'autre (deux couches voisines en fondu).
+// Dehors (voile 0) : la muraille nette et opaque (comme tout le décor). Dedans : l'opacité baisse de PRES à 0, et le
+// flou monte d'une couche à l'autre (deux couches voisines en fondu). En ressortant, le voile s'en va en douceur,
+// pour qu'elle redevienne pleine sans à-coup.
 function appliquer() {
-  const opacite = k <= 0 ? 1 : PRES * (1 - k);
+  const opacite = 1 - voile + voile * PRES * (1 - k);
   const pos = k * (couches.length - 1), i = Math.min(couches.length - 2, Math.floor(pos)), f = pos - i;
   couches.forEach((c, n) => {
-    const m = c.mesh.material, a = k <= 0 ? (n === 0 ? 1 : 0) : n === i ? opacite * (1 - f) : n === i + 1 ? opacite * f : 0;
-    const transparente = k > 0;
+    const m = c.mesh.material, a = n === i ? opacite * (1 - f) : n === i + 1 ? opacite * f : 0;
+    const transparente = voile > 0 || k > 0;
     if (m.transparent !== transparente) {
       Object.assign(m, { transparent: transparente, alphaTest: transparente ? 0.01 : 0.5, depthWrite: !transparente });
       m.needsUpdate = true;
@@ -70,11 +73,13 @@ function appliquer() {
 
 export function update(dt) {
   temps += dt;
-  const c = cible();
-  if (k !== c) {
-    // en entrant ou en sortant (le passage dehors/dedans), en douceur aussi
-    k += (c - k) * (dt > 0 ? 1 - Math.exp(-DOUCEUR * dt) : 1);
+  const c = cible(), v = c > 0 ? 1 : 0, suivre = dt > 0 ? 1 - Math.exp(-DOUCEUR * dt) : 1;
+  if (k !== c || voile !== v) {
+    k += (c - k) * suivre;
     if (Math.abs(c - k) < 0.002) k = c;
+    // en entrant, d'un coup (on voit le héros sous la voûte) ; en sortant, en douceur
+    voile = v ? 1 : voile * (1 - suivre);
+    if (voile < 0.002) voile = 0;
     appliquer();
   }
   braseros.forEach((b, i) => b.sprite.poser(b.x, b.y, b.pied, 16 * ((Math.floor(temps / PAS_FLAMME) + i * 2) % 4), 0));
