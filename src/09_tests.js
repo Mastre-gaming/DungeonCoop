@@ -6,6 +6,7 @@ import { createLoopback, createParty } from './skills/party-net/module/03_skill.
 import { LIEUX_AXES } from './10_missions.js';
 import { testsHudEpique } from './34_tests_hud.js';
 import { testsArmurerie } from './35_tests_armurerie.js';
+import { testsTableau } from './39_tests_tableau.js';
 
 export const name = 'camp';
 let ctx;
@@ -242,6 +243,7 @@ export async function selfTest(t, game) {
   testsHudEpique(t, ctx, game);   // le HUD épique (DESIGN.fr.md) : src/34_tests_hud.js
   testsBoite(t, game);
   testsArmurerie(t, ctx);   // l'armurerie et ses 5 niveaux : src/35_tests_armurerie.js
+  testsTableau(t, ctx, game);   // le tableau d'affichage qui devient pierre, et son crieur : src/39_tests_tableau.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);
   await testsParties(t, game);

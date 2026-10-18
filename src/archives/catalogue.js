@@ -52,6 +52,7 @@ function personnages() {
   liste.push(
     { id: 'heros-camp', nom: 'Le héros de départ', groupe: 'Le camp', planche: `${LPC}heros.png`, format: 'lpc', anims: ['marche', 'course', 'sort', 'estoc', 'taille', 'tir', 'blesse'], credits: './assets/credits/heros.txt', texte: 'Celui qu’on promène dans le camp, avant d’avoir son héros.' },
     { id: 'sentinelle', nom: 'La sentinelle', groupe: 'Le camp', planche: `${LPC}sentinelle.png`, format: 'lpc', anims: ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse'], credits: './assets/credits/sentinelle.txt', texte: 'Elle accueille à l’entrée et fait le tour du camp.' },
+    { id: 'crieur', nom: 'Le crieur', groupe: 'Le camp', planche: `${LPC}crieur.png`, format: 'lpc', anims: ['marche', 'course', 'sort', 'estoc', 'taille', 'tir', 'blesse'], credits: './assets/credits/crieur.txt', texte: 'Sur son estrade à côté du tableau d’affichage (niveau 3), il agite sa cloche et crie les nouvelles.' },
     { id: 'barde-camp', nom: 'Le barde de la radio', groupe: 'Le camp', planche: `${LPC}barde.png`, format: 'bande', w: 64, h: 68, images: 3, fps: 6, credits: './assets/credits/barde-camp.txt', texte: 'Assis près du feu, il joue de la lyre : la radio Deadlock.' },
     ...ESPECES.map((e, k) => ({ id: `rat-${e.nom}`, nom: `Le rat « ${e.texte} »`, groupe: 'Le camp', planche: `${LPC}rats.png`, format: 'rat', espece: k, texte: `Il sort quand une PR attend : ${e.texte}.` })),
   );

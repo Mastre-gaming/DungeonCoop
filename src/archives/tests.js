@@ -20,7 +20,7 @@ export async function selfTest(t, game) {
   // --- Le catalogue --------------------------------------------------------------------------------------------
   t.group('le catalogue : tous les assets du projet');
   t.eq(C.personnages.filter((p) => p.groupe !== 'Le camp').length, Object.keys(PERSOS).length, `les ${Object.keys(PERSOS).length} personnages du terrain d’entraînement`);
-  t.ok(['heros-camp', 'sentinelle', 'barde-camp', 'rat-conflit', 'rat-tests', 'rat-relecture'].every((id) => C.personnages.some((p) => p.id === id)), 'et ceux du camp : le héros de départ, la sentinelle, le barde, les 3 rats');
+  t.ok(['heros-camp', 'sentinelle', 'crieur', 'barde-camp', 'rat-conflit', 'rat-tests', 'rat-relecture'].every((id) => C.personnages.some((p) => p.id === id)), 'et ceux du camp : le héros de départ, la sentinelle, le crieur, le barde, les 3 rats');
   t.eq(C.classes.filter((c) => c.source === 'regles').length, Object.keys(HEROS).length, 'les 8 classes jouables au terrain');
   t.ok(C.classes.filter((c) => c.source === 'armurerie').length >= 5, 'les fiches de l’armurerie (content/classes/)');
   t.eq(C.sorts.length, Object.keys(CAPACITES).length, `toutes les capacités (${Object.keys(CAPACITES).length})`);
