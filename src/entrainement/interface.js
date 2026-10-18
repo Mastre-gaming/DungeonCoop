@@ -3,7 +3,10 @@
 // de mesure (à copier, comme dans la Salle d'essai). Les clics sur le terrain deviennent des actions du combat.
 //   clic : choisir un héros, marcher (on voit le chemin et sa longueur), viser · Échap ou clic droit : annuler
 //   1 à 9 : une capacité · Tab : le héros suivant · molette : zoom · clic droit glissé : déplacer la vue
-import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis } from './regles.js';
+//   V : les barres de vie des ennemis · Maj+V : celles des alliés
+// À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
+// actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
+import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
 import { CONTACT, metres } from './geometrie.js';
 
 export const name = 'interface';
@@ -22,13 +25,13 @@ const el = (tag, attrs = {}, ...enfants) => {
 const pct = (x) => `${Math.round(x * 100)} %`;
 const duree = (ms) => { const s = Math.round(Math.max(0, ms) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
-let game, combat, vue, canvas;
+let game, combat, vue, canvas, nouveauCombat, reseau = null;
 const ui = { sel: null, cap: null, survol: null, annuler: [], portee: null, fini: false, sale: true, horloge: Date.now };
 const dom = {};
 
 export function init(g, options) {
   game = g;
-  ({ combat, vue, canvas } = options);
+  ({ combat, vue, canvas, nouveauCombat } = options);
   if (options.horloge) ui.horloge = options.horloge;
   // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
   ui.choix = (new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe).slice();
@@ -51,7 +54,7 @@ function construire() {
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
     dom.boutonFiche = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => montrerFin(true) }, 'Fiche'),
-    el('a', { class: 'bouton-jeu', id: 'retour-camp', href: RETOUR_CAMP }, 'Retour au camp'));
+    el('a', { class: 'bouton-jeu retour-camp', id: 'retour-camp', href: RETOUR_CAMP }, 'Retour au camp'));
   dom.equipe = el('aside', { class: 'equipe-terrain', 'aria-label': 'Les héros' });
   dom.droite = el('aside', { class: 'droite-terrain' },
     dom.apercu = el('section', { class: 'apercu-terrain plaque', 'aria-live': 'polite' }),
@@ -66,23 +69,26 @@ function construire() {
   dom.info = el('div', { class: 'info-survol plaque', hidden: true });
   dom.distance = el('div', { class: 'distance-survol', hidden: true });
   dom.aide = el('p', { class: 'aide-terrain plaque' }, 'Clic : choisir, marcher, viser · ', el('kbd', {}, '1'), '–', el('kbd', {}, '9'), ' capacités · ',
-    el('kbd', {}, 'Tab'), ' héros suivant · ', el('kbd', {}, 'Échap'), ' annuler · molette : zoom · clic droit glissé : la vue');
+    el('kbd', {}, 'Tab'), ' héros suivant · ', el('kbd', {}, 'Échap'), ' annuler · ', el('kbd', {}, 'V'), ' vie des ennemis · ', el('kbd', {}, 'Maj'), '+', el('kbd', {}, 'V'),
+    ' des alliés · molette : zoom · clic droit glissé : la vue');
   dom.accueil = el('div', { class: 'fond-terrain', id: 'accueil' }, el('section', { class: 'cadre-terrain' },
     el('h1', {}, 'Le terrain d’entraînement'),
     el('p', {}, 'Le combat D1 du kit papier (la Salle d’essai de Fraps), joué ', el('strong', {}, 'sans cases'),
       ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
-    el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
+    dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
+    dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
     el('p', { class: 'muet' }, 'Les 4 héros du kit D1, ou des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester ; les vraies classes restent celles de chacun). ◀ ▶ pour changer.'),
     dom.places = el('div', { class: 'places-accueil' }),
-    el('div', { class: 'boutons' },
+    dom.boutonsEquipe = el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { ui.choix = EQUIPE_KIT.slice(); dessinerPlaces(); } }, 'Le kit D1'),
       el('button', { type: 'button', class: 'bouton-jeu discret', id: 'au-hasard', onclick: auHasard }, 'Au hasard')),
-    el('fieldset', { class: 'mode-tour' }, el('legend', {}, 'Le mode de tour'),
+    dom.mode = el('fieldset', { class: 'mode-tour', onchange: (e) => reseau?.mode(e.target.value) }, el('legend', {}, 'Le mode de tour'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'equipe', checked: true }), ' Tour d’équipe : tous les héros, puis tous les ennemis'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'initiative' }), ' Ordre d’initiative : d20 + DEX, deux héros qui se suivent jouent ensemble')),
     el('p', { class: 'objectif' }, 'Objectif : vaincre le chef (les autres s’enfuient).'),
-    el('div', { class: 'boutons' }, el('button', { type: 'button', class: 'bouton-jeu', id: 'commencer', onclick: commencer }, 'Commencer le combat'),
-      el('a', { class: 'bouton-jeu discret', href: RETOUR_CAMP }, 'Retour au camp'))));
+    dom.attente = el('p', { class: 'attente-lobby', hidden: true }),
+    el('div', { class: 'boutons' }, dom.commencer = el('button', { type: 'button', class: 'bouton-jeu', id: 'commencer', onclick: commencer }, 'Commencer le combat'),
+      el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   dom.fin = el('div', { class: 'fond-terrain', id: 'fin', hidden: true }, el('section', { class: 'cadre-terrain' },
     dom.finTitre = el('h1', {}),
     el('div', { class: 'notes-fin' },
@@ -92,9 +98,11 @@ function construire() {
     el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu', id: 'copier-fiche', onclick: copier }, 'Copier la fiche'),
       dom.continuer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { dom.fin.hidden = true; } }, 'Revenir au combat'),
-      el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => location.reload() }, 'Rejouer'),
-      el('a', { class: 'bouton-jeu discret', href: RETOUR_CAMP }, 'Retour au camp'))));
+      dom.rejouer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: rejouer }, 'Rejouer'),
+      el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   document.body.append(dom.haut, dom.equipe, dom.droite, dom.barre, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
+  // à plusieurs, « Retour au camp » passe par multi.js : l'hôte y emmène tout le groupe
+  document.addEventListener('click', (e) => { const a = e.target.closest?.('a.retour-camp'); if (a && reseau) { e.preventDefault(); reseau.partirAuCamp(); } });
   dessinerPlaces();
   dessinerTout();
 }
@@ -102,24 +110,30 @@ function construire() {
 // --- Le choix de l'équipe (#76) ---------------------------------------------------------------------------------
 const CLE_CHOIX = 'dungeoncoop:equipe-entrainement';
 function lireChoix() { try { return equipeDepuis(localStorage.getItem(CLE_CHOIX)); } catch { return null; } }
+const equipeAffichee = () => (reseau ? reseau.L.equipe : ui.choix);
 function changerClasse(k, sens) {
-  const i = CLASSES_ESSAI.indexOf(ui.choix[k]);
-  ui.choix[k] = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  const i = CLASSES_ESSAI.indexOf(equipeAffichee()[k]), type = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  if (reseau) return void reseau.classe(k, type);
+  ui.choix[k] = type;
   dessinerPlaces();
 }
+// à plusieurs : ma place, ou une place libre pour l'hôte (celle d'un ami, non)
+const peutRegler = (k) => !reseau || reseau.L.proprio[k] === reseau.moi || (reseau.hote && reseau.L.proprio[k] === null);
 function auHasard() {
   const melange = CLASSES_ESSAI.slice().sort(() => Math.random() - 0.5);
   ui.choix = melange.slice(0, 4);
   dessinerPlaces();
 }
 function dessinerPlaces() {
-  dom.places.replaceChildren(...ui.choix.map((type, k) => {
-    const H = HEROS[type];
-    return el('article', { class: 'place-heros', dataset: { place: k, classe: type } },
+  dessinerLobby();
+  dom.places.replaceChildren(...equipeAffichee().map((type, k) => {
+    const H = HEROS[type], ok = peutRegler(k), qui = reseau?.L.proprio[k];
+    return el('article', { class: `place-heros${reseau ? ` ${joueurDePlace(k)}` : ''}`, dataset: { place: k, classe: type }, style: qui ? `--couleur:${reseau.couleurDe(qui)}` : null },
       el('header', {},
-        el('button', { type: 'button', class: 'fleche', 'aria-label': `Héros ${k + 1} : la classe d’avant`, onclick: () => changerClasse(k, -1) }, '◀'),
+        el('button', { type: 'button', class: 'fleche', disabled: !ok, 'aria-label': `Héros ${k + 1} : la classe d’avant`, onclick: () => changerClasse(k, -1) }, '◀'),
         el('span', { class: 'qui-place' }, `Héros ${k + 1}`),
-        el('button', { type: 'button', class: 'fleche', 'aria-label': `Héros ${k + 1} : la classe d’après`, onclick: () => changerClasse(k, 1) }, '▶')),
+        el('button', { type: 'button', class: 'fleche', disabled: !ok, 'aria-label': `Héros ${k + 1} : la classe d’après`, onclick: () => changerClasse(k, 1) }, '▶')),
+      reseau ? proprioPlace(k) : null,
       vue.portrait(type, 56),
       el('strong', { class: 'classe' }, H.nom, H.essai ? el('span', { class: 'essai' }, 'essai') : null),
       el('span', { class: 'role' }, H.role),
@@ -128,6 +142,32 @@ function dessinerPlaces() {
       el('span', { class: 'faiblesse' }, `Faiblesse : ${H.faiblesse}`));
   }));
 }
+
+// --- Le lobby à plusieurs (#80) ------------------------------------------------------------------------------------
+const joueurDePlace = (k) => { const p = reseau.L.proprio[k]; return p === null ? 'libre' : p === reseau.moi ? 'mienne' : 'prise'; };
+function proprioPlace(k) {
+  const p = reseau.L.proprio[k];
+  if (p === null) return el('div', { class: 'joueur-place' }, el('span', { class: 'muet' }, 'libre'), el('button', { type: 'button', class: 'bouton-jeu petit prendre', onclick: () => reseau.prendre(k) }, 'Prendre'));
+  if (p === reseau.moi) return el('div', { class: 'joueur-place' }, el('strong', {}, 'toi'), el('button', { type: 'button', class: 'bouton-jeu discret petit laisser', onclick: () => reseau.rendre(k) }, 'Laisser'));
+  return el('div', { class: 'joueur-place' }, el('strong', {}, reseau.nomDe(p)));
+}
+function dessinerLobby() {
+  dom.groupe.hidden = !reseau;
+  dom.boutonsEquipe.hidden = !!reseau;
+  dom.titreEquipe.textContent = reseau ? 'Le lobby : chacun prend ses héros et choisit leur classe' : 'Ton équipe : choisis la classe de chacun';
+  for (const i of dom.mode.querySelectorAll('input')) i.disabled = !!reseau && !reseau.hote;
+  dom.commencer.hidden = !!reseau && !reseau.hote;
+  dom.attente.hidden = !reseau;
+  if (!reseau) return;
+  const L = reseau.L, joueurs = reseau.joueurs(), hote = joueurs.find((j) => j.id === 'host');
+  const radio = dom.mode.querySelector(`input[value=${L.mode}]`); if (radio && !radio.checked) radio.checked = true;
+  dom.groupe.replaceChildren(el('span', {}, `Le groupe${reseau.code ? ` (code ${reseau.code})` : ''} : `),
+    ...joueurs.map((j) => el('span', { class: 'joueur', style: `--couleur:${reseau.couleurDe(j.id)}` }, j.nom, j.moi ? ' (toi)' : '', j.id === 'host' ? ' · hôte' : '')),
+    ...(reseau.statut ? [el('span', { class: 'statut' }, reseau.statut)] : []));
+  const libres = L.proprio.filter((p) => p === null).length;
+  dom.attente.textContent = reseau.hote ? (libres ? `${libres === 1 ? 'Le héros sans joueur sera joué' : `Les ${libres} héros sans joueur seront joués`} par toi.` : 'Chaque héros a son joueur.')
+    : `${hote ? hote.nom : 'L’hôte'} lance le combat quand tout le monde est prêt.`;
+}
 // l'adresse qui lance le combat avec cette équipe et ce mode
 export const adresseEquipe = (equipe, mode) => `?equipe=${equipe.join(',')}&mode=${mode}&go`;
 const notes = () => Object.fromEntries([...dom.fin.querySelectorAll('input')].map((i) => [{ fun: 'Fun sur 10', lent: 'Ce qui a semblé lent', cases: 'Sans cases', regle: 'Une règle à changer' }[i.name], i.value.trim()]));
@@ -135,16 +175,26 @@ const notes = () => Object.fromEntries([...dom.fin.querySelectorAll('input')].ma
 // --- Le déroulé -------------------------------------------------------------------------------------------------
 function vider() { const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true; }
 function commencer() {
+  if (reseau) return void (reseau.hote && reseau.commencer());
   const mode = dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe';
   try { localStorage.setItem(CLE_CHOIX, ui.choix.join(',')); } catch {}
-  // une autre équipe que celle de la page : on recharge avec elle (les personnages se préparent au chargement)
-  if (ui.choix.join(',') !== combat.S.equipe.join(',')) { location.search = adresseEquipe(ui.choix, mode); return; }
+  // une autre équipe que celle du combat préparé : un nouveau combat avec elle, sans recharger
+  if (ui.choix.join(',') !== combat.S.equipe.join(',') || combat.S.phase !== 'preparation') nouveauCombat(ui.choix);
   combat.S.mode = mode;
-  dom.accueil.hidden = true;
+  lance();
   combat.commencer();
   vider();
 }
+function lance() { dom.accueil.hidden = true; dom.fin.hidden = true; ui.fini = false; ui.finMontree = false; ui.sale = true; }
+function accueil() { dom.fin.hidden = true; dom.accueil.hidden = false; ui.fini = false; ui.finMontree = false; dessinerPlaces(); ui.sale = true; }
+function rejouer() {
+  if (reseau) return void (reseau.hote && reseau.rejouer());
+  ui.choix = combat.S.equipe.slice();
+  nouveauCombat(ui.choix);
+  accueil();
+}
 function finPhase() {
+  if (reseau) return void (combat.S.phase === 'heros' && reseau.attendus().includes(reseau.moi) && reseau.pret(!reseau.estPret()));
   if (vue.occupe() || combat.S.phase !== 'heros') return;
   ui.sel = null; ui.cap = null; ui.annuler = []; ui.portee = null;
   combat.finPhaseHeros();
@@ -162,7 +212,7 @@ function surEvenement(e) {
   else if (e.type === 'phase' && e.phase === 'ennemis') banniere('Les ennemis jouent', 'ennemi');
   else if (e.type === 'phase' && e.phase === 'heros') {
     banniere('À vous', 'heros');
-    ui.sel = e.ids.map((id) => combat.U(id)).find((u) => !u.ko)?.id ?? null; ui.cap = null; ui.portee = null; ui.annuler = [];
+    ui.sel = e.ids.map((id) => combat.U(id)).find((u) => !u.ko && aMoi(u.id))?.id ?? null; ui.cap = null; ui.portee = null; ui.annuler = [];
   } else if (e.type === 'fin') ui.fini = true;
   else if (e.type === 'eclair') banniere('L’eau est électrisée !', 'combo');
   ui.sale = true;
@@ -170,9 +220,10 @@ function surEvenement(e) {
 
 // --- Choisir, marcher, viser ------------------------------------------------------------------------------------
 const herosChoisi = () => (ui.sel ? combat.U(ui.sel) : null);
+const aMoi = (id) => !reseau || reseau.aMoi(id);
 function choisirHeros(id) {
   const h = combat.U(id);
-  if (!h || h.camp !== 'h' || !combat.peutAgir(h)) return false;
+  if (!h || h.camp !== 'h' || !combat.peutAgir(h) || !aMoi(id)) return false;
   ui.sel = id; ui.cap = null; ui.portee = null; ui.sale = true;
   vue.viser(h.x * 32, h.y * 32);
   return true;
@@ -188,6 +239,7 @@ function choisirCapacite(id) {
 }
 function agir(cible) {
   const h = herosChoisi(); if (!h || !ui.cap) return false;
+  if (reseau) { reseau.agir({ type: 'capacite', id: h.id, cap: ui.cap, cible }); ui.cap = null; ui.portee = null; ui.sale = true; return true; }
   const ok = combat.utiliser(h, ui.cap, cible);
   if (ok) { ui.cap = null; ui.annuler = []; ui.portee = null; vider(); }
   return ok;
@@ -206,6 +258,7 @@ function cliquer(p) {
   if (!h) return;
   const P = portee(h), a = combat.apercuMarche(h, p.x, p.y, P);
   if (!a.ok) return;
+  if (reseau) { reseau.agir({ type: 'marche', id: h.id, x: p.x, y: p.y }); ui.portee = null; return; }
   const copie = combat.instantane();
   combat.deplacer(h, p.x, p.y, P);
   const evs = combat.S.evenements;
@@ -216,9 +269,14 @@ function cliquer(p) {
 function clavier(e) {
   if (e.target.closest?.('input, textarea')) return;
   if (e.key === 'Escape') { if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; return; }
+  if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const camp = e.shiftKey ? 'h' : 'e', oui = vue.basculerPlaques(camp);
+    banniere(`Barres de vie ${camp === 'h' ? 'des alliés' : 'des ennemis'} : ${oui ? 'affichées' : 'cachées'}`);
+    return;
+  }
   if (e.key === 'Tab' && combat.S.phase === 'heros') {
     e.preventDefault();
-    const ids = combat.groupeCourant()?.ids.filter((id) => combat.peutAgir(combat.U(id))) ?? [];
+    const ids = combat.groupeCourant()?.ids.filter((id) => combat.peutAgir(combat.U(id)) && aMoi(id)) ?? [];
     if (ids.length) choisirHeros(ids[(ids.indexOf(ui.sel) + 1) % ids.length]);
     return;
   }
@@ -269,6 +327,13 @@ export function update() {
   dessinerTout();
 }
 
+// à plusieurs : qui joue ce héros (« toi », ou le nom de l'ami, dans sa couleur)
+function joueurFiche(id) {
+  const p = reseau.L.proprio[PLACES.indexOf(id)];
+  if (p === null) return el('span', { class: 'fh-joueur libre' }, 'libre');
+  return el('span', { class: 'fh-joueur', style: `--couleur:${reseau.couleurDe(p)}` }, aMoi(id) ? 'toi' : reseau.nomDe(p));
+}
+
 function dessinerApercu(h, info) {
   const cap = ui.cap ? CAPACITES[ui.cap] : null;
   if (info) {
@@ -306,10 +371,11 @@ function dessinerTout() {
   dom.equipe.replaceChildren(...S.heros.map((id) => {
     const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
     const etats = Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean).concat(u.expose ? ['Exposé'] : []);
-    return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
+    return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
       vue.portrait(u.type, 40),
       el('span', { class: 'fh-corps' },
         el('strong', {}, H.nom, u.ko ? ' · KO' : ''),
+        reseau ? joueurFiche(id) : null,
         el('span', { class: 'fh-pv' }, el('span', { class: 'jauge' }, el('span', { style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })), ` ${Math.max(0, u.pv)}/${u.pvMax}`),
         el('span', { class: 'fh-ligne' }, `${u.res.type} ${u.res.v}/${u.res.max} · potion ${u.potion}`),
         el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`),
@@ -324,6 +390,15 @@ function dessinerTout() {
   }) : [el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : '')]));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
+  dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)
+  dom.finPhase.classList.toggle('pret', !!reseau?.estPret());
+  if (!reseau) dom.finPhase.textContent = 'Fin de la phase des héros';
+  else {
+    const attendus = reseau.attendus(), prets = attendus.filter((p) => reseau.L.pret.includes(p)).length, moi = attendus.includes(reseau.moi);
+    dom.finPhase.disabled = S.phase !== 'heros' || !moi;
+    dom.finPhase.textContent = S.phase !== 'heros' ? 'Fin de la phase des héros' : !moi ? `Les autres jouent (${prets}/${attendus.length} prêts)`
+      : reseau.estPret() ? `Prêt ✓ (${prets}/${attendus.length}) : je rejoue` : `Je suis prêt (${prets}/${attendus.length})`;
+  }
   // le journal
   dom.journal.replaceChildren(...S.journal.slice(0, 60).map((l) => el('li', { class: l.c }, l.t)));
 }
@@ -348,6 +423,8 @@ function banniere(texte, genre = '') {
 }
 function montrerFin(enCours) {
   const S = combat.S;
+  dom.rejouer.disabled = !!reseau && !reseau.hote;
+  dom.rejouer.title = dom.rejouer.disabled ? 'L’hôte relance le combat pour tout le groupe' : '';
   dom.finTitre.textContent = S.resultat === 'victoire' ? `Victoire au round ${S.round} !` : S.resultat === 'defaite' ? `Défaite au round ${S.round}` : 'La fiche de mesure (combat en cours)';
   dom.continuer.hidden = !enCours || !!S.resultat;
   dom.fiche.textContent = combat.fiche(notes());
@@ -360,7 +437,30 @@ async function copier() {
 
 export function dispose() { window.removeEventListener('keydown', clavier); }
 
+// Un autre combat (main.js) : on oublie la sélection, la fin, l'annulation.
+export function remplacer(c) {
+  combat = c;
+  Object.assign(ui, { sel: null, cap: null, annuler: [], portee: null, fini: false, finMontree: false, sale: true });
+}
+// Ce que mon pointeur montre aux amis (multi.js) : où il est, mon héros, ma capacité et ma cible (en numéros).
+function pointeur() {
+  const h = herosChoisi(), caps = h ? HEROS[h.type].capacites : [], vise = vue.marques.survolCible;
+  return { x: ui.survol?.x ?? -1, y: ui.survol?.y ?? -1, h: h ? PLACES.indexOf(h.id) + 1 : 0, c: ui.cap ? caps.indexOf(ui.cap) + 1 : 0,
+    v: vise ? combat.S.unites.findIndex((u) => u.id === vise) + 1 : 0 };
+}
+
 export const api = {
-  ui, dom, commencer, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin,
+  ui, dom, commencer, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
   get selection() { return ui.sel; },
+  get reseau() { return reseau; },
+  // multi.js : à plusieurs, puis de nouveau seul (l'hôte est parti : tous les héros sont à moi)
+  brancher(r) { reseau = r; dessinerPlaces(); ui.sale = true; },
+  debrancher(texte) {
+    reseau = null;
+    if (texte) banniere(texte);
+    if (combat.S.phase === 'heros' && !ui.sel) ui.sel = combat.groupeCourant()?.ids.find((id) => !combat.U(id).ko) ?? null;
+    dessinerPlaces(); ui.sale = true;
+  },
+  redessiner() { if (!dom.accueil.hidden) dessinerPlaces(); ui.sale = true; },
+  etatRecu() { ui.portee = null; ui.sale = true; if (ui.sel && !combat.U(ui.sel)) ui.sel = null; },
 };
