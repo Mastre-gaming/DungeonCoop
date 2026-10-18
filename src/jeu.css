@@ -324,3 +324,8 @@
 .reglages input[type=range] { width: 100%; accent-color: #e2b848; }
 .reglages .valeur { font: 700 .82rem var(--titre); color: var(--creme); text-align: right; }
 .reglages .note { grid-column: 2 / -1; margin: 0; font-size: .74rem; color: var(--creme-doux); }
+
+/* « Tes quêtes » : l'urgence après la taille */
+.suivi-quetes .urgence-haute { color: #ff8a6a; font-weight: 700; }
+.suivi-quetes .urgence-moyenne { color: #ffd35a; }
+.suivi-quetes .urgence-basse { color: var(--creme-doux); }

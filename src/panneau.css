@@ -69,3 +69,10 @@
 .bulle-panneau[hidden] { display: none; }
 .bulle-panneau kbd { display: inline-block; min-width: 1.2em; padding: 0 3px; border: 1px solid var(--bois); border-bottom-width: 2px; border-radius: 3px; background: #fffaf0; text-align: center; font: 12px ui-monospace, Consolas, monospace; }
 @media (prefers-reduced-motion: reduce) { .mission { transform: none !important; } }
+
+/* L'urgence d'une mission (les labels « priorité: … », choisie dans le tableau du dashboard) */
+.puce.urgence-haute { border-color: #b8322a; color: #8a2a1c; font-weight: 700; }
+.puce.urgence-haute::before { content: "▲▲ "; color: #b8322a; letter-spacing: -1px; }
+.puce.urgence-moyenne { border-color: #c98a1e; }
+.puce.urgence-moyenne::before { content: "▲ "; color: #c98a1e; }
+.puce.urgence-basse::before { content: "▽ "; }

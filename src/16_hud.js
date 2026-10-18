@@ -2,7 +2,7 @@
 // chacune avec son icône (des pièces LPC) et sa touche ; un seul panneau ouvert à la fois.
 // Et le suivi de quêtes, toujours visible sous la renommée : tes missions en cours.
 // Porte T : le journal de quêtes d'abord ; les autres cases s'allument une à une, chacune validée sur capture.
-import { etatDe, tailleDe, POINTS } from './10_missions.js';
+import { etatDe, tailleDe, urgenceDe, URGENCES, POINTS } from './10_missions.js';
 
 export const name = 'hud';
 export const always = true;
@@ -111,17 +111,19 @@ function brancher(id, p) {
   b.title = `${c.nom} (${c.touche.replace('Key', '')})`; b.setAttribute('aria-label', c.nom);
 }
 
+const rangUrgence = (t) => ({ haute: 0, moyenne: 1, basse: 2 })[urgenceDe(t)] ?? 3;
 // Le suivi : tes missions en cours (assignées à ton pseudo GitHub, encore ouvertes), comme le suivi d'objectifs d'un RPG.
 function dessinerSuivi() {
   if (!suivi || visite) return;
   const login = sentinelle?.qui?.github;
   if (!login) { suivi.hidden = true; return; }
   const miennes = missions.taches().filter((t) => etatDe(t) === 'encours' && (t.assignees ?? []).some((a) => a.login.toLowerCase() === login.toLowerCase()))
-    .sort((a, b) => a.number - b.number);
+    .sort((a, b) => rangUrgence(a) - rangUrgence(b) || a.number - b.number);   // (les plus urgentes d'abord : on n'en montre que 4)
   suivi.hidden = false;
   const lignes = miennes.slice(0, 4).map((t) => {
-    const taille = tailleDe(t);
-    return el('li', {}, el('span', { class: 'num' }, `#${t.number}`), el('span', { class: 'titre-q' }, t.title), taille ? el('span', { class: 'taille' }, `${taille} · ✦${POINTS[taille]}`) : null);
+    const taille = tailleDe(t), u = urgenceDe(t);
+    return el('li', {}, el('span', { class: 'num' }, `#${t.number}`), el('span', { class: 'titre-q' }, t.title),
+      taille || u ? el('span', { class: 'taille' }, taille ? `${taille} · ✦${POINTS[taille]}` : '', u ? el('span', { class: `urgence urgence-${u}` }, `${taille ? ' · ' : ''}urgence ${URGENCES[u]}`) : null) : null);
   });
   suivi.replaceChildren(...[
     el('h2', {}, 'Tes quêtes'),

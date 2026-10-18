@@ -198,9 +198,9 @@ export async function selfTest(t, game) {
 }
 
 // Des missions inventées (rien ne part sur le réseau en ?test).
-const issue = (number, labels, { state = 'open', qui = [], pr = false } = {}) => ({
+const issue = (number, labels, { state = 'open', qui = [], pr = false, raison = null } = {}) => ({
   number, title: `Mission inventée ${number}`, state, html_url: '#', labels: labels.map((name) => ({ name })),
-  assignees: qui.map((login) => ({ login })), ...(pr ? { pull_request: {} } : {}),
+  assignees: qui.map((login) => ({ login })), ...(pr ? { pull_request: {} } : {}), ...(raison ? { state_reason: raison } : {}),
 });
 
 function testsMissions(t, game) {
@@ -222,6 +222,12 @@ function testsMissions(t, game) {
   t.eq(p.total, 0, 'sans taille : 0 point ; une PR n’est pas une mission');
   p = progression(Array.from({ length: 5 }, (_, k) => issue(10 + k, ['axe: salles', 'taille: L'], { state: 'closed' })));
   t.eq([p.points.level, p.niveaux.level, p.feu], [40, 4, 2], '40 points : niveau 4 (seuil 35) et le feu à la taille 2 (seuil 40)');
+  p = progression([issue(15, ['axe: menus', 'taille: L', 'abandonnée'], { state: 'closed', raison: 'not_planned' }), issue(16, ['axe: menus', 'taille: M'], { state: 'closed', raison: 'not_planned' })]);
+  t.eq(p.total, 0, 'une mission abandonnée (fermée « non prévue », label « abandonnée ») n’est pas rentrée : 0 point');
+  const { urgenceDe, estAbandonnee } = missions.regles;
+  t.eq([urgenceDe(issue(17, ['priorité: haute'])), urgenceDe(issue(18, ['Priorité : Basse'])), urgenceDe(issue(19, ['axe: menus']))], ['haute', 'basse', null],
+    'l’urgence d’une mission : ses labels « priorité: … » (élevée, moyenne, faible)');
+  t.ok(estAbandonnee(issue(20, ['abandonnée'], { state: 'closed' })) && !estAbandonnee(issue(21, ['abandonnée'])), 'abandonnée : fermée avec le label (rouverte, elle revient)');
 
   t.group('les axes (content/axes.json, le contrat avec le dashboard)');
   const ax = LIEUX_AXES;
@@ -770,6 +776,9 @@ function testsHud(t, game) {
   t.ok(!txt.includes('#42') && !txt.includes('#43') && !txt.includes('#44'), 'pas celles des autres, ni les rentrées, ni celles à prendre');
   t.ok(txt.includes('L · ✦8'), 'avec leur taille et ce qu’elles rapportent');
   t.ok(!txt.includes('null'), 'rien d’autre (pas de « null » qui traîne)');
+  missions.charger([issue(46, ['axe: menus', 'taille: S'], { qui: ['PCrrfng'] }), issue(47, ['axe: son', 'taille: M', 'priorité: haute'], { qui: ['PCrrfng'] })]);
+  const quetes = [...hud.suivi.querySelectorAll('li')];
+  t.ok(quetes[0]?.textContent.includes('#47') && quetes[0].textContent.includes('urgence élevée'), 'l’urgence s’affiche, et la plus urgente passe en tête');
   missions.charger([issue(45, ['axe: son', 'taille: S'])]);
   t.ok(hud.suivi.textContent.includes('ouvre le journal (J)'), 'aucune quête en cours : il invite à ouvrir le journal');
   sentinelle.etat.qui = { nom: 'Zorg', github: null, saisie: 'Zorg' }; hud.majSuivi();

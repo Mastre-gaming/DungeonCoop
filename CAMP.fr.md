@@ -274,7 +274,7 @@ Chaque partie du dashboard a sa place dans le HUD du jeu, en lecture d'abord (le
 
 | Le dashboard | Dans le jeu | Où |
 |---|---|---|
-| Tableau de travail | **le journal de quêtes** (J) : les missions par axe, à prendre, en cours, rentrées ; et **le suivi de quêtes**, tes missions en cours, toujours visible | barre d'action ; sous la renommée |
+| Tableau de travail | **le journal de quêtes** (J) : les missions par axe, à prendre, en cours, rentrées, avec leur **urgence** (élevée, moyenne, faible : les labels « priorité: … » que le tableau du dashboard choisit) ; et **le suivi de quêtes**, tes missions en cours, les plus urgentes d'abord, toujours visible. Une mission abandonnée depuis le dashboard (fermée « non prévue ») ne compte pas | barre d'action ; sous la renommée |
 | Qui fait quoi | **les cadres de groupe** : un portrait par membre, son titre et sa quête en cours ; doré s'il est au camp | barre d'action |
 | Avancée du projet | **la barre de campagne** : le jalon en cours comme une barre d'expérience ; la carte de campagne (D1 à M4) au clic | en bas de l'écran |
 | Derniers push | **la chronique du camp** : « Paul a forgé 3 commits sur camp-v0 », quelques secondes en bas à gauche ; l'historique au clic | barre d'action |
