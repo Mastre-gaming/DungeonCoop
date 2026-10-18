@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Boutons : cinq options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&amp;family=Source+Sans+3:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#ffd35a}a:hover{color:#ffe2a8}
+.sol-herbe{background-image:url(../assets/herbe.png);background-size:64px 64px;image-rendering:pixelated}
+img{image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div class="sol-herbe" style="width: 1440px; height: 1400px; box-sizing: border-box; padding: 36px 40px; font-family: 'Source Sans 3', system-ui, sans-serif; color: #fff7e6; display: flex; flex-direction: column; gap: 18px">
+
+  <div style="display: grid; grid-template-columns: 250px repeat(5, minmax(0, 1fr)); gap: 16px; font: 500 13px 'Pixelify Sans', monospace; color: #fff7e6; padding: 6px 10px; background: rgba(43,28,29,.75); border-radius: 3px">
+    <span>Icônes : objets LPC du jeu</span><span>Normal</span><span>Survol</span><span>Choisi</span><span>Indisponible</span><span>Bouton principal</span>
+  </div>
+
+  <!-- A. Planche de bois cloutée -->
+  <div style="display: grid; grid-template-columns: 250px repeat(5, minmax(0, 1fr)); gap: 16px; align-items: center; padding: 16px 10px; background: rgba(43,28,29,.55); border-radius: 3px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <b style="font: 700 22px 'Pixelify Sans', monospace; color: #ffd35a">A · Planche de bois</b>
+      <span style="font-size: 14px; line-height: 1.35">Le bois du panneau des missions. Chaud, solide, très « camp ».</span>
+    </div>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 0; background: linear-gradient(180deg, #9a6638 0%, #7a4f2a 55%, #6b4423 100%); box-shadow: inset 0 2px 0 #c08a52, inset 0 -4px 0 #3b2716, 0 0 0 3px #2b1c1d, 0 5px 0 3px rgba(0,0,0,.35); clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px)">
+      <span style="width: 44px; height: 44px; flex: none; background: #3b2716; box-shadow: inset 0 2px 0 #2b1c1d; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-fleche.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #ffe2a8; text-shadow: 1px 1px 0 #2b1c1d">Flèche de feu</b><span style="font-size: 12px; color: #f3d9a8">Action · 11–14</span></span>
+      <span style="position: absolute; top: 5px; right: 7px; font: 700 11px 'Pixelify Sans', monospace; color: #ffe2a8">1</span>
+    </button>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 0; transform: translateY(-3px); background: linear-gradient(180deg, #b07a45 0%, #8f5e33 55%, #7a4f2a 100%); box-shadow: inset 0 2px 0 #d9a35a, inset 0 -4px 0 #3b2716, 0 0 0 3px #2b1c1d, 0 8px 0 3px rgba(0,0,0,.35); clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px)">
+      <span style="width: 44px; height: 44px; flex: none; background: #3b2716; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-vase.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #fff7e6; text-shadow: 1px 1px 0 #2b1c1d">Fiole d'huile</b><span style="font-size: 12px; color: #f3d9a8">Bonus · zone Huile</span></span>
+      <span style="position: absolute; top: 5px; right: 7px; font: 700 11px 'Pixelify Sans', monospace; color: #ffe2a8">2</span>
+    </button>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 0; background: linear-gradient(180deg, #b07a45 0%, #8f5e33 55%, #7a4f2a 100%); box-shadow: inset 0 2px 0 #d9a35a, inset 0 -4px 0 #3b2716, 0 0 0 3px #ffd35a, 0 0 0 6px #2b1c1d, 0 0 18px 6px rgba(255,211,90,.45)">
+      <span style="width: 44px; height: 44px; flex: none; background: #3b2716; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-epee.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #ffd35a; text-shadow: 1px 1px 0 #2b1c1d">Ouverture</b><span style="font-size: 12px; color: #fff7e6">Action · 11–14 · À terre</span></span>
+      <span style="position: absolute; top: 5px; right: 7px; font: 700 11px 'Pixelify Sans', monospace; color: #ffd35a">3</span>
+    </button>
+    <button type="button" disabled style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 0; filter: grayscale(.85) brightness(.75); background: linear-gradient(180deg, #8a6a4e 0%, #6b5440 100%); box-shadow: inset 0 -4px 0 #3b2716, 0 0 0 3px #2b1c1d; clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px)">
+      <span style="width: 44px; height: 44px; flex: none; background: #3b2716; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-fiole.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #e9d3ad">Potion</b><span style="font-size: 12px; color: #e9d3ad">déjà bue</span></span>
+    </button>
+    <a href="#" style="height: 70px; display: flex; align-items: center; justify-content: center; text-decoration: none; font: 700 17px 'Pixelify Sans', monospace; color: #2b1c1d; background: linear-gradient(180deg, #ffe08a 0%, #ffd35a 50%, #e2b848 100%); box-shadow: inset 0 2px 0 #fff0a0, inset 0 -4px 0 #a07028, 0 0 0 3px #2b1c1d, 0 5px 0 3px rgba(0,0,0,.35); clip-path: polygon(4px 0, calc(100% - 4px) 0, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 0 calc(100% - 4px), 0 4px)">Fin du tour ▸</a>
+  </div>
+
+  <!-- B. Parchemin et sceau de cire -->
+  <div style="display: grid; grid-template-columns: 250px repeat(5, minmax(0, 1fr)); gap: 16px; align-items: center; padding: 16px 10px; background: rgba(43,28,29,.55); border-radius: 3px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <b style="font: 700 22px 'Pixelify Sans', monospace; color: #ffd35a">B · Parchemin et sceau</b>
+      <span style="font-size: 14px; line-height: 1.35">Le parchemin des plaques actuelles et un sceau de cire : rouge pour une action, bleu pour un bonus.</span>
+    </div>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px 0 8px; display: flex; align-items: center; gap: 8px; text-align: left; background: #f4ead2; border: 2px solid #85581b; border-radius: 3px; box-shadow: inset 0 0 0 2px #fffaf0, 0 4px 0 #3b2716">
+      <img src="../icones/enseigne-fleche.png" alt="" style="width: 36px; height: 39px; flex: none">
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #3b2716">Flèche de feu</b><span style="font-size: 12px; color: #6f5a3e">Action · 11–14</span></span>
+      <span style="position: absolute; top: -10px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d9534f, #a3261c 60%, #7a1a12); box-shadow: 0 2px 0 #5a120c; display: flex; align-items: center; justify-content: center; font: 700 13px 'Pixelify Sans', monospace; color: #ffe2a8">1</span>
+    </button>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px 0 8px; display: flex; align-items: center; gap: 8px; text-align: left; background: #fffaf0; border: 2px solid #3b2716; border-radius: 3px; box-shadow: inset 0 0 0 2px #ffe9a8, 0 6px 0 #3b2716; transform: translateY(-2px)">
+      <img src="../icones/enseigne-vase.png" alt="" style="width: 36px; height: 39px; flex: none">
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #3b2716">Fiole d'huile</b><span style="font-size: 12px; color: #6f5a3e">Bonus · zone Huile</span></span>
+      <span style="position: absolute; top: -10px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #5b8fd6, #2f5fa8 60%, #1d3f73); box-shadow: 0 2px 0 #122a4d; display: flex; align-items: center; justify-content: center; font: 700 13px 'Pixelify Sans', monospace; color: #ffe2a8">2</span>
+    </button>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px 0 8px; display: flex; align-items: center; gap: 8px; text-align: left; background: #ffe9a8; border: 2px solid #c4621f; border-radius: 3px; box-shadow: 0 0 0 3px #c4621f, 0 4px 0 3px #3b2716">
+      <img src="../icones/enseigne-epee.png" alt="" style="width: 36px; height: 39px; flex: none">
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #3b2716">Ouverture</b><span style="font-size: 12px; color: #6f3a12">Action · 11–14 · À terre</span></span>
+      <span style="position: absolute; top: -10px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #d9534f, #a3261c 60%, #7a1a12); box-shadow: 0 0 0 3px #ffd35a; display: flex; align-items: center; justify-content: center; font: 700 13px 'Pixelify Sans', monospace; color: #ffe2a8">3</span>
+      <span style="position: absolute; right: 30px; bottom: -11px; width: 14px; height: 18px; background: #a3261c; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 72%, 0 100%)"></span>
+    </button>
+    <button type="button" disabled style="position: relative; height: 70px; padding: 0 12px 0 8px; display: flex; align-items: center; gap: 8px; text-align: left; background: #e3d8bd; border: 2px dashed #a8956f; border-radius: 3px; opacity: .75">
+      <img src="../icones/enseigne-fiole.png" alt="" style="width: 36px; height: 39px; flex: none; filter: grayscale(1)">
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #6f5a3e; text-decoration: line-through">Potion</b><span style="font-size: 12px; color: #6f5a3e">déjà bue</span></span>
+      <span style="position: absolute; top: -10px; right: -8px; width: 28px; height: 28px; border-radius: 50%; background: #a8a29a; display: flex; align-items: center; justify-content: center; font: 700 13px 'Pixelify Sans', monospace; color: #efe9df">5</span>
+    </button>
+    <a href="#" style="height: 70px; display: flex; align-items: center; justify-content: center; text-decoration: none; font: 700 17px 'Pixelify Sans', monospace; color: #fff7e6; background: #a3261c; border: 2px solid #5a120c; border-radius: 3px; box-shadow: inset 0 2px 0 #d9534f, 0 4px 0 #3b2716">Fin du tour ▸</a>
+  </div>
+
+  <!-- C. Pierre runique -->
+  <div style="display: grid; grid-template-columns: 250px repeat(5, minmax(0, 1fr)); gap: 16px; align-items: center; padding: 16px 10px; background: rgba(43,28,29,.55); border-radius: 3px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <b style="font: 700 22px 'Pixelify Sans', monospace; color: #ffd35a">C · Pierre runique</b>
+      <span style="font-size: 14px; line-height: 1.35">Une dalle taillée, l'icône qui s'allume. Plus « donjon » que « camp ».</span>
+    </div>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 2px; background: linear-gradient(180deg, #7a8496 0%, #5a6276 60%, #4a5163 100%); box-shadow: inset 0 2px 0 #a3adbd, inset 0 -3px 0 #2e3340, 0 0 0 2px #1e161e, 0 4px 0 2px rgba(0,0,0,.4)">
+      <span style="width: 44px; height: 44px; flex: none; background: #3a4050; box-shadow: inset 2px 2px 0 #2e3340, inset -1px -1px 0 #8a96a8; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-fleche.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #f0f4fa; text-shadow: 1px 1px 0 #1e161e">Flèche de feu</b><span style="font-size: 12px; color: #c0cad6">Action · 11–14</span></span>
+      <span style="position: absolute; top: 5px; right: 7px; font: 700 11px 'Pixelify Sans', monospace; color: #c0cad6">1</span>
+    </button>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 2px; background: linear-gradient(180deg, #8a96a8 0%, #6a7388 60%, #5a6276 100%); box-shadow: inset 0 2px 0 #c0cad6, inset 0 -3px 0 #2e3340, 0 0 0 2px #1e161e, 0 6px 0 2px rgba(0,0,0,.4); transform: translateY(-2px)">
+      <span style="width: 44px; height: 44px; flex: none; background: #3a4050; box-shadow: inset 2px 2px 0 #2e3340, 0 0 10px rgba(180,140,255,.6); display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-vase.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #fff; text-shadow: 1px 1px 0 #1e161e">Fiole d'huile</b><span style="font-size: 12px; color: #dfe5ee">Bonus · zone Huile</span></span>
+      <span style="position: absolute; top: 5px; right: 7px; font: 700 11px 'Pixelify Sans', monospace; color: #c0cad6">2</span>
+    </button>
+    <button type="button" style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 2px; background: linear-gradient(180deg, #6a7fa0 0%, #4f6488 60%, #3f5275 100%); box-shadow: inset 0 2px 0 #a8c4ec, inset 0 -3px 0 #22304a, 0 0 0 2px #7ce0ff, 0 0 0 4px #1e161e, 0 0 20px 4px rgba(124,224,255,.5)">
+      <span style="width: 44px; height: 44px; flex: none; background: #2a3a55; box-shadow: 0 0 12px rgba(124,224,255,.8); display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-epee.png" alt="" style="width: 36px; height: 39px"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #dff7ff; text-shadow: 1px 1px 0 #1e161e">Ouverture</b><span style="font-size: 12px; color: #dfe5ee">Action · 11–14 · À terre</span></span>
+      <span style="position: absolute; top: 5px; right: 7px; font: 700 11px 'Pixelify Sans', monospace; color: #7ce0ff">3</span>
+    </button>
+    <button type="button" disabled style="position: relative; height: 70px; padding: 0 12px; display: flex; align-items: center; gap: 10px; text-align: left; border: 0; border-radius: 2px; background: #4a4f5a; box-shadow: inset 0 -3px 0 #2e3340, 0 0 0 2px #1e161e; opacity: .7">
+      <span style="width: 44px; height: 44px; flex: none; background: #353a45; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-fiole.png" alt="" style="width: 36px; height: 39px; filter: grayscale(1) brightness(.7)"></span>
+      <span style="display: flex; flex-direction: column; gap: 2px"><b style="font: 700 15px 'Pixelify Sans', monospace; color: #a3adbd">Potion</b><span style="font-size: 12px; color: #a3adbd">déjà bue</span></span>
+    </button>
+    <a href="#" style="height: 70px; display: flex; align-items: center; justify-content: center; text-decoration: none; font: 700 17px 'Pixelify Sans', monospace; color: #1e161e; background: linear-gradient(180deg, #a8f0ff 0%, #7ce0ff 55%, #4fb8d9 100%); border-radius: 2px; box-shadow: inset 0 2px 0 #e6fbff, inset 0 -3px 0 #2a7f9c, 0 0 0 2px #1e161e, 0 4px 0 2px rgba(0,0,0,.4)">Fin du tour ▸</a>
+  </div>
+
+  <!-- D. Cases d'action -->
+  <div style="display: grid; grid-template-columns: 250px repeat(5, minmax(0, 1fr)); gap: 16px; align-items: center; padding: 18px 10px; background: rgba(43,28,29,.55); border-radius: 3px">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <b style="font: 700 22px 'Pixelify Sans', monospace; color: #ffd35a">D · Cases d'action</b>
+      <span style="font-size: 14px; line-height: 1.35">Des cases carrées, l'icône en grand, comme une barre de RPG. 9 capacités sur une ligne.</span>
+    </div>
+    <button type="button" style="justify-self: center; position: relative; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent">
+      <span style="width: 72px; height: 72px; background: #2b1c1d; box-shadow: inset 0 0 0 2px #85581b, inset 0 0 0 4px #2b1c1d, inset 0 0 0 6px #5a3b22, 0 0 0 2px #1e161e, 0 4px 0 2px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-fleche.png" alt="" style="width: 48px; height: 52px"></span>
+      <span style="position: absolute; top: -6px; left: 12px; min-width: 18px; height: 18px; background: #ffe2a8; border: 2px solid #2b1c1d; font: 700 11px 'Pixelify Sans', monospace; color: #2b1c1d; display: flex; align-items: center; justify-content: center">1</span>
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #fff7e6; text-shadow: 1px 1px 0 #1e161e">Flèche de feu</b>
+      <span style="font-size: 12px; padding: 0 6px; background: rgba(43,28,29,.85); color: #ffe2a8">11–14</span>
+    </button>
+    <button type="button" style="justify-self: center; position: relative; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; transform: translateY(-3px)">
+      <span style="width: 72px; height: 72px; background: #3b2716; box-shadow: inset 0 0 0 2px #ffe2a8, inset 0 0 0 4px #2b1c1d, inset 0 0 0 6px #85581b, 0 0 0 2px #1e161e, 0 7px 0 2px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-vase.png" alt="" style="width: 48px; height: 52px"></span>
+      <span style="position: absolute; top: -6px; left: 12px; min-width: 18px; height: 18px; background: #9ec5ff; border: 2px solid #2b1c1d; font: 700 11px 'Pixelify Sans', monospace; color: #2b1c1d; display: flex; align-items: center; justify-content: center">2</span>
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #fff; text-shadow: 1px 1px 0 #1e161e">Fiole d'huile</b>
+      <span style="font-size: 12px; padding: 0 6px; background: rgba(43,28,29,.85); color: #9ec5ff">Bonus</span>
+    </button>
+    <button type="button" style="justify-self: center; position: relative; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent">
+      <span style="width: 72px; height: 72px; background: #3b2716; box-shadow: inset 0 0 0 2px #ffd35a, inset 0 0 0 4px #2b1c1d, inset 0 0 0 6px #e2b848, 0 0 0 2px #1e161e, 0 0 20px 6px rgba(255,211,90,.5); display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-epee.png" alt="" style="width: 48px; height: 52px"></span>
+      <span style="position: absolute; top: -6px; left: 12px; min-width: 18px; height: 18px; background: #ffd35a; border: 2px solid #2b1c1d; font: 700 11px 'Pixelify Sans', monospace; color: #2b1c1d; display: flex; align-items: center; justify-content: center">3</span>
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #ffd35a; text-shadow: 1px 1px 0 #1e161e">Ouverture</b>
+      <span style="font-size: 12px; padding: 0 6px; background: rgba(43,28,29,.85); color: #ffe2a8">11–14 · À terre</span>
+    </button>
+    <button type="button" disabled style="justify-self: center; position: relative; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; opacity: .6">
+      <span style="position: relative; width: 72px; height: 72px; background: #2b1c1d; box-shadow: inset 0 0 0 2px #5a3b22, 0 0 0 2px #1e161e; display: flex; align-items: center; justify-content: center"><img src="../icones/enseigne-fiole.png" alt="" style="width: 48px; height: 52px; filter: grayscale(1) brightness(.6)"></span>
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #e9d3ad">Potion</b>
+      <span style="font-size: 12px; padding: 0 6px; background: rgba(43,28,29,.85); color: #e9d3ad">déjà bue</span>
+    </button>
+    <a href="#" style="justify-self: center; width: 170px; height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; text-decoration: none; background: #3b2716; box-shadow: inset 0 0 0 2px #ffd35a, inset 0 0 0 4px #2b1c1d, inset 0 0 0 6px #e2b848, 0 0 0 2px #1e161e, 0 4px 0 2px rgba(0,0,0,.4)"><b style="font: 700 17px 'Pixelify Sans', monospace; color: #ffd35a">Fin du tour</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #e9d3ad">Entrée</span></a>
+  </div>
+
+  <!-- E. Enseignes suspendues : l'enseigne LPC est le bouton -->
+  <div style="display: grid; grid-template-columns: 250px repeat(5, minmax(0, 1fr)); gap: 16px; align-items: start; padding: 16px 10px 20px; background: rgba(43,28,29,.55); border-radius: 3px">
+    <div style="display: flex; flex-direction: column; gap: 6px; align-self: center">
+      <b style="font: 700 22px 'Pixelify Sans', monospace; color: #ffd35a">E · Enseignes suspendues</b>
+      <span style="font-size: 14px; line-height: 1.35">Les enseignes LPC du camp, accrochées à une barre de fer. Le bouton est l'objet du décor lui-même : le plus « dans le monde ».</span>
+    </div>
+    <button type="button" style="justify-self: center; position: relative; width: 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent">
+      <span style="width: 120px; height: 4px; background: #4a4f5a; box-shadow: 0 1px 0 #1e161e"></span>
+      <img src="../icones/enseigne-fleche.png" alt="" style="width: 72px; height: 78px; margin-top: -6px">
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #ffe2a8; text-shadow: 1px 1px 0 #1e161e">1 · Flèche de feu</b>
+      <span style="font-size: 12px; padding: 1px 6px; background: #f4ead2; color: #3a2c1a; border: 1px solid #85581b">Action · 11–14</span>
+    </button>
+    <button type="button" style="justify-self: center; position: relative; width: 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent">
+      <span style="width: 120px; height: 4px; background: #4a4f5a; box-shadow: 0 1px 0 #1e161e"></span>
+      <img src="../icones/enseigne-vase.png" alt="" style="width: 72px; height: 78px; margin-top: -6px; transform: rotate(-5deg); transform-origin: 50% 0; filter: brightness(1.2) drop-shadow(0 0 6px rgba(255,226,168,.7))">
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #fff; text-shadow: 1px 1px 0 #1e161e">2 · Fiole d'huile</b>
+      <span style="font-size: 12px; padding: 1px 6px; background: #dbe8ff; color: #1d4d8f; border: 1px solid #2f68b8">Bonus · zone Huile</span>
+    </button>
+    <button type="button" style="justify-self: center; position: relative; width: 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent">
+      <span style="width: 120px; height: 4px; background: #ffd35a; box-shadow: 0 1px 0 #1e161e"></span>
+      <img src="../icones/enseigne-epee.png" alt="" style="width: 72px; height: 78px; margin-top: -6px; filter: drop-shadow(0 0 0 #ffd35a) drop-shadow(2px 0 0 #ffd35a) drop-shadow(-2px 0 0 #ffd35a) drop-shadow(0 2px 0 #ffd35a) drop-shadow(0 0 10px rgba(255,211,90,.8))">
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #ffd35a; text-shadow: 1px 1px 0 #1e161e">3 · Ouverture</b>
+      <span style="font-size: 12px; padding: 1px 6px; background: #ffe9a8; color: #3a2c1a; border: 1px solid #c4621f">Action · 11–14 · À terre</span>
+    </button>
+    <button type="button" disabled style="justify-self: center; position: relative; width: 120px; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; opacity: .55">
+      <span style="width: 120px; height: 4px; background: #4a4f5a"></span>
+      <img src="../icones/enseigne-fiole.png" alt="" style="width: 72px; height: 78px; margin-top: -6px; filter: grayscale(1) brightness(.7)">
+      <b style="font: 700 13px 'Pixelify Sans', monospace; color: #e9d3ad">5 · Potion</b>
+      <span style="font-size: 12px; padding: 1px 6px; background: #e3d8bd; color: #6f5a3e; border: 1px dashed #a8956f">déjà bue</span>
+    </button>
+    <a href="#" style="justify-self: center; margin-top: 14px; width: 180px; height: 70px; display: flex; align-items: center; justify-content: center; text-decoration: none; font: 700 17px 'Pixelify Sans', monospace; color: #ffe2a8; text-shadow: 1px 1px 0 #2b1c1d; background: linear-gradient(180deg, #6b4423 0%, #573726 100%); box-shadow: inset 0 2px 0 #8f5e33, inset 0 -4px 0 #2b1c1d, 0 0 0 3px #1e161e, 0 0 0 5px #ffd35a, 0 5px 0 5px rgba(0,0,0,.35)">Fin du tour ▸</a>
+  </div>
+
+  <p style="margin: 0; padding: 8px 12px; font-size: 14px; line-height: 1.4; color: #fff7e6; background: rgba(43,28,29,.75); border-radius: 3px">Icônes : l'enseigne vierge de « [LPC] Hanging signs » (Reemax, CC-BY-SA 3.0 / GPL 3.0), avec un symbole peint en couleur dans les rampes LPC à 3 tons. Les 31 capacités sont sur la planche « Icônes ».</p>
+</div>
+</body>
+</html>
