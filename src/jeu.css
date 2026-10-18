@@ -313,5 +313,14 @@
 .bandeau-radio[hidden] { display: none; }
 .bandeau-radio .station { font: 500 .78rem var(--titre); color: color-mix(in srgb, var(--couleur, #8a5a2b) 75%, #000); letter-spacing: .04em; }
 .bandeau-radio strong { font: 700 1.05rem var(--titre); }
+.bandeau-radio .par { font: 500 .72rem var(--titre); color: var(--parchemin-doux); }
 .radio-joue { margin: 0; font: 500 .9rem var(--titre); color: var(--parchemin-doux); }
 .radio-joue strong { color: var(--parchemin-encre); }
+
+/* Le menu Réglages (O, src/25_reglages.js) : le panneau en bois de la sacoche, deux curseurs */
+.reglages { width: min(440px, calc(100vw - 32px)); }
+.reglages .reglage { display: grid; grid-template-columns: 90px 1fr 52px; gap: 2px 10px; align-items: center; }
+.reglages label { font: 700 .9rem var(--titre); color: var(--creme); }
+.reglages input[type=range] { width: 100%; accent-color: #e2b848; }
+.reglages .valeur { font: 700 .82rem var(--titre); color: var(--creme); text-align: right; }
+.reglages .note { grid-column: 2 / -1; margin: 0; font-size: .74rem; color: var(--creme-doux); }

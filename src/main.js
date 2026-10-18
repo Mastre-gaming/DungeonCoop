@@ -28,6 +28,7 @@ import { creerSacoche, creerRumeurs } from './20_sacoche.js';
 import * as messagerieSkill from './21_messagerie.js';
 import * as boiteSkill from './22_boite.js';
 import * as radioSkill from './24_radio.js';
+import * as reglagesSkill from './25_reglages.js';
 import * as ratsSkill from './30_rats.js';
 import * as tourSkill from './31_tour.js';
 import * as terrainSkill from './23_terrain.js';
@@ -87,7 +88,9 @@ async function demarrer() {
   const messagerie = game.use(messagerieSkill, { missions, sentinelle, ...(query.has('test') ? { jeton: null } : {}) });
   hud.brancher('lettres', messagerie);
   const boite = game.use(boiteSkill, { rendu, heros, collision, visite, ouvrirMessages: () => { if (!messagerie.ouvert) hud.activer('lettres'); } });
-  const radio = game.use(radioSkill, { rendu, heros, collision, visite, muet: query.has('test') });   // la radio Deadlock : le barde près du feu (#94)
+  const radio = game.use(radioSkill, { rendu, heros, collision, visite, reseau, muet: query.has('test') });   // la radio Deadlock : le barde près du feu (#94)
+  const reglages = game.use(reglagesSkill, { visite });   // le menu Réglages (O) : la musique et les effets (#95)
+  hud.brancher('reglages', reglages);
   game.render = () => rendu.dessiner();
   const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, terrain });
 
@@ -97,7 +100,7 @@ async function demarrer() {
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, radio, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, radio, reglages, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

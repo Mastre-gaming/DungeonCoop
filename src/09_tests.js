@@ -631,9 +631,9 @@ function testsHud(t, game) {
   const touche = (code) => { window.dispatchEvent(new KeyboardEvent('keydown', { code })); game.dbg.advance(0.05); window.dispatchEvent(new KeyboardEvent('keyup', { code })); game.dbg.advance(0.02); };
   t.group('le HUD : la barre d’action');
   const cases = [...hud.barre.querySelectorAll('.case')];
-  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres'], 'sept cases, une par partie du dashboard');
+  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres', 'reglages'], 'sept cases, une par partie du dashboard, puis les réglages (#95)');
   t.ok(cases.every((c) => c.querySelector('canvas.icone') && c.querySelector('kbd')), 'chacune avec son icône en pixels et sa touche');
-  t.ok(cases.every((c) => !c.classList.contains('bientot')), 'les sept cases sont prêtes');
+  t.ok(cases.every((c) => !c.classList.contains('bientot')), 'toutes les cases sont prêtes');
   panneau.fermer();
   touche('KeyJ');
   t.ok(panneau.ouvert && cases[0].classList.contains('active'), 'J ouvre le journal de quêtes, et sa case s’allume');

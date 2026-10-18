@@ -235,6 +235,24 @@ export function nextSongShift(schedule: Schedule, now: number): number {
 }
 
 /**
+ * REVENIR AU MORCEAU PRÉCÉDENT (Dungeon Co-op, 2026-10-18, demande de Paul : « tu peux demander au barde le
+ * morceau précédent ») : de combien de secondes RECULER l'horloge de la station (un nombre négatif) pour tomber au
+ * DÉBUT du morceau d'avant. Pendant un morceau : celui qui le précédait ; pendant la pause (voix, jingle) : celui
+ * qui vient de finir. 0 : rien à reprendre (une grille vide, ou une station sans morceau).
+ */
+export function prevSongShift(schedule: Schedule, now: number): number {
+  const pos = livePosition(schedule, now);
+  if (!pos) return 0;
+  const { items, length } = schedule;
+  const here = items[pos.index].at + pos.into;
+  for (let k = 1; k <= items.length; k++) {
+    const it = items[(pos.index - k + items.length) % items.length];
+    if (!it.jingle && !it.filler) return -((((here - it.at) % length) + length) % length);
+  }
+  return 0;
+}
+
+/**
  * Où en est la station à l'instant `now` (secondes, horloge du monde) :
  * l'élément de la grille, et le temps écoulé dans sa partie audible (s). null
  * pour une grille vide. La boucle se répète sans fin : (now + décalage) modulo
