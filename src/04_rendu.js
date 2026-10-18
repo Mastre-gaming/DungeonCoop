@@ -80,6 +80,7 @@ export function creerRendu(canvas) {
         },
         rafraichir() { t.needsUpdate = true; },
         cacher(oui = true) { mesh.visible = !oui; },
+        retirer() { scene.remove(mesh); geo.dispose(); mesh.material.dispose(); },
       };
     },
 
@@ -87,7 +88,7 @@ export function creerRendu(canvas) {
     ombre(w, h) {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.22, depthWrite: false }));
       m.renderOrder = 1; scene.add(m);
-      return { poser(x, y) { m.position.set(Math.round(x), -Math.round(y), -50); }, cacher(oui = true) { m.visible = !oui; } };
+      return { poser(x, y) { m.position.set(Math.round(x), -Math.round(y), -50); }, cacher(oui = true) { m.visible = !oui; }, retirer() { scene.remove(m); m.geometry.dispose(); m.material.dispose(); } };
     },
 
     // La taille de l'écran : l'échelle est choisie entière (le pixel art reste net).

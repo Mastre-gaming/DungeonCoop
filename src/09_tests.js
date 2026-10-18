@@ -2,6 +2,7 @@
 // Le test de marche part de l'apparition et va à pied jusqu'à chaque lieu puis au feu, en tenant les touches
 // (de vrais événements clavier, comme un joueur) ; il donne les coordonnées exactes de tout endroit où le héros reste coincé.
 import { T, W, H, LIEUX, BOIS, FEU, APPARITION, emprise } from './01_plan.js';
+import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 
 export const name = 'camp';
 let ctx;
@@ -148,6 +149,8 @@ export function selfTest(t, game) {
   t.ok(document.querySelector('#tampon')?.textContent.includes(game.stamp), 'le tampon de version est à l’écran');
 
   testsMissions(t, game);
+  testsSentinelle(t, game);
+  testsReseau(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -227,3 +230,105 @@ function testsMissions(t, game) {
 }
 
 export const api = { marcherVers, rapportMarche: null };
+
+// La sentinelle : la scène de la première arrivée, le nom relié à GitHub, le retour, changer de nom.
+function testsSentinelle(t, game) {
+  const { heros, sentinelle, missions } = ctx, h = heros.heros, S = sentinelle.etat;
+  let garde = null; try { garde = localStorage.getItem('dungeoncoop:nom-dev'); } catch {}
+  const equipe = [{ github: 'DonBabaa', nom: '' }, { github: 'PCrrfng', nom: 'Paul' }];
+  missions.etat.equipe = equipe;
+
+  t.group('la sentinelle');
+  sentinelle.oublier(); sentinelle.demarrer();
+  t.ok(!h.controle, 'à l’arrivée, le joueur n’a pas la main : le héros monte vers la sentinelle');
+  game.dbg.advance(1.2);
+  t.eq(S.phase, 'halte', 'elle l’arrête et lève la main');
+  t.ok(!document.querySelector('.excl').hidden, 'un « ! » doré au-dessus d’elle');
+  game.dbg.advance(3);
+  t.eq(S.phase, 'question', 'puis elle pose sa question');
+  t.ok(!sentinelle.dialogue.hidden && sentinelle.texte === 'Halte. Avant d’entrer au camp : quel est ton nom de dev ?', `dans la boîte de dialogue, lettre à lettre (« ${sentinelle.texte} »)`);
+  t.ok(sentinelle.dialogue.textContent.includes('texte provisoire') && sentinelle.dialogue.querySelector('canvas.portrait'), 'avec son portrait et « texte provisoire »');
+  t.ok(!sentinelle.repondre('   ') && !sentinelle.dialogue.querySelector('.dial-erreur').hidden && S.phase === 'question', 'un nom vide est refusé, avec un message');
+  t.ok(sentinelle.repondre('paul'), '« paul » est accepté');
+  t.eq(sentinelle.qui, { nom: 'Paul', github: 'PCrrfng', saisie: 'paul' }, '« paul » devient Paul, relié à @PCrrfng (equipe.json)');
+  t.eq(sentinelle.reconnaitre('PCRRFNG', equipe).github, 'PCrrfng', '« PCRRFNG » (le pseudo GitHub) : la même personne');
+  t.eq(sentinelle.reconnaitre('pàul', equipe).github, 'PCrrfng', 'sans tenir compte des accents');
+  t.eq(sentinelle.reconnaitre('Zorg', equipe), { nom: 'Zorg', github: null, saisie: 'Zorg' }, 'un nom inconnu entre comme visiteur');
+  t.eq(sentinelle.reconnaitre('donbabaa', equipe).nom, 'donbabaa', 'un membre sans nom dans equipe.json garde le nom qu’il tape');
+  const x0 = S.x;
+  game.dbg.advance(3);
+  t.ok(S.phase === 'libre' && h.controle, 'elle salue, s’écarte, et le joueur a la main');
+  t.near(x0 - S.x, 48, 1, 'elle s’est écartée d’une case et demie');
+  t.ok(!ctx.collision.bloque(h.x, h.y - 40), 'le sentier est libre là où elle se tenait');
+  t.eq(sentinelle.lireNom()?.nom, 'Paul', 'le nom est gardé dans ce navigateur');
+  sentinelle.demarrer(); game.dbg.advance(2.4);
+  t.ok(S.phase !== 'question' && sentinelle.dialogue.hidden && document.querySelector('.bulle-perso').textContent === 'Rebonjour, Paul.', 'la fois suivante, pas de question : « Rebonjour, Paul. »');
+  game.dbg.advance(3);
+  t.ok(S.phase === 'libre' && h.controle, 'et on entre');
+  // lui parler de nouveau, pour changer de nom
+  heros.placer(S.x, S.y + 30, 'haut'); game.dbg.advance(0.05);
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); game.dbg.advance(0.7); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
+  t.eq(S.phase, 'question', 'devant elle, E : elle repose sa question (pour changer de nom)');
+  sentinelle.repondre('Zorg'); game.dbg.advance(2);
+  t.ok(S.phase === 'libre' && sentinelle.qui.nom === 'Zorg' && Math.abs(S.x - x0 + 48) < 1, 'nouveau nom, et elle reste où elle est');
+  try { garde ? localStorage.setItem('dungeoncoop:nom-dev', garde) : localStorage.removeItem('dungeoncoop:nom-dev'); } catch {}
+  sentinelle.etat.qui = sentinelle.lireNom();
+}
+
+// À plusieurs : le camp de cette page et des amis simulés, sur le fil « loopback » de party-net (pas de réseau).
+function testsReseau(t, game) {
+  const { reseau, heros, sentinelle } = ctx, h = heros.heros;
+  const hub = createLoopback({ latency: 0.03, jitter: 0.01 });
+  const pas = 1 / 60;
+  const ami = (nom) => {
+    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 } };
+    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 } });
+    return P;
+  };
+  const amis = [];
+  const jouer = (s, chaque) => { for (let k = 0; k < Math.round(s / pas); k++) { chaque?.(k * pas); hub.advance(pas); game.dbg.advance(pas); for (const a of amis) a.party.update(pas); } };
+
+  t.group('à plusieurs (deux clients simulés)');
+  sentinelle.etat.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'Paul' };
+  const party = reseau.brancherTest(hub);
+  reseau.heberger(); jouer(0.1);
+  t.ok(party.hosting && /^[A-Z2-9]{5}$/.test(party.code), `héberger donne un code de cinq lettres (${party.code})`);
+  t.ok(reseau.panneau.textContent.includes(party.code) && reseau.panneau.textContent.includes('Copier le lien'), 'le panneau « Jouer à plusieurs » montre le code et « Copier le lien »');
+  const ana = ami('Ana'); amis.push(ana); ana.party.join(party.code.toLowerCase()); jouer(0.5);
+  t.ok(ana.party.active && party.others.size === 1, 'Ana rejoint avec le code');
+  t.ok(reseau.copies.size === 1, 'son héros apparaît dans le camp');
+  t.ok([...ana.party.others.values()].some((o) => o.name === 'Paul'), 'Ana voit le héros de Paul, avec son nom');
+  t.ok(reseau.panneau.textContent.includes('Ana'), 'Ana est dans la liste du groupe');
+  const etiquette = [...document.querySelectorAll('#noms .etiquette')].find((e) => e.textContent === 'Ana');
+  t.ok(etiquette && !etiquette.hidden, 'son nom s’affiche au-dessus de son héros');
+  // Ana marche vers la droite : on la voit avancer, sans saut
+  let pire = 0;
+  jouer(2, (temps) => { ana.me.vx = 74; ana.me.x += 74 * pas; ana.me.bouge = 1; ana.me.dir = 3; const o = party.others.values().next().value; if (o && temps > 0.5) pire = Math.max(pire, Math.abs(o.shown.x - ana.me.x)); });
+  t.ok(pire < 12, `Ana marche : sa copie la suit à ${pire.toFixed(1)} px près`);
+  // Paul marche : Ana le voit bouger
+  const vu = () => [...ana.party.others.values()].find((o) => o.name === 'Paul')?.shown.x ?? 0;
+  heros.placer(18 * T, 17 * T, 'droite'); jouer(0.5);
+  const avant = vu();
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' })); jouer(1); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight' })); jouer(0.5);
+  t.ok(vu() - avant > 50, `Paul marche : Ana le voit avancer (${Math.round(vu() - avant)} px)`);
+  // un troisième, puis Ana part : rien ne casse pour les autres
+  const ben = ami('Ben'); amis.push(ben); ben.party.join(party.code); jouer(0.5);
+  t.ok(party.others.size === 2 && reseau.copies.size === 2, 'Ben rejoint aussi : trois dans le camp');
+  ana.party.leave(); amis.splice(amis.indexOf(ana), 1); jouer(0.5);
+  t.ok(party.others.size === 1 && reseau.copies.size === 1 && ben.party.active && [...ben.party.others.values()].every((o) => o.name !== 'Ana'), 'Ana part : son héros disparaît, Paul et Ben continuent');
+  // Ana revient
+  const ana2 = ami('Ana'); amis.push(ana2); ana2.party.join(party.code); jouer(0.5);
+  t.ok(party.others.size === 2 && reseau.copies.size === 2, 'Ana revient avec le même code');
+  // l'hôte ferme : les amis sont prévenus ; puis Paul rejoint un groupe hébergé ailleurs
+  reseau.quitter(); jouer(0.5);
+  t.ok(!party.active && reseau.copies.size === 0 && !ben.party.active, 'Paul ferme le groupe : les copies partent, les amis sont prévenus');
+  const hote = ami('Cy'); amis.length = 0; amis.push(hote); hote.party.host('KXQZB'); jouer(0.2);
+  t.ok(!reseau.rejoindre('KXQ'), 'un code trop court est refusé');
+  reseau.rejoindre('kxqzb'); jouer(0.6);
+  t.ok(reseau.party.active && !reseau.party.hosting && [...reseau.party.others.values()].some((o) => o.name === 'Cy'), 'Paul rejoint le groupe de Cy et le voit');
+  t.ok(reseau.copies.size === 1, 'le héros de Cy est dans le camp de Paul');
+  hote.party.leave(); jouer(0.5);
+  t.ok(!reseau.party.active && /fermé le groupe/.test(reseau.statut), `Cy ferme : Paul continue seul (« ${reseau.statut} »)`);
+  t.ok(Number.isFinite(h.x) && h.controle, 'et son héros marche toujours');
+  reseau.rebrancher();
+}

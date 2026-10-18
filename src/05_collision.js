@@ -77,5 +77,6 @@ export function creerCollision({ obstacles, bloquees }) {
     return lisse;
   }
 
-  return { bloque, chemin, droit, libre: (x, y) => !bloque(x, y), largeur, hauteur };
+  // ajouter(o) : un obstacle qui bouge (la sentinelle). Il bloque le pied, mais n'entre pas dans la grille des chemins.
+  return { bloque, chemin, droit, libre: (x, y) => !bloque(x, y), ajouter: (o) => obstacles.push(o), largeur, hauteur };
 }
