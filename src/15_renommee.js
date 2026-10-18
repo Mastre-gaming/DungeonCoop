@@ -5,9 +5,11 @@
 // premiers de la renommée gagnée pendant la phase (une égalité partage la place), jamais un classement complet.
 // Rien n'est stocké : tout se recalcule depuis les issues GitHub. Cosmétique et social seulement.
 // La plaque : ton nom, ton titre, ta renommée ; le podium de la phase en cours ; une annonce quand une mission rentre.
+// Le bouton ⟳ relit les issues tout de suite : le workflow missions-auto.yml a rentré, assigné et taillé sur GitHub ce qui
+// est arrivé sur main ; la plaque recompte et dit ce qui a changé. « Sur le chantier » : les missions prises, pas rentrées.
 import PHASES from '../content/phases.json';
 import AXES from '../content/axes.json';
-import { estTache, tailleDe, lieuDe, POINTS } from './10_missions.js';
+import { estTache, tailleDe, lieuDe, etatDe, POINTS } from './10_missions.js';
 
 export const name = 'renommee';
 export const always = true;
@@ -70,6 +72,9 @@ export const INVITATION = 'https://github.com/orgs/Mastre-gaming/invitation';
 const lireRepliee = () => { try { return localStorage.getItem(CLE_REPLIE) === '1'; } catch { return false; } };
 
 let game, missions, sentinelle, visite, plaque, annonces, repliee = lireRepliee(), dernier = null, connues = null;
+// Le bouton ⟳ : pendant la lecture, puis 10 s de repos (la lecture de secours sans Worker n'a que 60 appels par heure).
+export const REPOS_ACTUALISER = 10_000;
+const actu = { enCours: false, a: 0, message: null };
 
 export function init(g, options) {
   game = g;
@@ -99,6 +104,37 @@ function nomDe(login) {
   return missions.nomDe(login);
 }
 
+// ⟳ : relire les missions, puis dire ce qui a changé pour moi (ou que tout est à jour).
+async function actualiser(lire = () => missions.lire()) {
+  if (actu.enCours || Date.now() - actu.a < REPOS_ACTUALISER) return null;
+  const login = sentinelle?.qui?.github ?? null;
+  const avant = dernier ? { moi: login ? dernier.parPersonne[login] ?? 0 : 0, rentrees: Object.keys(dernier.gains).length } : { moi: 0, rentrees: 0 };
+  actu.enCours = true; actu.message = null; dessiner();
+  try { const p = lire(); if (p?.then) await p; } catch (e) { console.warn(e); }   // (une lecture sans attente reste synchrone : les tests)
+  actu.enCours = false; actu.a = Date.now();
+  majDonnees();
+  const moi = login ? dernier.parPersonne[login] ?? 0 : 0, rentrees = Object.keys(dernier.gains).length - avant.rentrees;
+  const heure = new Date(actu.a).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  actu.message = missions.etat.erreur ? missions.etat.erreur
+    : moi > avant.moi ? `✦ +${moi - avant.moi} pour toi · à jour à ${heure}`
+    : rentrees > 0 ? `${rentrees} mission${rentrees > 1 ? 's' : ''} rentrée${rentrees > 1 ? 's' : ''} · à jour à ${heure}`
+    : `Rien de nouveau · à jour à ${heure}`;
+  dessiner();
+  setTimeout(() => { if (!actu.enCours) dessiner(); }, REPOS_ACTUALISER + 50);
+  return { gagne: moi - avant.moi, rentrees, message: actu.message };
+}
+
+// Sur le chantier : chaque personne et la mission qu'elle a prise (la plus récente), sans les idées non prises.
+function chantier() {
+  const parQui = new Map();
+  for (const t of missions.etat.issues.filter(estTache)) {
+    if (etatDe(t) !== 'encours') continue;
+    for (const a of t.assignees) { const l = parQui.get(a.login) ?? []; l.push(t); parQui.set(a.login, l); }
+  }
+  return [...parQui.entries()].map(([qui, l]) => ({ qui, mission: l.sort((a, b) => b.number - a.number)[0], autres: l.length - 1 }))
+    .sort((a, b) => a.qui.localeCompare(b.qui));
+}
+
 function annoncer(numero, g) {
   const noms = g.qui.map(nomDe);
   const liste = noms.length > 1 ? `${noms.slice(0, -1).join(', ')} et ${noms[noms.length - 1]}` : noms[0];
@@ -114,6 +150,10 @@ function dessiner() {
   const podium = r.podiums[r.phaseEnCours] ?? [];
   const moi = sentinelle?.qui, login = moi?.github ?? null;
   const enfants = [];
+  const repos = !actu.enCours && Date.now() - actu.a < REPOS_ACTUALISER;
+  const boutonActu = visite ? null : el('button', { class: `actualiser${actu.enCours ? ' tourne' : ''}`, type: 'button', disabled: actu.enCours || repos,
+    title: 'Actualiser : relire les missions rentrées sur main', 'aria-label': actu.enCours ? 'Lecture des missions…' : 'Actualiser la renommée',
+    onclick: () => actualiser() }, '⟳');
   if (!visite) {
     const total = login ? r.parPersonne[login] ?? 0 : null;
     enfants.push(el('div', { class: 'moi' },
@@ -126,13 +166,21 @@ function dessiner() {
             : moi ? el('div', { class: 'visiteur' },
               el('p', { class: 'petit' }, 'Visiteur : rejoins l’équipe pour gagner de la renommée.'),
               el('a', { class: 'bouton-jeu', href: INVITATION, target: '_blank', rel: 'noopener' }, 'Rejoindre l’équipe sur GitHub ↗'))
-            : el('p', { class: 'petit' }, 'Dis ton nom à la sentinelle de l’entrée.'))));
+            : el('p', { class: 'petit' }, 'Dis ton nom à la sentinelle de l’entrée.')),
+      boutonActu));
+    if (actu.message && !repliee) enfants.push(el('p', { class: 'petit etat-maj', role: 'status' }, actu.message));
   }
   if (visite || !repliee) {
     enfants.push(el('h2', {}, phase ? phase.titre : 'La phase en cours'));
     if (!podium.length) enfants.push(el('p', { class: 'petit' }, 'Personne sur le podium : la première mission rentrée y monte.'));
     else enfants.push(el('ol', { class: 'podium' }, podium.map((e) => el('li', { class: login === e.qui ? 'toi' : null }, el('span', { class: 'rang' }, `${e.rang}.`), el('span', { class: 'nom' }, nomDe(e.qui)), el('span', { class: 'n' }, `✦ ${e.n}`)))));
     if (!visite && login && !podium.some((e) => e.qui === login)) enfants.push(el('p', { class: 'petit' }, `Toi, cette phase : ✦ ${r.parPhase[r.phaseEnCours]?.[login] ?? 0}`));
+    const enCours = chantier();
+    if (enCours.length) {
+      enfants.push(el('h2', {}, 'Sur le chantier'));
+      enfants.push(el('ul', { class: 'chantier' }, enCours.slice(0, 5).map((c) => el('li', { class: login === c.qui ? 'toi' : null, title: `#${c.mission.number} ${c.mission.title}` },
+        el('span', { class: 'nom' }, nomDe(c.qui)), el('span', { class: 'chantier-titre' }, c.mission.title), c.autres ? el('span', { class: 'n' }, `+${c.autres}`) : null))));
+    }
   }
   plaque.classList.toggle('repliee', repliee && !visite);
   plaque.replaceChildren(...enfants);
@@ -147,5 +195,8 @@ export const api = {
   get plaque() { return plaque; },
   get annonces() { return annonces; },
   maj: majDonnees,
+  actualiser,
+  chantier,
+  get actu() { return actu; },
   replier(oui) { repliee = !!oui; dessiner(); },
 };

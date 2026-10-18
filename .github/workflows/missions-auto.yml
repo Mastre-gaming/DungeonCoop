@@ -1,0 +1,34 @@
+# La renommée des bâtisseurs ne compte que ce qui arrive sur main (CAMP.fr.md, la renommée).
+# À chaque push sur main, .github/scripts/missions-auto.mjs rentre les missions : celles que la PR cite sont fermées,
+# assignées à l'auteur et taillées si personne ne l'avait fait ; un travail sans mission en devient une, fermée.
+# Taille automatique aux lignes changées : S sous 150, M sous 600, L au-dessus. Rien de posé à la main n'est changé.
+# Le jeu (le bouton ⟳ de la renommée) et le dashboard relisent ensuite les issues : les points suivent.
+
+name: Missions automatiques
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: missions-auto
+  cancel-in-progress: false
+
+jobs:
+  rentrer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Rentrer les missions du push
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: node .github/scripts/missions-auto.mjs

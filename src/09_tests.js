@@ -539,7 +539,8 @@ function testsRenommee(t, game) {
   t.ok(txt.includes('Paul') && txt.includes('Forgeron') && txt.includes('✦ 13 renommée'), `ton nom, ton titre, ta renommée (« ${txt.slice(0, 60)}… »)`);
   t.ok(txt.includes('Phase 0 : le camp') && /1\.\s*Paul/.test(R.plaque.querySelector('.podium')?.innerText ?? txt), 'le podium de la phase en cours, toi en tête');
   t.ok(R.plaque.querySelector('.podium li.toi'), 'ta ligne est en évidence');
-  t.ok(!txt.includes('anthonygiauna'), 'une mission en cours ne met personne sur le podium');
+  t.ok(!(R.plaque.querySelector('.podium')?.textContent ?? '').includes('anthonygiauna'), 'une mission en cours ne met personne sur le podium');
+  t.ok((R.plaque.querySelector('.chantier')?.textContent ?? '').includes('anthonygiauna'), '… elle le met « sur le chantier »');
   // une mission qui rentre en direct : l'annonce
   const avant = R.annonces.children.length;
   missions.charger([m(20, ['axe: menus', 'taille: M'], ['PCrrfng', 'DonBabaa']), m(21, ['axe: technique', 'taille: L'], ['PCrrfng']), m(22, ['axe: son', 'taille: S'], ['anthonygiauna', 'DonBabaa'])],
@@ -549,6 +550,26 @@ function testsRenommee(t, game) {
   R.replier(true);
   t.ok(R.plaque.classList.contains('repliee') && !R.plaque.querySelector('.podium') && R.plaque.textContent.includes('✦ 13'), 'repliée : seulement « ✦ 13 »');
   R.replier(false);
+  // ⟳ : relire, recompter, dire ce qui a changé ; puis 10 s de repos
+  R.actu.a = 0; R.actu.message = null;
+  const sansRien = [m(20, ['axe: menus', 'taille: M'], ['PCrrfng', 'DonBabaa']), m(21, ['axe: technique', 'taille: L'], ['PCrrfng']), m(22, ['axe: son', 'taille: S'], ['anthonygiauna', 'DonBabaa'])];
+  const equipe = [{ github: 'PCrrfng', nom: 'Paul' }, { github: 'DonBabaa', nom: '' }];
+  const bouton = () => R.plaque.querySelector('button.actualiser');
+  t.ok(bouton() && !bouton().disabled && bouton().textContent === '⟳', 'la plaque a son bouton ⟳');
+  let rep = R.actualiser(() => missions.charger([...sansRien, m(23, ['axe: technique', 'taille: M'], ['PCrrfng']), m(24, ['axe: camp', 'taille: S'], ['DonBabaa'], { state: 'open' }), m(25, ['axe: son', 'taille: S'], ['DonBabaa'], { state: 'open' })], equipe));
+  let msg = R.plaque.querySelector('.etat-maj')?.textContent ?? '';
+  t.ok(/^✦ \+3 pour toi · à jour à \d\d:\d\d$/.test(msg) && R.plaque.textContent.includes('✦ 16 renommée'), `une M rentrée pour moi : la renommée recompte (13 → 16) et le dit (« ${msg} »)`);
+  t.ok(bouton().disabled, 'puis le bouton se repose 10 s');
+  let relu = false; R.actualiser(() => { relu = true; });
+  t.ok(!relu, 'pendant le repos, un clic ne relit pas');
+  R.actu.a = 0;
+  R.actualiser(() => missions.charger([...sansRien, m(23, ['axe: technique', 'taille: M'], ['PCrrfng']), m(24, ['axe: camp', 'taille: S'], ['DonBabaa'], { state: 'open' }), m(25, ['axe: son', 'taille: S'], ['DonBabaa'], { state: 'open' })], equipe));
+  msg = R.plaque.querySelector('.etat-maj')?.textContent ?? '';
+  t.ok(msg.startsWith('Rien de nouveau · à jour à'), `rien n’a changé : « ${msg} »`);
+  const ch = [...R.plaque.querySelectorAll('.chantier li')].map((li) => li.textContent);
+  t.eq(ch, ['DonBabaaMission inventée 25+1'], 'sur le chantier : qui a pris quoi (sa mission la plus récente, +1 pour l’autre)');
+  t.ok(!R.plaque.textContent.includes('Mission inventée 22') && rep !== undefined, 'une mission rentrée n’est plus sur le chantier');
+  R.actu.a = 0; R.actu.message = null;
   sentinelle.etat.qui = { nom: 'Zorg', github: null, saisie: 'Zorg' }; R.maj();
   const lien = R.plaque.querySelector('.visiteur a');
   t.ok(R.plaque.textContent.includes('Visiteur') && lien?.href === 'https://github.com/orgs/Mastre-gaming/invitation' && lien.target === '_blank', 'un visiteur : un bouton vers l’invitation de l’organisation GitHub');

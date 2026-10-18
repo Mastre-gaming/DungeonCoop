@@ -15,6 +15,10 @@ The two files imported above are the owner's standing calls and what failed befo
 - **(if it fits) calls this game takes on:** 14 (a game for friends) only. **Overrides of the manual:** 2D, not 3D; a mouse cursor, not locked-mouse look; heroes come from the LPC generator through `lpc-sprite-mods`, not the Blender MCP; the story is the team's to write, never Claude's.
 - **Players:** co-op for 1 to 4; the party is always four heroes · **Live build:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, Workers Builds from `main`, a preview per PR) · **The owner's route:** live link → Host → share the five-letter code → friends join → the fight.
 
+## Every change is a mission
+- **Use the `mission-camp` skill** (`.claude/skills/mission-camp/SKILL.md`, loaded automatically in this repo) for anything built, drawn or written for DungeonCoop: find or create the mission (an issue with an `axe` and a `taille`), take it (`--add-assignee @me`), then a PR with « Ferme #n ». The reference copy is in the dashboard repo (`skills/mission-camp/`); the checks warn when the two differ.
+- **Only what lands on `main` counts** for the builders' renown. The workflow `missions-auto.yml` runs on every push to `main`: it closes the missions the PR names, assigns them to the author and sizes them if nobody did; a PR or direct push with no mission becomes a mission, closed, sized by lines changed (S under 150, M under 600, L above).
+
 ## Before anything
 - **`KICKOFF.md` must be signed off.** No code until it is (gate K).
 - **`GAME_SPEC.md`** holds the plan and the state; update it the same day anything changes.
