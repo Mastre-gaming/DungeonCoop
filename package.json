@@ -9,6 +9,7 @@
     "build": "vite build && node tools/sauvegarde.mjs",
     "preview": "vite preview --port 4173",
     "test": "node tools/test.mjs",
+    "test:ci": "node tools/test.mjs --visite",
     "shots": "node tools/captures.mjs",
     "deploy": "wrangler deploy"
   },
