@@ -14,6 +14,7 @@ import * as interfaceSkill from './interface.js';
 import * as multiSkill from './multi.js';
 import * as tests from './tests.js';
 import PERSOS from './persos.json';
+import { PLANCHES as EFFETS } from './effets.js';
 import '../panneau.css';
 import '../jeu.css';
 import './entrainement.css';
@@ -27,6 +28,7 @@ async function demarrer() {
   const planches = {
     herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
+    ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
   };
   const images = await chargerImages('./assets/lpc/', planches);
   const canvas = document.querySelector('#jeu');

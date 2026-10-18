@@ -303,8 +303,14 @@ export async function selfTest(t, game) {
   clic(s1.x, s1.y - 0.8);
   for (let k = 0; k < 40 && ihm.dom.de.hidden; k++) game.dbg.advance(0.05);
   t.ok(!ihm.dom.de.hidden && /\d/.test(ihm.dom.de.textContent), 'l’attaque : le d20 s’affiche en grand sur le plateau');
+  t.ok(V.effets().actifs >= 2, 'l’Étincelle joue son effet (#134) : la boule qui file, puis l’impact doré');
   jouerFile();
   t.ok(combat.S.journal.some((l) => l.t.startsWith('Mage → Sbire 1')) && !mage.t.action, 'elle est au journal, et l’action de la Mage est dépensée');
+  for (let k = 0; k < 30; k++) game.dbg.advance(0.05);
+  t.eq(V.effets().actifs, 0, 'une fois joués, les effets s’en vont');
+  const mT = trouver(combat, 'mage'); mT.st.trempe = { ttl: 2, par: null }; game.dbg.advance(0.05);
+  t.ok(V.effets().gardes >= 1, 'un état se voit en boucle sur la créature (Trempé : des gouttes)');
+  delete mT.st.trempe; game.dbg.advance(0.05);
   ihm.dom.finPhase.click();
   jouerFile();
   t.ok(combat.S.round === 2 && combat.S.phase === 'heros' && combat.S.journal.some((l) => /avance|Ordres|ordres/.test(l.t)), 'Fin de la phase : les ennemis jouent seuls, puis c’est le round 2');
