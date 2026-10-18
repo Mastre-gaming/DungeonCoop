@@ -146,8 +146,8 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
 
 ### Le barde et la radio Deadlock (mission #94, 18 oct.)
 - **Près du feu, à l'ouest, un barde** est assis sur une souche, une lyre médiévale sur les genoux, avec **une enceinte** à côté de lui. Il diffuse DEADLOCK RECORDS RADIO, la station de Mastres Racing : les morceaux de Deadlock Records, l'animateur et les jingles, comme un petit poste.
-- **La radio est en direct :** tout le camp entend le même morceau au même moment. On l'entend partout, plus fort en s'approchant de l'enceinte. Elle démarre au premier geste du joueur.
-- **E devant le barde** (ou un clic) : ce qui joue, « Morceau suivant », couper ou rallumer. Un bandeau annonce chaque morceau. Ses répliques sont provisoires.
+- **La radio est en direct :** on l'entend partout, plus fort en s'approchant de l'enceinte. Elle démarre au premier geste du joueur, et continue quand on quitte l'onglet. À plusieurs, tout le groupe entend la radio de l'hôte, au même instant.
+- **E devant le barde** (ou un clic) : ce qui joue, « Morceau précédent », « Morceau suivant », couper ou rallumer ; à plusieurs, un morceau passé l'est pour tout le groupe. Un bandeau annonce chaque morceau. Ses répliques sont provisoires.
 - Le détail, les fichiers et les droits : `design/radio/README.fr.md`. Le volume de la musique se réglera dans le menu Réglages (#95).
 
 ### Le tableau d'affichage dans le décor : le panneau-carte

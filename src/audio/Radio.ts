@@ -64,7 +64,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { RADIO_STATIC, RADIO_STATIONS } from './radioCatalog';
 import { connectRadioFx } from './radioFx';
-import { buildSchedule, livePosition, nextSongShift, type RadioStation, type RadioTrack, type Schedule } from './radioSchedule';
+import { buildSchedule, livePosition, nextSongShift, prevSongShift, type RadioStation, type RadioTrack, type Schedule } from './radioSchedule';
 // (Export : la clé de stockage vient de radioStorage.ts, à côté ; dans Mastres Racing, de src/storage.ts.)
 import { storageKey } from './radioStorage';
 
@@ -220,15 +220,15 @@ class RadioPlayer {
       this.emit('tune');
     };
     for (const type of ['keydown', 'pointerdown', 'pointerup', 'touchend']) addEventListener(type, go);
+    // (Dungeon Co-op, 2026-10-18, Paul : un onglet qu'on quitte ne coupe PAS la radio, et au retour elle ne repart pas
+    // ailleurs.) Dans Mastres Racing, une page cachée se taisait, puis se recalait en direct au retour : le morceau
+    // sautait. Ici, cachée, elle continue (l'élément <audio> et ses événements vivent sans l'image du jeu). Revenue :
+    // on ne touche à rien, sauf si le navigateur l'a arrêtée entre-temps (son contexte audio suspendu, l'élément en
+    // pause) : alors on la reprend en direct.
     document.addEventListener('visibilitychange', () => {
-      if (!this.started) return;
-      // Cachée : silence. Revenue : la station a continué sans nous, on la reprend en direct (et son
-      // contexte audio, si le navigateur l'a suspendu entre-temps).
-      if (document.hidden) audio.pause();
-      else {
-        void this.fx?.ctx.resume();
-        this.tuneLive(true);
-      }
+      if (!this.started || document.hidden) return;
+      void this.fx?.ctx.resume();
+      if (audio.paused && this.station >= 0) this.tuneLive(true);
     });
   }
 
@@ -296,6 +296,42 @@ class RadioPlayer {
     if (this.started) this.crackle();
     this.tuneLive(this.started);
     this.emit('track');
+  }
+
+  /**
+   * REVENIR AU MORCEAU PRÉCÉDENT (Dungeon Co-op, 2026-10-18 : le barde du camp) : la station recule jusqu'au début
+   * du morceau d'avant (prevSongShift), derrière un grésillement, comme skip dans l'autre sens. EN MULTIJOUEUR
+   * (setSync) : le nouveau décalage part au salon, et tout le monde recule en même temps (setSyncOffsets).
+   */
+  back(): void {
+    if (this.station < 0 || !this.audio) return;
+    const sched = this.schedules[this.station];
+    const id = this.stations[this.station].id;
+    const shift = prevSongShift(sched, this.clock());
+    if (shift >= 0) return;
+    const wrap = (x: number) => ((x % sched.length) + sched.length) % sched.length;
+    if (this.sync) {
+      if (!this.sync.host()) {
+        this.emit('locked');
+        return;
+      }
+      this.sync.skip(id, wrap((this.sync.offsets[id] ?? 0) + shift));
+      return;
+    }
+    const skips = this.loadSkips();
+    skips[id] = wrap((skips[id] ?? 0) + shift);
+    try { localStorage.setItem(SKIPS_KEY, JSON.stringify(skips)); } catch { /* stockage refusé : le retour vaut pour cette page */ }
+    if (this.started) this.crackle();
+    this.tuneLive(this.started);
+    this.emit('track');
+  }
+
+  /**
+   * Les décalages de CE navigateur (les morceaux passés seul), pour qu'un hôte de groupe les partage tels quels :
+   * en ouvrant le groupe, sa radio ne bouge pas (Dungeon Co-op, la radio à plusieurs du camp).
+   */
+  get localOffsets(): Record<string, number> {
+    return { ...this.loadSkips() };
   }
 
   /**

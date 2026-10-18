@@ -4,17 +4,18 @@
 // Ici, le barde la joue : assis sur une souche à l'ouest du feu, une lyre sur les genoux, son enceinte à côté de lui
 // (dessinés par design/camp/outils/barde_radio.py).
 //   - Le son vient de l'enceinte : on l'entend dans tout le camp, de plus en plus fort en s'approchant (presence).
-//   - Il démarre au premier geste (touche, clic : la règle des navigateurs). Page cachée : silence ; au retour, la
-//     station a continué. Les amis du camp entendent le même morceau au même moment (la grille suit l'horloge) ;
-//     « morceau suivant » ne vaut que pour soi.
-//   - Un bandeau annonce chaque morceau. E devant le barde (ou un clic sur lui) : ce qui joue, « Morceau suivant »,
-//     couper ou rallumer. Ses répliques sont provisoires : l'histoire est à l'équipe.
+//   - Il démarre au premier geste (touche, clic : la règle des navigateurs). Un onglet qu'on quitte ne la coupe pas, et
+//     au retour elle n'a pas sauté (Paul, 18 oct.).
+//   - Un bandeau annonce chaque morceau. E devant le barde (ou un clic sur lui) : ce qui joue, « Morceau précédent »,
+//     « Morceau suivant », couper ou rallumer. Ses répliques sont provisoires : l'histoire est à l'équipe.
+//   - À plusieurs (le groupe du camp) : tout le monde entend la radio de l'hôte, au même instant ; un morceau passé
+//     (ou repris) au barde, par n'importe qui, l'est pour tout le groupe (voir « À plusieurs », plus bas).
 //   - Le volume de la musique : le réglage « musique » (dungeoncoop:reglages, le menu Réglages de #95), 0,6 sans lui.
 // En ?test et en ?visite (la carte du dashboard), pas de son : les tests branchent une fausse radio (brancherTest).
 import { T } from './01_plan.js';
 import { radio as radioDuJeu } from './audio/Radio';
 import { RADIO_STATIONS, RADIO_STATIC } from './audio/radioCatalog';
-import { buildSchedule, livePosition, nextSongShift } from './audio/radioSchedule';
+import { buildSchedule, livePosition, nextSongShift, prevSongShift } from './audio/radioSchedule';
 
 export const name = 'radio';
 export const always = true;
@@ -28,7 +29,7 @@ const MUSIQUE = 0.6;                                     // le volume de la musi
 const REPLIQUES = [                                      // (provisoires)
   'Ici DEADLOCK RECORDS RADIO, en direct du camp ! Approche-toi, ça sonne mieux près de l’enceinte.',
   'Ma lyre s’accorde toute seule. L’enceinte, c’est un voyageur qui me l’a laissée. Elle ne se tait jamais.',
-  'Un autre morceau ? Dis-le, je passe au suivant.',
+  'Un autre morceau ? Le suivant, ou celui d’avant : dis-le, je le joue.',
 ];
 
 // Le volume selon la distance à l'enceinte (en cases) : plein jusqu'à PROCHE, puis il baisse jusqu'à PLANCHER, à LOIN
@@ -52,16 +53,16 @@ function el(tag, attrs = {}, ...enfants) {
 }
 const lireReglages = () => { try { return JSON.parse(localStorage.getItem(CLE_REGLAGES)) ?? {}; } catch { return {}; } };
 
-let game, rendu, heros, collision, visite, radio = radioDuJeu;
+let game, rendu, heros, collision, visite, reseau = null, radio = radioDuJeu;
 let spriteBarde = null, spriteEnceinte = null, imageNotes = null, ombres = [], obstacles = [];
-let bulle, bandeau, panneau, texte, joue, boutonSuite, boutonCouper, portrait;
+let bulle, bandeau, panneau, texte, joue, boutonPrecedent, boutonSuite, boutonCouper, portrait;
 let musique = MUSIQUE, volumeDonne = -1, temps = 0, minuterieBandeau = 0, ouvert = false, desabonner = null;
 const lyre = { t: 0, image: 0 }, enceinte = { image: 0, moyenne: 0 }, notes = [];
 let prochaineNote = 0;
 
 export function init(g, options) {
   game = g;
-  ({ rendu, heros, collision, visite } = options);
+  ({ rendu, heros, collision, visite, reseau = null } = options);
   game.input.bindings.consulter ??= ['KeyE'];
   // ce qui bloque : la souche du barde, et l'enceinte
   obstacles = [{ x: POSTE.x - 13, y: POSTE.y - 8, w: 26, h: 8 }, { x: ENCEINTE.x - 9, y: ENCEINTE.y - 6, w: 18, h: 6 }];
@@ -78,6 +79,7 @@ export function init(g, options) {
   portrait = el('canvas', { width: 40, height: 40, class: 'portrait', 'aria-hidden': 'true' });
   texte = el('p', { class: 'dial-texte' });
   joue = el('p', { class: 'radio-joue' });
+  boutonPrecedent = el('button', { class: 'bouton-jeu discret', type: 'button', onclick: () => { radio.back(); dessiner(); } }, 'Morceau précédent');
   boutonSuite = el('button', { class: 'bouton-jeu', type: 'button', onclick: () => { radio.skip(); dessiner(); } }, 'Morceau suivant');
   boutonCouper = el('button', { class: 'bouton-jeu discret', type: 'button', onclick: () => { radio.next(); dessiner(); } }, 'Couper la radio');
   panneau = el('section', { id: 'dialogue-barde', class: 'dialogue', hidden: true, role: 'dialog', 'aria-label': 'Le barde te parle' },
@@ -85,7 +87,7 @@ export function init(g, options) {
     el('div', { class: 'dial-corps' },
       el('p', { class: 'dial-qui' }, 'Le barde ', el('span', { class: 'provisoire' }, 'texte provisoire')),
       texte, joue,
-      el('div', { class: 'dial-boutons' }, boutonSuite, boutonCouper, el('button', { class: 'bouton-jeu discret', type: 'button', onclick: fermer }, 'Fermer'))));
+      el('div', { class: 'dial-boutons' }, boutonPrecedent, boutonSuite, boutonCouper, el('button', { class: 'bouton-jeu discret', type: 'button', onclick: fermer }, 'Fermer'))));
   document.body.append(bulle, bandeau, panneau);
   window.addEventListener('keydown', (e) => { if (ouvert && e.key === 'Escape') fermer(); });
 
@@ -99,6 +101,8 @@ export function init(g, options) {
   musique = lireReglages().musique ?? MUSIQUE;
   game.bus.on('reglages:maj', (r) => { if (r?.musique != null) { musique = r.musique; volumeDonne = -1; } });
   brancher(radioDuJeu);
+  game.bus.on('party:game', surMessageDuGroupe);
+  game.bus.on('party:join', ({ id }) => { if (partage?.role === 'hote') redire(null, id); });
   // le son : pas en test ni dans la carte du dashboard
   if (!visite && !options.muet) radioDuJeu.start(musique * presence(distance()), STATION);
   return api;
@@ -106,6 +110,7 @@ export function init(g, options) {
 
 function brancher(r) {
   desabonner?.();
+  if (partage) finirLeGroupe();
   radio = r;
   volumeDonne = -1;
   desabonner = radio.onChange((info) => { annoncer(info); if (ouvert) dessiner(); });
@@ -117,7 +122,9 @@ function annoncer(info) {
   clearTimeout(minuterieBandeau);
   if (!info.station) { bandeau.replaceChildren(el('span', { class: 'station' }, 'Radio coupée')); }
   else if (info.jingle || info.filler || !info.track) return;
-  else bandeau.replaceChildren(el('span', { class: 'station', style: `--couleur:${info.station.color}` }, `♪ ${info.station.name}`), el('strong', {}, info.track.title));
+  else bandeau.replaceChildren(el('span', { class: 'station', style: `--couleur:${info.station.color}` }, `♪ ${info.station.name}`), el('strong', {}, info.track.title),
+    partage?.par && info.reason === 'track' ? el('span', { class: 'par' }, `choisi par ${partage.par}`) : null);
+  if (partage) partage.par = null;
   bandeau.hidden = false;
   minuterieBandeau = setTimeout(() => { bandeau.hidden = true; }, info.station ? 4000 : 2000);
 }
@@ -139,7 +146,7 @@ function dessiner() {
   joue.replaceChildren(...(!info.station ? ['La radio est coupée.']
     : info.jingle || info.filler || !info.track ? [`${info.station.name} · un jingle`]
       : [`${info.station.name} · `, el('strong', {}, info.track.title)]));
-  boutonSuite.disabled = !info.station;
+  boutonSuite.disabled = boutonPrecedent.disabled = !info.station;
   boutonCouper.textContent = info.station ? 'Couper la radio' : 'Rallumer la radio';
 }
 // le portrait : la tête du barde, prise sur son image
@@ -172,6 +179,7 @@ function niveau() {
 export function update(dt) {
   temps += dt;
   if (visite) { bulle.hidden = true; return; }
+  suivreLeGroupe();
   // le volume, selon la distance (seulement quand il change vraiment)
   const v = musique * presence(distance());
   if (Math.abs(v - volumeDonne) > 0.004) { volumeDonne = v; radio.setVolume(v); }
@@ -208,6 +216,75 @@ function lancerNote() {
   notes.push({ s, t: 0, x: POSTE.x - 6 + Math.random() * 8, y: POSTE.y - 48, phase: Math.random() * 6, forme: Math.random() < 0.6 ? 0 : 1 });
 }
 
+// --- À plusieurs : la radio de l'hôte pour tout le groupe ---------------------------------------------------------
+// Le moteur sait suivre une radio partagée (radio.setSync, écrit pour les salons de Mastres Racing) : une horloge
+// commune, les décalages de la station (ses morceaux passés), et la lecture tenue sur l'horloge. Ici, le groupe du
+// camp (13_reseau, party-net) en tient lieu :
+//   - l'hôte donne son heure (Date.now) et ses décalages, à l'arrivée de chacun puis toutes les 10 s ;
+//   - chacun cale sa radio dessus (son heure + l'écart avec celle de l'hôte) : tout le monde entend la même chose ;
+//   - « Morceau suivant » ou « précédent », chez n'importe qui : le nouveau décalage part chez l'hôte, qui le renvoie à
+//     tous, et tout le groupe saute en même temps (le bandeau dit qui l'a choisi) ;
+//   - le groupe fini : chacun reprend sa radio seule.
+// Messages (party:game) : { type: 'radio', epoch, offsets, par } (de l'hôte) · { type: 'radio-saut', station, offset, par } (vers l'hôte)
+const REDIRE = 10;          // s : l'hôte redit l'heure et les décalages (l'horloge qui dérive, un message perdu)
+let partage = null;         // { role: 'hote' | 'invite', offsets, ecart, prochaine, par }
+let reseauDuJeu = null;     // (tests : le vrai groupe, mis de côté)
+const nomMoi = () => reseau?.nom?.() ?? '';
+const enGroupe = () => { const p = reseau?.party; return p?.active && p.code ? p : null; };
+
+function suivreLeGroupe() {
+  const p = enGroupe();
+  if (!p) { if (partage) finirLeGroupe(); return; }
+  if (p.hosting && partage?.role !== 'hote') devenirHote();
+  if (!p.hosting && partage?.role === 'hote') finirLeGroupe();
+  if (partage?.role === 'hote' && temps >= partage.prochaine) redire();
+}
+function devenirHote() {
+  // (ses propres morceaux passés deviennent ceux du groupe : en ouvrant le groupe, sa radio ne bouge pas)
+  partage = { role: 'hote', offsets: { ...(radio.localOffsets ?? {}) }, prochaine: 0, par: null };
+  radio.setSync?.({ now: () => Date.now() / 1000, offsets: partage.offsets, host: () => true, skip: (station, offset) => sauter(station, offset, nomMoi()) });
+}
+// L'hôte : un morceau passé ou repris, par lui ou par un ami. Tout le groupe saute, lui compris.
+function sauter(station, offset, par) {
+  if (partage?.role !== 'hote' || !Number.isFinite(offset)) return;
+  partage.offsets = { ...partage.offsets, [station]: offset };
+  partage.par = par || null;
+  redire(par);
+  radio.setSyncOffsets?.(partage.offsets);
+}
+function redire(par = null, a = null) {
+  const p = enGroupe();
+  if (!p || partage?.role !== 'hote') return;
+  const m = { type: 'radio', epoch: Date.now() / 1000, offsets: partage.offsets, par };
+  if (a) p.to(a, m); else p.toAll(m);
+  partage.prochaine = temps + REDIRE;
+}
+// Un invité : l'heure et les décalages de l'hôte.
+function recevoir(m) {
+  if (!Number.isFinite(m.epoch) || !m.offsets || typeof m.offsets !== 'object') return;
+  const ecart = m.epoch - Date.now() / 1000;
+  if (partage?.role !== 'invite') {
+    partage = { role: 'invite', ecart, offsets: { ...m.offsets }, par: null };
+    radio.setSync?.({ now: () => Date.now() / 1000 + (partage?.ecart ?? 0), offsets: partage.offsets, host: () => true,
+      skip: (station, offset) => enGroupe()?.toHost({ type: 'radio-saut', station, offset, par: nomMoi() }) });
+    return;
+  }
+  if (Math.abs(ecart - partage.ecart) > 0.25) { partage.ecart = ecart; radio.resync?.(); }   // (son horloge a dérivé)
+  if (JSON.stringify(m.offsets) !== JSON.stringify(partage.offsets)) {
+    partage.offsets = { ...m.offsets };
+    partage.par = m.par || null;
+    radio.setSyncOffsets?.(partage.offsets);
+  }
+}
+function finirLeGroupe() { partage = null; radio.setSync?.(null); }
+function surMessageDuGroupe({ from, m }) {
+  if (!m || typeof m !== 'object' || visite) return;
+  const p = enGroupe();
+  if (!p) return;
+  if (m.type === 'radio' && !p.hosting) recevoir(m);
+  else if (m.type === 'radio-saut' && p.hosting && typeof m.station === 'string') sauter(m.station, Number(m.offset), String(m.par ?? p.others.get(from)?.name ?? '').slice(0, 24));
+}
+
 export function dispose() {
   desabonner?.();
   for (const o of obstacles) collision?.retirer(o);
@@ -226,9 +303,10 @@ export const api = {
   get images() { return { lyre: lyre.image, enceinte: enceinte.image, notes: notes.length }; },
   get radio() { return radio; },
   ouvrir, fermer,
-  // Pour les tests : une fausse radio (sans son), puis de nouveau la vraie.
-  brancherTest(fausse) { brancher(fausse); },
-  debrancherTest() { brancher(radioDuJeu); fermer(); bandeau.hidden = true; },
+  get partage() { return partage && { ...partage }; },
+  // Pour les tests : une fausse radio (sans son), un faux groupe, puis de nouveau les vrais.
+  brancherTest(fausse, faux = undefined) { brancher(fausse); if (faux !== undefined) reseauDuJeu = [reseau, faux], reseau = faux; },
+  debrancherTest() { brancher(radioDuJeu); if (reseauDuJeu) { reseau = reseauDuJeu[0]; reseauDuJeu = null; } fermer(); bandeau.hidden = true; },
 };
 
 // --- Les vérifications (?test) ------------------------------------------------------------------------------------
@@ -241,6 +319,9 @@ export async function selfTest(t) {
   t.ok(morceaux.slice(-3).every((i) => i.track.last) && Math.abs(g.length - g.items.reduce((s, i) => s + i.length, 0)) < 1e-6, 'les trois morceaux « en fin de queue » passent en dernier ; la boucle est la somme des sons');
   const a = livePosition(g, 1e9), b = livePosition(g, 1e9 + g.length);
   t.ok(a && b && a.index === b.index && Math.abs(a.into - b.into) < 1e-6, 'en direct : le même instant de l’horloge donne le même son, une boucle plus tard aussi (tout le camp entend la même chose)');
+  const recul = prevSongShift(g, 12345.6), ici = livePosition(g, 12345.6), avantIci = livePosition(g, 12345.6 + recul + 1e-3);
+  const morceauIci = g.items[ici.index].jingle ? null : ici.index;
+  t.ok(recul < 0 && !g.items[avantIci.index].jingle && avantIci.into < 0.01 && avantIci.index !== morceauIci, '« Morceau précédent » recule au début du morceau d’avant');
   const saut = nextSongShift(g, 12345.6), apres = livePosition(g, 12345.6 + saut + 1e-3);
   t.ok(saut > 0 && !g.items[apres.index].jingle && apres.into < 0.01, '« Morceau suivant » tombe au début d’un morceau (voix et jingle sautés)');
   const fichiers = [...st.tracks, ...st.voices, ...st.jingles, RADIO_STATIC].map((x) => x.file);
@@ -250,13 +331,13 @@ export async function selfTest(t) {
   if (visite) { update(0); t.ok(bulle.hidden, 'en visite (la carte du dashboard) : pas de bulle, pas de son'); return; }
 
   // une fausse radio : ce qu'elle joue, ce qu'on lui demande
-  const appels = { skip: 0, next: 0, volumes: [] };
+  const appels = { skip: 0, back: 0, next: 0, volumes: [] };
   let ecouteur = null;
   const info = { station: st, track: st.tracks[2], jingle: false, filler: false, index: 0, count: 1, reason: 'tune' };
   const fausse = {
     get info() { return { ...info }; },
     onChange(f) { ecouteur = f; return () => { ecouteur = null; }; },
-    skip() { appels.skip++; }, next() { appels.next++; info.station = info.station ? null : st; },
+    skip() { appels.skip++; }, back() { appels.back++; }, next() { appels.next++; info.station = info.station ? null : st; },
     setVolume(v) { appels.volumes.push(v); }, analyser: () => null,
   };
   brancherTest(fausse);
@@ -273,6 +354,8 @@ export async function selfTest(t) {
   t.ok(ouvert && !panneau.hidden && panneau.textContent.includes(st.tracks[2].title) && panneau.textContent.includes('texte provisoire'), `E : le barde dit ce qui joue (« ${st.tracks[2].title} »)`);
   [...panneau.querySelectorAll('button')].find((b) => b.textContent === 'Morceau suivant').click();
   t.eq(appels.skip, 1, '« Morceau suivant » passe au morceau d’après');
+  [...panneau.querySelectorAll('button')].find((b) => b.textContent === 'Morceau précédent').click();
+  t.eq(appels.back, 1, '« Morceau précédent » reprend celui d’avant');
   [...panneau.querySelectorAll('button')].find((b) => b.textContent === 'Couper la radio').click();
   t.ok(appels.next === 1 && panneau.textContent.includes('La radio est coupée') && [...panneau.querySelectorAll('button')].some((b) => b.textContent === 'Rallumer la radio'), '« Couper la radio », puis « Rallumer la radio »');
   info.station = st;
@@ -283,8 +366,49 @@ export async function selfTest(t) {
   t.eq(bandeau.textContent, avantJingle, 'un jingle n’est pas annoncé');
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));
   t.ok(!ouvert && panneau.hidden, 'Échap : le barde se tait');
+  window.dispatchEvent(new KeyboardEvent('keyup', { key: 'Escape', code: 'Escape' })); game.dbg.advance(0.02);   // (l'appui est consommé : il ne fermerait pas un panneau ouvert ensuite)
   heros.placer(avant.x, avant.y); h.controle = avant.controle;
   debrancherTest(); update(0);
+
+  // --- À plusieurs : une fausse radio qui suit le groupe comme le moteur (setSync, setSyncOffsets), un faux groupe
+  t.group('la radio à plusieurs : la radio de l’hôte pour tous (#94)');
+  const envoyes = [];
+  const groupe = { active: true, code: 'KXQZB', hosting: true, id: 'host', others: new Map([['p1', { name: 'Fraps' }]]),
+    toAll: (m) => envoyes.push(['tous', m]), toHost: (m) => envoyes.push(['hote', m]), to: (id, m) => envoyes.push([id, m]) };
+  const suivie = { sync: null, offsets: null, recales: 0 };
+  const radioSuivie = { ...fausse,
+    get localOffsets() { return { [STATION]: 12 }; },
+    setSync(s) { suivie.sync = s; suivie.offsets = s ? { ...s.offsets } : null; },
+    setSyncOffsets(o) { suivie.offsets = { ...o }; ecouteur?.({ ...info, station: st, track: st.tracks[7], reason: 'track' }); },
+    resync() { suivie.recales++; },
+    skip() { suivie.sync?.skip(STATION, 77); }, back() { suivie.sync?.skip(STATION, 5); } };
+  brancherTest(radioSuivie, { party: groupe, nom: () => 'Paolitus' });
+  update(0);
+  t.ok(partage?.role === 'hote' && suivie.sync?.host() && suivie.offsets[STATION] === 12 && Math.abs(suivie.sync.now() - Date.now() / 1000) < 1,
+    'l’hôte : sa radio devient celle du groupe, à son heure, sans bouger (ses morceaux passés deviennent ceux du groupe)');
+  t.ok(envoyes.some(([a, m]) => a === 'tous' && m.type === 'radio' && m.offsets[STATION] === 12), 'il dit à tous où en est la radio (puis toutes les 10 s)');
+  game.bus.emit('party:join', { id: 'p2', name: 'BABA' });
+  t.ok(envoyes.some(([a, m]) => a === 'p2' && m.type === 'radio'), 'un ami arrive : l’hôte lui dit tout de suite où en est la radio');
+  envoyes.length = 0;
+  game.bus.emit('party:game', { from: 'p1', m: { type: 'radio-saut', station: STATION, offset: 42, par: 'Fraps' } });
+  t.ok(suivie.offsets[STATION] === 42 && envoyes.some(([a, m]) => a === 'tous' && m.offsets[STATION] === 42 && m.par === 'Fraps'), 'Fraps passe le morceau au barde : l’hôte saute, et le dit à tous');
+  t.ok(!bandeau.hidden && bandeau.textContent.includes('choisi par Fraps'), `le bandeau dit qui l’a choisi (« ${bandeau.textContent} »)`);
+  radioSuivie.skip();
+  t.ok(suivie.offsets[STATION] === 77 && envoyes.some(([a, m]) => a === 'tous' && m.offsets[STATION] === 77 && m.par === 'Paolitus'), 'l’hôte passe un morceau : pareil, pour tout le groupe');
+  // chez un invité
+  groupe.hosting = false; groupe.id = 'p1'; envoyes.length = 0;
+  update(0);
+  t.ok(!partage && suivie.sync === null, 'plus hôte : sa radio redevient la sienne, en attendant celle de l’hôte');
+  game.bus.emit('party:game', { from: 'host', m: { type: 'radio', epoch: Date.now() / 1000 + 3, offsets: { [STATION]: 42 } } });
+  t.ok(partage?.role === 'invite' && Math.abs(suivie.sync.now() - (Date.now() / 1000 + 3)) < 0.5 && suivie.offsets[STATION] === 42, 'un invité cale sa radio sur l’heure de l’hôte (ici 3 s d’écart) et ses morceaux passés');
+  radioSuivie.back();
+  t.ok(envoyes.some(([a, m]) => a === 'hote' && m.type === 'radio-saut' && m.offset === 5 && m.par === 'Paolitus') && suivie.offsets[STATION] === 42,
+    '« Morceau précédent » chez un invité : la demande part chez l’hôte (on saute à son retour, tous ensemble)');
+  game.bus.emit('party:game', { from: 'host', m: { type: 'radio', epoch: Date.now() / 1000 + 3, offsets: { [STATION]: 5 }, par: 'Paolitus' } });
+  t.ok(suivie.offsets[STATION] === 5, 'le retour de l’hôte : tout le groupe recule ensemble');
+  groupe.active = false; update(0);
+  t.ok(!partage && suivie.sync === null, 'le groupe fini : chacun reprend sa radio seule');
+  debrancherTest(); update(0);
 }
-function brancherTest(f) { api.brancherTest(f); }
+function brancherTest(...a) { api.brancherTest(...a); }
 function debrancherTest() { api.debrancherTest(); }

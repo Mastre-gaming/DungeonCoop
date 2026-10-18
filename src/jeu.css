@@ -295,5 +295,6 @@
 .bandeau-radio[hidden] { display: none; }
 .bandeau-radio .station { font: 500 .78rem var(--titre); color: color-mix(in srgb, var(--couleur, #8a5a2b) 75%, #000); letter-spacing: .04em; }
 .bandeau-radio strong { font: 700 1.05rem var(--titre); }
+.bandeau-radio .par { font: 500 .72rem var(--titre); color: var(--parchemin-doux); }
 .radio-joue { margin: 0; font: 500 .9rem var(--titre); color: var(--parchemin-doux); }
 .radio-joue strong { color: var(--parchemin-encre); }
