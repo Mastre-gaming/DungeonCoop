@@ -11,7 +11,7 @@ import AXES from '../content/axes.json';   // le contrat des axes, lu aussi par 
 export const name = 'missions';
 export const always = true;
 
-const DEPOT = 'Mastre-gaming/DungeonCoop';
+export const DEPOT = 'Mastre-gaming/DungeonCoop';
 const WORKER = 'https://dungeoncoop-direct.mastredev.workers.dev';
 const GITHUB = 'https://api.github.com';
 const EQUIPE = 'https://raw.githubusercontent.com/Mastre-gaming/DungeonCoop-dashboard/main/equipe.json';
@@ -186,6 +186,13 @@ export const api = {
   // Pour les tests et dbg : remplace les issues par celles données (rien ne part sur le réseau).
   charger(issues, equipe = etat.equipe) { etat.issues = issues; etat.equipe = equipe; etat.source = 'test'; game.bus.emit('missions:maj', api.resume()); },
   taches: () => etat.issues.filter(estTache),
+  // Après une écriture dans GitHub depuis le camp : l'issue à jour (ou retirée) tout de suite, sans attendre le webhook.
+  remplacer(issue) {
+    const i = etat.issues.findIndex((x) => x.number === issue.number);
+    etat.issues = i < 0 ? [issue, ...etat.issues] : etat.issues.map((x, k) => (k === i ? issue : x));
+    game.bus.emit('missions:maj', api.resume());
+  },
+  retirer(numero) { etat.issues = etat.issues.filter((x) => x.number !== numero); game.bus.emit('missions:maj', api.resume()); },
   nomDe(login) { const m = etat.equipe.find((e) => norm(e.github) === norm(login)); return m?.nom || login; },
   // Les pseudos du Worker (à la lecture, puis à chaque changement) : l'équipe est refaite avec.
   profils(liste) {

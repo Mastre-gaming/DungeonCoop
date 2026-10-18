@@ -44,8 +44,8 @@ const heure = (t) => { try { return new Date(t).toLocaleTimeString('fr-FR', { ho
 // Le laissez-passer : dans le fragment de l'adresse (le dashboard l'y met), sinon celui qu'on a gardé.
 export function lireLaissezPasser() {
   const m = /(?:^|[#&])jeton=([^&]+)/.exec(location.hash);
-  if (m) {
-    const jeton = decodeURIComponent(m[1]);
+  const jeton = m ? decodeURIComponent(m[1]) : null;
+  if (jeton?.startsWith('v1.')) {   // (un autre jeton dans le fragment : le token GitHub, pour 27_github.js)
     ecrire(CLE_JETON, jeton);
     history.replaceState(null, '', location.pathname + location.search);   // on ne le laisse pas dans l'adresse
     return jeton;

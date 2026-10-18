@@ -26,6 +26,7 @@ import * as campagneSkill from './18_campagne.js';
 import * as chroniqueSkill from './19_chronique.js';
 import { creerSacoche, creerRumeurs } from './20_sacoche.js';
 import * as messagerieSkill from './21_messagerie.js';
+import * as githubSkill from './27_github.js';
 import * as partiesSkill from './28_parties.js';
 import * as boiteSkill from './22_boite.js';
 import * as radioSkill from './24_radio.js';
@@ -69,7 +70,9 @@ async function demarrer() {
   // les missions (les tâches du tableau de travail) ; en ?test, rien ne part sur le réseau
   const missions = game.use(missionsSkill, { horsLigne: query.has('test') });
   const lieux = game.use(lieuxSkill, { rendu, images, collision, missions, decor });
-  const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite });
+  // la connexion GitHub (la même que le tableau de travail du dashboard) : gérer les missions depuis le panneau
+  const github = game.use(githubSkill, { horsLigne: query.has('test') });
+  const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite, github });
   // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
@@ -99,7 +102,7 @@ async function demarrer() {
   const reglages = game.use(reglagesSkill, { visite });   // le menu Réglages (O) : la musique et les effets (#95)
   hud.brancher('reglages', reglages);
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, terrain, muraille, parties });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, terrain, muraille, parties, github });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -110,7 +113,7 @@ async function demarrer() {
   // l'entrée du camp (#123) : sur la route, devant le pont ; et juste après la porte, en entrant
   game.dbg.spot('porte', aller(15 * T, 36.6 * T, 'haut'));
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, radio, reglages, muraille, parties, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, radio, reglages, muraille, parties, github, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
