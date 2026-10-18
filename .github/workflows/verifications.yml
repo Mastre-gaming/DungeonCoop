@@ -52,6 +52,17 @@ jobs:
             exit 1
           fi
 
+      - name: Le skill mission-camp est le même que celui du dashboard
+        run: |
+          ref=https://raw.githubusercontent.com/Mastre-gaming/DungeonCoop-dashboard/main/skills/mission-camp/SKILL.md
+          if curl -sf "$ref" -o /tmp/mission-camp.md; then
+            if ! diff -q /tmp/mission-camp.md .claude/skills/mission-camp/SKILL.md >/dev/null; then
+              echo "::warning::.claude/skills/mission-camp/SKILL.md diffère de celui du dashboard (skills/mission-camp/). Recopie-le pour que chaque Claude suive le même rituel."
+            fi
+          else
+            echo "La copie du dashboard ne se lit pas, vérification sautée."
+          fi
+
       - name: Y a-t-il déjà du code ?
         id: code
         run: |

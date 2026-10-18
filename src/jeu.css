@@ -78,6 +78,24 @@
 @media (max-width: 640px) { .renommee-jeu { top: auto; bottom: 48px; } .annonces { top: auto; bottom: 200px; } }
 @media (prefers-reduced-motion: reduce) { .annonce-renommee { animation: none; transition: none; } }
 .renommee-jeu .visiteur { display: grid; gap: 6px; }
+/* ⟳ : relire les missions rentrées sur main ; il tourne pendant la lecture */
+.renommee-jeu .moi > div { flex: 1; }
+.renommee-jeu .actualiser { margin-left: auto; background: var(--bois-fonce); border: 2px solid var(--bois-clair); border-radius: 4px; color: #ffd35a;
+  font: 700 1rem/1 var(--titre); width: 26px; height: 26px; padding: 0; cursor: pointer; flex: none; }
+.renommee-jeu .actualiser:hover:not(:disabled) { border-color: #ffd35a; }
+.renommee-jeu .actualiser:disabled { opacity: .55; cursor: default; }
+.renommee-jeu .actualiser:focus-visible { outline: 3px solid #ffd35a; outline-offset: 2px; }
+.renommee-jeu .actualiser.tourne { animation: tourne .8s linear infinite; opacity: 1; }
+@keyframes tourne { to { transform: rotate(360deg); } }
+.renommee-jeu .etat-maj { color: #ffd35a; }
+/* Sur le chantier : qui a pris quelle mission */
+.renommee-jeu .chantier { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.renommee-jeu .chantier li { display: grid; grid-template-columns: auto 1fr auto; gap: 6px; align-items: baseline; font-size: .82rem; }
+.renommee-jeu .chantier .nom { color: var(--creme); font-weight: 600; }
+.renommee-jeu .chantier li.toi .nom { color: #ffd35a; }
+.renommee-jeu .chantier .chantier-titre { color: var(--creme-doux); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.renommee-jeu .chantier .n { color: var(--creme-doux); }
+@media (prefers-reduced-motion: reduce) { .renommee-jeu .actualiser.tourne { animation: none; } }
 .renommee-jeu .visiteur .bouton-jeu { font-size: .85rem; padding: 4px 8px; text-decoration: none; text-align: center; }
 
 /* La colonne de droite : la renommée, le suivi de quêtes, les annonces, empilés (CAMP §8 bis) */
