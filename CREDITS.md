@@ -11,6 +11,7 @@ Tout ce qui est dans le jeu et qui n'a pas été fait par l'équipe, avec sa sou
 | Le héros de départ | `public/assets/lpc/heros.png` | [Universal LPC Spritesheet Character Generator](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/) | une liste par pièce dans `credits/heros.txt` (bluecarrot16, JaidynReiman, Eliza Wyatt, Redshrike…) | OGA-BY 3.0, CC-BY-SA 3.0 ou GPL 3.0 selon la pièce |
 | La sentinelle | `public/assets/lpc/sentinelle.png` | même générateur | une liste par pièce dans `credits/sentinelle.txt` | OGA-BY 3.0, CC-BY-SA 3.0 ou GPL 3.0 selon la pièce |
 | Le panneau-carte du tableau d'affichage | `public/assets/lpc/panneau_carte.png` | dessiné pixel par pixel pour le camp (session de design du 18 oct), rampe de bois prise sur les planches LPC | l'équipe | CC-BY-SA 3.0 (comme les planches dont il prend les couleurs) |
+| La boîte aux lettres du camp | `public/assets/lpc/boite_lettres.png` | dessinée pixel par pixel pour le camp (design/camp/outils/boite_lettres.py), rampe de bois prise sur les planches LPC | l'équipe | CC-BY-SA 3.0 (comme les planches dont elle prend les couleurs) |
 
 Moteur : [three.js](https://threejs.org) 0.186.1 (MIT). Jeu à plusieurs : [PeerJS](https://peerjs.com) 1.5.5 (MIT), par son service public de mise en relation. Outils : [Vite](https://vite.dev) (MIT), [Wrangler](https://github.com/cloudflare/workers-sdk) (MIT ou Apache 2.0).
 
