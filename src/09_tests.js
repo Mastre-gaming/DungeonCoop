@@ -585,7 +585,7 @@ function testsRenommee(t, game) {
     [{ github: 'PCrrfng', nom: 'Paul' }, { github: 'DonBabaa', nom: '' }]);
   R.replier(false);
   let txt = R.plaque.textContent;
-  t.ok(txt.includes('Paul') && txt.includes('Forgeron') && txt.includes('✦ 13 renommée'), `ton nom, ton titre, ta renommée (« ${txt.slice(0, 60)}… »)`);
+  t.ok(txt.includes('Paul') && txt.includes('Forgeron') && txt.includes('✦ 13 au total'), `ton nom, ton titre, ta renommée (« ${txt.slice(0, 60)}… »)`);
   t.ok(txt.includes('Phase 0 : le camp') && /1\.\s*Paul/.test(R.plaque.querySelector('.podium')?.innerText ?? txt), 'le podium de la phase en cours, toi en tête');
   t.ok(R.plaque.querySelector('.podium li.toi'), 'ta ligne est en évidence');
   t.ok(!(R.plaque.querySelector('.podium')?.textContent ?? '').includes('anthonygiauna'), 'une mission en cours ne met personne sur le podium');
@@ -607,7 +607,7 @@ function testsRenommee(t, game) {
   t.ok(bouton() && !bouton().disabled && bouton().textContent === '⟳', 'la plaque a son bouton ⟳');
   let rep = R.actualiser(() => missions.charger([...sansRien, m(23, ['axe: technique', 'taille: M'], ['PCrrfng']), m(24, ['axe: camp', 'taille: S'], ['DonBabaa'], { state: 'open' }), m(25, ['axe: son', 'taille: S'], ['DonBabaa'], { state: 'open' })], equipe));
   let msg = R.plaque.querySelector('.etat-maj')?.textContent ?? '';
-  t.ok(/^✦ \+3 pour toi · à jour à \d\d:\d\d$/.test(msg) && R.plaque.textContent.includes('✦ 16 renommée'), `une M rentrée pour moi : la renommée recompte (13 → 16) et le dit (« ${msg} »)`);
+  t.ok(/^✦ \+3 pour toi · à jour à \d\d:\d\d$/.test(msg) && R.plaque.textContent.includes('✦ 16 au total'), `une M rentrée pour moi : la renommée recompte (13 → 16) et le dit (« ${msg} »)`);
   t.ok(bouton().disabled, 'puis le bouton se repose 10 s');
   let relu = false; R.actualiser(() => { relu = true; });
   t.ok(!relu, 'pendant le repos, un clic ne relit pas');

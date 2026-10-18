@@ -162,7 +162,7 @@ function dessiner() {
       repliee ? el('span', { class: 'total' }, login ? `✦ ${total}` : '✦')
         : el('div', {},
           el('p', { class: 'qui' }, moi ? moi.nom : 'Voyageur', login && r.titres[login] ? el('span', { class: 'titre' }, ` · ${r.titres[login]}`) : null),
-          login ? el('p', { class: 'total' }, `✦ ${total} renommée`)
+          login ? el('p', { class: 'total', title: 'Toute ta renommée, toutes phases confondues' }, `✦ ${total} au total`)
             : moi ? el('div', { class: 'visiteur' },
               el('p', { class: 'petit' }, 'Visiteur : rejoins l’équipe pour gagner de la renommée.'),
               el('a', { class: 'bouton-jeu', href: INVITATION, target: '_blank', rel: 'noopener' }, 'Rejoindre l’équipe sur GitHub ↗'))
@@ -171,7 +171,7 @@ function dessiner() {
     if (actu.message && !repliee) enfants.push(el('p', { class: 'petit etat-maj', role: 'status' }, actu.message));
   }
   if (visite || !repliee) {
-    enfants.push(el('h2', {}, phase ? phase.titre : 'La phase en cours'));
+    enfants.push(el('h2', { title: 'Le podium ne compte que la renommée gagnée pendant cette phase' }, `Podium · ${phase ? phase.titre : 'la phase en cours'}`));
     if (!podium.length) enfants.push(el('p', { class: 'petit' }, 'Personne sur le podium : la première mission rentrée y monte.'));
     else enfants.push(el('ol', { class: 'podium' }, podium.map((e) => el('li', { class: login === e.qui ? 'toi' : null }, el('span', { class: 'rang' }, `${e.rang}.`), el('span', { class: 'nom' }, nomDe(e.qui)), el('span', { class: 'n' }, `✦ ${e.n}`)))));
     if (!visite && login && !podium.some((e) => e.qui === login)) enfants.push(el('p', { class: 'petit' }, `Toi, cette phase : ✦ ${r.parPhase[r.phaseEnCours]?.[login] ?? 0}`));
