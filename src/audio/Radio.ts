@@ -179,6 +179,17 @@ class RadioPlayer {
    */
   private skips: Record<string, number> | null = null;
   /**
+   * (Dungeon Co-op, 2026-10-18 : la radio du site en ligne repartait au début de chaque morceau.) Le serveur sait-il
+   * servir un BOUT de fichier (une requête « Range », réponse 206) ? Sans cela, l'élément <audio> ne peut pas sauter
+   * au milieu d'un morceau (seekable reste vide) : la radio démarrait au début du morceau au lieu du direct, et deux
+   * amis n'étaient plus calés. C'est le cas des fichiers statiques des Workers de Cloudflare, où le jeu est en ligne.
+   * Alors chaque son est lu EN ENTIER en mémoire (un Blob de ~5 Mo, pas décodé : l'élément le lit toujours au fil de
+   * l'eau), et l'on saute dedans. null : pas encore su (le premier chargement le demande au serveur).
+   */
+  private plages: boolean | null = null;
+  /** (Sans plages) les sons en mémoire : adresse → l'adresse du Blob (le courant, le suivant, au plus trois). */
+  private readonly memoire = new Map<string, Promise<string>>();
+  /**
    * Appelée quand le JOUEUR change de station (next, prev) : la page enregistre
    * son choix (main.ts, sur les pages de course). Pas sur l'accueil : son panneau
    * de réglages enregistre à sa façon (ENREGISTRER, ou NE PAS ENREGISTRER).
@@ -554,11 +565,48 @@ class RadioPlayer {
         if (e instanceof DOMException && e.name === 'NotAllowedError') this.started = false;
       });
     };
-    if (audio.src === url && audio.readyState >= HTMLMediaElement.HAVE_METADATA) seekAndPlay();
-    else {
-      audio.src = url;
-      audio.addEventListener('loadedmetadata', seekAndPlay, { once: true });
+    // (L'adresse du fichier, ou celle du son en mémoire si le serveur ne sert pas de plages : voir `plages`. Le temps
+    // de le charger compte dans `late` : en direct, on saute d'autant plus loin.)
+    void this.source(url).then((src) => {
+      if (token !== this.loads) return;
+      if (audio.src === src && audio.readyState >= HTMLMediaElement.HAVE_METADATA) seekAndPlay();
+      else {
+        audio.src = src;
+        audio.addEventListener('loadedmetadata', seekAndPlay, { once: true });
+      }
+      this.prefetch();
+    });
+  }
+
+  /** L'adresse à donner à l'élément : le fichier lui-même, ou (sans plages) le son lu en entier en mémoire. */
+  private async source(url: string): Promise<string> {
+    if (this.plages === null) this.plages = await servesRanges(url);
+    return this.plages ? url : this.inMemory(url);
+  }
+
+  /** (Sans plages) le son en mémoire : téléchargé une fois, gardé tant qu'il sert (le courant, le suivant). */
+  private inMemory(url: string): Promise<string> {
+    let p = this.memoire.get(url);
+    if (p) { this.memoire.delete(url); this.memoire.set(url, p); return p; }   // (le plus récent en dernier)
+    p = fetch(url)
+      .then((r) => { if (!r.ok) throw new Error(`${r.status}`); return r.blob(); })
+      .then((b) => URL.createObjectURL(b))
+      .catch(() => url);   // (un échec : le fichier lui-même, lu au fil de l'eau, comme avant)
+    this.memoire.set(url, p);
+    while (this.memoire.size > 3) {
+      const [vieux, q] = this.memoire.entries().next().value!;
+      this.memoire.delete(vieux);
+      void q.then((u) => { if (u.startsWith('blob:') && this.audio?.src !== u) URL.revokeObjectURL(u); });
     }
+    return p;
+  }
+
+  /** (Sans plages) le son suivant de la grille, chargé pendant que celui-ci joue : pas de blanc entre les deux. */
+  private prefetch(): void {
+    if (this.plages !== false || this.station < 0) return;
+    const sched = this.schedules[this.station];
+    const next = sched.items[(this.item + 1) % sched.items.length];
+    if (next) void this.inMemory(new URL(next.track.file, document.baseURI).href);
   }
 
   /**
@@ -642,6 +690,22 @@ class RadioPlayer {
     gain.gain.linearRampToValueAtTime(0, ctx.currentTime + CRACKLE.duration);
     src.connect(band).connect(gain).connect(fx.input);
     src.start();
+  }
+}
+
+/**
+ * Le serveur sert-il des plages (une requête « Range : bytes=0-1 », réponse 206) ? La réponse arrive avec ses
+ * en-têtes : on n'attend pas le corps (abort). Une erreur : on fait comme s'il en servait (le comportement d'avant).
+ */
+async function servesRanges(url: string): Promise<boolean> {
+  const stop = new AbortController();
+  try {
+    const r = await fetch(url, { headers: { Range: 'bytes=0-1' }, signal: stop.signal });
+    return r.status === 206;
+  } catch {
+    return true;
+  } finally {
+    stop.abort();
   }
 }
 
