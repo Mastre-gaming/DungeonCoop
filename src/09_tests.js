@@ -48,7 +48,7 @@ function marcherVers(bx, by, { courir = false, limite = 40 } = {}) {
 export const devant = (l) => [(l.porte[0] + 1) * T, (l.porte[1] + 1.4) * T];
 export const devantFeu = () => [FEU[0] * T, FEU[1] * T + 2 * T];
 
-export function selfTest(t, game) {
+export async function selfTest(t, game) {
   const { heros, collision, camera, rendu, visite, camp } = ctx, h = heros.heros;
   game.dbg.freeze(true);
 
@@ -156,6 +156,7 @@ export function selfTest(t, game) {
   testsRenommee(t, game);
   testsHud(t, game);
   testsBoite(t, game);
+  await testsDirect(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -243,7 +244,7 @@ function testsMissions(t, game) {
   panneau.marquerVu(etaitVu);
 }
 
-export const api = { marcherVers, rapportMarche: null };
+export const api = { marcherVers, rapportMarche: null, fauxWorker: () => fauxWorker(), JETON_TEST: 'v1.9999999999999.QmFiYQ.signature-de-test' };   // (le faux Worker : aussi pour les captures)
 
 // La sentinelle : la scène de la première arrivée, le nom relié à GitHub, le retour, changer de nom.
 function testsSentinelle(t, game) {
@@ -678,7 +679,7 @@ function testsHud(t, game) {
   const quiAvant = sentinelle.etat.qui; sentinelle.etat.qui = { nom: 'Baba', github: 'DonBabaa', saisie: 'Baba' };
   messagerie.laissezPasser(null);
   touche('KeyM');
-  t.ok(messagerie.ouvert && messagerie.boite.textContent.includes('Jouer au camp'), 'M ouvre la messagerie ; sans laissez-passer, elle dit comment l’obtenir (par le dashboard)');
+  t.ok(messagerie.ouvert && messagerie.boite.querySelector('.laissez-passer:not([hidden]) a.bouton-jeu')?.href.includes('#camp='), 'M ouvre la messagerie ; sans laissez-passer, elle dit comment l’obtenir (par le dashboard)');
   t.ok(!messagerie.envoyer('bonjour') && envoyes.length === 0, 'sans laissez-passer, rien ne part');
   messagerie.laissezPasser('v1.test.jeton');
   t.eq(envoyes[envoyes.length - 1], { type: 'jeton', jeton: 'v1.test.jeton' }, 'avec un laissez-passer, le jeu le présente au Worker');
@@ -743,4 +744,126 @@ function testsBoite(t, game) {
   messagerie.fermer();
   game.bus.emit('messagerie:nonlus', { n: 0 }); game.dbg.advance(0.05);
   t.ok(!boite.drapeauLeve && boite.excl.hidden, 'les messages lus : le drapeau redescend');
+}
+// --- Le camp branché sur un faux Worker direct : la messagerie liée au dashboard et la renommée en direct ------
+// Le faux serveur parle comme le vrai (dashboard/worker/src/index.js et messagerie.js) : GET /api/…, GET /profils,
+// et le WebSocket /direct (maj, jeton → bienvenue avec l'historique, envoyer → envoye + message à toutes les pages
+// entrées). Rien ne part sur le réseau.
+const JETON_TEST = 'v1.9999999999999.QmFiYQ.signature-de-test';
+function fauxWorker() {
+  const srv = { issues: [], messages: [], profils: [], pages: new Set(), appels: [], id: 0 };
+  const repondre = (corps) => ({ ok: true, status: 200, json: async () => JSON.parse(JSON.stringify(corps)) });
+  const rien = () => ({ ok: false, status: 404, json: async () => ({}) });
+  srv.fetch = async (url) => {
+    srv.appels.push(String(url));
+    const u = new URL(url);
+    if (u.host !== 'faux-worker.test') return rien();
+    if (u.pathname.startsWith('/api/repos/') && u.pathname.endsWith('/issues')) return repondre(srv.issues);
+    if (u.pathname === '/profils') return repondre(srv.profils);
+    return rien();
+  };
+  const plusTard = (f) => setTimeout(f, 5);
+  const diffuser = (o) => { for (const p of srv.pages) if (p.entree) p.recevoir(o); };
+  srv.WebSocket = class FauxSocket {
+    constructor(url) { this.url = url; this.readyState = 0; this.entree = false; srv.pages.add(this); plusTard(() => { if (this.readyState === 0) { this.readyState = 1; this.onopen?.(); } }); }
+    send(d) {
+      if (this.readyState !== 1) throw new Error('fermé');
+      if (d === 'ping') return;
+      const m = JSON.parse(d);
+      plusTard(() => {
+        if (m.type === 'jeton') {
+          if (m.jeton !== JETON_TEST) return this.recevoir({ type: 'refuse', raison: 'Laissez-passer refusé.' });
+          this.entree = true; this.nom = 'Baba';
+          this.recevoir({ type: 'bienvenue', nom: this.nom, messages: srv.messages.slice(-100) });
+        } else if (m.type === 'envoyer') {
+          if (!this.entree) return this.recevoir({ type: 'erreur', ref: m.ref, erreur: 'Il faut être entré avec le mot de passe pour écrire.' });
+          const message = { id: ++srv.id, auteur: this.nom, texte: m.texte, t: Date.now() };
+          srv.messages.push(message);
+          this.recevoir({ type: 'envoye', ref: m.ref, id: message.id });
+          diffuser({ type: 'message', message });
+        }
+      });
+    }
+    close() { if (this.readyState === 3) return; this.readyState = 3; srv.pages.delete(this); plusTard(() => this.onclose?.()); }
+    recevoir(o) { if (this.readyState === 1) this.onmessage?.({ data: JSON.stringify(o) }); }
+  };
+  // un message écrit dans le dashboard : le Worker le garde, et le diffuse aux pages entrées
+  srv.depuisDashboard = (auteur, texte, { direct = true } = {}) => {
+    const message = { id: ++srv.id, auteur, texte, t: Date.now() };
+    srv.messages.push(message);
+    if (direct) diffuser({ type: 'message', message });
+  };
+  // un webhook GitHub : le Worker prévient toutes les pages
+  srv.maj = (sujets) => { for (const p of srv.pages) p.recevoir({ type: 'maj', sujets, messages: [] }); };
+  // le Worker redémarre (un déploiement, une coupure) : toutes les connexions tombent
+  srv.couper = () => { for (const p of [...srv.pages]) p.close(); };
+  return srv;
+}
+const attendre = async (cond, ms = 4000) => {
+  const t0 = performance.now();
+  while (!cond()) { if (performance.now() - t0 > ms) return false; await new Promise((r) => setTimeout(r, 10)); }
+  return true;
+};
+
+async function testsDirect(t, game) {
+  const { missions, messagerie, renommee: R, sentinelle, boite } = ctx;
+  const srv = fauxWorker();
+  const quiAvant = sentinelle.etat.qui;
+  sentinelle.etat.qui = { nom: 'Baba', github: 'DonBabaa', saisie: 'Baba' };
+  srv.messages = [1, 2, 3].map((k) => ({ id: k, auteur: 'Paul', texte: `Message du dashboard n° ${k}`, t: Date.now() - (4 - k) * 60_000 }));
+  srv.id = 3;
+  srv.issues = [{ ...issue(90, ['axe: menus', 'taille: M'], { qui: ['DonBabaa'] }), milestone: null }];
+  let nonLus = null;
+  game.bus.on('messagerie:nonlus', (d) => { nonLus = d.n; });
+  const total = () => R.resultat?.parPersonne?.DonBabaa ?? 0;
+  const fil = () => [...messagerie.boite.querySelectorAll('.msg .texte')].map((p) => p.textContent);
+
+  t.group('la messagerie liée au dashboard (faux Worker)');
+  t.eq(messagerie.extraireJeton(`{"nom":"Baba","jeton":"${JETON_TEST}"}`), JETON_TEST, 'coller la réponse de /session du dashboard : le jeu y trouve le laissez-passer');
+  t.ok(messagerie.extraireJeton('bonjour') === null, 'autre chose n’est pas un laissez-passer');
+  messagerie.laissezPasser(JETON_TEST);
+  missions.relier({ fetch: srv.fetch, WebSocket: srv.WebSocket, worker: 'https://faux-worker.test' });
+  t.ok(await attendre(() => messagerie.etat.statut === 'ouverte'), 'le camp se branche au Worker et y entre avec le laissez-passer');
+  messagerie.ouvrir();
+  t.eq(fil(), ['Message du dashboard n° 1', 'Message du dashboard n° 2', 'Message du dashboard n° 3'], 'à l’ouverture, l’historique du dashboard est là');
+  // une page du dashboard, ouverte en même temps
+  const dash = new srv.WebSocket('wss://faux-worker.test/direct'), recuDash = [];
+  await attendre(() => dash.readyState === 1);
+  dash.onmessage = (m) => recuDash.push(JSON.parse(m.data));
+  dash.send(JSON.stringify({ type: 'jeton', jeton: JETON_TEST }));
+  await attendre(() => dash.entree);
+  t.ok(messagerie.envoyer('Écrit depuis le camp'), 'écrire dans le camp');
+  t.ok(await attendre(() => recuDash.some((m) => m.type === 'message' && m.message.texte === 'Écrit depuis le camp')), 'le message écrit au camp arrive dans le dashboard, en direct');
+  t.ok(await attendre(() => fil().includes('Écrit depuis le camp')) && ![...messagerie.etat.enAttente.values()].includes('Écrit depuis le camp'), 'et dans le fil du camp, confirmé par le Worker');
+  messagerie.fermer();
+  srv.depuisDashboard('Paul', 'Réponse écrite dans le dashboard');
+  t.ok(await attendre(() => fil().includes('Réponse écrite dans le dashboard')), 'un message écrit dans le dashboard apparaît au camp, en direct');
+  t.ok(nonLus === 1 && boite.drapeauLeve, `panneau fermé : il compte comme non lu, et le drapeau de la boîte aux lettres se lève (${nonLus})`);
+
+  t.group('la renommée en direct (faux Worker)');
+  await attendre(() => R.resultat && missions.etat.source === 'worker');
+  t.eq(total(), 0, 'la mission #90 de Baba est en cours : pas encore de renommée');
+  srv.issues = [{ ...srv.issues[0], state: 'closed' }];
+  srv.maj(['issues']);
+  t.ok(await attendre(() => total() === 3), 'le Worker annonce que les issues ont changé (#90 rentrée) : la renommée passe à 3 toute seule');
+  t.ok(R.plaque.textContent.includes('✦ 3'), `la plaque du HUD le montre (« ${R.plaque.textContent.slice(0, 60)} »)`);
+  t.ok([...R.annonces.children].some((a) => a.textContent.includes('#90')), 'avec l’annonce dorée « #90 rentrée »');
+
+  t.group('le direct coupé puis rouvert (faux Worker)');
+  srv.couper();
+  t.ok(await attendre(() => messagerie.etat.statut === 'coupee'), 'le direct tombe : la messagerie le dit (« Connexion perdue »)');
+  // pendant la coupure : une autre mission rentre, et Paul écrit dans le dashboard (le camp n'est prévenu de rien)
+  srv.issues = [...srv.issues, { ...issue(91, ['axe: son', 'taille: S'], { qui: ['DonBabaa'], state: 'closed' }), milestone: null }];
+  srv.depuisDashboard('Paul', 'Écrit pendant la coupure', { direct: false });
+  t.ok(await attendre(() => missions.directOuvert && messagerie.etat.statut === 'ouverte', 5000), 'le camp se reconnecte seul (en 1 s) et rentre dans la messagerie');
+  t.ok(await attendre(() => total() === 4), `à la reconnexion, les issues sont relues : la mission rentrée pendant la coupure compte (${total()})`);
+  t.ok(await attendre(() => fil().includes('Écrit pendant la coupure')), 'et le message écrit pendant la coupure est là');
+  t.ok(srv.appels.length > 0 && srv.appels.every((u) => u.startsWith('https://faux-worker.test/') || u.includes('equipe.json')), `toutes les lectures passent par le faux Worker (${srv.appels.length})`);
+
+  missions.delier();
+  try { dash.close(); } catch {}
+  messagerie.laissezPasser(null);
+  missions.charger([]);
+  sentinelle.etat.qui = quiAvant;
+  game.bus.emit('messagerie:nonlus', { n: 0 });
 }
