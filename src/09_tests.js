@@ -3,6 +3,7 @@
 // (de vrais événements clavier, comme un joueur) ; il donne les coordonnées exactes de tout endroit où le héros reste coincé.
 import { T, W, H, LIEUX, BOIS, FEU, APPARITION, emprise } from './01_plan.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
+import { LIEUX_AXES } from './10_missions.js';
 
 export const name = 'camp';
 let ctx;
@@ -151,6 +152,7 @@ export function selfTest(t, game) {
   testsMissions(t, game);
   testsSentinelle(t, game);
   testsReseau(t, game);
+  testsRenommee(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -176,12 +178,20 @@ function testsMissions(t, game) {
   t.eq([p.points.combat, p.niveaux.combat], [12, 2], 'M + L + S = 12 points : niveau 2 (majuscules sans effet)');
   p = progression([issue(5, ['axe: combats', 'taille: L'], { state: 'open', qui: ['PCrrfng'] })]);
   t.eq(p.points.combat, 0, 'une mission rouverte ou en cours ne compte pas');
-  p = progression([issue(6, ['axe: technique', 'taille: L'], { state: 'closed' }), issue(7, ['taille: M'], { state: 'closed' })]);
+  p = progression([issue(6, ['axe: inconnu', 'taille: L'], { state: 'closed' }), issue(7, ['taille: M'], { state: 'closed' })]);
   t.eq(p.total, 0, 'un axe sans lieu, ou pas d’axe : aucun lieu ne grandit');
   p = progression([issue(8, ['axe: menus'], { state: 'closed' }), issue(9, ['axe: menus', 'taille: L'], { state: 'closed', pr: true })]);
   t.eq(p.total, 0, 'sans taille : 0 point ; une PR n’est pas une mission');
   p = progression(Array.from({ length: 5 }, (_, k) => issue(10 + k, ['axe: salles', 'taille: L'], { state: 'closed' })));
   t.eq([p.points.level, p.niveaux.level, p.feu], [40, 4, 2], '40 points : niveau 4 (seuil 35) et le feu à la taille 2 (seuil 40)');
+
+  t.group('les axes (content/axes.json, le contrat avec le dashboard)');
+  const ax = LIEUX_AXES;
+  t.eq(ax.length, 8, 'huit axes, un lieu chacun');
+  t.eq(ax.map((a) => a.labels[0]).sort(), ['axe: classes', 'axe: combats', 'axe: histoire', 'axe: menus', 'axe: pixel art', 'axe: salles', 'axe: son', 'axe: technique'], 'les huit labels du tableau de travail');
+  t.ok(ax.every((a) => LIEUX.some((l) => l.id === a.id)), 'chaque axe a son emplacement dans le plan du camp');
+  p = progression([issue(70, ['axe: technique', 'taille: L'], { state: 'closed' }), issue(71, ['axe: runs', 'taille: S'], { state: 'closed' })]);
+  t.eq([p.points.technique, p.points.level], [8, 1], 'axe: technique fait grandir la forge ; un ancien label (axe: runs) compte pour son axe');
 
   t.group('le panneau des missions');
   const etaitVu = panneau.vu;
@@ -194,7 +204,7 @@ function testsMissions(t, game) {
   t.ok(!decor.appel, 'déjà ouvert, rien à prendre : il ne scintille pas');
   missions.charger([
     issue(21, ['axe: menus', 'taille: S']), issue(22, ['axe: menus', 'taille: M'], { qui: ['PCrrfng'] }),
-    issue(23, ['axe: menus', 'taille: S'], { state: 'closed', qui: ['DonBabaa'] }), issue(24, ['axe: technique']), issue(25, ['idée']),
+    issue(23, ['axe: menus', 'taille: S'], { state: 'closed', qui: ['DonBabaa'] }), issue(24, ['axe: inconnu']), issue(25, ['idée']),
   ], [{ github: 'PCrrfng', nom: 'Paul' }, { github: 'DonBabaa', nom: '' }]);
   game.dbg.advance(1);
   t.ok(decor.appel && decor.nbEtoiles > 0, `des missions à prendre : le panneau scintille (${decor.nbEtoiles} étoiles)`);
@@ -210,7 +220,7 @@ function testsMissions(t, game) {
   t.ok(texte.includes('À prendre · 1') && texte.includes('En cours · 1') && texte.includes('Rentrées · 1'), 'rangées en à prendre, en cours, rentrées');
   t.ok(texte.includes('Paul') && texte.includes('DonBabaa'), 'avec qui s’en occupe (nom de equipe.json, sinon le pseudo GitHub)');
   t.ok(texte.includes('Ferme #21'), 'et comment la rentrer : une PR avec « Ferme #n »');
-  t.ok(texte.includes('Sans lieu') && !texte.includes('Mission inventée 25'), 'axe: technique va dans « Sans lieu » ; une idée non prise n’y est pas');
+  t.ok(texte.includes('Sans lieu') && !texte.includes('Mission inventée 25'), 'un axe inconnu va dans « Sans lieu » ; une idée non prise n’y est pas');
   const x0 = heros.heros.x; window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' })); game.dbg.advance(0.5); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight' }));
   t.ok(Math.abs(heros.heros.x - x0) < 0.5, 'panneau ouvert : le héros ne bouge pas');
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' }));
@@ -344,4 +354,56 @@ function testsReseau(t, game) {
   t.ok(!reseau.party.active && /fermé le groupe/.test(reseau.statut), `Cy ferme : Paul continue seul (« ${reseau.statut} »)`);
   t.ok(Number.isFinite(h.x) && h.controle, 'et son héros marche toujours');
   reseau.rebrancher();
+}
+
+// La renommée du bâtisseur (RENOMMEE.fr.md) : le calcul, la plaque du HUD, l'annonce quand une mission rentre.
+function testsRenommee(t, game) {
+  const { renommee: R, missions, sentinelle } = ctx;
+  const calc = R.renommee;
+  const jalon = (code) => ({ title: `${code} · un jalon` });
+  const m = (number, labels, qui, { state = 'closed', j = null } = {}) => ({ ...issue(number, labels, { state, qui }), milestone: j ? jalon(j) : null });
+
+  t.group('la renommée : le calcul (RENOMMEE §1, §2)');
+  let r = calc([m(1, ['axe: menus', 'taille: S'], ['Ana'])]);
+  t.eq(r.parPersonne, { Ana: 1 }, 'une S rentrée seule : 1');
+  r = calc([m(2, ['axe: combats', 'taille: M'], ['Ana', 'Ben'])]);
+  t.eq(r.parPersonne, { Ana: 5, Ben: 5 }, 'une M à deux : 3 + 2 = 5 chacun');
+  r = calc([m(3, ['axe: salles', 'taille: L'], ['Ana', 'Ben', 'Cy'])]);
+  t.eq(r.parPersonne.Cy, 12, 'une L à trois : 8 + 4 = 12 chacun');
+  r = calc([m(4, ['axe: salles', 'taille: L'], ['Ana'], { state: 'open' }), m(5, ['axe: salles'], ['Ana']), m(6, ['axe: salles', 'taille: L'], [])]);
+  t.eq(r.parPersonne, {}, 'en cours, sans taille, ou sans personne assignée : rien');
+  r = calc([m(7, ['axe: menus', 'taille: S'], ['Ana'], { j: 'D1' }), m(8, ['axe: menus', 'taille: S'], ['Ben'], { j: 'D3' }), m(9, ['axe: menus', 'taille: M'], ['Ana'], { j: 'D2', state: 'open' })]);
+  t.ok(r.finies.includes(1) && r.parPersonne.Ana === 6 && r.parPersonne.Ben === 6, `la phase 1 finie (D1, D3 rentrés) : +5 à Ana et Ben (${r.parPersonne.Ana}, ${r.parPersonne.Ben})`);
+  t.eq(r.phaseEnCours, 0, 'la phase 0 (M1) n’a pas de mission : elle reste la phase en cours');
+  r = calc([m(10, ['axe: menus', 'taille: M'], ['Ana']), m(11, ['axe: son', 'taille: S'], ['Ben'], { j: 'D4' }), m(19, ['axe: son', 'taille: S'], [], { j: 'D1', state: 'open' })]);
+  t.ok(r.parPhase[0]?.Ana === 3 && r.parPhase[1]?.Ben === 1, 'une mission sans jalon compte pour la phase en cours ; avec jalon, pour sa phase');
+  r = calc([m(12, ['axe: menus', 'taille: M'], ['Ana']), m(13, ['axe: son', 'taille: M'], ['Ben']), m(14, ['axe: son', 'taille: S'], ['Cy']), m(15, ['axe: son', 'taille: S'], ['Dee']), m(16, ['axe: son', 'taille: S'], ['Eve'])]);
+  t.eq(r.podiums[0].map((e) => `${e.rang}${e.qui}`), ['1Ana', '1Ben', '3Cy', '3Dee', '3Eve'], 'une égalité partage la place ; on ne montre que le podium');
+  r = calc([m(17, ['axe: technique', 'taille: L'], ['Ana']), m(18, ['axe: salles', 'taille: M'], ['Ana'])]);
+  t.eq(r.titres.Ana, 'Forgeron', 'le titre vient de l’axe où on a le plus de renommée (technique : Forgeron)');
+
+  t.group('la renommée : la plaque du HUD');
+  const garde = sentinelle.etat.qui;
+  sentinelle.etat.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'Paul' };
+  missions.charger([m(20, ['axe: menus', 'taille: M'], ['PCrrfng', 'DonBabaa']), m(21, ['axe: technique', 'taille: L'], ['PCrrfng']), m(22, ['axe: son', 'taille: S'], ['anthonygiauna'], { state: 'open' })],
+    [{ github: 'PCrrfng', nom: 'Paul' }, { github: 'DonBabaa', nom: '' }]);
+  R.replier(false);
+  let txt = R.plaque.textContent;
+  t.ok(txt.includes('Paul') && txt.includes('Forgeron') && txt.includes('✦ 13 renommée'), `ton nom, ton titre, ta renommée (« ${txt.slice(0, 60)}… »)`);
+  t.ok(txt.includes('Phase 0 : le camp') && /1\.\s*Paul/.test(R.plaque.querySelector('.podium')?.innerText ?? txt), 'le podium de la phase en cours, toi en tête');
+  t.ok(R.plaque.querySelector('.podium li.toi'), 'ta ligne est en évidence');
+  t.ok(!txt.includes('anthonygiauna'), 'une mission en cours ne met personne sur le podium');
+  // une mission qui rentre en direct : l'annonce
+  const avant = R.annonces.children.length;
+  missions.charger([m(20, ['axe: menus', 'taille: M'], ['PCrrfng', 'DonBabaa']), m(21, ['axe: technique', 'taille: L'], ['PCrrfng']), m(22, ['axe: son', 'taille: S'], ['anthonygiauna', 'DonBabaa'])],
+    [{ github: 'PCrrfng', nom: 'Paul' }, { github: 'DonBabaa', nom: '' }]);
+  const a = R.annonces.lastElementChild?.textContent ?? '';
+  t.ok(R.annonces.children.length === avant + 1 && a === '✦ +2 pour anthonygiauna et DonBabaa : #22 rentrée à 2', `une mission rentre : l’annonce dorée (« ${a} »)`);
+  R.replier(true);
+  t.ok(R.plaque.classList.contains('repliee') && !R.plaque.querySelector('.podium') && R.plaque.textContent.includes('✦ 13'), 'repliée : seulement « ✦ 13 »');
+  R.replier(false);
+  sentinelle.etat.qui = { nom: 'Zorg', github: null, saisie: 'Zorg' }; R.maj();
+  const lien = R.plaque.querySelector('.visiteur a');
+  t.ok(R.plaque.textContent.includes('Visiteur') && lien?.href === 'https://github.com/orgs/Mastre-gaming/invitation' && lien.target === '_blank', 'un visiteur : un bouton vers l’invitation de l’organisation GitHub');
+  sentinelle.etat.qui = garde; missions.charger([]); R.maj();
 }

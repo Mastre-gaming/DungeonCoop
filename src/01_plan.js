@@ -3,7 +3,7 @@
 export const T = 32;
 export const W = 42, H = 28;                        // le camp fait 42 x 28 cases
 
-// Les huit lieux, un par axe du plan. `porte` = la case de la porte (en bas, au centre-gauche de l'emprise).
+// Les huit lieux, un par axe du tableau de travail (content/axes.json). `porte` = la case de la porte (en bas, au centre-gauche de l'emprise).
 // Les noms sont provisoires (CAMP §4) : ils sont à l'axe Histoire.
 export const LIEUX = [
   { id: 'interface', lieu: "le tableau d'affichage", axe: 'Interface et UX', porte: [27, 16] },
@@ -13,7 +13,7 @@ export const LIEUX = [
   { id: 'classes', lieu: "l'armurerie", axe: 'Classes et personnages', porte: [35, 7] },
   { id: 'son', lieu: "l'estrade", axe: 'Son et musique', porte: [25, 24] },
   { id: 'art', lieu: "l'atelier", axe: 'Direction artistique', porte: [33, 23] },
-  { id: 'runs', lieu: 'la porte du camp', axe: 'Structure des runs', porte: [8, 24] },
+  { id: 'technique', lieu: 'la forge', axe: 'Technique', porte: [8, 24] },
 ];
 
 // L'emprise du niveau 4 (6 x 5 cases), réservée dès le départ : [x0, y0, x1, y1] en cases, x1 et y1 exclus.

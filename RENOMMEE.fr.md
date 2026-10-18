@@ -73,6 +73,7 @@ Une mission compte pour la phase de son jalon. Une mission sans jalon compte pou
 
 ## 4. Où on la voit
 
+- **Sur le HUD du camp (décision du 18 oct) :** une plaque en bois et parchemin en haut à droite, toujours visible : ton nom, ton titre et ta renommée totale ; puis le podium de la phase en cours (les trois premiers seulement ; si tu n'y es pas, ta renommée de la phase s'affiche sous le podium, sans ta place). Quand une mission rentre, une annonce dorée dit qui gagne combien (« ✦ +5 pour Paul et Ana : #33 rentrée à deux »). Un visiteur voit le podium et comment s'ajouter à `equipe.json`. La plaque se replie en un clic ; en vue visite (le dashboard), seul le podium s'affiche.
 - **Au camp :** les tentes (une par membre de l'équipe), les titres sous les noms, les statues des bâtisseurs. En s'approchant d'une tente : la renommée totale de son propriétaire et ses missions récentes.
 - **Dans le dashboard :** le podium de la phase en cours, et pour chacun sa renommée totale et son titre (avec le choix « Je suis » ou le nom d'entrée).
 - **Dans le jeu final :** seulement les cosmétiques débloqués (§3), lus depuis une liste par personne. Les règles du combat ne la voient jamais.
@@ -96,4 +97,5 @@ Une mission compte pour la phase de son jalon. Une mission sans jalon compte pou
 | 18 oct | Une mission faite à plusieurs rapporte un bonus à chacun (+50 %) | le propriétaire |
 | 18 oct | Un podium par phase (les trois premiers), et la course repart à chaque phase | le propriétaire |
 | 18 oct | Première version : la tente, le titre, la statue du bâtisseur de la phase | le propriétaire |
+| 18 oct | La renommée s'affiche sur le HUD du camp : ta renommée et ton titre, le podium de la phase, une annonce quand une mission rentre | le propriétaire |
 | 18 oct | Remplace la règle « aucun chiffre par personne, aucun classement » de `CAMP.fr.md` pour les personnes. Le camp et ses lieux restent ceux de l'équipe | le propriétaire |

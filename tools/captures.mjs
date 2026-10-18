@@ -31,7 +31,7 @@ export async function ouvrir(url, query = '', taille = opt.taille || '1600x900')
   return page;
 }
 
-const POINTS = ['panneau', 'apparition', 'feu', 'interface', 'histoire', 'level', 'combat', 'classes', 'son', 'art', 'runs', 'visite'];
+const POINTS = ['panneau', 'apparition', 'feu', 'interface', 'histoire', 'level', 'combat', 'classes', 'son', 'art', 'technique', 'visite'];
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const srv = await servir();

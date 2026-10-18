@@ -78,16 +78,18 @@ Repo du JEU (DungeonCoop)                          Repo du DASHBOARD (DungeonCoo
 
 Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font partie de l'histoire (axe 1), qui n'a pas de responsable pour l'instant. Ils seront renommés quand l'axe en aura un.
 
-| Axe du plan | Lieu (provisoire) | Ce qu'on y trouve plus tard dans le jeu |
+**Les 8 axes sont ceux du tableau de travail du dashboard** (décision du 18 oct) ; ils sont décrits une seule fois, dans `content/axes.json`, que le jeu et le dashboard lisent tous les deux.
+
+| Axe (label GitHub) | Lieu (provisoire) | Ce qu'on y trouve plus tard dans le jeu |
 |---|---|---|
-| 1. Histoire et narration | le coin des récits | le journal de campagne, les récits |
-| 2. Combat et combos | le terrain d'entraînement | la salle d'entraînement de Paolitus |
-| 3. Classes et personnages | l'armurerie | choisir et équiper son héros |
-| 4. Structure des runs | la porte du camp | le départ des runs |
-| 5. Level design | la table des cartes | la carte du chapitre |
-| 6. Direction artistique | l'atelier | les apparences des héros |
-| 7. Interface et UX | le tableau d'affichage | les missions, au cœur du camp |
-| 8. Son et musique | l'estrade | la musique du camp |
+| Chapitres et histoire (`axe: histoire`) | le coin des récits | le journal de campagne, les récits |
+| Combats (`axe: combats`) | le terrain d'entraînement | la salle d'entraînement de Paolitus |
+| Classes et personnages (`axe: classes`) | l'armurerie | choisir et équiper son héros |
+| Salles et carte (`axe: salles`, avec la structure des runs) | la table des cartes | la carte du chapitre, le départ des runs |
+| Pixel art (`axe: pixel art`) | l'atelier | les apparences des héros |
+| Menus et écrans (`axe: menus`) | le tableau d'affichage | les missions, au cœur du camp |
+| Son et musique (`axe: son`) | l'estrade | la musique du camp |
+| Technique (`axe: technique`) | la forge | les outils de l'équipe |
 
 ### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
 - **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
@@ -95,7 +97,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   - le monde : le coin des récits et la table des cartes ;
   - les héros : le terrain d'entraînement et l'armurerie ;
   - l'atelier : l'atelier et l'estrade.
-- **La porte du camp (les runs)** est seule, à l'entrée sud.
+- **La forge (la technique)** est seule, au sud-ouest, près de l'entrée sud (elle prend l'emplacement prévu pour « la porte du camp », avant que les axes ne soient ceux du tableau de travail).
 - **Chaque lieu réserve dès le départ son emprise du niveau 4 (6 × 5 cases),** avec une case de marge : il grandit sans écraser son voisin. Les façades sont tournées vers le bas (vue trois-quarts LPC) et chaque sentier arrive devant la porte.
 - **Vérifié par un contrôle automatique :** aucun chevauchement, aucun sentier qui traverse un lieu, et jamais plus de 2 lieux entiers dans le cadre de la caméra au zoom moyen.
 - Écartés : « le carré » (des rangées autour d'une place, trop lotissement) et « le chemin » (une longue rue, trop longue à parcourir et petite dans le dashboard).
@@ -109,7 +111,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | armurerie | 35, 7 | les héros (nord-est) |
 | estrade | 25, 24 | l'atelier (sud-est) |
 | atelier | 33, 23 | l'atelier (sud-est) |
-| porte du camp | 8, 24 | l'entrée (sud-ouest) |
+| forge | 8, 24 | l'entrée (sud-ouest) |
 
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.

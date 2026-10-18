@@ -1,0 +1,11 @@
+{
+  "_lisez_moi": "Les phases du plan de travail (RENOMMEE.fr.md §2) : chacune regroupe des jalons GitHub (le début du titre du jalon : « D1 · The paper fight » → D1). Une mission compte pour la phase de son jalon ; sans jalon, pour la phase en cours (la première qui n'est pas finie). Une phase est finie quand elle a des missions et qu'elles sont toutes rentrées. Lu par le jeu, et plus tard par le dashboard.",
+  "version": 1,
+  "phases": [
+    { "id": 0, "titre": "Phase 0 : le camp", "nom": "le camp", "jalons": ["M1"] },
+    { "id": 1, "titre": "Phase 1 : en parallèle", "nom": "en parallèle", "jalons": ["D1", "D3", "D4"] },
+    { "id": 2, "titre": "Phase 2 : après D1", "nom": "après D1", "jalons": ["D2"] },
+    { "id": 3, "titre": "Phases 3 et 4 : la grille, les dés, les combos", "nom": "la grille, les dés, les combos", "jalons": ["M2", "M3"] },
+    { "id": 5, "titre": "Phase 5 : la run", "nom": "la run", "jalons": ["M4"] }
+  ]
+}

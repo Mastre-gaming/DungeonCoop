@@ -50,3 +50,31 @@
 .groupe-jeu .statut, .groupe-jeu .petit { margin: 0; font-size: .82rem; color: var(--creme-doux); overflow-wrap: anywhere; }
 @media (max-width: 640px) { .groupe-jeu { width: auto; right: 10px; } }
 @media (prefers-reduced-motion: reduce) { .excl { animation: none; } }
+
+/* La renommée des bâtisseurs, en haut à droite (RENOMMEE.fr.md §4) */
+.renommee-jeu { position: fixed; right: 10px; top: 10px; z-index: 8; width: 230px; box-sizing: border-box; display: grid; gap: 4px;
+  background: var(--bois); border: 4px solid var(--bois-fonce); border-radius: 5px; box-shadow: inset 0 0 0 2px var(--bois-clair); padding: 8px 10px; color: #fff3dc; font: 14px/1.4 var(--texte); }
+.renommee-jeu.repliee { width: auto; }
+.renommee-jeu p { margin: 0; }
+.renommee-jeu .moi { display: flex; gap: 8px; align-items: flex-start; }
+.renommee-jeu .replier { background: none; border: 0; color: var(--creme); font: 700 1rem var(--titre); cursor: pointer; padding: 0 2px; }
+.renommee-jeu .replier:focus-visible { outline: 3px solid #ffd35a; outline-offset: 2px; }
+.renommee-jeu .qui { font: 700 1rem var(--titre); color: var(--creme); }
+.renommee-jeu .titre { font: 500 .85rem var(--titre); color: var(--creme-doux); }
+.renommee-jeu .total { font: 700 1rem var(--titre); color: #ffd35a; }
+.renommee-jeu h2 { margin: 4px 0 0; padding-top: 6px; border-top: 1px solid var(--bois-clair); font: 500 .85rem var(--titre); color: var(--creme-doux); }
+.renommee-jeu .podium { margin: 0; padding: 0; list-style: none; display: grid; gap: 2px; }
+.renommee-jeu .podium li { display: grid; grid-template-columns: 1.6em 1fr auto; gap: 4px; align-items: baseline; }
+.renommee-jeu .podium li.toi .nom { color: #ffd35a; font-weight: 600; }
+.renommee-jeu .podium .rang { font: 700 .9rem var(--titre); color: var(--creme); }
+.renommee-jeu .podium .n { font: 500 .9rem var(--titre); color: #ffd35a; }
+.renommee-jeu .petit { font-size: .82rem; color: var(--creme-doux); }
+.annonces { position: fixed; right: 10px; top: 200px; z-index: 9; display: grid; gap: 6px; justify-items: end; pointer-events: none; }
+.annonce-renommee { margin: 0; background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid #b8892a; border-radius: 4px; padding: 4px 10px;
+  font: 500 .95rem var(--titre); box-shadow: 0 0 0 2px var(--bois-fonce); animation: arrive .4s ease-out; transition: opacity .8s, transform .8s; }
+.annonce-renommee.part { opacity: 0; transform: translateY(-8px); }
+@keyframes arrive { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+@media (max-width: 640px) { .renommee-jeu { top: auto; bottom: 48px; } .annonces { top: auto; bottom: 200px; } }
+@media (prefers-reduced-motion: reduce) { .annonce-renommee { animation: none; transition: none; } }
+.renommee-jeu .visiteur { display: grid; gap: 6px; }
+.renommee-jeu .visiteur .bouton-jeu { font-size: .85rem; padding: 4px 8px; text-decoration: none; text-align: center; }
