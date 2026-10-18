@@ -28,9 +28,10 @@ function eclaircir(im) {
   return c;
 }
 
-export async function chargerImages(base = './assets/lpc/') {
+// `liste` : d'autres planches que celles du camp (le terrain d'entraînement charge les siennes).
+export async function chargerImages(base = './assets/lpc/', liste = FICHIERS) {
   const im = {};
-  await Promise.all(Object.entries(FICHIERS).map(async ([nom, f]) => { im[nom] = await charger(base + f); }));
-  im.herbe = eclaircir(im.herbe);
+  await Promise.all(Object.entries(liste).map(async ([nom, f]) => { im[nom] = await charger(base + f); }));
+  if (im.herbe) im.herbe = eclaircir(im.herbe);
   return im;
 }

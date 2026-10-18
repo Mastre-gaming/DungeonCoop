@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dungeon Co-op : le terrain d'entraînement</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2f5a2a; }
+  #jeu { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; image-rendering: pixelated; touch-action: none; cursor: crosshair; }
+  #chargement { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); background: #f3e7c9; border: 3px solid #5a3b22; padding: 4px 10px; font: 14px system-ui, sans-serif; }
+</style>
+</head>
+<body>
+<canvas id="jeu" aria-label="Le terrain d'entraînement, vu de dessus"></canvas>
+<p id="chargement">Le terrain se prépare…</p>
+<script type="module" src="./src/entrainement/main.js"></script>
+</body>
+</html>

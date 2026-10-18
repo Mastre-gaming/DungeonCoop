@@ -1,0 +1,63 @@
+Character: Mage des tempêtes
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_light&head=Human_Female_light&expression=Neutral_light&hat=Hood_navy&clothes=Robe_blue&shoes=Basic_Shoes_brown&weapon=Gnarled_staff_medium
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/female/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Benjamin K. Smith (BenCreating), bluecarrot16, TheraHedwig, Evert, MuffinElZangano, Durrani, Pierre Vigier (pvigier), ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/human/female/walk.png
+
+original head by Redshrike, tweaks by BenCreating, modular version by bluecarrot16
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike)
+
+head/faces/female/neutral/walk.png
+
+Original by Redshrike, Expressions by ElizaWy, mapped to all frames by JaidynReiman
+
+Licenses: OGA-BY 3.0
+
+Authors: JaidynReiman, ElizaWy, Stephen Challener (Redshrike)
+
+hat/cloth/hood/adult/walk.png
+
+Brown hood by Wulax, original black/white recolors by ??, mapped to idle/run/jump/revised combat by JaidynReiman, along with additional recolors.
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Johannes Sjölund (wulax), JaidynReiman
+
+torso/clothes/robe/female/walk/blue.png
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: Luke Mehl
+
+feet/shoes/basic/thin/walk.png
+
+original by wulax, edited for v3 base by bluecarrot16, Jump/Sit/Emote/Run/Revised Combat by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: JaidynReiman, bluecarrot16, Johannes Sjölund (wulax)
+
+weapon/magic/gnarled/universal/foreground/walk/medium.png
+
+Licenses: OGA-BY 3.0+, GPL 3.0, CC-BY 4.0
+
+Authors: bluecarrot16
+
+Download TXT
+Download CSV

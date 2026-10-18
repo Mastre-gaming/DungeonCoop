@@ -7,6 +7,8 @@ const tampon = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', da
 export default defineConfig({
   base: './',
   define: { __BUILD_STAMP__: JSON.stringify(tampon) },
-  build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 0, target: 'es2022', chunkSizeWarningLimit: 900 },
+  // deux pages : le camp, et le terrain d'entraînement où l'on entre depuis le camp
+  build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 0, target: 'es2022', chunkSizeWarningLimit: 900,
+    rollupOptions: { input: { camp: 'index.html', entrainement: 'entrainement.html' } } },
   server: { port: 5173 },
 });

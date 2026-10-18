@@ -85,7 +85,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Axe (label GitHub) | Lieu (provisoire) | Ce qu'on y trouve plus tard dans le jeu |
 |---|---|---|
 | Chapitres et histoire (`axe: histoire`) | le coin des récits | le journal de campagne, les récits |
-| Combats (`axe: combats`) | le terrain d'entraînement | la salle d'entraînement de Paolitus |
+| Combats (`axe: combats`) | le terrain d'entraînement | la salle d'entraînement de Paolitus : déjà ouverte, E devant lui lance le combat d'entraînement sans cases (`entrainement.html`, mission #14) ; son enclos agrandi dans le camp est la mission #77 |
 | Classes et personnages (`axe: classes`) | l'armurerie | choisir et équiper son héros |
 | Salles et carte (`axe: salles`, avec la structure des runs) | la table des cartes | la carte du chapitre, le départ des runs |
 | Pixel art (`axe: pixel art`) | l'atelier | les apparences des héros |

@@ -272,3 +272,7 @@
 .bulle-rat small { font: 500 .78rem var(--titre); color: #a3261c; }
 .bulle-rat.dessous { transform: translate(-50%, 0); }
 .bulle-rat[hidden] { display: none; }
+
+/* L'entrée du terrain d'entraînement (src/23_terrain.js) : la bulle se clique aussi */
+.bulle-terrain { pointer-events: auto; cursor: pointer; text-decoration: none; }
+.bulle-terrain:hover { filter: brightness(1.05); }
