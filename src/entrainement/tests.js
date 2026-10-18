@@ -287,6 +287,44 @@ export async function selfTest(t, game) {
   ihm.dom.fin.hidden = true;
   await pause(0);
 
+  // --- Le zoom fin et animé (#122) : sous la souris, quatre crans pour doubler ---------------------------------------
+  t.group('le zoom fin et animé (#122)');
+  {
+    const toile = document.querySelector('#jeu'), r = toile.getBoundingClientRect();
+    const px = r.left + r.width * 0.3, py = r.top + r.height * 0.4;
+    const roulette = (deltaY) => toile.dispatchEvent(new WheelEvent('wheel', { deltaY, clientX: px, clientY: py, bubbles: true, cancelable: true }));
+    const s0 = V.cam.s;
+    roulette(-100); game.dbg.advance(0.05);
+    const enRoute = V.cam.s;
+    game.dbg.advance(0.6);
+    t.ok(enRoute > s0 && enRoute < s0 * 2 ** 0.25 - 0.005 && Math.abs(V.cam.s - s0 * 2 ** 0.25) < 1e-6, `un cran : ×1,19, et il glisse (${s0} → ${enRoute.toFixed(2)} → ${V.cam.s.toFixed(2)})`);
+    for (let k = 0; k < 3; k++) roulette(-100);
+    game.dbg.advance(0.8);
+    t.ok(Math.abs(V.cam.s - Math.min(5, s0 * 2)) < 1e-6, `quatre crans : le zoom double (${V.cam.s})`);
+    for (let k = 0; k < 30; k++) roulette(-100);
+    game.dbg.advance(1.5);
+    t.eq(V.cam.s, 5, 'jamais plus près que 5');
+    for (let k = 0; k < 40; k++) roulette(100);
+    game.dbg.advance(1.5);
+    t.eq(V.cam.s, 1, 'jamais plus loin que 1');
+    for (let k = 0; k < 40; k++) roulette(-100);
+    game.dbg.advance(0.2);
+    V.ajusterCamera(true); game.dbg.advance(0.1);
+    // l'ancrage, là où la vue peut défiler (au départ, elle montre presque toute la salle : elle bute sur ses bords)
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    while (V.versMonde(r.right, r.bottom).x - V.versMonde(r.left, r.top).x > 26 * 0.85 || V.versMonde(r.right, r.bottom).y - V.versMonde(r.left, r.top).y > 20 * 0.85) {
+      toile.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: cx, clientY: cy, bubbles: true, cancelable: true })); game.dbg.advance(0.8);
+      if (V.cam.s >= 5) break;
+    }
+    const qx = r.left + r.width * 0.42, qy = r.top + r.height * 0.45, avantQ = V.versMonde(qx, qy);
+    toile.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: qx, clientY: qy, bubbles: true, cancelable: true }));
+    game.dbg.advance(0.8);
+    const apresQ = V.versMonde(qx, qy);
+    t.ok(Math.abs(apresQ.x - avantQ.x) < 0.05 && Math.abs(apresQ.y - avantQ.y) < 0.05, `le point sous la souris y reste (${(Math.hypot(apresQ.x - avantQ.x, apresQ.y - avantQ.y) * 32).toFixed(1)} px)`);
+    V.ajusterCamera(true); game.dbg.advance(0.1);
+    t.eq(V.cam.s, s0, 'et l’on revient à l’échelle de départ');
+  }
+
   // --- Rejouer, une autre équipe : un nouveau combat sans recharger la page ----------------------------------------
   t.group('rejouer, changer d’équipe, sans recharger');
   const CLE = 'dungeoncoop:equipe-entrainement';

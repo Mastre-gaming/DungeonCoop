@@ -1,6 +1,6 @@
 // Ce qu'on voit du terrain d'entraînement : les personnages LPC animés, les taches des surfaces (dessinées sans cases,
 // au pixel près), les marques de jeu (où l'on peut marcher, le chemin et sa longueur, la portée, les cibles, les zones),
-// la caméra (molette : zoom, clic droit glissé : déplacer la vue), et la file des événements du combat, jouée dans
+// la caméra (molette : zoom fin et animé, clic droit glissé : déplacer la vue), et la file des événements du combat, jouée dans
 // l'ordre : une marche, une attaque et son d20 en grand (la remarque de la partie D1), des dégâts, un KO…
 // Les barres de vie au-dessus des têtes, avec le nom : V pour les ennemis, Maj+V pour les alliés (gardé dans ce navigateur).
 import * as THREE from 'three';
@@ -28,7 +28,10 @@ const tonneaux = new Map();
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
-const cam = { s: 2, cx: 0, cy: 0, cible: null, glisse: null };
+// La caméra : son centre (cx, cy), l'échelle affichée (s) qui glisse vers celle des crans (base × 2^(crans/4), #122),
+// le point de l'écran qui reste sous la souris pendant le zoom (ancre), la molette pas encore comptée (des petits pas).
+const cam = { s: 2, base: 2, crans: 0, ancre: null, molette: 0, cx: 0, cy: 0, cible: null, glisse: null };
+const CRANS = 4, MOLETTE = 100, ZOOM_MAX = 5, DOUCEUR_ZOOM = 12;
 let marques = {};                      // ce que l'interface demande de montrer (voir dessinerMarques)
 const CLE_PLAQUES = 'dungeoncoop:plaques-terrain';
 const plaques = { e: false, h: false }; // les barres de vie montrées : des ennemis (e), des alliés (h)
@@ -43,7 +46,7 @@ export function init(g, options) {
   const plan = (z, nom) => {
     const c = Object.assign(document.createElement('canvas'), { width: W, height: H });
     const tex = new THREE.CanvasTexture(c);
-    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; tex.colorSpace = THREE.SRGBColorSpace;
+    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;   // (pas d'espace de couleurs : 04_rendu.js)
     const m = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false }));
     m.position.set(W / 2, -H / 2, z); m.name = nom;
     rendu.scene.add(m);
@@ -58,8 +61,13 @@ export function init(g, options) {
 
   peupler();
 
-  // la caméra : molette (zoom entier), clic droit glissé (déplacer la vue)
-  canvas.addEventListener('wheel', (e) => { e.preventDefault(); zoomer(e.deltaY < 0 ? 1 : -1, e.clientX, e.clientY); }, { passive: false });
+  // la caméra : molette (zoom fin et animé, sous la souris), clic droit glissé (déplacer la vue)
+  canvas.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    cam.ancre = { x: e.clientX, y: e.clientY };
+    cam.cible = null;   // (comme le clic droit glissé : le joueur reprend la vue, elle ne file plus vers le dernier qui a agi)
+    cam.molette += e.deltaY * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+  }, { passive: false });
   canvas.addEventListener('pointerdown', (e) => { if (e.button === 2 || e.button === 1) { cam.glisse = { x: e.clientX, y: e.clientY, cx: cam.cx, cy: cam.cy }; cam.cible = null; } });
   window.addEventListener('pointermove', (e) => {
     if (!cam.glisse) return;
@@ -110,15 +118,39 @@ function echelleDeBase() {
   const f = Math.min((r.width * dpr) / (salle.l * T), (r.height * dpr) / (salle.h * T));
   return Math.max(1, Math.floor(f + 0.35));       // presque tout le terrain, au pixel entier (on fait défiler le reste)
 }
+const echelleDe = (n) => Math.max(1, Math.min(ZOOM_MAX, cam.base * 2 ** (n / CRANS)));
+const bornesCrans = () => [Math.floor(CRANS * Math.log2(1 / cam.base)), Math.ceil(CRANS * Math.log2(ZOOM_MAX / cam.base))];
+// La taille de l'écran a changé (ou le début) : l'échelle de base suit l'écran ; on garde ses crans.
 function ajusterCamera(premiere = false) {
-  if (premiere) cam.s = echelleDeBase();
+  cam.base = echelleDeBase();
+  if (premiere) cam.crans = 0;
+  const [min, max] = bornesCrans();
+  cam.crans = Math.max(min, Math.min(max, cam.crans));
+  cam.s = echelleDe(cam.crans);
   rendu.ajuster({ echelle: cam.s });
 }
+// Un cran de zoom (+1 : plus près), sous le point (cx, cy) de l'écran s'il est donné. Le but change tout de suite ;
+// l'image y glisse (glisserZoom, à chaque image).
 function zoomer(sens, cx, cy) {
-  const avant = cx != null ? rendu.versMonde(cx, cy) : null;
-  cam.s = Math.max(1, Math.min(5, cam.s + sens));
-  ajusterCamera();
-  if (avant) { const apres = rendu.versMonde(cx, cy); cam.cx += avant.x - apres.x; cam.cy += avant.y - apres.y; }
+  const [min, max] = bornesCrans();
+  cam.crans = Math.max(min, Math.min(max, cam.crans + sens));
+  cam.ancre = cx != null ? { x: cx, y: cy } : null;
+}
+function glisserZoom(dt) {
+  while (Math.abs(cam.molette) >= MOLETTE) { zoomer(cam.molette < 0 ? 1 : -1, cam.ancre?.x, cam.ancre?.y); cam.molette -= Math.sign(cam.molette) * MOLETTE; }
+  const but = echelleDe(cam.crans);
+  if (cam.s === but) return;
+  let e = Math.exp(Math.log(cam.s) + (Math.log(but) - Math.log(cam.s)) * (1 - Math.exp(-DOUCEUR_ZOOM * dt)));
+  if (Math.abs(Math.log(but / e)) < 0.003) e = but;
+  const avant = cam.ancre ? rendu.versMonde(cam.ancre.x, cam.ancre.y) : null;
+  cam.s = e;
+  rendu.ajuster({ echelle: e });
+  if (avant) {
+    // le point sous la souris y reste : on recale le centre de la vue
+    rendu.viser(cam.cx - rendu.vue.w / 2, cam.cy - rendu.vue.h / 2);
+    const apres = rendu.versMonde(cam.ancre.x, cam.ancre.y);
+    cam.cx += avant.x - apres.x; cam.cy += avant.y - apres.y;
+  }
 }
 function bornerCamera() {
   const W = salle.l * T, H = salle.h * T, vw = rendu.vue.w, vh = rendu.vue.h;
@@ -352,6 +384,7 @@ export function update(dt) {
   // le feu crépite
   if (temps > prochainFeu) { prochainFeu = temps + 0.16; if (feuPresent()) redessinerSurfaces(temps); }
   // la caméra glisse vers sa cible
+  glisserZoom(dt);
   if (cam.cible && !cam.glisse) { cam.cx += (cam.cible.x - cam.cx) * Math.min(1, dt * 5); cam.cy += (cam.cible.y - cam.cy) * Math.min(1, dt * 5); }
   bornerCamera();
   rendu.viser(cam.cx - rendu.vue.w / 2, cam.cy - rendu.vue.h / 2);
