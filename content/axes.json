@@ -1,5 +1,5 @@
 {
-  "_lisez_moi": "Le contrat des axes (CAMP.fr.md §2) : le seul endroit où ils sont décrits. Le jeu (le camp) et le dashboard (le tableau de travail) le lisent tous les deux. Un axe = un label GitHub « axe: … » sur les missions, une colonne du tableau de travail, un lieu du camp. Les noms des lieux et les titres (RENOMMEE §3 : le titre du bâtisseur, tiré de l'axe où il a le plus de renommée) sont provisoires (ils sont à l'axe Histoire). « anciens » : d'autres labels rangés dans le même axe.",
+  "_lisez_moi": "Le contrat des axes (CAMP.fr.md §2) : le seul endroit où ils sont décrits. Le jeu (le camp) et le dashboard (le tableau de travail) le lisent tous les deux. Un axe = un label GitHub « axe: … » sur les missions, une colonne du tableau de travail, un lieu du camp. Les noms des lieux et les titres (RENOMMEE §3 : le titre du bâtisseur, tiré de l'axe où il a le plus de renommée) sont provisoires (ils sont à l'axe Histoire). « anciens » : d'autres labels rangés dans le même axe. « sansLieu » : un axe qui n'a pas de bâtiment ; l'axe « camp » modernise le camp tout entier à chaque niveau.",
   "version": 1,
   "axes": [
     { "id": "histoire", "titre": "Conteur", "label": "axe: histoire", "nom": "Chapitres et histoire", "lieu": "Coin des récits", "couleur": "#8e5cc2", "anciens": [] },
@@ -9,7 +9,8 @@
     { "id": "art", "titre": "Peintre", "label": "axe: pixel art", "nom": "Pixel art", "lieu": "Atelier", "couleur": "#c25a8a", "anciens": ["axe: art"] },
     { "id": "interface", "titre": "Héraut", "label": "axe: menus", "nom": "Menus et écrans", "lieu": "Tableau d'affichage", "couleur": "#2f68b8", "anciens": ["axe: interface"] },
     { "id": "son", "titre": "Ménestrel", "label": "axe: son", "nom": "Son et musique", "lieu": "Estrade", "couleur": "#7a6a5a", "anciens": [] },
-    { "id": "technique", "titre": "Forgeron", "label": "axe: technique", "nom": "Technique", "lieu": "Forge", "couleur": "#5b6e2f", "anciens": [] }
+    { "id": "technique", "titre": "Forgeron", "label": "axe: technique", "nom": "Technique", "lieu": "Forge", "couleur": "#5b6e2f", "anciens": [] },
+    { "id": "camp", "titre": "Bâtisseur", "label": "axe: camp", "nom": "Le camp", "lieu": "Le camp tout entier", "couleur": "#b8892a", "anciens": [], "sansLieu": true }
   ],
   "tailles": { "taille: S": 1, "taille: M": 3, "taille: L": 8 }
 }

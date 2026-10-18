@@ -78,7 +78,7 @@ Repo du JEU (DungeonCoop)                          Repo du DASHBOARD (DungeonCoo
 
 Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font partie de l'histoire (axe 1), qui n'a pas de responsable pour l'instant. Ils seront renommés quand l'axe en aura un.
 
-**Les 8 axes sont ceux du tableau de travail du dashboard** (décision du 18 oct) ; ils sont décrits une seule fois, dans `content/axes.json`, que le jeu et le dashboard lisent tous les deux.
+**Les axes sont ceux du tableau de travail du dashboard** (décision du 18 oct), plus « le camp » (9e axe, même jour) ; ils sont décrits une seule fois, dans `content/axes.json`, que le jeu et le dashboard lisent tous les deux.
 
 | Axe (label GitHub) | Lieu (provisoire) | Ce qu'on y trouve plus tard dans le jeu |
 |---|---|---|
@@ -90,6 +90,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Menus et écrans (`axe: menus`) | le tableau d'affichage | les missions, au cœur du camp |
 | Son et musique (`axe: son`) | l'estrade | la musique du camp |
 | Technique (`axe: technique`) | la forge | les outils de l'équipe |
+| Le camp (`axe: camp`, ajouté le 18 oct) | **le camp tout entier** (pas de bâtiment) | à chaque niveau, le camp se modernise : son design graphique, sa vie (les niveaux sont à proposer, puis à choisir) |
 
 ### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
 - **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
@@ -250,6 +251,22 @@ L'idée : chaque « première fois » de dev (premier commit, première PR fusio
 6. **À M4, la porte du camp lance les runs :** le camp devient le lieu entre les parties qu'imaginait `STORY_STRUCTURE.fr.md`.
 
 ---
+
+## 8 bis. Le HUD du camp : le dashboard, façon RPG (décidé le 18 oct)
+
+Chaque partie du dashboard a sa place dans le HUD du jeu, en lecture d'abord (les actions qui écrivent viendront ensemble, avec la connexion GitHub). **Une barre d'action en bas de l'écran,** des icônes en bois avec leur touche ; un seul panneau ouvert à la fois. Toujours à l'écran : la renommée (en haut à droite), le suivi de tes quêtes, la barre de campagne. Une chose à la fois (porte T), chacune validée sur capture avant la suivante.
+
+| Le dashboard | Dans le jeu | Où |
+|---|---|---|
+| Tableau de travail | **le journal de quêtes** (J) : les missions par axe, à prendre, en cours, rentrées ; et **le suivi de quêtes**, tes missions en cours, toujours visible | barre d'action ; sous la renommée |
+| Qui fait quoi | **les cadres de groupe** : un portrait par membre, son titre et sa quête en cours ; doré s'il est au camp | barre d'action |
+| Avancée du projet | **la barre de campagne** : le jalon en cours comme une barre d'expérience ; la carte de campagne (D1 à M4) au clic | en bas de l'écran |
+| Derniers push | **la chronique du camp** : « Paul a forgé 3 commits sur camp-v0 », quelques secondes en bas à gauche ; l'historique au clic | barre d'action |
+| Liens utiles | **la sacoche** : un inventaire, un objet par lien (`liens.json`) | barre d'action |
+| Idées | **les rumeurs de la taverne** : les idées par jalon, leurs votes | barre d'action |
+| Messagerie | **la boîte aux lettres** : une vraie boîte dans le camp, une icône au-dessus quand un message arrive ; la messagerie s'ouvre sur le HUD | dans le décor ; barre d'action |
+
+**La messagerie et son laissez-passer :** c'est celle du dashboard, par le Worker direct de Paul, qui n'accepte que le laissez-passer de l'entrée du dashboard (un jeton signé, gardé dans un cookie de son domaine, que le jeu ne peut pas lire). Le dashboard le passe au jeu dans le fragment de l'adresse (`#jeton=…`, qui ne passe par aucun serveur) quand on ouvre le camp avec son bouton ; le jeu le garde dans le navigateur. Sans lui, le panneau dit comment l'obtenir. Les non-lus : une pastille sur la case M, et l'événement `messagerie:nonlus` pour l'icône de la boîte aux lettres du décor.
 
 ## 9. Choix techniques
 - **2D en pixel art,** rendu net : pas de lissage, à l'échelle entière.

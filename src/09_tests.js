@@ -153,6 +153,7 @@ export function selfTest(t, game) {
   testsSentinelle(t, game);
   testsReseau(t, game);
   testsRenommee(t, game);
+  testsHud(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -187,9 +188,10 @@ function testsMissions(t, game) {
 
   t.group('les axes (content/axes.json, le contrat avec le dashboard)');
   const ax = LIEUX_AXES;
-  t.eq(ax.length, 8, 'huit axes, un lieu chacun');
-  t.eq(ax.map((a) => a.labels[0]).sort(), ['axe: classes', 'axe: combats', 'axe: histoire', 'axe: menus', 'axe: pixel art', 'axe: salles', 'axe: son', 'axe: technique'], 'les huit labels du tableau de travail');
-  t.ok(ax.every((a) => LIEUX.some((l) => l.id === a.id)), 'chaque axe a son emplacement dans le plan du camp');
+  t.eq(ax.length, 9, 'neuf axes : huit lieux, et le camp tout entier');
+  t.eq(ax.map((a) => a.labels[0]).sort(), ['axe: camp', 'axe: classes', 'axe: combats', 'axe: histoire', 'axe: menus', 'axe: pixel art', 'axe: salles', 'axe: son', 'axe: technique'], 'les labels du tableau de travail');
+  t.ok(ax.filter((a) => a.id !== 'camp').every((a) => LIEUX.some((l) => l.id === a.id)), 'chaque axe à bâtiment a son emplacement dans le plan du camp');
+  t.eq(progression([issue(72, ['axe: camp', 'taille: M'], { state: 'closed' })]).points.camp, 3, 'axe: camp compte pour le camp tout entier');
   p = progression([issue(70, ['axe: technique', 'taille: L'], { state: 'closed' }), issue(71, ['axe: runs', 'taille: S'], { state: 'closed' })]);
   t.eq([p.points.technique, p.points.level], [8, 1], 'axe: technique fait grandir la forge ; un ancien label (axe: runs) compte pour son axe');
 
@@ -406,4 +408,156 @@ function testsRenommee(t, game) {
   const lien = R.plaque.querySelector('.visiteur a');
   t.ok(R.plaque.textContent.includes('Visiteur') && lien?.href === 'https://github.com/orgs/Mastre-gaming/invitation' && lien.target === '_blank', 'un visiteur : un bouton vers l’invitation de l’organisation GitHub');
   sentinelle.etat.qui = garde; missions.charger([]); R.maj();
+}
+
+// Le HUD façon RPG (CAMP §8 bis) : la barre d'action, le journal de quêtes (J), le suivi de quêtes.
+function testsHud(t, game) {
+  const { hud, panneau, missions, sentinelle } = ctx;
+  const touche = (code) => { window.dispatchEvent(new KeyboardEvent('keydown', { code })); game.dbg.advance(0.05); window.dispatchEvent(new KeyboardEvent('keyup', { code })); game.dbg.advance(0.02); };
+  t.group('le HUD : la barre d’action');
+  const cases = [...hud.barre.querySelectorAll('.case')];
+  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres'], 'sept cases, une par partie du dashboard');
+  t.ok(cases.every((c) => c.querySelector('canvas.icone') && c.querySelector('kbd')), 'chacune avec son icône en pixels et sa touche');
+  t.ok(cases.every((c) => !c.classList.contains('bientot')), 'les sept cases sont prêtes');
+  panneau.fermer();
+  touche('KeyJ');
+  t.ok(panneau.ouvert && cases[0].classList.contains('active'), 'J ouvre le journal de quêtes, et sa case s’allume');
+  touche('KeyJ');
+  t.ok(!panneau.ouvert, 'J le referme');
+  cases[0].click(); game.dbg.advance(0.02);
+  t.ok(panneau.ouvert, 'un clic sur la case l’ouvre aussi');
+  panneau.fermer();
+  t.ok(!hud.activer('inconnue'), 'une case qui n’existe pas n’ouvre rien');
+
+  t.group('le HUD : le groupe (P), qui fait quoi');
+  const { groupe } = ctx;
+  sentinelle.etat.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'Paul' };
+  missions.charger([issue(50, ['axe: combats', 'taille: L'], { qui: ['PCrrfng'] }), issue(51, ['axe: menus', 'taille: S'], { qui: ['DonBabaa'] }), issue(52, ['axe: menus', 'taille: M'], { qui: ['DonBabaa'] }),
+    issue(53, ['axe: son', 'taille: S'], { qui: ['Inconnu42'] }), issue(54, ['axe: son']), issue(55, ['axe: son'])],
+    [{ github: 'PCrrfng', nom: 'Paul' }, { github: 'DonBabaa', nom: '' }, { github: 'anthonygiauna', nom: '' }]);
+  touche('KeyP');
+  t.ok(groupe.ouvert && !panneau.ouvert, 'P ouvre le groupe');
+  const cadres = [...groupe.boite.querySelectorAll('.cadre')];
+  t.eq(cadres.map((c) => c.dataset.login ?? 'personne'), ['PCrrfng', 'DonBabaa', 'Inconnu42', 'anthonygiauna', 'personne'], 'un cadre par membre (moi d’abord, au camp ; puis qui a le plus de quêtes), et « Personne » en bas');
+  t.ok(cadres[0].classList.contains('present') && cadres[0].textContent.includes('● au camp'), 'qui est au camp a un cadre doré');
+  t.ok(cadres[1].textContent.includes('#51') && cadres[1].textContent.includes('#52') && !cadres[1].textContent.includes('#50'), 'chacun avec ses quêtes en cours');
+  t.ok(cadres[3].textContent.includes('Pas de quête en cours'), 'un membre sans quête le dit');
+  t.ok(cadres[4].textContent.includes('2 quêtes à prendre'), '« Personne » : les quêtes que personne n’a prises');
+  t.ok(cadres.slice(0, 4).every((c) => c.querySelector('canvas.portrait')), 'avec un portrait (la tête du héros)');
+  touche('KeyJ');
+  t.ok(panneau.ouvert && !groupe.ouvert, 'ouvrir le journal ferme le groupe : un seul panneau à la fois');
+  panneau.fermer(); touche('KeyP'); touche('KeyP');
+  t.ok(!groupe.ouvert, 'P le referme');
+
+  t.group('le HUD : la campagne (C)');
+  const { campagne } = ctx;
+  const spec = ['## Milestones', '| # | Result | Check | Status |', '|---|---|---|---|',
+    '| **D1** | **The paper fight**, both modes | the sheet is filled | done (17 Oct) |',
+    '| **D2** | **Each friend’s class** on the template | four sheets | not started |',
+    '| M1 | **The camp** (`CAMP.fr.md`): the camp | two browsers join | started (18 Oct) |', '', '## Progress'].join('\n');
+  campagne.charger(spec, [{ title: 'D1 · The paper fight', open_issues: 0, closed_issues: 4, html_url: '#' }, { title: 'D2 · Each friend’s class', open_issues: 3, closed_issues: 1, html_url: '#' }, { title: 'M1 · The camp', open_issues: 5, closed_issues: 0 }]);
+  const res = campagne.etat.resultat;
+  t.eq(res.jalons.map((j) => `${j.id}:${j.etat}:${Math.round(j.part * 100)}`), ['D1:fait:100', 'D2:pas-commence:25', 'M1:en-cours:0'], 'les jalons de GAME_SPEC.md, avec la part de missions rentrées (comme le dashboard)');
+  t.eq(res.courant.id, 'D2', 'le jalon en cours : le premier qui n’est pas fait');
+  t.ok(campagne.barre.textContent.includes('D2 · Each friend’s class') && campagne.barre.textContent.includes('1/4 missions · 25 %') && campagne.barre.querySelector('.rempli').style.width === '25%', `la barre de campagne : « ${campagne.barre.textContent} »`);
+  touche('KeyC');
+  t.ok(campagne.ouvert && campagne.carte.querySelectorAll('.etape').length === 3, 'C ouvre la carte de campagne : une étape par jalon');
+  t.ok(campagne.carte.querySelector('.etape.fait[data-jalon="D1"]') && campagne.carte.querySelector('.etape.courant[data-jalon="D2"]'), 'faits, en cours, à venir');
+  t.ok(campagne.carte.textContent.includes('Validé quand : four sheets'), 'le détail du jalon en cours : ce qui le valide');
+  campagne.carte.querySelector('[data-jalon="M1"]').click();
+  t.ok(campagne.carte.textContent.includes('M1 · The camp') && campagne.carte.textContent.includes('0 rentrées sur 5'), 'un clic sur une étape montre son détail');
+  touche('KeyC');
+  t.ok(!campagne.ouvert, 'C la referme');
+
+  t.group('le HUD : la chronique du camp (N)');
+  const { chronique } = ctx;
+  const ev = (id, type, login, ref, depot, message, minutes) => ({ id, activity_type: type, actor: { login }, ref: `refs/heads/${ref}`, depot, timestamp: new Date(Date.now() - minutes * 60000).toISOString(), commit: message ? { commit: { message } } : undefined });
+  chronique.charger([ev(1, 'push', 'PCrrfng', 'camp-v0', 'jeu', 'Le panneau des missions\nplus de détails', 30), ev(2, 'pr_merge', 'DonBabaa', 'main', 'dashboard', 'Merge pull request #12', 5)]);
+  t.eq(chronique.crieur.children.length, 0, 'au premier chargement, rien n’est crié (ce n’est pas nouveau)');
+  touche('KeyN');
+  const li = [...chronique.boite.querySelectorAll('li')];
+  t.ok(chronique.ouvert && li.length === 2 && li[0].textContent.includes('a scellé une PR dans main') && li[0].textContent.includes('dashboard'), 'N ouvre la chronique, la plus récente d’abord, façon RPG');
+  t.ok(li[1].textContent.includes('Paul a forgé sur camp-v0') && li[1].textContent.includes('« Le panneau des missions »') && li[1].textContent.includes('il y a 30 min'), 'qui, quoi, où, le message, quand (le nom de equipe.json)');
+  chronique.charger([ev(3, 'push', 'DonBabaa', 'hud-quetes', 'jeu', 'La barre d’action', 0), ev(1, 'push', 'PCrrfng', 'camp-v0', 'jeu', 'Le panneau des missions', 30), ev(2, 'pr_merge', 'DonBabaa', 'main', 'dashboard', null, 5)]);
+  t.ok(chronique.crieur.children.length === 1 && chronique.crieur.textContent.includes('a forgé sur hud-quetes') && chronique.crieur.textContent.includes('« La barre d’action »'), `un push qui arrive : le crieur l’annonce (« ${chronique.crieur.textContent} »)`);
+  t.ok(chronique.boite.querySelectorAll('li').length === 3, 'et la chronique ouverte se met à jour');
+  touche('KeyN');
+  t.ok(!chronique.ouvert, 'N la referme');
+  chronique.crieur.replaceChildren();
+
+  t.group('le HUD : la sacoche (I) et les rumeurs (R)');
+  const { sacoche, rumeurs } = ctx;
+  sacoche.charger([{ nom: 'Le repo du jeu', url: 'https://github.com/Mastre-gaming/DungeonCoop', icone: '📦', note: 'le code' },
+    { nom: 'Sprite Painter', url: '/sprite-painter/', icone: '🎨', note: 'l’éditeur' }, { nom: 'Discord', url: '', icone: '💬', note: 'le serveur' }]);
+  touche('KeyI');
+  const objets = [...sacoche.boite.querySelectorAll('.case-objet')];
+  t.ok(sacoche.ouvert && objets.length === 3, 'I ouvre la sacoche : un objet par lien de liens.json');
+  t.ok(objets[0].textContent.includes('Grimoire du code') && objets[0].href === 'https://github.com/Mastre-gaming/DungeonCoop' && objets[0].target === '_blank', 'chaque lien devient un objet (le repo : le Grimoire du code), ouvert dans un nouvel onglet');
+  t.ok(objets[1].href === 'https://dungeoncoop-dashboard.mastredev.workers.dev/sprite-painter/', 'un lien du dashboard (/sprite-painter/) mène au dashboard');
+  t.ok(objets[2].classList.contains('vide') && objets[2].textContent.includes('emplacement à remplir'), 'un lien vide est un emplacement à remplir');
+  touche('KeyR');
+  t.ok(rumeurs.ouvert && !sacoche.ouvert, 'R ouvre les rumeurs (et ferme la sacoche)');
+  const idee = (number, titre, labels, milestone = null, plus = 0) => ({ ...issue(number, ['idée', ...labels]), title: titre, milestone: milestone ? { title: milestone } : null, reactions: { '+1': plus } });
+  missions.charger([idee(80, '[Idée] Une taverne', [], null, 2), idee(81, 'Des rats', [], 'M2 · Roll for it', 1), idee(82, 'Un boss', ['priorité: haute'], 'M2 · Roll for it', 0),
+    idee(83, 'Doublage', [], 'Parking'), { ...idee(84, 'Fermée', []), state: 'closed' }, issue(85, ['axe: son'])]);
+  const groupes = [...rumeurs.boite.querySelectorAll('.groupe-rumeurs')].map((g) => g.dataset.jalon);
+  t.eq(groupes, ['À trier', 'M2', 'Parking'], 'les rumeurs par jalon : à trier d’abord, le parking à la fin');
+  const m2 = [...rumeurs.boite.querySelectorAll('[data-jalon="M2"] .rumeur')].map((r) => +r.dataset.numero);
+  t.eq(m2, [82, 81], 'la priorité décide, les votes départagent');
+  t.ok(rumeurs.boite.textContent.includes('Une taverne') && !rumeurs.boite.textContent.includes('[Idée]') && rumeurs.boite.textContent.includes('🍺 2 y croient'), 'sans le « [Idée] » du modèle, avec les votes « y croient »');
+  t.ok(!rumeurs.boite.textContent.includes('Fermée') && !rumeurs.boite.textContent.includes('#85'), 'seulement les idées ouvertes');
+  t.ok(rumeurs.boite.querySelector('a.bouton-jeu')?.href.includes('issues/new?template=idee.md'), 'et un bouton pour lancer une rumeur (une idée sur GitHub)');
+  touche('KeyR');
+  t.ok(!rumeurs.ouvert, 'R les referme');
+  missions.charger([]);
+
+  t.group('le HUD : la messagerie (M)');
+  const { messagerie } = ctx;
+  const envoyes = [];
+  const directAvant = missions.envoyerDirect;
+  missions.envoyerDirect = (o) => { envoyes.push(o); return true; };   // le Worker, simulé (rien ne part sur le réseau)
+  const pastille = () => hud.barre.querySelector('[data-case="lettres"] .pastille');
+  const quiAvant = sentinelle.etat.qui; sentinelle.etat.qui = { nom: 'Baba', github: 'DonBabaa', saisie: 'Baba' };
+  messagerie.laissezPasser(null);
+  touche('KeyM');
+  t.ok(messagerie.ouvert && messagerie.boite.textContent.includes('Jouer au camp'), 'M ouvre la messagerie ; sans laissez-passer, elle dit comment l’obtenir (par le dashboard)');
+  t.ok(!messagerie.envoyer('bonjour') && envoyes.length === 0, 'sans laissez-passer, rien ne part');
+  messagerie.laissezPasser('v1.test.jeton');
+  t.eq(envoyes[envoyes.length - 1], { type: 'jeton', jeton: 'v1.test.jeton' }, 'avec un laissez-passer, le jeu le présente au Worker');
+  messagerie.recevoir({ type: 'bienvenue', nom: 'Baba', messages: [{ id: 1, auteur: 'Paul', texte: 'Salut @Baba, regarde #66', t: Date.now() }] });
+  const fil = () => [...messagerie.boite.querySelectorAll('.msg')];
+  t.ok(fil().length === 1 && fil()[0].querySelector('a.ref')?.href.endsWith('/issues/66') && fil()[0].querySelector('.mention.moi'), 'les messages de l’équipe ; #66 mène à la mission, @Baba (moi) est en évidence');
+  t.ok(messagerie.envoyer('C’est fait !') && envoyes[envoyes.length - 1].type === 'envoyer' && envoyes[envoyes.length - 1].texte === 'C’est fait !', 'écrire et envoyer');
+  messagerie.recevoir({ type: 'message', message: { id: 2, auteur: 'Baba', texte: 'C’est fait !', t: Date.now() } });
+  t.ok(fil()[1].classList.contains('mien'), 'mon message, à droite');
+  touche('KeyM');
+  t.ok(!messagerie.ouvert, 'M la referme');
+  let signal = null; game.bus.on('messagerie:nonlus', (d) => { signal = d.n; });
+  messagerie.recevoir({ type: 'message', message: { id: 3, auteur: 'Ana', texte: 'Tu passes au camp ?', t: Date.now() } });
+  messagerie.recevoir({ type: 'message', message: { id: 4, auteur: 'Anthony', texte: 'Moi aussi', t: Date.now() } });
+  t.ok(pastille() && !pastille().hidden && pastille().textContent === '2' && signal === 2, 'deux messages arrivent panneau fermé : une pastille « 2 » sur la case M (et le signal pour la boîte aux lettres)');
+  touche('KeyM');
+  t.ok(pastille().hidden && signal === 0, 'on les lit : la pastille s’éteint');
+  messagerie.recevoir({ type: 'refuse', raison: 'Laissez-passer refusé.' });
+  t.ok(messagerie.boite.textContent.includes('Laissez-passer refusé.'), 'un laissez-passer refusé : on le dit');
+  messagerie.fermer();
+  missions.envoyerDirect = directAvant;
+  messagerie.laissezPasser(null);
+  sentinelle.etat.qui = quiAvant;
+
+  t.group('le HUD : le suivi de quêtes');
+  const garde = sentinelle.etat.qui;
+  sentinelle.etat.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'Paul' };
+  missions.charger([issue(40, ['axe: combats', 'taille: L'], { qui: ['PCrrfng'] }), issue(41, ['axe: menus', 'taille: S'], { qui: ['pcrrfng', 'DonBabaa'] }),
+    issue(42, ['axe: son', 'taille: M'], { qui: ['DonBabaa'] }), issue(43, ['axe: son', 'taille: M'], { qui: ['PCrrfng'], state: 'closed' }), issue(44, ['axe: son'])]);
+  const txt = hud.suivi.textContent;
+  t.ok(!hud.suivi.hidden && txt.includes('Tes quêtes') && txt.includes('#40') && txt.includes('#41'), 'tes missions en cours s’affichent sous la renommée');
+  t.ok(!txt.includes('#42') && !txt.includes('#43') && !txt.includes('#44'), 'pas celles des autres, ni les rentrées, ni celles à prendre');
+  t.ok(txt.includes('L · ✦8'), 'avec leur taille et ce qu’elles rapportent');
+  t.ok(!txt.includes('null'), 'rien d’autre (pas de « null » qui traîne)');
+  missions.charger([issue(45, ['axe: son', 'taille: S'])]);
+  t.ok(hud.suivi.textContent.includes('ouvre le journal (J)'), 'aucune quête en cours : il invite à ouvrir le journal');
+  sentinelle.etat.qui = { nom: 'Zorg', github: null, saisie: 'Zorg' }; hud.majSuivi();
+  t.ok(hud.suivi.hidden, 'un visiteur n’a pas de suivi (il n’a pas de compte GitHub dans l’équipe)');
+  sentinelle.etat.qui = garde; missions.charger([]); hud.majSuivi();
 }

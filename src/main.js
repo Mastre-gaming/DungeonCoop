@@ -20,6 +20,12 @@ import * as sentinelleSkill from './12_sentinelle.js';
 import * as reseauSkill from './13_reseau.js';
 import * as lieuxSkill from './14_lieux.js';
 import * as renommeeSkill from './15_renommee.js';
+import * as hudSkill from './16_hud.js';
+import * as groupeSkill from './17_groupe.js';
+import * as campagneSkill from './18_campagne.js';
+import * as chroniqueSkill from './19_chronique.js';
+import { creerSacoche, creerRumeurs } from './20_sacoche.js';
+import * as messagerieSkill from './21_messagerie.js';
 import './jeu.css';
 
 const query = new URLSearchParams(location.search);
@@ -57,9 +63,22 @@ async function demarrer() {
   // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
+  const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
+  const groupe = game.use(groupeSkill, { missions, renommee, reseau, sentinelle, images, ouvrirJournal: () => hud.activer('journal') });
+  hud.brancher('groupe', groupe);
+  const campagne = game.use(campagneSkill, { visite, horsLigne: query.has('test'), ouvrirCarte: () => hud.activer('campagne') });
+  hud.brancher('campagne', campagne);
+  const chronique = game.use(chroniqueSkill, { missions, visite, horsLigne: query.has('test') });
+  hud.brancher('chronique', chronique);
+  const sacoche = creerSacoche({ horsLigne: query.has('test') });
+  hud.brancher('sacoche', sacoche);
+  const rumeurs = creerRumeurs({ missions, bus: game.bus });
+  hud.brancher('rumeurs', rumeurs);
+  const messagerie = game.use(messagerieSkill, { missions, sentinelle, ...(query.has('test') ? { jeton: null } : {}) });
+  hud.brancher('lettres', messagerie);
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -67,7 +86,7 @@ async function demarrer() {
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
 

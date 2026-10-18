@@ -92,9 +92,10 @@ function brancherDirect() {
         const d = JSON.parse(m.data);
         if (d?.type === 'maj' && (d.sujets ?? []).includes('issues')) lire();
         if (d?.type === 'profils') api.profils(d.profils);
+        game.bus.emit('direct:message', d);   // (les autres modules écoutent aussi : les push, la messagerie)
       } catch {}
     };
-    ws.onopen = () => { clearInterval(ping); ping = setInterval(() => { try { ws.send('ping'); } catch {} }, 30000); };
+    ws.onopen = () => { clearInterval(ping); ping = setInterval(() => { try { ws.send('ping'); } catch {} }, 30000); game.bus.emit('direct:ouvert'); };
     ws.onclose = () => { clearInterval(ping); ws = null; clearTimeout(relance); relance = setTimeout(brancherDirect, 15000); };
   } catch { relance = setTimeout(brancherDirect, 15000); }
 }
@@ -118,6 +119,9 @@ export function update() {
 export function dispose() { clearInterval(ping); clearTimeout(relance); try { ws?.close(); } catch {} }
 
 export const api = {
+  // Envoyer au Worker direct, sur la même connexion (la messagerie) ; false si elle n'est pas ouverte.
+  envoyerDirect(objet) { if (ws?.readyState !== 1) return false; try { ws.send(JSON.stringify(objet)); return true; } catch { return false; } },
+  get directOuvert() { return ws?.readyState === 1; },
   etat,
   lire,
   regles: { progression, etatDe, lieuDe, tailleDe, estTache },
