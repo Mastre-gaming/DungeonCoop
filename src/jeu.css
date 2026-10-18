@@ -288,3 +288,12 @@
 .annonce-terrain { position: fixed; left: 50%; top: 18%; transform: translateX(-50%); z-index: 30; margin: 0; padding: 8px 16px;
   background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce); border-radius: 4px; font: 700 1rem var(--titre); box-shadow: 0 3px 0 rgba(0,0,0,.3); }
 .annonce-terrain[hidden] { display: none; }
+
+/* La radio Deadlock (src/24_radio.js) : le bandeau du morceau, en haut au milieu, et ce que dit le barde */
+.bandeau-radio { position: fixed; top: 14px; left: 50%; transform: translateX(-50%); z-index: 12; display: grid; justify-items: center; gap: 2px; padding: 6px 16px 7px;
+  background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce); border-radius: 4px; box-shadow: 0 3px 0 rgba(0,0,0,.3); pointer-events: none; }
+.bandeau-radio[hidden] { display: none; }
+.bandeau-radio .station { font: 500 .78rem var(--titre); color: color-mix(in srgb, var(--couleur, #8a5a2b) 75%, #000); letter-spacing: .04em; }
+.bandeau-radio strong { font: 700 1.05rem var(--titre); }
+.radio-joue { margin: 0; font: 500 .9rem var(--titre); color: var(--parchemin-doux); }
+.radio-joue strong { color: var(--parchemin-encre); }

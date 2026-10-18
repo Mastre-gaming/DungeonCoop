@@ -151,6 +151,12 @@ Il n'appartient à aucun lieu : **il montre l'équipe entière**, avec la somme 
 
 Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus nombreuses quand il grandit. Pour comparer : les 8 lieux au niveau 4 font 280 points.
 
+### Le barde et la radio Deadlock (mission #94, 18 oct.)
+- **Près du feu, à l'ouest, un barde** est assis sur une souche, une lyre médiévale sur les genoux, avec **une enceinte** à côté de lui. Il diffuse DEADLOCK RECORDS RADIO, la station de Mastres Racing : les morceaux de Deadlock Records, l'animateur et les jingles, comme un petit poste.
+- **La radio est en direct :** tout le camp entend le même morceau au même moment. On l'entend partout, plus fort en s'approchant de l'enceinte. Elle démarre au premier geste du joueur.
+- **E devant le barde** (ou un clic) : ce qui joue, « Morceau suivant », couper ou rallumer. Un bandeau annonce chaque morceau. Ses répliques sont provisoires.
+- Le détail, les fichiers et les droits : `design/radio/README.fr.md`. Le volume de la musique se réglera dans le menu Réglages (#95).
+
 ### Le tableau d'affichage dans le décor : le panneau-carte
 - **D'après la référence du propriétaire (18 oct) :** deux poteaux, une traverse aux bouts biseautés, et un parchemin encadré qui montre **la carte du camp** (la forêt, les clairières, les sentiers, le feu au centre). Environ 3 × 2,5 cases (96 × 80 px).
 - **La carte vit avec le jeu :** une zone grise est à construire ; une zone rentrée prend sa couleur et grandit sur la carte. La légende à droite, une ligne par zone, s'allonge avec le niveau. On voit d'un coup d'œil, depuis le camp, ce qui reste à construire.

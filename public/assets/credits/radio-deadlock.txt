@@ -1,0 +1,17 @@
+DEADLOCK RECORDS RADIO, dans le camp de Dungeon Co-op (mission #94)
+
+Les morceaux (assets/radio/deadlock-records/*.mp3, 27 titres)
+  Deadlock Records (rap, Monaco). Utilisés dans ce jeu avec l'accord du groupe, donné par Paul (Paolitus) le
+  18 octobre 2026. Tous droits réservés au groupe : ils ne se réutilisent pas ailleurs sans son accord.
+
+Les voix de l'animateur et les jingles (assets/radio/deadlock-records/voix/, jingles/)
+  Générés avec ElevenLabs (https://elevenlabs.io) pour la radio de Mastres Racing, par Paul. Les prompts :
+  design/radio/RADIO_ELEVENLABS_DEADLOCK.md. L'usage suit l'offre ElevenLabs utilisée (l'offre gratuite demande de
+  citer ElevenLabs et interdit l'usage commercial).
+
+Le grésillement de CB (assets/radio/cb-static.mp3)
+  Livré avec la radio de Mastres Racing ; sa source est à confirmer par Paul. Il ne joue que pour une station sans
+  morceau (ce n'est pas le cas de DEADLOCK RECORDS RADIO).
+
+Le lecteur, la grille en direct et le filtre « petit poste » (src/audio/)
+  Écrits pour Mastres Racing, d'après la recette de son de Paul ; repris tels quels.
