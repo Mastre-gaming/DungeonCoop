@@ -55,11 +55,15 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .jauge > span.bas { background: #d8742c; }
 
 /* le journal, à droite */
-.droite-terrain { position: fixed; right: 8px; top: 60px; bottom: 210px; z-index: 8; width: 270px; display: grid; grid-template-rows: minmax(0, 1fr); }
+/* le journal, en haut à droite : court (les 6 dernières lignes), « Tout » le déplie */
+.droite-terrain { position: fixed; right: 8px; top: 60px; z-index: 8; width: 250px; display: grid; }
 .droite-terrain .plaque { position: static; padding: 8px 10px; min-height: 0; }
-.journal-terrain { overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
-.journal-terrain h2 { font-size: 1rem; }
-.journal-terrain ol { margin: 0; padding: 0; list-style: none; overflow: auto; font-size: 12px; display: grid; align-content: start; gap: 2px; }
+.journal-terrain { overflow: hidden; display: grid; grid-template-rows: auto 1fr; gap: 2px; }
+.journal-terrain header { display: flex; align-items: center; justify-content: space-between; }
+.journal-terrain h2 { margin: 0; font-size: .95rem; }
+.journal-terrain .bouton-jeu.petit { font-size: .72rem; padding: 0 8px; }
+.journal-terrain ol { margin: 0; padding: 0; list-style: none; overflow: auto; max-height: 132px; font-size: 12px; display: grid; align-content: start; gap: 2px; }
+.journal-terrain.deplie ol { max-height: min(56vh, calc(100vh - 360px)); }
 .journal-terrain li.round { font: 700 .85rem var(--titre); color: var(--bois-fonce); border-top: 1px solid #d8c59c; padding-top: 2px; }
 .journal-terrain li.combo { color: #1d5fa8; font-weight: 700; } .journal-terrain li.bon { color: #2c7a2a; }
 .journal-terrain li.mauvais { color: #a3261c; } .journal-terrain li.ennemi { color: #7a3a2a; } .journal-terrain li.muet { color: var(--parchemin-doux); }
@@ -125,7 +129,11 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .cc-role { font: 400 12.5px/1.35 var(--texte); color: #e9d3ad; }
 .carte-cible .effet { font-size: 11.5px; padding: 2px 6px; }
 
-.boutons-phase { display: flex; gap: 6px; }
+/* en bas à droite : finir la phase, et annuler le dernier déplacement */
+.coin-phase { position: fixed; right: 8px; bottom: 8px; z-index: 9; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 10px; width: 236px; box-sizing: border-box; }
+.coin-phase .bouton-jeu { font-size: .9rem; padding: 6px 10px; }
+.coin-phase #fin-phase { font: 700 1.05rem var(--titre); padding: 12px 10px; background: #85581b; border-color: #ffd35a; box-shadow: inset 0 -3px 0 rgba(0,0,0,.3), 0 0 12px rgba(255, 211, 90, .25); }
+.coin-phase #fin-phase:disabled { box-shadow: none; border-color: var(--bois-fonce); }
 .bouton-jeu:disabled { opacity: .5; cursor: not-allowed; filter: none; }
 
 /* le d20 en grand, les bannières, le survol */
@@ -173,7 +181,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 
 @media (max-width: 1280px) { .bas-terrain { max-width: calc(100vw - 16px); } .aide-terrain { display: none; } }
 @media (max-width: 900px) {
-  .equipe-terrain { width: 200px; } .droite-terrain { width: 200px; } .fiche-heros .fh-chiffres { flex-wrap: wrap; gap: 0 8px; }
+  .equipe-terrain { width: 200px; } .droite-terrain { width: 200px; } .coin-phase { width: 200px; } .fiche-heros .fh-chiffres { flex-wrap: wrap; gap: 0 8px; }
 }
 
 /* le choix de l'équipe, à l'accueil (#76) */
@@ -203,7 +211,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .attente-lobby { margin: 0; color: var(--parchemin-doux); font-size: 13px; }
 .fiche-heros .fh-joueur { justify-self: start; font: 700 .72rem var(--titre); color: #fff7e6; background: var(--couleur, var(--bois)); border-radius: 3px; padding: 0 5px; }
 .fiche-heros.ami { cursor: default; }
-#fin-phase.pret { background: #4f7a2e; }
+#fin-phase.pret, .coin-phase #fin-phase.pret { background: #4f7a2e; }
 .curseurs-amis { position: fixed; inset: 0; pointer-events: none; z-index: 7; overflow: hidden; }
 .curseur-ami { position: absolute; left: 0; top: 0; white-space: nowrap; font: 700 12px var(--titre); color: #fff; padding: 1px 6px 1px 12px;
   background: color-mix(in srgb, var(--couleur, #7ce0ff) 78%, #000); border-radius: 0 4px 4px 4px; text-shadow: 0 1px 0 rgba(0,0,0,.5); }
