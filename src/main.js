@@ -18,6 +18,8 @@ import * as missionsSkill from './10_missions.js';
 import * as panneauSkill from './11_panneau.js';
 import * as sentinelleSkill from './12_sentinelle.js';
 import * as reseauSkill from './13_reseau.js';
+import * as lieuxSkill from './14_lieux.js';
+import * as renommeeSkill from './15_renommee.js';
 import './jeu.css';
 
 const query = new URLSearchParams(location.search);
@@ -50,12 +52,14 @@ async function demarrer() {
   const camera = game.use(cameraSkill, { rendu, visite, monde: { w: W * T, h: H * T }, cible: visite ? null : () => heros.heros });
   // les missions (les tâches du tableau de travail) ; en ?test, rien ne part sur le réseau
   const missions = game.use(missionsSkill, { horsLigne: query.has('test') });
+  const lieux = game.use(lieuxSkill, { rendu, images, collision, missions, decor });
   const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite });
   // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
+  const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -63,7 +67,7 @@ async function demarrer() {
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, tests: camptests, lieux: LIEUX.map((l) => l.id) });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
 

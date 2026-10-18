@@ -4,7 +4,7 @@
 // Lecture : le Worker « direct » de Paul (CORS ouvert), sinon GitHub sans jeton, relu au plus toutes les 5 minutes.
 // En direct : le WebSocket du Worker dit quand les issues changent ; on relit alors tout de suite.
 // En ?test, rien ne part sur le réseau : les vérifications donnent leurs propres missions.
-import AXES from './data/axes.json';
+import AXES from '../content/axes.json';   // le contrat des axes, lu aussi par le dashboard
 
 export const name = 'missions';
 export const always = true;
@@ -14,7 +14,8 @@ const WORKER = 'https://dungeoncoop-direct.mastredev.workers.dev';
 const GITHUB = 'https://api.github.com';
 const EQUIPE = 'https://raw.githubusercontent.com/Mastre-gaming/DungeonCoop-dashboard/main/equipe.json';
 export const DASHBOARD = 'https://dungeoncoop-dashboard.mastredev.workers.dev/';
-export const LIEUX_AXES = AXES.lieux;
+// Chaque axe : son lieu au camp, et les labels qui le désignent (le sien, puis les anciens).
+export const LIEUX_AXES = AXES.axes.map((a) => ({ id: a.id, lieu: a.lieu, axe: a.nom, couleur: a.couleur, labels: [a.label, ...(a.anciens ?? [])] }));
 export const SEUILS = [0, 1, 5, 15, 35];                 // niveaux 0 à 4 d'un lieu (CAMP §4)
 export const SEUILS_FEU = [0, 10, 40, 100, 200];         // tailles 0 à 4 du feu
 export const POINTS = { S: 1, M: 3, L: 8 };

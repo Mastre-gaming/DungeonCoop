@@ -10,7 +10,7 @@ export const name = 'panneau';
 export const always = true;
 
 const ETATS = [{ id: 'aprendre', nom: 'À prendre' }, { id: 'encours', nom: 'En cours' }, { id: 'rentree', nom: 'Rentrées' }];
-const SANS = { id: 'sans', lieu: 'Sans lieu', axe: 'Technique, ou pas encore d’axe', couleur: '#8f8a7c' };
+const SANS = { id: 'sans', lieu: 'Sans lieu', axe: 'Pas encore d’axe', couleur: '#8f8a7c' };
 
 // Construit un élément sans innerHTML : el('p', { class: 'x', onclick }, 'texte', autreElement)
 function el(tag, attrs = {}, ...enfants) {
@@ -121,7 +121,7 @@ function dessiner() {
     el('div', { class: 'tete' },
       el('h3', { id: 't-missions' }, 'Tableau des missions'),
       el('span', { class: 'total' }, `Le camp : ${res.total} point${res.total > 1 ? 's' : ''} · le feu : taille ${res.feu}`),
-      el('span', { class: 'provisoire', title: 'Les axes du camp ne sont pas encore décidés : chaque label du tableau de travail est rangé dans le lieu qui lui ressemble.' }, 'lieux provisoires'),
+      el('span', { class: 'provisoire', title: 'Les noms des lieux sont provisoires : ils sont à l’axe Histoire.' }, 'noms provisoires'),
       el('button', { class: 'fermer', type: 'button', onclick: fermer, 'aria-label': 'Fermer le panneau' }, 'Fermer ', el('kbd', {}, 'Échap'))),
     etat.erreur ? el('p', { class: 'annonce grave', role: 'alert' }, etat.erreur) : null,
     !etat.source && !etat.erreur ? el('p', { class: 'annonce' }, 'Les missions arrivent…') : null,
@@ -160,7 +160,6 @@ function dessinerApercu() { dessinerPanneau(gApercu, images, missions.resume().n
 export function update(dt) {
   temps += dt;
   const res = missions.resume();
-  decor.niveaux(res.niveaux);
   decor.appeler(res.aPrendre > 0 || !vu);   // des missions attendent, ou c'est la première fois
   if (ouvert) { dessinerApercu(); return; }
   // la bulle « E : consulter » au-dessus du panneau, quand on est devant

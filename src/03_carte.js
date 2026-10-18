@@ -63,8 +63,8 @@ function emplacement(objets, obstacles, [px, py]) {
 }
 
 // Le panneau-carte (CAMP §4) : dessiné à part, parce qu'il change avec les niveaux et qu'il scintille.
-export const COULEURS = { interface: '#2f68b8', combat: '#c2412f', classes: '#d9822b', art: '#c25a8a', histoire: '#8e5cc2', level: '#2f7d6d', runs: '#5b6e2f', son: '#7a6a5a' };
-const ORDRE = ['interface', 'combat', 'classes', 'art', 'histoire', 'level', 'runs', 'son'];
+export const COULEURS = { interface: '#2f68b8', combat: '#c2412f', classes: '#d9822b', art: '#c25a8a', histoire: '#8e5cc2', level: '#2f7d6d', technique: '#5b6e2f', son: '#7a6a5a' };
+const ORDRE = ['interface', 'combat', 'classes', 'art', 'histoire', 'level', 'technique', 'son'];
 // `zone` clignote (cadre doré) : celle qu'on regarde dans le panneau des missions. `temps` en secondes.
 export function dessinerPanneau(g, im, niveaux = {}, zone = null, temps = 0) {
   g.clearRect(0, 0, 96, 80);
