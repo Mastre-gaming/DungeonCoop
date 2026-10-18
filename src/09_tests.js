@@ -528,7 +528,8 @@ function testsReseau(t, game) {
   // le groupe part ensemble au terrain d'entraînement (#80) : E devant la porte emmène tout le monde
   const allees = [], porte = { x: h.x, y: h.y };
   terrain.testerNavigation((u) => allees.push(u));
-  heros.placer(27.5 * T, 8.2 * T, 'haut'); h.controle = true; jouer(0.1);
+  const [px, py] = LIEUX.find((l) => l.id === 'combat').porte;   // (devant sa porte, où qu'elle soit : l'enclos de #77 la déplace)
+  heros.placer((px + 0.5) * T, (py + 1.2) * T, 'haut'); h.controle = true; jouer(0.1);
   t.ok(!terrain.bulle.hidden && terrain.bulle.textContent.includes('emmener le groupe'), 'en groupe, devant le terrain : « E : emmener le groupe au terrain d’entraînement »');
   ben.party.toHost({ type: 'terrain' }); jouer(0.3);
   const vers = ben.recus.find((m) => m.type === 'terrain');
