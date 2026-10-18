@@ -1134,7 +1134,9 @@ async function testsParties(t, game) {
   t.ok(parties.bulle.hidden, 'ma propre partie ne me propose pas de la rejoindre');
   game.bus.emit('party:status', { status: 'Give your friends the code' }); await attendre(() => false, 50);
   t.eq(annoncesDe(party.code).length, 1, 'une seule annonce par code');
+  const premier = party.code;
   reseau.quitter(); jouer(0.1);
+  t.ok(await attendre(() => srv.messages.some((m) => m.texte === `🎲 Baba a fermé la partie ${premier}.`)), 'je ferme mon groupe : le camp dit tout seul que la partie est fermée');
 
   reseau.rejoindre = (code) => { rejoints.push(code); return true; };
   srv.depuisDashboard('PCrrfng', parties.texteAnnonce('Paul', 'QWERT'));
@@ -1143,8 +1145,8 @@ async function testsParties(t, game) {
   const msgPaul = [...messagerie.boite.querySelectorAll('.msg')].find((li) => li.textContent.includes('code QWERT'));
   t.ok(msgPaul?.querySelector('button.rejoindre'), 'dans le fil aussi, l’annonce porte un bouton « Rejoindre »');
   messagerie.onglet('parties');
-  t.ok(!messagerie.liste.hidden && messagerie.liste.textContent.includes('QWERT') && messagerie.liste.textContent.includes(party.code), 'l’onglet « Parties » liste celles de l’heure (la sienne et la mienne)');
-  t.ok(messagerie.boite.querySelector('.onglet[aria-selected="true"]')?.textContent.startsWith('Parties (2)'), 'avec leur nombre sur l’onglet');
+  t.ok(!messagerie.liste.hidden && messagerie.liste.textContent.includes('QWERT') && !messagerie.liste.textContent.includes(premier), 'l’onglet « Parties » liste celles de l’heure encore ouvertes (pas la mienne, fermée)');
+  t.ok(messagerie.boite.querySelector('.onglet[aria-selected="true"]')?.textContent.startsWith('Parties (1)'), 'avec leur nombre sur l’onglet');
   messagerie.onglet('messages');
   [...parties.bulle.querySelectorAll('button')].find((b) => b.textContent === 'Rejoindre').click();
   t.ok(rejoints[0] === 'QWERT' && parties.bulle.hidden, '« Rejoindre » rejoint le groupe de Paul, avec son code, et la bulle part');
@@ -1157,6 +1159,32 @@ async function testsParties(t, game) {
   t.ok(parties.bulle.hidden && rejoints.length === 2, '✕ : plus tard, sans rejoindre');
   messagerie.recevoir({ type: 'message', message: { id: 990, auteur: 'Ana', texte: parties.texteAnnonce('Ana', 'VIEUX'), t: Date.now() - 2 * 3600_000 } });
   t.ok(parties.bulle.hidden && !messagerie.liste.textContent.includes('VIEUX'), 'une annonce de plus d’une heure : ni bulle, ni dans la liste');
+
+
+  t.group('fermer les parties en double (faux Worker)');
+  const liste = () => messagerie.liste.textContent;
+  srv.depuisDashboard('Baba', parties.texteAnnonce('Baba', 'DOUB1'));
+  srv.depuisDashboard('Baba', parties.texteAnnonce('Baba', 'DOUB2'));
+  srv.depuisDashboard('Baba', parties.texteAnnonce('Baba', 'DOUB3'));
+  messagerie.onglet('parties');
+  t.ok(await attendre(() => liste().includes('DOUB3')) && messagerie.liste.querySelectorAll('.fermer-partie').length === 3, 'trois parties à moi en même temps : chacune a son bouton « Fermer »');
+  const ligne = (code) => [...messagerie.liste.querySelectorAll('.partie')].find((li) => li.textContent.includes(code));
+  ligne('DOUB1').querySelector('.fermer-partie').click();
+  t.ok(await attendre(() => !liste().includes('DOUB1')) && liste().includes('DOUB2'), '« Fermer » retire cette partie de la liste, les autres restent');
+  t.ok(srv.messages.some((m) => m.texte === '🎲 Baba a fermé la partie DOUB1.'), 'et le dit à l’équipe (le dashboard le voit)');
+  t.ok(!ligne('QWERT')?.querySelector('.fermer-partie') && ligne('QWERT')?.querySelector('button.rejoindre'), 'la partie de Paul n’a pas de « Fermer » chez moi : seul son hôte la ferme');
+  const party2 = reseau.brancherTest(hub);
+  reseau.heberger(); jouer(0.1);
+  t.ok(await attendre(() => srv.messages.some((m) => m.texte === '🎲 Baba a fermé les parties DOUB2, DOUB3.')), `j’héberge un nouveau groupe (${party2.code}) : mes anciennes parties se ferment toutes seules, en un message`);
+  t.ok(await attendre(() => liste().includes(party2.code) && !liste().includes('DOUB2') && !liste().includes('DOUB3')), 'il ne reste que la nouvelle');
+  reseau.quitter(); jouer(0.1);
+  srv.depuisDashboard('Ana', '🎲 Ana a fermé la partie QWERT.');
+  await attendre(() => false, 50);
+  t.ok(liste().includes('QWERT'), 'quelqu’un d’autre ne peut pas fermer la partie de Paul');
+  srv.depuisDashboard('PCrrfng', '🎲 Paul a fermé la partie QWERT.');
+  t.ok(await attendre(() => !liste().includes('QWERT')), 'Paul la ferme : elle quitte la liste chez tout le monde');
+  t.ok(![...messagerie.boite.querySelectorAll('.msg')].some((li) => li.textContent.includes('code QWERT') && li.querySelector('button.rejoindre')), 'et plus de « Rejoindre » dans le fil pour cette partie fermée');
+  messagerie.onglet('messages');
 
   reseau.rejoindre = rejoindreAvant;
   reseau.rebrancher();
