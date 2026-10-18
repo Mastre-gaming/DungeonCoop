@@ -12,6 +12,7 @@ Aujourd'hui, une capacité ne joue que le geste LPC du lanceur (sort, estoc, tai
 | Ses planches et son index | `bibliotheque/<brique>.png`, `bibliotheque/bibliotheque.json` | ce que le jeu chargera |
 | Le lecteur | `bibliotheque/lecteur.js` | quelle image montrer à un instant, et où la poser |
 | L'outil | `outil/` | tout se refait avec `node fabriquer.mjs` depuis `outil/` (Node seul, sans rien installer) |
+| L'index des esquisses | `esquisses/esquisses.json` | le nom, la classe, la famille, le nombre d'images et le déroulé de chaque effet, pour les pages web (les archives du camp) ; `node index-esquisses.mjs` depuis `outil/` le refait |
 
 Les 25 effets : Étincelle, Éclaboussure, Foudre, Foudre sur l'eau (le combo) ; Flèche de feu, Fiole d'huile, Tir rapide, Filet, Tir lesté ; Fouet de ronce, Liane, Pluie, Chant de bataille, Moquerie ; Soin, Garde de givre, Cri de ralliement, Charge au bouclier ; Coup d'épée, Fracas, Dague, Ouverture, Projection et Pousser, Potion, Relever.
 

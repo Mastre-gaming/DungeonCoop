@@ -35,6 +35,7 @@ import * as ratsSkill from './30_rats.js';
 import * as tourSkill from './31_tour.js';
 import * as terrainSkill from './23_terrain.js';
 import * as armurerieSkill from './26_armurerie.js';
+import * as archivesSkill from './27_archives.js';
 import * as murailleSkill from './32_muraille.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
@@ -82,6 +83,7 @@ async function demarrer() {
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
   const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite, reseau });   // E devant le terrain : le combat d'entraînement (à plusieurs : tout le groupe)
   const armurerie = game.use(armurerieSkill, { rendu, canvas, heros, visite });       // E devant l'armurerie : le créateur de classe (#125)
+  const archives = game.use(archivesSkill, { rendu, canvas, heros, collision, images, visite });   // E devant la tente des archives : tous les assets du projet
   // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
   const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
   const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
@@ -111,11 +113,12 @@ async function demarrer() {
   game.dbg.spot('apparition', aller(depart.x, depart.y));
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
+  game.dbg.spot('archives', aller(archivesSkill.PORTE.x * T, (archivesSkill.PORTE.y + 0.8) * T, 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
   // l'entrée du camp (#123) : sur la route, devant le pont ; et juste après la porte, en entrant
   game.dbg.spot('porte', aller(15 * T, 36.6 * T, 'haut'));
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, radio, reglages, muraille, parties, github, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

@@ -1,0 +1,99 @@
+/* Les archives du camp : l'intérieur de la grande tente derrière (un canevas plein écran, design/archives/), et par-dessus
+   l'interface dans l'habillage épique de BABA (DESIGN.fr.md §1 et §5) : les textures --tex-bois, --tex-parchemin,
+   --cadre-bois et --cadre-fin sont dessinées par src/33_cadres.js (habiller()), les jetons sont dans cadres.css.
+   Les grandes boîtes prennent le cadre de bois, les rayons le cadre fin, les aperçus des cases de bois creux. */
+:root { --accent-parchemin: #7a3b10; }   /* (l'accent sur parchemin, DESIGN §2) */
+html, body { background: #2b1c1d; }
+body { color: var(--creme); font: 14px/1.45 var(--texte); }
+.fond-tente { position: fixed; inset: 0; width: 100vw; height: 100vh; z-index: 0; image-rendering: pixelated; pointer-events: none; }
+.archives { position: relative; z-index: 1; box-sizing: border-box; height: 100vh; max-width: 1480px; margin: 0 auto; padding: 18px 28px 20px;
+  display: grid; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; }
+
+/* les grandes boîtes : le cadre de bois épique (la recette de hud.css, .cadre-epique) ; dedans, le parchemin */
+.cadre-epique { box-sizing: border-box; border: 14px solid var(--bois-fonce); border-radius: 0; border-image: var(--cadre-bois) 32 / 32px / 6px repeat;
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); box-shadow: 0 6px 0 rgba(0, 0, 0, .35); image-rendering: pixelated; }
+.parchemin-epique { box-sizing: border-box; background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); image-rendering: pixelated; color: var(--parchemin-encre);
+  border: 2px solid var(--bois-nuit); box-shadow: inset 0 0 0 2px #cdb68c; }
+
+/* le bandeau, comme une enseigne au-dessus de l'interface */
+.haut-archives { justify-self: center; width: min(1040px, 100%); display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 4px 12px; }
+.haut-archives .titres { flex: 1 1 300px; }
+.haut-archives h1 { margin: 0; font: 700 1.45rem var(--titre); color: var(--or); text-shadow: var(--contour-or); letter-spacing: .04em; }
+.haut-archives p { margin: 0; color: var(--creme); font-size: 13px; text-shadow: 0 1px 0 var(--bois-nuit); }
+.recherche { font: 14px var(--texte); padding: 6px 9px; border: 2px solid var(--bois-nuit); box-shadow: inset 0 0 0 1px var(--laiton); border-radius: 3px; background: var(--parchemin); color: var(--parchemin-encre); width: min(260px, 100%); }
+.haut-archives .bouton-jeu { text-decoration: none; font-size: .95rem; padding: 5px 12px; }
+.bouton-jeu.petit { font-size: .85rem; padding: 2px 9px; }
+.bouton-jeu[aria-pressed="true"] { border-color: var(--or); box-shadow: 0 0 0 2px var(--or); color: var(--or); }
+:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+
+/* les rayons : des boutons de bois sous l'enseigne */
+.onglets-archives { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.onglet { font: 500 1rem var(--titre); color: var(--creme); background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); image-rendering: pixelated;
+  border: 8px solid var(--bois-fonce); border-image: var(--cadre-fin) 20 / 20px / 4px repeat; border-radius: 0;
+  padding: 2px 10px; cursor: pointer; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); display: inline-flex; gap: 8px; align-items: center; text-shadow: var(--contour-or); }
+.onglet[aria-pressed="true"] { background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); color: var(--bois-fonce); text-shadow: none; box-shadow: 0 0 0 2px var(--or), 0 3px 0 rgba(0, 0, 0, .35); }
+.compte { font: 500 .75rem var(--titre); color: var(--bois-nuit); background: var(--or-jauge); border-radius: 3px; padding: 0 5px; text-shadow: none; }
+
+/* le corps : deux panneaux, la tente reste visible autour */
+.corps-archives { min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 500px; gap: 22px; align-items: stretch; }
+.panneau-liste, .panneau-detail { min-height: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); padding: 4px; }
+.liste-archives { min-height: 0; min-width: 0; grid-template-columns: minmax(0, 1fr); overflow: auto; padding: 12px 14px; display: grid; align-content: start; gap: 14px; }
+.groupe h2 { margin: 0 0 6px; font: 700 1rem var(--titre); color: var(--bois-fonce); display: flex; gap: 8px; align-items: center; border-bottom: 2px solid #cdb68c; padding-bottom: 3px; }
+.cartes { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.cartes.sorts, .cartes.animations { grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); }
+/* une carte : une case de bois creux (DESIGN §5), son aperçu, son nom */
+.carte { display: grid; justify-items: center; align-content: start; gap: 3px; padding: 6px 6px 7px; cursor: pointer; text-align: center; font: inherit;
+  background: var(--bois-creux); color: var(--creme); border: 2px solid var(--bois-nuit); border-radius: 4px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .08), inset 0 -3px 0 rgba(0, 0, 0, .35); }
+.carte:hover { border-color: var(--laiton); }
+.carte[aria-current="true"] { border-color: var(--or); box-shadow: 0 0 0 2px var(--or), inset 0 2px 0 rgba(255, 255, 255, .08); }
+.carte .nom { font: 700 .9rem var(--titre); color: var(--creme); }
+.carte[aria-current="true"] .nom { color: var(--or); }
+.carte .petit { font-size: 12px; color: var(--creme-doux); line-height: 1.25; }
+.carte .ligne { display: inline-flex; gap: 5px; align-items: center; }
+.icone { width: 24px; height: 26px; image-rendering: pixelated; }
+.apercu { display: block; image-rendering: pixelated; border: 2px solid var(--bois-nuit); border-radius: 2px; }
+.sans-scene, .sans-portrait { display: grid; place-items: center; width: 192px; height: 96px; background: var(--bois-nuit); border: 2px solid var(--bois-nuit); border-radius: 2px; color: var(--creme-doux); font: 700 1.2rem var(--titre); }
+.sans-scene img { width: 48px; height: 52px; image-rendering: pixelated; }
+.vide { margin: 0; padding: 12px; color: var(--parchemin-doux); }
+
+/* le détail */
+.detail-archives { min-height: 0; min-width: 0; grid-template-columns: minmax(0, 1fr); overflow: auto; padding: 14px 16px 16px; display: grid; align-content: start; gap: 10px; }
+.detail-archives header h2 { margin: 0; font: 700 1.3rem var(--titre); color: var(--bois-fonce); }
+.surtitre { margin: 0; font: 500 .8rem var(--titre); color: var(--accent-parchemin); }
+.scene-grande { display: grid; justify-items: center; gap: 6px; padding: 8px; background: var(--bois-creux); border: 2px solid var(--bois-nuit); border-radius: 4px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .08), inset 0 -3px 0 rgba(0, 0, 0, .35); }
+.scene-grande.sans-scene { width: auto; height: auto; padding: 16px; color: var(--creme-doux); }
+.scene-grande.sans-scene p { margin: 0; font-size: 13px; }
+.zone-reglages, .reglages { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; }
+.zone-reglages { flex-direction: column; align-items: center; }
+.lecture { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.image-n { font: 500 .8rem var(--titre); color: var(--parchemin-doux); min-width: 7em; }
+.infos { margin: 0; display: grid; gap: 4px; }
+.info { display: grid; grid-template-columns: 110px 1fr; gap: 8px; }
+.info dt { font: 500 .85rem var(--titre); color: var(--bois-fonce); }
+.info dd { margin: 0; overflow-wrap: anywhere; }
+.info code { font: 12px ui-monospace, Consolas, monospace; }
+.detail-archives a { color: var(--accent-parchemin); }
+.phrase { margin: 0; font-style: italic; }
+.puces { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
+.puce { font: 500 .8rem var(--titre); padding: 2px 7px; background: var(--bois-creux); color: var(--creme); border: 1px solid var(--bois-nuit); }
+.effets { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.effets li.feu { color: #a33a10; } .effets li.eau { color: #1f4a8c; } .effets li.glace { color: #2a6d8a; } .effets li.magie { color: #5a3a8c; } .effets li.soin { color: #2c5a20; } .effets li.foudre { color: #7a5a08; }
+.sorts-de, .briques-de, .deroule { display: grid; gap: 5px; }
+.sorts-de h3, .briques-de h3, .deroule h3 { margin: 0; font: 700 .95rem var(--titre); color: var(--bois-fonce); }
+.sorts-de p { margin: 0; }
+.sort-lien { display: inline-flex; gap: 6px; align-items: center; justify-self: start; background: none; border: 0; padding: 0; cursor: pointer; font: 600 .95rem var(--texte); color: var(--accent-parchemin); text-decoration: underline; }
+.sort-lien img { width: 24px; height: 26px; image-rendering: pixelated; }
+.mini-cartes { display: flex; flex-wrap: wrap; gap: 6px; }
+.mini { display: grid; justify-items: center; gap: 2px; background: none; border: 0; padding: 0; cursor: pointer; font: 600 11px var(--texte); color: var(--parchemin-encre); max-width: 80px; }
+.deroule ol { margin: 0; padding-left: 18px; display: grid; gap: 3px; }
+.case-ancre { font-size: 13px; }
+
+@media (max-width: 1000px) {
+  .archives { height: auto; min-height: 100vh; grid-template-rows: none; }
+  .corps-archives { grid-template-columns: 1fr; }
+  .panneau-detail { order: -1; }
+  .liste-archives, .detail-archives { overflow: visible; }
+}
+@media (max-width: 560px) { .archives { padding: 12px 14px; } .scene-grande canvas { max-width: 100%; height: auto !important; } }
