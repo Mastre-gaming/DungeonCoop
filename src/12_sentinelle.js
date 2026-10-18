@@ -6,6 +6,7 @@
 // Pour changer de nom : lui parler de nouveau (E, devant elle).
 // Le nom est relié au pseudo GitHub par equipe.json (le dashboard) : on le cherche dans le nom ou dans le pseudo, sans
 // tenir compte des majuscules ni des accents. Un nom inconnu entre quand même, comme visiteur. Il ne sert qu'à afficher.
+// Un dev relié à GitHub prend le pseudo choisi dans le dashboard (missions.fusionner) ; son ancien nom reste reconnu.
 // Ses répliques sont provisoires (les textes du jeu sont à l'équipe) : marquées « texte provisoire » à l'écran.
 import { T } from './01_plan.js';
 
@@ -28,7 +29,7 @@ const CLE_NOM = 'dungeoncoop:nom-dev';
 const norm = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
 export function reconnaitre(saisie, equipe = []) {
   const n = norm(saisie);
-  const m = equipe.find((e) => (e.nom && norm(e.nom) === n) || norm(e.github) === n);
+  const m = equipe.find((e) => [e.nom, ...(e.autresNoms ?? [])].some((x) => x && norm(x) === n) || norm(e.github) === n);
   return { nom: m?.nom || String(saisie).trim(), github: m?.github ?? null, saisie: String(saisie).trim() };
 }
 export function lireNom() { try { const v = JSON.parse(localStorage.getItem(CLE_NOM)); return v && v.nom ? v : null; } catch { return null; } }
@@ -159,6 +160,10 @@ export function update(dt) {
     const r = reconnaitre(S.qui.saisie ?? S.qui.nom, missions.etat.equipe);
     if (r.github) { S.qui = r; ecrireNom(r); game.bus.emit('nom:change', r); }
   }
+  // relié à GitHub : son nom suit le pseudo choisi dans le dashboard (et revient au sien si le pseudo est retiré)
+  const membre = S.qui?.github && missions?.etat.equipe?.find((e) => norm(e.github) === norm(S.qui.github));
+  const voulu = membre && (membre.nom || S.qui.saisie || S.qui.nom);
+  if (voulu && voulu !== S.qui.nom) { S.qui = { ...S.qui, nom: voulu }; ecrireNom(S.qui); game.bus.emit('nom:change', S.qui); }
   poser();
 
   const levee = S.phase === 'halte' || S.phase === 'question' || S.phase === 'reparler';

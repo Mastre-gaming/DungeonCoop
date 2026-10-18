@@ -3,6 +3,8 @@
 // une que si quelqu'un l'a prise. Fermée = rentrée ; quelqu'un d'assigné = en cours ; sinon = à prendre.
 // Lecture : le Worker « direct » de Paul (CORS ouvert), sinon GitHub sans jeton, relu au plus toutes les 5 minutes.
 // En direct : le WebSocket du Worker dit quand les issues changent ; on relit alors tout de suite.
+// L'équipe : equipe.json, où le pseudo choisi dans le dashboard (Worker, GET /profils) remplace le nom ; le
+// WebSocket prévient aussi quand un pseudo change. Le camp lit les pseudos, il ne les écrit pas.
 // En ?test, rien ne part sur le réseau : les vérifications donnent leurs propres missions.
 import AXES from './data/axes.json';
 
@@ -35,6 +37,15 @@ export function tailleDe(issue) {
 }
 const niveauDe = (p, seuils) => seuils.reduce((n, s, i) => (p >= s ? i : n), 0);
 
+// fusionner(equipe, profils) → l'équipe où le pseudo remplace le nom d'equipe.json. L'ancien nom reste connu
+// (autresNoms) : la sentinelle reconnaît encore « paul » après que Paul a choisi un pseudo.
+export function fusionner(equipe = [], profils = []) {
+  return equipe.map((m) => {
+    const p = profils.find((x) => norm(x.github) === norm(m.github));
+    return p?.nom ? { ...m, nom: p.nom, autresNoms: [m.nom].filter(Boolean) } : m;
+  });
+}
+
 // progression(issues) → les points et le niveau de chaque lieu, le total de l'équipe et la taille du feu.
 // Seules les missions rentrées comptent, selon leur taille (S 1, M 3, L 8 ; sans taille : 0). Une rouverte ne compte plus.
 export function progression(issues) {
@@ -51,7 +62,7 @@ export function progression(issues) {
 
 // --- La lecture --------------------------------------------------------------------------------
 let game, horsLigne = false, ws = null, ping = 0, relance = 0;
-const etat = { issues: [], equipe: [], source: null, lueA: 0, erreur: null };
+const etat = { issues: [], equipe: [], equipeFichier: [], profils: [], source: null, lueA: 0, erreur: null };
 
 async function lireJson(url) {
   const r = await fetch(url, { headers: { accept: 'application/vnd.github+json' } });
@@ -76,7 +87,11 @@ function brancherDirect() {
   try {
     ws = new WebSocket(WORKER.replace(/^http/, 'ws') + '/direct');
     ws.onmessage = (m) => {
-      try { const d = JSON.parse(m.data); if (d?.type === 'maj' && (d.sujets ?? []).includes('issues')) lire(); } catch {}
+      try {
+        const d = JSON.parse(m.data);
+        if (d?.type === 'maj' && (d.sujets ?? []).includes('issues')) lire();
+        if (d?.type === 'profils') api.profils(d.profils);
+      } catch {}
     };
     ws.onopen = () => { clearInterval(ping); ping = setInterval(() => { try { ws.send('ping'); } catch {} }, 30000); };
     ws.onclose = () => { clearInterval(ping); ws = null; clearTimeout(relance); relance = setTimeout(brancherDirect, 15000); };
@@ -87,7 +102,8 @@ export function init(g, { horsLigne: hl = false } = {}) {
   game = g; horsLigne = hl;
   if (!horsLigne) {
     lire();
-    lireJson(EQUIPE).then((e) => { etat.equipe = Array.isArray(e) ? e : []; game.bus.emit('missions:maj', api.resume()); }).catch(() => {});
+    lireJson(EQUIPE).then((e) => { etat.equipeFichier = Array.isArray(e) ? e : []; api.profils(etat.profils); }).catch(() => {});
+    lireJson(`${WORKER}/profils`).then((p) => api.profils(p)).catch(() => {});
     brancherDirect();
   }
   return api;
@@ -108,6 +124,12 @@ export const api = {
   charger(issues, equipe = etat.equipe) { etat.issues = issues; etat.equipe = equipe; etat.source = 'test'; game.bus.emit('missions:maj', api.resume()); },
   taches: () => etat.issues.filter(estTache),
   nomDe(login) { const m = etat.equipe.find((e) => norm(e.github) === norm(login)); return m?.nom || login; },
+  // Les pseudos du Worker (à la lecture, puis à chaque changement) : l'équipe est refaite avec.
+  profils(liste) {
+    etat.profils = Array.isArray(liste) ? liste : [];
+    etat.equipe = fusionner(etat.equipeFichier, etat.profils);
+    game.bus.emit('missions:maj', api.resume());
+  },
   resume() {
     const taches = api.taches(), p = progression(etat.issues);
     return { ...p, aPrendre: taches.filter((t) => etatDe(t) === 'aprendre').length, taches: taches.length };

@@ -271,6 +271,19 @@ function testsSentinelle(t, game) {
   t.eq(S.phase, 'question', 'devant elle, E : elle repose sa question (pour changer de nom)');
   sentinelle.repondre('Zorg'); game.dbg.advance(2);
   t.ok(S.phase === 'libre' && sentinelle.qui.nom === 'Zorg' && Math.abs(S.x - x0 + 48) < 1, 'nouveau nom, et elle reste où elle est');
+  // le pseudo choisi dans le dashboard (le Worker l'envoie au camp) remplace le nom d'equipe.json
+  missions.etat.equipeFichier = equipe;
+  missions.profils([{ github: 'PCrrfng', nom: 'Mastre' }]);
+  t.eq(missions.nomDe('PCrrfng'), 'Mastre', 'un pseudo du dashboard remplace le nom d’equipe.json');
+  t.eq(sentinelle.reconnaitre('paul', missions.etat.equipe), { nom: 'Mastre', github: 'PCrrfng', saisie: 'paul' }, 'l’ancien nom « paul » est encore reconnu, et devient Mastre');
+  t.eq(sentinelle.reconnaitre('MASTRE', missions.etat.equipe).github, 'PCrrfng', 'le pseudo lui-même est reconnu');
+  S.qui = { nom: 'Paul', github: 'PCrrfng', saisie: 'paul' }; game.dbg.advance(0.05);
+  t.eq(sentinelle.qui.nom, 'Mastre', 'déjà entré comme Paul : son nom (au-dessus de sa tête aussi) suit le pseudo, tout seul');
+  missions.profils([]); game.dbg.advance(0.05);
+  t.eq(sentinelle.qui.nom, 'Paul', 'pseudo retiré : il reprend le nom d’equipe.json');
+  missions.profils([{ github: 'DonBabaa', nom: 'BABA' }]); S.qui = sentinelle.reconnaitre('donbabaa', missions.etat.equipe);
+  missions.profils([]); game.dbg.advance(0.05);
+  t.eq(sentinelle.qui.nom, 'donbabaa', 'sans nom dans equipe.json, il reprend le nom qu’il avait tapé');
   try { garde ? localStorage.setItem('dungeoncoop:nom-dev', garde) : localStorage.removeItem('dungeoncoop:nom-dev'); } catch {}
   sentinelle.etat.qui = sentinelle.lireNom();
 }
