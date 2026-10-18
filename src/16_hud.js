@@ -18,6 +18,7 @@ export const CASES = [
   { id: 'sacoche', nom: 'La sacoche', touche: 'KeyI', icone: [8, 0] },
   { id: 'rumeurs', nom: 'Rumeurs de la taverne', touche: 'KeyR', icone: [7, 1] },
   { id: 'lettres', nom: 'Boîte aux lettres', touche: 'KeyM', icone: 'enveloppe' },
+  { id: 'reglages', nom: 'Réglages', touche: 'KeyO', icone: 'engrenage' },
 ];
 
 function el(tag, attrs = {}, ...enfants) {
@@ -40,6 +41,15 @@ function icone(images, src) {
     r(5, 9, 22, 15, '#2b1c1d'); r(6, 10, 20, 13, '#f3e7c9'); r(6, 20, 20, 3, '#e4d4ac');
     for (let k = 0; k < 10; k++) { r(6 + k, 10 + k, 1, 1, '#85581b'); r(25 - k, 10 + k, 1, 1, '#85581b'); }
     r(14, 18, 4, 3, '#b8322a'); r(15, 19, 2, 1, '#e8792a');   // le cachet de cire
+  } else if (src === 'engrenage') {   // un engrenage en bronze, pixel par pixel (les réglages)
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+      const dx = x + 0.5 - 16, dy = y + 0.5 - 16, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);
+      const dent = Math.cos(a * 8) > 0.35 ? 11.5 : 9;            // huit dents
+      if (d > dent + 1 || d < 3.2) continue;
+      const bord = d > dent || d < 4.4;
+      g.fillStyle = bord ? '#2b1c1d' : (dx + dy < -4 ? '#e2b848' : dx + dy < 6 ? '#b78c41' : '#85581b');
+      g.fillRect(x, y, 1, 1);
+    }
   } else g.drawImage(images.deco, src[0] * T, src[1] * T, T, T, 0, 0, T, T);
   return c;
 }

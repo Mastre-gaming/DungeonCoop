@@ -184,6 +184,11 @@ class RadioPlayer {
    * de réglages enregistre à sa façon (ENREGISTRER, ou NE PAS ENREGISTRER).
    */
   persist: ((id: string) => void) | null = null;
+  /**
+   * (Dungeon Co-op, 2026-10-18 : le réglage « Effets » du camp, #95) Le volume des effets, de 0 à 1 : le
+   * grésillement d'un changement de station. Le réglage « Musique » le règle aussi, comme tout ce qui sort du poste.
+   */
+  private effets = 1;
 
   /**
    * À appeler une fois par page : prépare la station `stationId` (le réglage ;
@@ -230,6 +235,11 @@ class RadioPlayer {
       void this.fx?.ctx.resume();
       if (audio.paused && this.station >= 0) this.tuneLive(true);
     });
+  }
+
+  /** Le réglage « Effets » du camp a changé (0 à 1) : le prochain grésillement en tient compte. */
+  setEffets(volume: number): void {
+    this.effets = Math.max(0, Math.min(1, volume));
   }
 
   /** Le réglage « Musique » a changé (0 à 1) : appliqué tout de suite. */
@@ -612,7 +622,7 @@ class RadioPlayer {
    */
   private crackle(): void {
     const fx = this.fx;
-    if (!fx) return;
+    if (!fx || this.effets <= 0) return;
     const { ctx } = fx;
     if (!this.noise) {
       const len = Math.round(ctx.sampleRate * CRACKLE.duration);
@@ -628,7 +638,7 @@ class RadioPlayer {
     band.frequency.value = 1800;
     band.Q.value = 0.6;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(CRACKLE.level, ctx.currentTime);
+    gain.gain.setValueAtTime(CRACKLE.level * this.effets, ctx.currentTime);
     gain.gain.linearRampToValueAtTime(0, ctx.currentTime + CRACKLE.duration);
     src.connect(band).connect(gain).connect(fx.input);
     src.start();

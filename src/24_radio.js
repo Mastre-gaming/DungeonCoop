@@ -10,9 +10,10 @@
 //     « Morceau suivant », couper ou rallumer. Ses répliques sont provisoires : l'histoire est à l'équipe.
 //   - À plusieurs (le groupe du camp) : tout le monde entend la radio de l'hôte, au même instant ; un morceau passé
 //     (ou repris) au barde, par n'importe qui, l'est pour tout le groupe (voir « À plusieurs », plus bas).
-//   - Le volume de la musique : le réglage « musique » (dungeoncoop:reglages, le menu Réglages de #95), 0,6 sans lui.
+//   - Les volumes : les réglages « musique » et « effets » (le grésillement) du menu Réglages (O, src/25_reglages.js).
 // En ?test et en ?visite (la carte du dashboard), pas de son : les tests branchent une fausse radio (brancherTest).
 import { T } from './01_plan.js';
+import { lireReglages } from './25_reglages.js';
 import { radio as radioDuJeu } from './audio/Radio';
 import { RADIO_STATIONS, RADIO_STATIC } from './audio/radioCatalog';
 import { buildSchedule, livePosition, nextSongShift, prevSongShift } from './audio/radioSchedule';
@@ -24,8 +25,6 @@ export const POSTE = { x: 17.3 * T, y: 15.3 * T };       // les pieds du barde, 
 export const ENCEINTE = { x: 16.1 * T, y: 15.2 * T };    // le pied de l'enceinte, à sa droite (à gauche à l'écran)
 export const STATION = 'deadlock-records';
 const IMAGES = { barde: './assets/lpc/barde.png', enceinte: './assets/lpc/enceinte.png', notes: './assets/lpc/notes.png' };
-const CLE_REGLAGES = 'dungeoncoop:reglages';
-const MUSIQUE = 0.6;                                     // le volume de la musique sans réglage
 const REPLIQUES = [                                      // (provisoires)
   'Ici DEADLOCK RECORDS RADIO, en direct du camp ! Approche-toi, ça sonne mieux près de l’enceinte.',
   'Ma lyre s’accorde toute seule. L’enceinte, c’est un voyageur qui me l’a laissée. Elle ne se tait jamais.',
@@ -51,12 +50,11 @@ function el(tag, attrs = {}, ...enfants) {
   for (const e of enfants.flat()) if (e != null && e !== false) n.append(e instanceof Node ? e : String(e));
   return n;
 }
-const lireReglages = () => { try { return JSON.parse(localStorage.getItem(CLE_REGLAGES)) ?? {}; } catch { return {}; } };
 
 let game, rendu, heros, collision, visite, reseau = null, radio = radioDuJeu;
 let spriteBarde = null, spriteEnceinte = null, imageNotes = null, ombres = [], obstacles = [];
 let bulle, bandeau, panneau, texte, joue, boutonPrecedent, boutonSuite, boutonCouper, portrait;
-let musique = MUSIQUE, volumeDonne = -1, temps = 0, minuterieBandeau = 0, ouvert = false, desabonner = null;
+let musique = 0.6, effets = 0.8, volumeDonne = -1, temps = 0, minuterieBandeau = 0, ouvert = false, desabonner = null;
 const lyre = { t: 0, image: 0 }, enceinte = { image: 0, moyenne: 0 }, notes = [];
 let prochaineNote = 0;
 
@@ -98,8 +96,8 @@ export function init(g, options) {
     ouvrir();
   }, { capture: true });
 
-  musique = lireReglages().musique ?? MUSIQUE;
-  game.bus.on('reglages:maj', (r) => { if (r?.musique != null) { musique = r.musique; volumeDonne = -1; } });
+  ({ musique, effets } = lireReglages());
+  game.bus.on('reglages:maj', (r) => { if (r?.musique != null) musique = r.musique; if (r?.effets != null) effets = r.effets; volumeDonne = -1; radio.setEffets?.(effets); });
   brancher(radioDuJeu);
   game.bus.on('party:game', surMessageDuGroupe);
   game.bus.on('party:join', ({ id }) => { if (partage?.role === 'hote') redire(null, id); });
@@ -113,6 +111,7 @@ function brancher(r) {
   if (partage) finirLeGroupe();
   radio = r;
   volumeDonne = -1;
+  radio.setEffets?.(effets);
   desabonner = radio.onChange((info) => { annoncer(info); if (ouvert) dessiner(); });
 }
 
