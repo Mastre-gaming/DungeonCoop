@@ -95,14 +95,16 @@ export function creerRendu(canvas) {
     //   `zoom`  : combien de cases on veut voir en largeur et en hauteur (on prend l'échelle entière la plus proche)
     //   `tout`  : la taille du monde à faire tenir en entier (vue visite) ; l'échelle peut alors être fractionnaire si l'écran est petit
     //   `ecart` : des crans de zoom en plus (+) ou en moins (-) par rapport à l'échelle de base (la molette), bornés à [1, ECHELLE_MAX]
-    ajuster({ zoom = null, tout = null, ecart = 0 } = {}) {
+    //   `echelle` : une échelle imposée (le terrain d'entraînement choisit la sienne)
+    ajuster({ zoom = null, tout = null, ecart = 0, echelle = null } = {}) {
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
       const cw = canvas.clientWidth || window.innerWidth, ch = canvas.clientHeight || window.innerHeight;
       renderer.setPixelRatio(dpr);
       renderer.setSize(cw, ch, false);
       const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr);
       let s;
-      if (tout) { const f = Math.min(bw / tout.w, bh / tout.h); s = f >= 1 ? Math.floor(f) : f; }
+      if (echelle) s = echelle;
+      else if (tout) { const f = Math.min(bw / tout.w, bh / tout.h); s = f >= 1 ? Math.floor(f) : f; }
       else {
         rendu.echelleBase = Math.max(1, Math.round(Math.min(bw / (zoom.w * 32), bh / (zoom.h * 32))));
         s = Math.max(1, Math.min(ECHELLE_MAX, rendu.echelleBase + ecart));

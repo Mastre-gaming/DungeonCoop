@@ -75,6 +75,21 @@ Each encounter states one of these: **defeat every enemy**, **defeat the leader*
 ## Critical 1s: the fumble
 A natural 1 deals no damage and makes something funny happen (`PAPER_FIGHT_KIT.md` has the table). It must never be worse than losing the turn, so luck stays fun and never decides a fight on its own (Paolitus's "never").
 
+## On trial: moving without squares (the training ground, mission #14)
+The team asked on 18 Oct to try a mode **without squares**, where each class has its own **maximum distance per turn**. The training ground in the camp plays it (`entrainement.html`). The squares above stay the rule until the team decides (#26).
+
+- **Metres instead of squares.** One square of the kit is 1.5 m. Creatures stand anywhere.
+- **Moving:** up to the class's distance per turn, along any path; the length walked is what counts, so a diagonal is no longer free. The kit's heroes keep their speed: Brute, Mage and Guardian 7.5 m, Rogue 9 m; enemies 7.5 m. Movement can be split before and after the action and the bonus action. You walk through allies, never through enemies, walls, rocks, barrels, deep water or the pit.
+- **Chilled:** 3 m less. **Prone:** standing up costs half your distance.
+- **Contact** (melee, shove, revive): the two creatures' centres are 2.25 m apart or less (about one square, diagonal included).
+- **Ranges:** the kit's squares × 1.5 m (Spark 9 m, Fire Arrow 12 m), centre to centre, with a line of sight: walls and rocks block it; fences, hay, barrels and water don't.
+- **Areas:** a 2×2 area becomes a circle of 1.7 m radius, a 3×3 area a circle of 2.5 m radius. Its centre must be within the ability's range.
+- **Surfaces** are patches on the ground, drawn without squares. A creature is in a surface when its centre is.
+- **Shoves** go straight away from the shover: 2 squares become 3 m (Hurl: 4.5 m, 7.5 m with 20 Rage). Hitting a wall, rock, barrel or creature: +8 damage. Into the pit: as off the ledge (a grunt is out, anything bigger takes 20 and climbs back out). On ice, the target slides on until it hits something.
+- **Flank:** an ally in contact with the target, on its far side: the angle attacker, target, ally is 135° or more.
+- **Deep water is scenery:** nobody walks in it (players' note after D1). A puddle made by a spell is a surface you walk through.
+- **The training room:** 24 × 16 squares (36 × 24 m), with the D1 fight's heroes, enemies and objective (defeat the leader). Each hero's d20 shows big on the board (players' note after D1).
+
 ## Checks this draft must pass on paper
 | Bar | Target |
 |---|---|

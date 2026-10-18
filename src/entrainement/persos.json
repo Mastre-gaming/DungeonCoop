@@ -1,0 +1,67 @@
+{
+  "brute": {
+    "nom": "Brute",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hat=Barbarian_iron&clothes=Sleeveless_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Waraxe_waraxe",
+    "attaque": {
+      "nom": "slash_oversize",
+      "taille": 192,
+      "y": 1664,
+      "images": 6
+    }
+  },
+  "mage": {
+    "nom": "Mage des tempêtes",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_light&head=Human_Female_light&expression=Neutral_light&hat=Hood_navy&clothes=Robe_blue&shoes=Basic_Shoes_brown&weapon=Gnarled_staff_medium",
+    "attaque": {
+      "nom": "thrust_oversize",
+      "taille": 192,
+      "y": 1664,
+      "images": 8
+    }
+  },
+  "voleur": {
+    "nom": "Voleur",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_olive&head=Human_Female_olive&expression=Neutral_olive&hat=Hood_forest&clothes=Longsleeve_forest&legs=Leggings_charcoal&shoes=Basic_Boots_black&weapon=Normal_medium",
+    "attaque": null
+  },
+  "gardien": {
+    "nom": "Gardien",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_amber&head=Human_Male_amber&expression=Neutral_amber&hair=Plain_chestnut&clothes=Longsleeve_white&legs=Pants_white&shoes=Basic_Boots_brown&weapon=Simple_staff_simple",
+    "attaque": null
+  },
+  "sbire": {
+    "nom": "Sbire",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Orc_male_green&clothes=TShirt_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Club_club",
+    "attaque": {
+      "nom": "slash_reverse_oversize",
+      "taille": 192,
+      "y": 1664,
+      "images": 6
+    }
+  },
+  "archer": {
+    "nom": "Archer",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Skeleton_white&head=Skeleton_white&weapon=Normal_dark",
+    "attaque": null
+  },
+  "brute-ennemie": {
+    "nom": "Brute ennemie",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Orc_male_green&armour=Plate_iron&legs=Armour_iron&shoes=Armour_iron&weapon=Mace_mace",
+    "attaque": {
+      "nom": "slash_oversize",
+      "taille": 192,
+      "y": 1664,
+      "images": 6
+    }
+  },
+  "chef": {
+    "nom": "Chef",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Orc_male_green&armour=Plate_gold&legs=Armour_iron&shoes=Armour_iron&hat=Crown_crown_gold&cape=Solid_red&weapon=Waraxe_waraxe",
+    "attaque": {
+      "nom": "slash_oversize",
+      "taille": 192,
+      "y": 1664,
+      "images": 6
+    }
+  }
+}

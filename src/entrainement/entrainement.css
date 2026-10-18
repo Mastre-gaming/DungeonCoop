@@ -1,0 +1,105 @@
+/* Le terrain d'entraînement : le bois et le parchemin du camp (panneau.css, jeu.css), posés autour du terrain. */
+.plaque { position: fixed; z-index: 8; background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce);
+  box-shadow: inset 0 0 0 2px var(--bois-clair), 0 3px 0 rgba(0,0,0,.25); border-radius: 4px; font: 14px/1.35 var(--texte); }
+.plaque h2 { margin: 0 0 4px; font: 700 .95rem var(--titre); color: var(--bois-fonce); }
+.muet { color: var(--parchemin-doux); }
+kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid var(--bois); border-bottom-width: 2px; border-radius: 3px; background: #fffaf0; text-align: center; font: 11px ui-monospace, Consolas, monospace; }
+
+/* le bandeau du haut */
+.haut-terrain { left: 50%; top: 8px; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 5px 8px 5px 12px; white-space: nowrap; }
+.titre-terrain { font: 700 1rem var(--titre); color: var(--bois-fonce); }
+.etat-terrain { font: 500 .9rem var(--titre); }
+.chrono { font: 12px ui-monospace, Consolas, monospace; color: var(--parchemin-doux); }
+.sans-cases { font: 500 .8rem var(--titre); color: #fff7e6; background: #2f68b8; border-radius: 3px; padding: 1px 6px; }
+.haut-terrain .bouton-jeu, .barre-terrain .bouton-jeu, .cadre-terrain .bouton-jeu { font-size: .9rem; padding: 4px 10px; text-decoration: none; display: inline-block; }
+
+/* les héros, à gauche */
+.equipe-terrain { position: fixed; left: 8px; top: 60px; z-index: 8; display: grid; gap: 6px; width: 232px; }
+.fiche-heros { position: static; display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 6px; text-align: left; cursor: pointer; }
+.fiche-heros .portrait-terrain { width: 40px; height: 40px; image-rendering: pixelated; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; }
+.fiche-heros .fh-corps { display: grid; gap: 1px; min-width: 0; font-size: 12px; }
+.fiche-heros strong { font: 700 .9rem var(--titre); }
+.fiche-heros.choisi { outline: 3px solid #7ce0ff; outline-offset: 1px; }
+.fiche-heros.attend { opacity: .72; }
+.fiche-heros.ko { filter: grayscale(.9); opacity: .6; }
+.fh-etats, .info-survol .fh-etats { color: #8a3d12; font-weight: 600; }
+.jauge { display: inline-block; vertical-align: middle; width: 96px; height: 7px; background: #c9b48c; border: 1px solid var(--bois-fonce); border-radius: 2px; overflow: hidden; }
+.jauge > span { display: block; height: 100%; background: #3f9a3b; }
+
+/* l'aperçu et le journal, à droite */
+.droite-terrain { position: fixed; right: 8px; top: 60px; bottom: 96px; z-index: 8; width: 270px; display: grid; grid-template-rows: auto 1fr; gap: 6px; }
+.droite-terrain .plaque { position: static; padding: 8px 10px; min-height: 0; }
+.apercu-terrain p { margin: 2px 0; }
+.chances { width: 100%; border-collapse: collapse; font-size: 13px; }
+.chances th { text-align: left; font: 500 .85rem var(--titre); }
+.chances td { text-align: right; padding: 1px 0 1px 8px; white-space: nowrap; }
+.chances tr.critique th { color: #a8761b; } .chances tr.rate th { color: #a3261c; }
+.apercu-terrain .notes { margin: 4px 0 0; padding-left: 16px; font-size: 12px; color: var(--parchemin-doux); }
+.avantage { color: #2c7a2a; font-weight: 600; } .desavantage { color: #a3261c; font-weight: 600; }
+.journal-terrain { overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+.journal-terrain ol { margin: 0; padding: 0; list-style: none; overflow: auto; font-size: 12px; display: grid; align-content: start; gap: 2px; }
+.journal-terrain li.round { font: 700 .85rem var(--titre); color: var(--bois-fonce); border-top: 1px solid #d8c59c; padding-top: 2px; }
+.journal-terrain li.combo { color: #1d5fa8; font-weight: 700; } .journal-terrain li.bon { color: #2c7a2a; }
+.journal-terrain li.mauvais { color: #a3261c; } .journal-terrain li.ennemi { color: #7a3a2a; } .journal-terrain li.muet { color: var(--parchemin-doux); }
+
+/* les capacités, en bas */
+.barre-terrain { left: 50%; bottom: 8px; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 6px 8px; max-width: calc(100vw - 32px); }
+.capacites { display: flex; flex-wrap: wrap; gap: 4px; }
+.capacite { display: grid; grid-template-columns: auto auto; column-gap: 4px; align-items: center; text-align: left; padding: 3px 7px; cursor: pointer;
+  background: #fffaf0; color: var(--parchemin-encre); border: 2px solid var(--bois-clair); border-radius: 4px; font: 13px var(--texte); }
+.capacite .cap-nom { font: 500 .9rem var(--titre); }
+.capacite .cap-slot { grid-column: 2; font-size: 11px; color: var(--parchemin-doux); }
+.capacite kbd { grid-row: span 2; }
+.capacite.bonus { border-style: dashed; }
+.capacite.choisie { background: #ffe9a8; border-color: #c4621f; box-shadow: 0 0 0 2px #c4621f; }
+.capacite:disabled { opacity: .45; cursor: not-allowed; }
+.boutons-phase { display: flex; gap: 6px; }
+.bouton-jeu:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+
+/* le d20 en grand, les bannières, le survol */
+.de-grand { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 12; pointer-events: none; display: grid; justify-items: center; gap: 2px;
+  background: rgba(43, 28, 29, .88); color: #fff7e6; border: 3px solid #ffd35a; border-radius: 6px; padding: 6px 16px 8px; font: 500 1rem var(--titre); animation: apparait .18s ease-out; }
+.de-grand[hidden] { display: none; }
+.de-grand .de-qui { font-size: .85rem; color: var(--creme-doux); }
+.de-grand .des { display: flex; gap: 8px; }
+.de-grand .face { width: 54px; height: 54px; display: grid; place-items: center; font: 700 1.7rem var(--titre); color: #2b1c1d; background: #ffd35a;
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%); }
+.de-grand .face.ecarte { opacity: .35; }
+.de-grand .resultat { font: 700 1.25rem var(--titre); }
+.de-grand.critique .resultat { color: #ffd35a; } .de-grand.touche .resultat { color: #9fe28f; } .de-grand.eraflure .resultat { color: #f3c48a; } .de-grand.rate .resultat { color: #ff8a7a; }
+.de-grand.ennemi { border-color: #ff6a50; } .de-grand.ennemi .face { background: #ff9a7a; }
+@keyframes apparait { from { transform: translate(-50%, -8px); opacity: 0; } }
+.banniere-terrain { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 11; pointer-events: none; font: 700 1.6rem var(--titre); color: #fff7e6;
+  text-shadow: 0 3px 0 #3b2716, 2px 0 0 #3b2716, -2px 0 0 #3b2716, 0 -2px 0 #3b2716; animation: apparait .2s ease-out; white-space: nowrap; }
+.banniere-terrain[hidden] { display: none; }
+.banniere-terrain.combo { color: #7ce0ff; } .banniere-terrain.ennemi { color: #ff9a7a; } .banniere-terrain.heros { color: #ffd35a; }
+.info-survol { padding: 4px 8px; pointer-events: none; font-size: 13px; max-width: 260px; z-index: 13; }
+.info-survol[hidden], .distance-survol[hidden] { display: none; }
+.distance-survol { position: fixed; z-index: 13; pointer-events: none; font: 500 .85rem var(--titre); color: #fff7e6; background: rgba(43, 28, 29, .85); border-radius: 3px; padding: 1px 6px; }
+.flottant { position: fixed; z-index: 9; pointer-events: none; transform: translate(-50%, -100%); font: 700 1.05rem var(--titre); color: #fff;
+  text-shadow: 0 2px 0 #2b1c1d, 1px 0 0 #2b1c1d, -1px 0 0 #2b1c1d, 0 -1px 0 #2b1c1d; white-space: nowrap; }
+.flottant.degats { color: #ff8a7a; } .flottant.soin { color: #9fe28f; } .flottant.info { color: #ffd35a; font-size: .9rem; }
+.aide-terrain { left: 8px; bottom: 8px; margin: 0; padding: 4px 8px; font-size: 12px; max-width: 232px; }
+
+/* l'accueil et la fin */
+.fond-terrain { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(20, 14, 8, .55); overflow: auto; }
+.fond-terrain[hidden] { display: none; }
+.cadre-terrain { width: min(720px, 100%); box-sizing: border-box; background: var(--parchemin); color: var(--parchemin-encre); border: 6px solid var(--bois-fonce);
+  box-shadow: inset 0 0 0 3px var(--bois-clair), 0 10px 0 rgba(0,0,0,.25); border-radius: 6px; padding: 16px 20px; font: 15px/1.45 var(--texte); display: grid; gap: 10px; }
+.cadre-terrain h1 { margin: 0; font: 700 1.5rem var(--titre); color: var(--bois-fonce); }
+.cadre-terrain p { margin: 0; }
+.heros-accueil { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.heros-accueil li { display: flex; gap: 10px; align-items: center; }
+.heros-accueil .portrait-terrain { width: 48px; height: 48px; image-rendering: pixelated; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; }
+.mode-tour { border: 2px solid var(--bois-clair); border-radius: 4px; display: grid; gap: 4px; }
+.mode-tour legend { font: 700 .95rem var(--titre); padding: 0 4px; }
+.objectif { font: 500 1rem var(--titre); }
+.cadre-terrain .boutons { display: flex; flex-wrap: wrap; gap: 8px; }
+.notes-fin { display: grid; gap: 6px; }
+.notes-fin label { display: grid; gap: 2px; font: 500 .9rem var(--titre); }
+.notes-fin input { font: 14px var(--texte); padding: 4px 6px; border: 2px solid var(--bois-clair); border-radius: 3px; background: #fffaf0; }
+.fiche { margin: 0; white-space: pre-wrap; font: 12px/1.4 ui-monospace, Consolas, monospace; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; padding: 8px; max-height: 240px; overflow: auto; }
+
+@media (max-width: 900px) {
+  .equipe-terrain { width: 180px; } .droite-terrain { width: 200px; } .jauge { width: 60px; } .aide-terrain { display: none; }
+}

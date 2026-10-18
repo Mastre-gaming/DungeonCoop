@@ -1,0 +1,75 @@
+Character: Voleur
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_olive&head=Human_Female_olive&expression=Neutral_olive&hat=Hood_forest&clothes=Longsleeve_forest&legs=Leggings_charcoal&shoes=Basic_Boots_black&weapon=Normal_medium
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/female/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Benjamin K. Smith (BenCreating), bluecarrot16, TheraHedwig, Evert, MuffinElZangano, Durrani, Pierre Vigier (pvigier), ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/human/female/walk.png
+
+original head by Redshrike, tweaks by BenCreating, modular version by bluecarrot16
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike)
+
+head/faces/female/neutral/walk.png
+
+Original by Redshrike, Expressions by ElizaWy, mapped to all frames by JaidynReiman
+
+Licenses: OGA-BY 3.0
+
+Authors: JaidynReiman, ElizaWy, Stephen Challener (Redshrike)
+
+hat/cloth/hood/adult/walk.png
+
+Brown hood by Wulax, original black/white recolors by ??, mapped to idle/run/jump/revised combat by JaidynReiman, along with additional recolors.
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Johannes Sjölund (wulax), JaidynReiman
+
+torso/clothes/longsleeve/longsleeve/female/walk.png
+
+original by ElizaWy, edited to v3 bases by bluecarrot16; cleanup and climb/jump/run/sit/emote/revised combat adapted from LPC Revised by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, ElizaWy, JaidynReiman, Stephen Challener (Redshrike)
+
+legs/leggings/thin/walk.png
+
+Original bases by Redshrike, thrust/shoot bases by Wulax, adapted from sara's leggings to v3 bases by bluecarrot16, jump/run/sit by JaidynReiman based on ElizaWy's and modified to match
+
+Licenses: OGA-BY 3.0
+
+Authors: bluecarrot16, ElizaWy, JaidynReiman, Mandi Paugh, William.Thompsonj, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+feet/boots/basic/thin/walk.png
+
+original by Nila122, edited for male and v3 bases by bluecarrot16, Jump/Sit/Emote/Run/Revised Combat by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0
+
+Authors: JaidynReiman, bluecarrot16, Nila122
+
+weapon/ranged/bow/normal/universal/background/walk/medium.png
+
+original by wulax, walk animations by pvigier, split into layers and tweaked for v3 character bases by bluecarrot16. pvigier has agreed to license this sheet as OGA-BY 3.0+.
+
+Licenses: OGA-BY 3.0+, GPL 3.0, CC-BY 4.0
+
+Authors: Johannes Sjölund (wulax), Pierre Vigier (pvigier)
+
+Download TXT
+Download CSV
