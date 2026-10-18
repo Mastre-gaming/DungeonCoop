@@ -1,7 +1,7 @@
 // Les vérifications du camp (?test) : elles jouent comme un joueur (le manuel §3).
 // Le test de marche part de l'apparition et va à pied jusqu'à chaque lieu puis au feu, en tenant les touches
 // (de vrais événements clavier, comme un joueur) ; il donne les coordonnées exactes de tout endroit où le héros reste coincé.
-import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, emprise } from './01_plan.js';
+import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, MURAILLE, emprise } from './01_plan.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 import { LIEUX_AXES } from './10_missions.js';
 
@@ -80,12 +80,13 @@ export async function selfTest(t, game) {
   t.eq(traverse, [], 'aucun sentier ne traverse un lieu');
   const surArbre = LIEUX.filter((l) => BOIS.some(([i, j]) => inter(E[l.id], [i, j, i + 1, j + 1]))).map((l) => l.id);
   t.eq(surArbre, [], 'aucun arbre dans une emprise de lieu');
-  t.eq([collision.largeur, collision.hauteur], [W * T, H * T], 'le camp fait 42 x 28 cases');
+  t.eq([collision.largeur, collision.hauteur], [W * T, H * T], 'le camp fait 42 x 38 cases (avec l’entrée, #123)');
   t.ok(!collision.bloque(APPARITION[0] * T, APPARITION[1] * T), "l'apparition est libre");
 
   if (visite) {
     t.group('la vue visite');
     t.ok(rendu.vue.w >= W * T - 0.5 && rendu.vue.h >= H * T - 0.5, `tout le camp tient dans le cadre (vue ${Math.round(rendu.vue.w)} x ${Math.round(rendu.vue.h)})`);
+    t.ok(ctx.muraille.fantome === 0 && ctx.muraille.opacite === 1, 'en visite, la muraille de l’entrée est pleine');
     game.dbg.freeze(false);
     return;
   }
@@ -165,6 +166,30 @@ export async function selfTest(t, game) {
   tenir(['ArrowLeft']); game.dbg.advance(4); tenir([]);
   t.ok(h.x / T > ouest, `vers l’ouest, la clôture arrête le héros (x ${(h.x / T).toFixed(1)})`);
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
+
+  t.group('l’entrée du camp : muraille, douves, pont-levis (#123)');
+  const { muraille } = ctx, [p0, p1] = MURAILLE.porte;
+  const rangees = [...MURAILLE.mur, ...MURAILLE.douves];
+  const ouvertes = [];
+  for (const j of rangees) for (let i = 1; i < W - 1; i++) if (!MURAILLE.porte.includes(i) && !collision.bloque((i + 0.5) * T, (j + 0.6) * T)) ouvertes.push(`${i},${j}`);
+  t.eq(ouvertes, [], 'la muraille et les douves bloquent partout, sauf à la porte');
+  t.ok(rangees.every((j) => !collision.bloque((p0 + 1) * T, (j + 0.6) * T)), `la porte et le pont-levis sont ouverts (colonnes ${p0} et ${p1})`);
+  const route = [15 * T, (H - 1.4) * T];
+  heros.placer(...route, 'haut'); camera.snap(); game.dbg.advance(0.5);
+  t.ok(muraille.fantome === 0 && muraille.opacite === 1, 'sur la route, dehors : la muraille est pleine');
+  const parLaPorte = marcherVers(...devantFeu(), { limite: 60 });
+  rapport.push({ vers: 'le feu, depuis la route, par la porte', ...parLaPorte });
+  t.ok(parLaPorte.arrive && !parLaPorte.traverse, `depuis la route, par le pont et la porte, jusqu’au feu${parLaPorte.arrive ? ` (${parLaPorte.temps.toFixed(1)} s)` : ` : coincé en (${parLaPorte.coince})`}`);
+  game.dbg.advance(0.5);
+  t.ok(muraille.fantome === 1 && muraille.floue && Math.abs(muraille.opacite - 0.2) < 0.01, `dedans : la muraille est fantôme (opacité ${muraille.opacite.toFixed(2)}, floue)`);
+  heros.placer(15 * T, (MURAILLE.pied - 1.2) * T, 'bas'); camera.snap(); game.dbg.advance(0.1);
+  t.ok(muraille.fantome > 0, 'sous la voûte, déjà fantôme (le héros n’est jamais caché par la porte)');
+  heros.placer(...route, 'haut'); game.dbg.advance(0.5);
+  t.ok(muraille.fantome === 0 && muraille.opacite === 1, 'ressorti : la muraille redevient pleine');
+  heros.placer(15 * T, (H - 0.2) * T, 'bas'); camera.snap();
+  tenir(['ArrowDown']); game.dbg.advance(1.5); tenir([]);
+  t.ok(h.y <= H * T, 'au bout de la route, le bord de la carte arrête le héros');
+  heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap(); game.dbg.advance(0.5);
 
   t.group('le clic');
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas');

@@ -123,17 +123,18 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **Vérifié** comme le reste du plan (`?test` et `design/camp/plans/verifier.py`) : aucun chevauchement, aucun sentier qui traverse un lieu, au plus 2 lieux entiers dans le cadre. On y entre par l'entrée, et la clôture arrête le héros partout ailleurs.
 - **Les captures** sont dans `design/camp/enclos/` : l'entrée, l'enclos entier au niveau d'aujourd'hui, les niveaux 0 et 4, et la vue du dashboard.
 
-### L'entrée du camp : la muraille blanche et la grande porte (mission #123, proposé par Mope le 18 oct)
+### L'entrée du camp : la muraille blanche et la grande porte (mission #123, proposé par Mope le 18 oct, construit)
 - **D'après les références de Mope** (Minas Tirith : la ville blanche, sa grande porte, ses remparts) : le camp a une entrée majestueuse au sud, là où le sentier sort aujourd'hui de la lisière.
 - **Le camp s'agrandit de 10 rangées au sud (42 × 38 cases).** La muraille a sa propre bande, sous tous les lieux : elle ne cache rien du camp. La lisière sud disparaît ; à l'ouest et à l'est, la forêt descend jusqu'en bas et avale les bouts de la muraille.
 - **La muraille :** pierre blanche, 4 cases de façade, créneaux, chemin de ronde et contreforts. Elle finit de chaque côté sur une tour d'angle à moitié cachée dans les arbres. **Trois tours de guet, à droite seulement,** avec un dôme vert et une bannière.
 - **La grande porte,** au bout du sentier (la même colonne qu'aujourd'hui) : deux tours plus hautes à dômes verts, une voûte en plein cintre, la herse relevée, une galerie à trois baies et un blason doré (une flamme, le feu du camp). Des bannières aux couleurs des axes sur les tours, avec « MASTRES » écrit à la verticale en lettres gothiques dorées.
 - **Les douves et le pont-levis :** deux cases d'eau au pied de la muraille ; le pont-levis abaissé, avec ses chaînes, est le seul passage. Au-delà, une route pavée entre deux braseros.
 - **La muraille fantôme :** une fois la porte passée vers le nord, la muraille devient fantôme (environ 20 % d'opacité, et floue) tant qu'un héros est derrière elle, pour qu'on voie bien le camp ; elle redevient pleine quand on ressort.
-- **Quatre archers** postés : un sur chaque tour de la porte, un sur la muraille de chaque côté. Ils saluent (bras levés, rangée « sort » LPC) chaque héros qui entre ou qui sort. Ils viennent du générateur LPC, à travers `lpc-sprite-mods`.
+- **Quatre archers** postés (mission #124, à venir) : un sur chaque tour de la porte, un sur la muraille de chaque côté. Ils saluent (bras levés, rangée « sort » LPC) chaque héros qui entre ou qui sort. Ils viennent du générateur LPC, à travers `lpc-sprite-mods`.
 - **L'art :** dessiné pixel par pixel dans le style LPC (contour sombre, lumière en haut à gauche, rampe de pierre blanche), comme le panneau-carte ; l'eau, les arbres et les personnages sont des pièces LPC, crédités dans `CREDITS.md`.
-- **Vérifié** comme le reste du plan (`?test`, `design/camp/plans/verifier.py`) : on n'entre et ne sort que par le pont-levis ; aucun lieu n'est sous la muraille.
-- **La maquette** (v4, validée par Mope le 18 oct ; l'agrandissement reste à valider par le propriétaire du camp) est dans `design/camp/entree/` : la porte, l'arrivée avec la muraille fantôme, et le camp entier.
+- **Dans le jeu :** `src/32_muraille.js` pose la muraille (une seule image, triée sur son pied) et l'estompe dès que le héros passe sous la voûte ; les pièces (`muraille.png`, `douves.png`, `brasero.png`) sont faites par `design/camp/outils/muraille.py`. La muraille et l'eau bloquent sur les rangées 31 à 34, sauf les colonnes 14 et 15 (la porte et le pont). Le point nommé `porte` est sur la route, `entree` juste après la porte.
+- **Vérifié** dans `?test` : la muraille et les douves bloquent partout sauf à la porte ; on va à pied de la route au feu par le pont et la porte ; la muraille est pleine dehors et en visite, fantôme (20 %, floue) dedans, déjà sous la voûte, et redevient pleine quand on ressort.
+- **La maquette** (v4, validée par Mope le 18 oct, agrandissement compris) est dans `design/camp/entree/` : la porte, l'arrivée avec la muraille fantôme, et le camp entier ; à côté, les mêmes vues prises dans le jeu (5 à 7).
 
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
