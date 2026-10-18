@@ -14,7 +14,7 @@ except Exception:
     equipe = json.load(open('equipe.json', encoding='utf-8'))
 
 # les pièces que la page utilise (les niveaux du premier tableau et les exemples de carte n'y servent plus)
-garder = lambda n: not n.startswith(('tab_n', 'carte_debut', 'carte_milieu'))
+garder = lambda n: not n.startswith(('tab_n', 'carte_debut', 'carte_milieu')) and not n.endswith('_apercu.png')
 images = {os.path.basename(f)[:-4]: 'data:image/png;base64,' + base64.b64encode(open(f, 'rb').read()).decode()
           for f in sorted(glob.glob('../pieces/*.png')) if garder(os.path.basename(f))}
 
