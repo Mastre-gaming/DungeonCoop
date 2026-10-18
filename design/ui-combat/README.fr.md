@@ -27,7 +27,7 @@ Les pages s'ouvrent dans un navigateur, sans rien installer. La version de trava
 - Sur les cartes des héros, PV et ressource tiennent **sur une seule ligne**.
 
 ## Les icônes
-`icones/` : 25 PNG de 24 × 26 px, au format des enseignes du pack. Le fond est l'enseigne vierge de « [LPC] Hanging signs », telle quelle. Le symbole est peint sur 13 × 13 pixels avec des rampes à 3 tons (lumière en haut, ombre en bas, contour sombre) et recalé au centre du panneau. Les variantes (Projection furieuse, Ouverture critique, Fiole sur une cible, Grand givre) gardent l'icône de base avec un tampon doré.
+`icones/` : 25 PNG de 24 × 26 px, au format des enseignes du pack. Le fond est l'enseigne vierge de « [LPC] Hanging signs », telle quelle. Le symbole est peint avec des rampes à 3 tons (lumière en haut, ombre en bas, contour sombre) et posé sur l'axe du panneau : x = 11,5 (entre les chaînes), rangée 15 sous la poutre. Comme l'axe tombe entre deux pixels, chaque symbole a une largeur paire (10 à 14 px) ; le générateur refuse une largeur impaire. Les variantes (Projection furieuse, Ouverture critique, Fiole sur une cible, Grand givre) gardent l'icône de base avec un tampon doré.
 
 Pour changer une icône : modifier sa grille dans `icones/outil/icones.mjs` (une lettre par couleur, la légende est en tête du fichier), puis lancer, depuis `icones/outil/` :
 
