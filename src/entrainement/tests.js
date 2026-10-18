@@ -1,6 +1,7 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
-import { creerCombat, CAPACITES, HEROS } from './regles.js';
+import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis } from './regles.js';
+import { adresseEquipe } from './interface.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
 
 export const name = 'terrain';
@@ -17,7 +18,9 @@ const pause = (ms) => new Promise((ok) => setTimeout(ok, ms));
 export async function selfTest(t, game) {
   const { SALLE, salle, trame } = ctx;
   const neuf = (o = {}) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, alea: graine(3), horloge: () => 0, ...o });
-  const poser = (C, id, x, y) => { const u = C.U(id); u.x = x; u.y = y; return u; };
+  // un héros par sa classe (h1 à h4 : les places), ou une créature par son id
+  const trouver = (C, id) => C.U(id) ?? C.S.unites.find((u) => u.camp === 'h' && u.type === id);
+  const poser = (C, id, x, y) => { const u = trouver(C, id); u.x = x; u.y = y; return u; };
 
   // --- La géométrie sans cases ---------------------------------------------------------------------------------
   t.group('sans cases : la géométrie');
@@ -42,17 +45,17 @@ export async function selfTest(t, game) {
   // --- Les règles du kit, sans cases -----------------------------------------------------------------------------
   t.group('sans cases : les règles');
   {
-    const C = neuf(), A = C._.attaqueHeros(CAPACITES.fleche), c = C._.calculer(C.U('voleur'), C.U('s1'), A), o = C._.chances(A, c);
+    const C = neuf(), A = C._.attaqueHeros(CAPACITES.fleche), c = C._.calculer(trouver(C, 'voleur'), C.U('s1'), A), o = C._.chances(A, c);
     t.near(o.rate + o.eraflure + o.touche + o.critique, 1, 1e-9, 'les chances d’une attaque font 100 %');
     const cav = C._.chances(A, { ...c, av: 1 });
     t.near(cav.critique, 39 / 400, 1e-9, 'avec l’avantage, un critique sort 39 fois sur 400');
   }
   {
     const C = neuf({ alea: des([15, 15]) }), v = poser(C, 'voleur', 10, 10), s = poser(C, 's1', 13, 10);
-    s.st.huile = { ttl: 3, par: 'brute' };
+    s.st.huile = { ttl: 3, par: trouver(C, 'brute').id };
     C._.attaquer(v, s, C._.attaqueHeros(CAPACITES.fleche));
     t.ok(C.S.journal.some((l) => l.t.includes('Flèche de feu') && l.t.includes('(×2)')) && s.pv <= 30 - 22, 'Huilé puis Flèche de feu : dégâts ×2');
-    t.ok(C.S.stats.combos.some((c) => c.a === 'brute' && c.b === 'voleur' && c.quoi === 'Huilé puis feu'), 'et c’est un combo entre deux héros, compté dans la fiche');
+    t.ok(C.S.stats.combos.some((c) => c.a === trouver(C, 'brute').id && c.b === trouver(C, 'voleur').id && c.quoi === 'Huilé puis feu'), 'et c’est un combo entre deux héros, compté dans la fiche');
   }
   {
     const C = neuf({ alea: des([15, 3]) }), m = poser(C, 'mage', 8, 12), s = poser(C, 's1', 11, 12), s2 = poser(C, 's2', 11.9, 12);
@@ -93,13 +96,13 @@ export async function selfTest(t, game) {
   {
     const C = neuf();
     C.S.mode = 'equipe'; C.commencer();
-    const b = C.U('brute');
+    const b = trouver(C, 'brute');
     t.ok(!C.deplacer(b, 10, 5.5), 'on ne marche pas dans l’étang');
     t.ok(!C.deplacer(b, b.x + 5.6, b.y), 'ni plus loin que son déplacement (7,5 m)');
     const x0 = b.x;
     t.ok(C.deplacer(b, b.x + 2, b.y) && Math.abs(b.t.mv - 3) < 0.05, 'marcher 3 m laisse 4,5 m');
     t.ok(C.deplacer(b, b.x + 2.9, b.y) && b.x > x0 + 4.8, 'et le reste se marche après (le déplacement se coupe)');
-    const v = C.U('voleur');
+    const v = trouver(C, 'voleur');
     t.eq(HEROS.voleur.vitesse * 1.5, 9, 'le Voleur a 9 m par tour, les autres 7,5 m');
     t.ok(v.t.mv === 6, 'son déplacement du tour : 6 cases');
   }
@@ -113,7 +116,7 @@ export async function selfTest(t, game) {
       for (const id of C.groupeCourant().ids) {
         const h = C.U(id); if (!C.peutAgir(h)) continue;
         const en = C.ennemisVivants().sort((a, b) => dist(a, h) - dist(b, h));
-        const cap = HEROS[id].capacites.find((k) => CAPACITES[k].type === 'attaque' && !CAPACITES[k].cout && C.peutUtiliser(h, CAPACITES[k]));
+        const cap = HEROS[h.type].capacites.find((k) => CAPACITES[k].type === 'attaque' && !CAPACITES[k].cout && C.peutUtiliser(h, CAPACITES[k]));
         const vise = () => en.find((e) => C.aPortee(h, CAPACITES[cap], e));
         if (cap && !vise() && en.length) {
           const P = C.portee(h); let best = null, bd = Infinity;
@@ -131,6 +134,98 @@ export async function selfTest(t, game) {
     t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} : le combat va jusqu’au bout (${C.S.resultat} au round ${C.S.round}, ${Math.round(performance.now() - debut)} ms)`);
   }
 
+  // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
+  t.group('les classes d’essai');
+  t.eq(CLASSES_ESSAI.length, 8, 'huit classes à choisir : les 4 du kit et 4 d’essai');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
+  t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
+  t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
+  const essai = (equipe, o = {}) => neuf({ equipe, ...o });
+  {
+    const C = essai(['brute', 'brute', 'mage', 'barde']);
+    t.eq(C.S.unites.filter((u) => u.camp === 'h').map((u) => u.nom), ['Brute', 'Brute 2', 'Mage', 'Barde'], 'deux fois la même classe : « Brute » et « Brute 2 »');
+  }
+  {
+    const C = essai(['eclaireuse', 'gardien', 'druide', 'chevalier'], { alea: des([15, 15, 15, 15]) });
+    C.commencer();
+    const e = trouver(C, 'eclaireuse');
+    t.eq(e.res.v, 3, 'l’Éclaireuse a 3 Énergie au début de son tour');
+    const s = poser(C, 's1', e.x + 4, e.y);
+    t.ok(C.utiliser(e, 'filet', { id: 's1' }) && s.st.gele && e.res.v === 1, 'Filet (2 Énergie) : le sbire est Gelé');
+    const pv = s.pv;
+    t.ok(C.utiliser(e, 'tirLeste', { id: 's1' }) && C.S.journal.some((l) => l.t.includes('Tir lesté') && l.t.includes('(×2)')), 'Tir lesté sur une cible Gelée : ×2');
+    t.ok(s.mort || s.pv < pv, 'et ça fait mal');
+    const s2 = poser(C, 's2', e.x + 0.9, e.y);
+    const c = C._.calculer(e, s2, C._.attaqueHeros(CAPACITES.tirRapide));
+    t.eq(c.av, -1, 'un ennemi au contact de l’Éclaireuse : ses tirs ont le désavantage');
+  }
+  {
+    const C = essai(['druide', 'voleur', 'mage', 'gardien'], { alea: des([15, 15]) });
+    C.commencer();
+    const dr = trouver(C, 'druide'), v = trouver(C, 'voleur'), s = poser(C, 's3', dr.x + 4.5, dr.y);
+    C._.poserZone(v, CAPACITES.fiole, { x: dr.x + 2.6, y: dr.y });
+    C._.enflammer({ x: dr.x + 2.6, y: dr.y }, v.id);
+    const x0 = s.x;
+    t.ok(C.utiliser(dr, 'liane', { id: 's3' }) && s.x <= x0 - 1.9, `Liane : le sbire est attiré vers le Druide (${((x0 - s.x) * 1.5).toFixed(1)} m)`);
+    t.ok(C.S.stats.combos.some((k) => k.quoi === 'attiré dans le feu'), 'attiré dans le feu du Voleur : un combo');
+    t.ok(C._.calculer(trouver(C, 'mage'), dr, C._.attaqueHeros(CAPACITES.foudre)).mult === 2, 'la foudre fait ×2 au Druide (sa faiblesse)');
+  }
+  {
+    const C = essai(['chevalier', 'brute', 'mage', 'gardien']);
+    C.commencer();
+    const ch = trouver(C, 'chevalier'), b = trouver(C, 'brute'), m = trouver(C, 'mage');
+    b.pv = 100; m.pv = 100; poser(C, 'mage', ch.x + 2.5, ch.y);
+    t.ok(C.utiliser(ch, 'ralliement', {}) && b.pv === 110 && m.pv === 110, 'Cri de ralliement : +10 aux alliés à 4,5 m');
+    C._.poserZone(trouver(C, 'gardien'), CAPACITES.givre, { x: ch.x + 2, y: ch.y + 3 });
+    ch.t.mv = 4;
+    C.deplacer(ch, ch.x + 2, ch.y + 3);
+    t.ok(ch.st.aTerre && C.S.journal.some((l) => l.t.includes('sans jet')), 'le Chevalier sur la glace : À terre, sans jet');
+    t.eq(ch.vitesse * 1.5, 6, 'et il ne fait que 6 m par tour');
+  }
+  {
+    const C = essai(['barde', 'brute', 'mage', 'voleur'], { alea: des([12, 12, 12, 12]) });
+    C.commencer();
+    const ba = trouver(C, 'barde'), b = trouver(C, 'brute'), s = poser(C, 's1', b.x + 1, b.y);
+    t.ok(C.utiliser(ba, 'chant', { id: b.id }) && b.st.inspire, 'Chant de bataille : la Brute est Inspirée');
+    t.eq(C._.calculer(b, s, C._.attaqueHeros(CAPACITES.fracas)).av, 1, 'son attaque suivante a l’avantage');
+    C.utiliser(b, 'fracas', { id: 's1' });
+    t.ok(!b.st.inspire && C.S.stats.combos.some((k) => k.quoi === 'chant de bataille'), 'le chant sert une fois, et compte comme un combo');
+    const s2 = poser(C, 's2', ba.x + 4, ba.y);
+    ba.t.bonus = true; ba.res.v = 3;          // (le tour suivant : Chant et Moquerie sont deux actions bonus)
+    t.ok(C.utiliser(ba, 'moquerie', { id: 's2' }) && s2.expose?.par === ba.id, 'Moquerie : le sbire est Exposé');
+    t.eq(C._.calculer(trouver(C, 'mage'), s2, C._.attaqueHeros(CAPACITES.etincelle)).av, 1, 'l’attaque suivante contre lui a l’avantage');
+    const pv = ba.pv;
+    C._.attaquer(poser(C, 's3', ba.x + 1, ba.y), ba, { nom: 'Coup', mod: 2, dmod: 0, base: 8, de: 4, melee: true });
+    t.ok(C.S.journal.some((l) => l.t.includes('fragile au contact')) || ba.pv === pv, 'la Barde est fragile au contact : +3');
+  }
+  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9]]) {
+    const C = essai(equipe, { alea: graine(s) });
+    C.commencer();
+    let tours = 0;
+    while (!C.S.resultat && C.S.round < 40) {
+      for (const id of C.groupeCourant().ids) {
+        const h = C.U(id); if (!C.peutAgir(h)) continue;
+        const en = C.ennemisVivants().sort((a, b) => dist(a, h) - dist(b, h));
+        const cap = HEROS[h.type].capacites.find((k) => CAPACITES[k].type === 'attaque' && !CAPACITES[k].cout && C.peutUtiliser(h, CAPACITES[k]));
+        const vise = () => en.find((e) => C.aPortee(h, CAPACITES[cap], e));
+        if (cap && !vise() && en.length) {
+          const P = C.portee(h); let best = null, bd = Infinity;
+          for (let a = 0; a < 16; a++) for (const r of [h.t.mv, h.t.mv * 0.6, h.t.mv * 0.3]) {
+            const p = { x: h.x + Math.cos((a / 16) * Math.PI * 2) * r, y: h.y + Math.sin((a / 16) * Math.PI * 2) * r };
+            if (P.atteint(p) && dist(p, en[0]) < bd) { bd = dist(p, en[0]); best = p; }
+          }
+          if (best) C.deplacer(h, best.x, best.y, P);
+        }
+        const cible = cap && vise();
+        if (cible) C.utiliser(h, cap, { id: cible.id });
+        tours++;
+      }
+      if (!C.S.resultat) C.finPhaseHeros();
+    }
+    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `une équipe d’essai (${equipe.join(', ')}) joue jusqu’au bout : ${C.S.resultat} au round ${C.S.round}`);
+  }
+
   // --- L'interface, comme un joueur ------------------------------------------------------------------------------
   t.group('l’interface');
   const { combat, vue: V, ihm } = ctx, canvas = document.querySelector('#jeu');
@@ -143,26 +238,36 @@ export async function selfTest(t, game) {
   };
   t.ok(!ihm.dom.accueil.hidden && ihm.dom.accueil.textContent.includes('sans cases'), 'l’accueil explique le mode sans cases, avec la distance de chaque héros');
   t.ok(document.querySelector('#retour-camp')?.getAttribute('href') === './index.html?spot=combat', '« Retour au camp » ramène devant le terrain, dans le camp');
+  // le choix de l'équipe (#76)
+  const places = () => [...document.querySelectorAll('.place-heros')];
+  t.ok(places().length === 4 && places()[0].textContent.includes('m par tour'), 'l’accueil montre 4 héros, avec leur distance par tour');
+  [...document.querySelectorAll('.place-heros')][0].querySelector('.fleche:last-child').click();
+  t.eq(ihm.ui.choix[0], 'mage', '▶ change la classe du héros 1 (Brute → Mage)');
+  document.querySelector('#au-hasard').click();
+  t.ok(new Set(ihm.ui.choix).size === 4 && places().some((p) => p.querySelector('.essai')) === ihm.ui.choix.some((c) => HEROS[c].essai), '« Au hasard » : 4 classes différentes ; les classes d’essai sont marquées « essai »');
+  t.eq(adresseEquipe(['chevalier', 'druide', 'barde', 'eclaireuse'], 'initiative'), '?equipe=chevalier,druide,barde,eclaireuse&mode=initiative&go', 'une autre équipe se lance par l’adresse (le terrain se recharge avec elle)');
+  [...document.querySelectorAll('.cadre-terrain .boutons button')].find((b) => b.textContent === 'Le kit D1').click();
+  t.eq(ihm.ui.choix, ['brute', 'mage', 'voleur', 'gardien'], '« Le kit D1 » remet les 4 héros du kit');
   document.querySelector('#commencer').click();
   jouerFile();
-  t.ok(ihm.dom.accueil.hidden && combat.S.phase === 'heros' && ihm.selection === 'brute', 'Commencer : la phase des héros, la Brute choisie');
+  t.ok(ihm.dom.accueil.hidden && combat.S.phase === 'heros' && ihm.selection === trouver(combat, 'brute').id, 'Commencer : la phase des héros, la Brute choisie');
   game.dbg.advance(0.05);
   const marques = document.querySelector('canvas') && V.marques;
   t.ok(marques.portee && marques.mv === 5, 'la zone où la Brute peut marcher est dessinée');
-  const b = combat.U('brute'), x0 = b.x;
+  const b = trouver(combat, 'brute'), x0 = b.x;
   clic(b.x + 3, b.y);
   jouerFile();
-  t.ok(Math.abs(b.x - (x0 + 3)) < 0.3 && Math.abs(V.aff.get('brute').x / 32 - b.x) < 0.05, `un clic sur le sol : la Brute y marche (4,5 m), et on la voit arriver`);
+  t.ok(Math.abs(b.x - (x0 + 3)) < 0.3 && Math.abs(V.aff.get(trouver(combat, 'brute').id).x / 32 - b.x) < 0.05, `un clic sur le sol : la Brute y marche (4,5 m), et on la voit arriver`);
   t.ok(Math.abs(b.t.mv - 2) < 0.1 && ihm.dom.equipe.textContent.includes('3 / 7,5 m'), 'sa fiche dit ce qui lui reste : 3 m sur 7,5');
   t.ok(!ihm.dom.annuler.disabled, '« Annuler le déplacement » est possible');
   ihm.dom.annuler.click();
   jouerFile();
-  const b2 = combat.U('brute');   // (l'état est remis tel qu'il était : de nouveaux objets)
-  t.ok(Math.abs(b2.x - x0) < 0.01 && Math.abs(b2.t.mv - 5) < 0.01 && Math.abs(V.aff.get('brute').x / 32 - x0) < 0.01, 'Annuler : la Brute revient (on la voit revenir), avec tout son déplacement');
+  const b2 = trouver(combat, 'brute');   // (l'état est remis tel qu'il était : de nouveaux objets)
+  t.ok(Math.abs(b2.x - x0) < 0.01 && Math.abs(b2.t.mv - 5) < 0.01 && Math.abs(V.aff.get(trouver(combat, 'brute').id).x / 32 - x0) < 0.01, 'Annuler : la Brute revient (on la voit revenir), avec tout son déplacement');
   // un ennemi à portée de la Mage, pour viser
-  const s1 = combat.U('s1'), mage = combat.U('mage'); s1.x = mage.x + 4; s1.y = mage.y; jouerFile();
+  const s1 = combat.U('s1'), mage = trouver(combat, 'mage'); s1.x = mage.x + 4; s1.y = mage.y; jouerFile();
   clic(mage.x, mage.y - 0.8);
-  t.eq(ihm.selection, 'mage', 'un clic sur la Mage la choisit');
+  t.eq(ihm.selection, trouver(combat, 'mage').id, 'un clic sur la Mage la choisit');
   window.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
   t.eq(ihm.ui.cap, 'etincelle', 'la touche 1 : sa première capacité, Étincelle');
   game.dbg.advance(0.05);

@@ -10,8 +10,18 @@ import {
   libre, simulerPoussee, pointLibreProche, trajetLibre,
 } from './geometrie.js';
 
-// --- Les héros et les ennemis du kit (niveau 1, « uniquement pour ce test ») --------------------------------------
-export const ORDRE_HEROS = ['brute', 'mage', 'voleur', 'gardien'];
+// --- Les classes d'essai (niveau 1, « uniquement pour ce test ») et les ennemis du kit ------------------------------
+// Les 4 premières sont les héros du kit D1 ; les 4 suivantes, des classes d'essai faites au budget de
+// CLASS_TEMPLATE.fr.md (mission #76, fiches dans design/terrain-entrainement/CLASSES_ESSAI.fr.md).
+// Les vraies classes restent celles de chacun (missions #30 à #33).
+export const EQUIPE_KIT = ['brute', 'mage', 'voleur', 'gardien'];
+export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde'];
+export const PLACES = ['h1', 'h2', 'h3', 'h4'];            // les 4 héros : une place, une classe choisie à l'entrée
+// « brute,chevalier,druide,barde » (l'adresse : ?equipe=…) → une équipe valable de 4 classes, ou null.
+export function equipeDepuis(texte) {
+  const ids = String(texte ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  return ids.length === 4 && ids.every((id) => CLASSES_ESSAI.includes(id)) ? ids : null;
+}
 export const ORDRE_ENNEMIS = ['s1', 's2', 's3', 'a1', 'a2', 'br', 'chef'];
 export const HEROS = {
   brute: { nom: 'Brute', court: 'BRU', pv: 145, vitesse: 5, dex: 0, res: { type: 'Rage', v: 0, max: 50 }, role: 'Tank · lance les ennemis',
@@ -27,6 +37,18 @@ export const HEROS = {
   gardien: { nom: 'Gardien', court: 'GAR', pv: 140, vitesse: 5, dex: 0, res: { type: 'Foi', v: 0, max: 3 }, role: 'Soutien · gèle le sol',
     faiblesse: 'Ne peut pas se soigner lui-même.', passif: 'Foi : +1 par soin.',
     capacites: ['baton', 'soin', 'givre', 'givre3', 'pousser', 'potion', 'relever'] },
+  eclaireuse: { nom: 'Éclaireuse', court: 'ECL', pv: 110, vitesse: 7, dex: 2, res: { type: 'Énergie', v: 3, max: 3 }, role: 'Dégâts à distance · harcèle et entrave', essai: true,
+    faiblesse: 'Un ennemi à son contact : ses tirs ont le désavantage.', passif: 'Énergie : 3 à chaque tour, perdue si elle n’est pas dépensée. La plus rapide : 10,5 m par tour.',
+    capacites: ['tirRapide', 'filet', 'tirLeste', 'pousser', 'potion', 'relever'] },
+  chevalier: { nom: 'Chevalier', court: 'CHE', pv: 155, vitesse: 4, dex: -1, res: { type: 'Foi', v: 0, max: 3 }, role: 'Tank · protège les siens', essai: true,
+    faiblesse: 'Lent (6 m), et la glace le renverse à coup sûr, sans jet.', passif: 'Foi : +1 par protection (le Cri de ralliement).',
+    capacites: ['epee', 'chargeBouclier', 'ralliement', 'pousser', 'potion', 'relever'] },
+  druide: { nom: 'Druide', court: 'DRU', pv: 135, vitesse: 6, dex: 0, res: { type: 'Mana', v: 40, max: 40 }, role: 'Contrôle · attire et inonde', essai: true,
+    faiblesse: 'La foudre lui fait double dégâts, même l’eau électrisée.', passif: 'Mana : +5 au début de son tour.',
+    capacites: ['ronce', 'liane', 'pluie', 'pousser', 'potion', 'relever'] },
+  barde: { nom: 'Barde', court: 'BAR', pv: 135, vitesse: 6, dex: 2, res: { type: 'Énergie', v: 3, max: 3 }, role: 'Soutien · donne l’avantage', essai: true,
+    faiblesse: 'Fragile : chaque coup reçu au contact lui fait 3 dégâts de plus.', passif: 'Énergie : 3 à chaque tour, perdue si elle n’est pas dépensée.',
+    capacites: ['dague', 'chant', 'moquerie', 'pousser', 'potion', 'relever'] },
 };
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
@@ -54,10 +76,26 @@ export const CAPACITES = {
   soin: { nom: 'Soin', slot: 'action', type: 'soin', portee: 6, anim: 'sort', ds: '18–23 PV à un allié à 9 m, sans jet' },
   givre: { nom: 'Garde de givre', slot: 'action', type: 'zone', surf: 'glace', rayon: R2, portee: 5, anim: 'sort', ds: 'Glace sur 1,7 m à 7,5 m (l’eau gèle) ; ennemis dessus Gelés' },
   givre3: { nom: 'Grand givre', slot: 'action', type: 'zone', surf: 'glace', rayon: R3, portee: 5, cout: 3, anim: 'sort', ds: '3 Foi · Glace sur 2,5 m' },
+  // l'Éclaireuse
+  tirRapide: { nom: 'Tir rapide', slot: 'action', type: 'attaque', portee: 8, mod: 2, base: 8, de: 4, anim: 'tir', ds: 'Portée 12 m · 5–7 / 11–14 / 22–28' },
+  filet: { nom: 'Filet', slot: 'bonus', type: 'etatCible', etat: 'gele', portee: 5, cout: 2, anim: 'tir', ds: '2 Énergie · un ennemi à 7,5 m est Gelé (−3 m, désavantage)' },
+  tirLeste: { nom: 'Tir lesté', slot: 'action', type: 'attaque', portee: 8, mod: 2, base: 14, de: 6, contreGele: true, cout: 1, anim: 'tir', ds: '1 Énergie · 8–11 / 17–22 / 34–44 ; ×2 sur une cible Gelée' },
+  // le Chevalier
+  epee: { nom: 'Coup d’épée', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'attaque', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
+  chargeBouclier: { nom: 'Charge au bouclier', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 2, proj: true, ds: 'Pousse de 3 m ; s’il heurte quelque chose : +8 et À terre' },
+  ralliement: { nom: 'Cri de ralliement', slot: 'action', type: 'soinZone', rayon: 3, soin: 10, anim: 'sort', ds: '+10 PV à chaque allié à 4,5 m de toi (toi compris), sans jet' },
+  // le Druide
+  ronce: { nom: 'Fouet de ronce', slot: 'action', type: 'attaque', portee: 3, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Portée 4,5 m · 5–7 / 11–14 / 22–28' },
+  liane: { nom: 'Liane', slot: 'bonus', type: 'attraction', portee: 5, longueur: 2, anim: 'sort', ds: 'Attire un ennemi à 7,5 m de 3 m vers toi (dans le feu, l’eau, le fossé…)' },
+  pluie: { nom: 'Pluie', slot: 'action', type: 'zone', surf: 'eau', rayon: R3, portee: 6, cout: 15, anim: 'sort', ds: '15 Mana · une grande flaque de 2,5 m à 9 m ; ceux dedans sont Trempés' },
+  // la Barde
+  dague: { nom: 'Dague', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
+  chant: { nom: 'Chant de bataille', slot: 'bonus', type: 'inspiration', portee: 6, cout: 1, anim: 'sort', ds: '1 Énergie · un allié à 9 m a l’avantage à sa prochaine attaque' },
+  moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
 };
 export const NOM_SURFACE = { eau: 'l’eau', huile: 'l’huile', feu: 'le feu', glace: 'la glace' };
 export const NOM_RESULTAT = { rate: 'Raté', eraflure: 'Éraflure', touche: 'Touché', critique: 'Critique' };
-export const NOM_ETAT = { trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé' };
+export const NOM_ETAT = { trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé', inspire: 'Inspiré' };
 
 // --- Les surfaces : des taches sur une trame fine (un demi-pas de case), dessinées sans cases -----------------------
 const MAILLE = 0.5;
@@ -65,7 +103,8 @@ const cle = (x, y) => `${Math.floor(x / MAILLE)},${Math.floor(y / MAILLE)}`;
 const centreMaille = (k) => { const [i, j] = k.split(',').map(Number); return { x: (i + 0.5) * MAILLE, y: (j + 0.5) * MAILLE }; };
 const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
-export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = null, mode = 'equipe', alea = Math.random, horloge = Date.now }) {
+// equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
+export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -73,12 +112,14 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
   const S = {
     mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
-    stats: { degats: { brute: 0, mage: 0, voleur: 0, gardien: 0 }, combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [] },
+    heros: PLACES.slice(), equipe: equipe.slice(),
+    stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [] },
   };
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
-  ORDRE_HEROS.forEach((id, k) => {
-    const h = HEROS[id], [x, y] = departs.heros[k];
-    S.unites.push(unite({ id, camp: 'h', type: id, nom: h.nom, court: h.court, x, y, pv: h.pv, pvMax: h.pv, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: 1 }));
+  PLACES.forEach((id, k) => {
+    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k];
+    const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
+    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: h.pv, pvMax: h.pv, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: 1 }));
   });
   const TYPE = { s: 'sbire', a: 'archer', br: 'brt', chef: 'chef' };
   for (const id of ORDRE_ENNEMIS) {
@@ -92,8 +133,8 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
   const U = (id) => S.unites.find((u) => u.id === id);
   const herosVivants = () => S.unites.filter((u) => u.camp === 'h' && !u.ko);
   const ennemisVivants = () => S.unites.filter((u) => u.camp === 'e' && !u.mort);
-  const estHeros = (id) => !!(id && HEROS[id]);
-  const nomHeros = (id) => HEROS[id]?.nom ?? '';
+  const estHeros = (id) => !!id && U(id)?.camp === 'h';
+  const nomHeros = (id) => U(id)?.nom ?? '';
   const ev = (o) => S.evenements.push(o);
   const log = (t, c = '') => { S.journal.unshift({ r: S.round, t, c }); if (S.journal.length > 250) S.journal.length = 250; };
   const entreeRound = () => { let e = S.stats.rounds.find((r) => r.r === S.round); if (!e) { e = { r: S.round, herosMs: 0 }; S.stats.rounds.push(e); } return e; };
@@ -135,12 +176,14 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     S.stats.combos.push({ r: S.round, a, b, quoi });
     log(`Combo ! ${nomHeros(a)} prépare, ${nomHeros(b)} exploite : ${quoi}.`, 'combo');
     ev({ type: 'combo', a, b, quoi });
-    if (a === 'voleur') { const v = U('voleur'); if (v.res.v < v.res.max) { v.res.v++; log('Le Voleur gagne 1 Concentration.', 'muet'); } }
+    const v = U(a);
+    if (v.type === 'voleur' && v.res.v < v.res.max) { v.res.v++; log(`${v.nom} gagne 1 Concentration.`, 'muet'); }
   }
   const rage = (u, n) => { if (u && u.type === 'brute' && u.camp === 'h') u.res.v = Math.min(u.res.max, u.res.v + n); };
   function blesser(u, n, par, o = {}) {
     if (!u || u.mort || u.ko || n <= 0) return 0;
     if (!o.sansFaiblesse && u.type === 'mage' && surfaceA(u)?.t === 'eau') { n *= 2; log('La Mage est dans l’eau : dégâts ×2.', 'muet'); }
+    if (o.melee && u.type === 'barde') { n += 3; log(`${u.nom} est fragile au contact : +3.`, 'muet'); }
     const avant = u.pv; u.pv -= n;
     if (estHeros(par) && u.camp === 'e') S.stats.degats[par] += Math.min(n, avant);
     ev({ type: 'degats', id: u.id, n, pv: Math.max(0, u.pv) });
@@ -179,7 +222,9 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     if (s.t === 'eau') { u.st.trempe = { ttl: 3, par: s.par }; if (u.st.brulure) { delete u.st.brulure; log(`L’eau éteint ${u.nom}.`, 'muet'); } }
     else if (s.t === 'huile') u.st.huile = { ttl: 3, par: s.par };
     else if (s.t === 'feu') { log(`${u.nom} entre dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
-    else if (s.t === 'glace' && enMarchant) {
+    else if (s.t === 'glace' && enMarchant && u.type === 'chevalier') {
+      u.st.aTerre = { par: s.par }; log(`${u.nom} pose son armure sur la glace : À terre, sans jet.`, 'mauvais'); return true;
+    } else if (s.t === 'glace' && enMarchant) {
       const r = d(20);
       ev({ type: 'de', id: u.id, k: r, quoi: 'glace' });
       if (r <= 9) { u.st.aTerre = { par: s.par }; log(`${u.nom} glisse sur la glace (d20 : ${r}) : À terre.`, u.camp === 'h' ? 'mauvais' : 'bon'); return true; }
@@ -202,7 +247,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     log('La foudre électrise l’eau : 8 dégâts à tous ceux qui sont dedans.');
     ev({ type: 'eclair', mailles: mailles.length });
     const touches = new Set();
-    for (const k of mailles) for (const u of dedans(k)) if (!touches.has(u)) { touches.add(u); blesser(u, 8, par); }
+    for (const k of mailles) for (const u of dedans(k)) if (!touches.has(u)) { touches.add(u); blesser(u, u.type === 'druide' ? 16 : 8, par); }
   }
   function eclaterTonneau(b, par, feu) {
     S.tonneaux = S.tonneaux.filter((o) => o !== b);
@@ -237,7 +282,16 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     let av = false, des = false, mult = 1, tenaille = false;
     const notes = [], aCombos = [];
     if (cible.st.aTerre) { av = true; notes.push('cible À terre : avantage'); if (cible.st.aTerre.par) aCombos.push([cible.st.aTerre.par, 'cible À terre']); }
-    if (cible.expose) { av = true; notes.push('la cible a pris la pose : avantage'); }
+    if (cible.expose) {
+      av = true; notes.push(cible.expose.par ? 'la cible est moquée (Exposé) : avantage' : 'la cible a pris la pose : avantage');
+      if (cible.expose.par) aCombos.push([cible.expose.par, 'cible moquée']);
+    }
+    if (att.st.inspire) { av = true; notes.push('Inspiré par un chant : avantage'); aCombos.push([att.st.inspire.par, 'chant de bataille']); }
+    if (att.type === 'eclaireuse' && !A.melee && S.unites.some((o) => o.camp !== att.camp && !o.mort && !o.ko && dist(o, att) <= CONTACT)) {
+      des = true; notes.push('un ennemi au contact de l’Éclaireuse : désavantage');
+    }
+    if (A.contreGele && cible.st.gele) { mult *= 2; notes.push('cible Gelée : tir lesté ×2'); aCombos.push([cible.st.gele.par, 'Gelé puis tir lesté']); }
+    if (A.el === 'foudre' && cible.type === 'druide') { mult *= 2; notes.push('faiblesse du Druide : foudre ×2'); }
     if (A.melee && enTenaille(att, cible, S.unites.filter((o) => o.camp === att.camp && !o.ko && !o.mort))) { av = true; tenaille = true; notes.push('prise en tenaille : avantage'); }
     if (att.camp === 'e' && S.ennemisAvantage) { av = true; notes.push('ordres du chef : avantage'); }
     if (surfaceA(att)?.t === 'glace') { des = true; notes.push('attaque depuis la glace : désavantage'); }
@@ -264,7 +318,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     const f = (v) => (g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult;
     return g === 'rate' ? '0' : `${f(lo)}–${f(hi)}`;
   }
-  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, anim: cap.anim });
+  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, anim: cap.anim });
   const attaqueEnnemi = (e) => { const a = ENNEMIS[e.type].atk; return { nom: a.nom, mod: 2, dmod: 0, base: a.base, de: a.de, melee: a.portee === CONTACT, anim: a.anim }; };
   function rate(u) {
     const r = d(6);
@@ -286,6 +340,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     }
     const g = noter(k, A, c);
     cible.expose = false;
+    if (att.st.inspire) delete att.st.inspire;          // le chant ne sert qu'une fois
     const qui = `${att.nom} → ${cible.nom} · ${A.nom}`;
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
     ev({ type: 'attaque', de: att.id, vers: cible.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
@@ -298,7 +353,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     c.aCombos.forEach(([a, w]) => combo(a, att.id, w));
     if (c.tenaille && att.camp === 'h') S.stats.tenailles++;
     log(`${qui} · d20 ${label}${A.auto ? '' : ` + ${A.mod} = ${k + A.mod}`} : ${NOM_RESULTAT[g]} · ${n} dégâts${c.mult > 1 ? ` (×${c.mult})` : ''}`, att.camp === 'e' ? 'ennemi' : '');
-    blesser(cible, n, att.id, { sansFaiblesse: true });
+    blesser(cible, n, att.id, { sansFaiblesse: true, melee: A.melee });
     rage(att, 10); rage(cible, 10);
     if (!cible.mort && !cible.ko) {
       if (A.aTerre) cible.st.aTerre = { par: att.id };
@@ -316,7 +371,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     if (estUnite && cible.st.gele) { longueur += 2; combo(cible.st.gele.par, parHeros, 'Gelé puis poussée'); }
     const autres = [...S.unites.filter((u) => !u.mort && !u.ko && u !== cible), ...S.tonneaux.filter((b) => b !== cible)];
     const sim = simulerPoussee(trame, src, cible, longueur, { obstacles: autres, surGlace: (x, y) => S.surfaces[cle(x, y)]?.t === 'glace' });
-    log(`${src.nom} ${o.proj ? 'projette' : 'pousse'} ${estUnite ? cible.nom : 'le tonneau'} de ${metres(sim.parcouru)} m.`, src.camp === 'e' ? 'ennemi' : '');
+    log(`${src.nom} ${o.attire ? 'attire' : o.proj ? 'projette' : 'pousse'} ${estUnite ? cible.nom : 'le tonneau'} de ${metres(sim.parcouru)} m.`, src.camp === 'e' ? 'ennemi' : '');
     ev({ type: 'poussee', id: cible.id, tonneau: !estUnite, chemin: sim.chemin.map((p) => ({ ...p })) });
     let vu = surfaceA(cible);
     for (const p of sim.chemin) {
@@ -324,7 +379,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
       if (!estUnite) continue;
       const s = surfaceA(p);
       if (s && s !== vu) {
-        if (s.par && parHeros && s.par !== parHeros) combo(s.par, parHeros, `poussé dans ${NOM_SURFACE[s.t]}`);
+        if (s.par && parHeros && s.par !== parHeros) combo(s.par, parHeros, `${o.attire ? 'attiré' : 'poussé'} dans ${NOM_SURFACE[s.t]}`);
         entrerSurface(cible, s, false);
       }
       vu = s;
@@ -342,11 +397,17 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
         cible.x = p.x; cible.y = p.y;
         ev({ type: 'place', id: cible.id, x: p.x, y: p.y });
       }
-    } else if (sim.arret) {
+    } else if (sim.arret && !(o.attire && sim.heurte === o.attire)) {      // attiré jusqu'au lanceur : il arrive, sans choc
       log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : 'un obstacle'} : +8.`);
       blesser(cible, 8, parHeros);
       if (o.proj && !cible.mort && !cible.ko) { cible.st.aTerre = { par: parHeros }; log(`${cible.nom} est À terre.`, 'muet'); }
     }
+  }
+
+  // Attirer (la Liane du Druide) : une poussée vers le lanceur, avec les mêmes chocs, surfaces et chutes.
+  function attirer(src, cible, longueur) {
+    const derriere = { id: src.id, nom: src.nom, camp: src.camp, x: cible.x + (cible.x - src.x), y: cible.y + (cible.y - src.y) };
+    pousser(derriere, cible, { longueur, attire: src });
   }
 
   // --- Les déplacements -----------------------------------------------------------------------------------------
@@ -413,7 +474,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
 
   // --- Les tours ------------------------------------------------------------------------------------------------
   function groupes() {
-    if (S.mode === 'equipe') return [{ camp: 'h', ids: ORDRE_HEROS.slice() }, { camp: 'e', ids: ORDRE_ENNEMIS.slice() }];
+    if (S.mode === 'equipe') return [{ camp: 'h', ids: S.heros.slice() }, { camp: 'e', ids: ORDRE_ENNEMIS.slice() }];
     const gs = [];
     for (const id of S.ordre) {
       const u = U(id); if (!u) continue;
@@ -437,7 +498,8 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     if (u.st.gele) mv = Math.max(0, mv - 2);
     if (u.st.aTerre) { mv = Math.max(0, mv - u.vitesse / 2); delete u.st.aTerre; log(`${u.nom} se relève (la moitié de son déplacement).`, 'muet'); ev({ type: 'releve', id: u.id }); }
     u.t = { mv, action: true, bonus: true, reaction: true };
-    if (u.type === 'mage' && u.camp === 'h') u.res.v = Math.min(u.res.max, u.res.v + 5);
+    if (u.camp === 'h' && u.res.type === 'Mana') u.res.v = Math.min(u.res.max, u.res.v + 5);
+    if (u.camp === 'h' && u.res.type === 'Énergie') u.res.v = u.res.max;          // 3 à chaque tour, le reste est perdu
   }
   function finTour(u) {
     if (u.mort || u.ko) return;
@@ -544,8 +606,8 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
   }
   function attaqueEnnemie(e, cible) {
     let t = cible;
-    const B = U('brute');
-    if (B && !B.ko && B !== t && B.t.reaction && dist(B, t) <= CONTACT) { B.t.reaction = false; log(`Provocation : ${e.nom} attaque la Brute à la place de ${t.nom}.`, 'combo'); ev({ type: 'texte', id: B.id, texte: 'Provocation !' }); t = B; }
+    const B = S.unites.find((u) => u.camp === 'h' && u.type === 'brute' && !u.ko && u !== t && u.t.reaction && dist(u, t) <= CONTACT);
+    if (B) { B.t.reaction = false; log(`Provocation : ${e.nom} attaque ${B.nom} à la place de ${t.nom}.`, 'combo'); ev({ type: 'texte', id: B.id, texte: 'Provocation !' }); t = B; }
     const g = attaquer(e, t, attaqueEnnemi(e));
     if (e.type === 'brt' && g !== 'rate' && !t.ko && !t.mort) pousser(e, t, { longueur: 2 });
   }
@@ -626,6 +688,8 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     } else if (cap.type === 'soin') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'relever') S.unites.filter((u) => u.camp === 'h' && u.ko && dist(h, u) <= CONTACT).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'huileCible') S.unites.filter((u) => !u.mort && !u.ko && u !== h && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
+    else if (['etatCible', 'attraction', 'moquerie'].includes(cap.type)) ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
+    else if (cap.type === 'inspiration') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     return out;
   }
   const zonePossible = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && libre(trame, p.x, p.y);
@@ -642,6 +706,18 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
       ev({ type: 'lance', id: h.id, anim: cap.anim, x: cible.x, y: cible.y });
       log(`${h.nom} · ${cap.nom} à ${metres(dist(h, cible))} m.`);
       poserZone(h, cap, cible);
+      return true;
+    }
+    if (cap.type === 'soinZone') {                // le Cri de ralliement : tous les alliés autour, sans cible à choisir
+      payer(h, cap);
+      ev({ type: 'lance', id: h.id, anim: cap.anim, x: h.x, y: h.y });
+      ev({ type: 'zone', x: h.x, y: h.y, r: cap.rayon, surf: 'soin' });
+      log(`${h.nom} pousse un cri de ralliement.`, 'bon');
+      for (const u of herosVivants().filter((u) => dist(u, h) <= cap.rayon)) {
+        const a = Math.min(cap.soin, u.pvMax - u.pv); if (a <= 0) continue;
+        u.pv += a; ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
+      }
+      h.res.v = Math.min(h.res.max, h.res.v + 1);
       return true;
     }
     if (cap.type === 'potion') {
@@ -684,6 +760,34 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
       log(`${h.nom} relève ${u.nom} (25 PV). Il rejouera au prochain tour.`, 'bon');
       return true;
     }
+    const ennemiVise = u && u.camp === 'e' && !u.mort && aPortee(h, cap, u);
+    if (cap.type === 'etatCible' && ennemiVise) {          // le Filet : Gelé
+      payer(h, cap); u.st[cap.etat] = { n: 1, par: h.id };
+      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'texte', id: u.id, texte: NOM_ETAT[cap.etat] });
+      log(`${h.nom} · ${cap.nom} : ${u.nom} est ${NOM_ETAT[cap.etat]}.`);
+      return true;
+    }
+    if (cap.type === 'attraction' && ennemiVise) {         // la Liane : attire vers soi
+      payer(h, cap);
+      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      attirer(h, u, cap.longueur);
+      return true;
+    }
+    if (cap.type === 'moquerie' && ennemiVise) {           // Exposé : la prochaine attaque contre lui a l'avantage
+      payer(h, cap); u.expose = { par: h.id };
+      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'texte', id: u.id, texte: 'Exposé !' });
+      log(`${h.nom} se moque de ${u.nom} : il est Exposé.`);
+      return true;
+    }
+    if (cap.type === 'inspiration' && u && u.camp === 'h' && !u.ko && u !== h && dist(h, u) <= cap.portee) {
+      payer(h, cap); u.st.inspire = { par: h.id };
+      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'texte', id: u.id, texte: 'Inspiré !' });
+      log(`${h.nom} chante pour ${u.nom} : avantage à sa prochaine attaque.`, 'bon');
+      return true;
+    }
     if (cap.type === 'huileCible' && u && !u.mort && !u.ko && u !== h && aPortee(h, cap, u)) {
       payer(h, cap); u.st.huile = { ttl: 3, par: h.id };
       ev({ type: 'lance', id: h.id, anim: 'tir', x: u.x, y: u.y });
@@ -712,7 +816,8 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
       `Phase des héros par round : ${rounds.map((r) => `R${r.r} ${fmt(r.herosMs)}`).join(' · ') || '—'} (moyenne ${fmt(moy)})`,
       `Combos entre héros : ${S.stats.combos.length}${S.stats.combos.length ? ` (${S.stats.combos.map((c) => `R${c.r} ${nomHeros(c.a)} → ${nomHeros(c.b)} : ${c.quoi}`).join(' ; ')})` : ''}`,
       `Prises en tenaille : ${S.stats.tenailles}`,
-      `Dégâts : ${ORDRE_HEROS.map((id) => `${nomHeros(id)} ${S.stats.degats[id]} (${Math.round((S.stats.degats[id] / tot) * 100)} %)`).join(' · ')}`,
+      `Équipe : ${S.heros.map((id) => nomHeros(id)).join(', ')}`,
+      `Dégâts : ${S.heros.map((id) => `${nomHeros(id)} ${S.stats.degats[id]} (${Math.round((S.stats.degats[id] / tot) * 100)} %)`).join(' · ')}`,
       `Héros KO : ${S.stats.ko} · relevés : ${S.stats.releves}`,
       ...Object.entries(notes).filter(([, v]) => v).map(([k, v]) => `${k} : ${v}`),
     ].join('\n');

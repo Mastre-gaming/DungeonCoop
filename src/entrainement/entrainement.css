@@ -103,3 +103,18 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 @media (max-width: 900px) {
   .equipe-terrain { width: 180px; } .droite-terrain { width: 200px; } .jauge { width: 60px; } .aide-terrain { display: none; }
 }
+
+/* le choix de l'équipe, à l'accueil (#76) */
+.cadre-terrain h2 { margin: 4px 0 0; font: 700 1.05rem var(--titre); color: var(--bois-fonce); }
+.cadre-terrain { width: min(900px, 100%); }
+.places-accueil { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.place-heros { display: grid; justify-items: center; gap: 2px; text-align: center; padding: 6px; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 4px; font-size: 12px; }
+.place-heros header { display: flex; width: 100%; justify-content: space-between; align-items: center; }
+.place-heros .qui-place { font: 500 .8rem var(--titre); color: var(--parchemin-doux); }
+.place-heros .fleche { font: 700 .9rem var(--titre); background: var(--bois); color: #fff7e6; border: 2px solid var(--bois-fonce); border-radius: 3px; cursor: pointer; padding: 0 6px; }
+.place-heros .portrait-terrain { width: 56px; height: 56px; image-rendering: pixelated; }
+.place-heros .classe { font: 700 1rem var(--titre); color: var(--bois-fonce); display: flex; gap: 4px; align-items: center; }
+.place-heros .essai { font: 500 .65rem var(--titre); color: #fff7e6; background: #c4621f; border-radius: 3px; padding: 0 4px; }
+.place-heros .role, .place-heros .liste-capacites { color: var(--parchemin-encre); }
+.place-heros .faiblesse { color: #8a3d12; font-size: 11px; }
+@media (max-width: 720px) { .places-accueil { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

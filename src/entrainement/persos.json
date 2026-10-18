@@ -29,6 +29,36 @@
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_amber&head=Human_Male_amber&expression=Neutral_amber&hair=Plain_chestnut&clothes=Longsleeve_white&legs=Pants_white&shoes=Basic_Boots_brown&weapon=Simple_staff_simple",
     "attaque": null
   },
+  "eclaireuse": {
+    "nom": "Éclaireuse",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_amber&head=Human_Female_amber&expression=Neutral_amber&hat=Leather_Cap_leather&clothes=Longsleeve_brown&legs=Pants_leather&shoes=Basic_Boots_brown&weapon=Recurve_light",
+    "attaque": null
+  },
+  "chevalier": {
+    "nom": "Chevalier",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&armour=Plate_steel&legs=Armour_steel&shoes=Armour_steel&arms=Armour_steel&gloves=Gloves_steel&hat=Greathelm_steel&cape=Solid_blue&weapon=Arming_Sword_steel&shield=Crusader_shield_crusader",
+    "attaque": {
+      "nom": "slash_128",
+      "taille": 128,
+      "y": 1664,
+      "images": 6
+    }
+  },
+  "druide": {
+    "nom": "Druide",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_olive&head=Human_Male_olive&expression=Neutral_olive&hair=Plain_white&beard=Winter_Beard_white&clothes=Longsleeve_forest&legs=Pants_brown&shoes=Sandals_brown&weapon=Loop_staff_light",
+    "attaque": {
+      "nom": "thrust_oversize",
+      "taille": 192,
+      "y": 1664,
+      "images": 8
+    }
+  },
+  "barde": {
+    "nom": "Barde",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_brown&head=Human_Female_brown&expression=Neutral_brown&hat=Cavalier_red&clothes=Blouse_red&legs=Pants_black&shoes=Basic_Boots_black&weapon=Dagger_dagger",
+    "attaque": null
+  },
   "sbire": {
     "nom": "Sbire",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Orc_male_green&clothes=TShirt_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Club_club",

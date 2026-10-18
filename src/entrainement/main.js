@@ -7,7 +7,7 @@ import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
 import * as SALLE from './salle.js';
 import { creerTrame } from './geometrie.js';
-import { creerCombat } from './regles.js';
+import { creerCombat, equipeDepuis, EQUIPE_KIT } from './regles.js';
 import * as vueSkill from './vue.js';
 import * as interfaceSkill from './interface.js';
 import * as tests from './tests.js';
@@ -35,10 +35,13 @@ async function demarrer() {
 
   const salle = SALLE.salle(), trame = creerTrame(salle);
   const alea = query.has('graine') || query.has('test') ? graine(Number(query.get('graine')) || 20261018) : Math.random;
-  const combat = creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, alea });
+  // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
+  const equipe = equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT;
+  const combat = creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, equipe, alea });
 
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas });
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas });
+  // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, demarrer: query.has('go'), mode: query.get('mode') });
   game.render = () => rendu.dessiner();
   game.use(tests, { combat, vue, ihm, trame, salle, game, images, SALLE });
   Object.assign(game.dbg, { combat, vue, ihm, trame, salle, rendu });
