@@ -1,0 +1,119 @@
+/* L'armurerie (le créateur de classe) : le bois et le parchemin du camp (panneau.css, jeu.css), en page pleine. */
+body { background: #2b1c14 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='8' height='8' fill='%232b1c14'/%3E%3Crect width='4' height='4' fill='%23311f16'/%3E%3C/svg%3E"); color: var(--parchemin-encre); font: 15px/1.45 var(--texte); }
+.armurerie { min-height: 100vh; box-sizing: border-box; padding: 10px 12px 24px; display: grid; align-content: start; gap: 10px; }
+.plaque { background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce); box-shadow: inset 0 0 0 2px var(--bois-clair), 0 3px 0 rgba(0,0,0,.25); border-radius: 4px; }
+.muet { color: var(--parchemin-doux); }
+kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid var(--bois); border-bottom-width: 2px; border-radius: 3px; background: #fffaf0; text-align: center; font: 11px ui-monospace, Consolas, monospace; }
+
+/* le bandeau */
+.haut-armurerie { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 6px 10px; }
+.titre-armurerie { font: 700 1.1rem var(--titre); color: var(--bois-fonce); }
+.badge-cadre { font: 500 .8rem var(--titre); color: #fff7e6; background: #2f68b8; border: 0; border-radius: 3px; padding: 2px 7px; cursor: pointer; }
+.badge-cadre.modifie { background: #b8632f; }
+.outils { margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.outils .bouton-jeu { font-size: .9rem; padding: 4px 10px; text-decoration: none; display: inline-block; }
+.choix, .page-armurerie select, .page-armurerie input[type=text], .page-armurerie input[type=number], .page-armurerie textarea {
+  font: 14px var(--texte); padding: 4px 6px; border: 2px solid var(--bois-clair); border-radius: 3px; background: #fffaf0; color: var(--parchemin-encre); min-width: 0; }
+.page-armurerie textarea { resize: vertical; font-family: var(--texte); }
+
+/* le corps : les onglets et la page à gauche, l'aperçu à droite */
+.corps-armurerie { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 10px; align-items: start; }
+.gauche-armurerie { display: grid; gap: 0; min-width: 0; }
+.onglets-armurerie { display: flex; flex-wrap: wrap; gap: 3px; padding: 0 6px; }
+.onglet { position: relative; font: 500 .9rem var(--titre); color: var(--creme); background: var(--bois); border: 3px solid var(--bois-fonce); border-bottom: 0; border-radius: 4px 4px 0 0; padding: 5px 10px 7px; cursor: pointer; }
+.onglet.actif { background: var(--parchemin); color: var(--bois-fonce); box-shadow: inset 0 2px 0 var(--bois-clair); margin-bottom: -3px; padding-bottom: 10px; z-index: 1; }
+.onglet .pastille { position: absolute; top: -6px; right: -4px; min-width: 16px; height: 16px; border-radius: 8px; background: #a3261c; color: #fff; font: 700 11px/16px var(--texte); text-align: center; padding: 0 3px; }
+.page-armurerie { padding: 12px 16px 16px; display: grid; gap: 10px; min-height: 420px; }
+.page-armurerie h2 { margin: 0; font: 700 1.1rem var(--titre); color: var(--bois-fonce); }
+.page-armurerie h3 { margin: 4px 0 0; font: 700 .95rem var(--titre); color: var(--bois-fonce); }
+.page-armurerie p { margin: 0; }
+.champ { display: grid; gap: 3px; min-width: 0; }
+.etiquette-champ { font: 500 .9rem var(--titre); color: var(--bois-fonce); }
+.champ small { font-size: 12px; }
+.deux { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.quatre { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.boutons { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bouton-jeu.petit { font-size: .8rem; padding: 2px 8px; }
+.lien { background: none; border: 0; padding: 0; color: #1d5fa8; text-decoration: underline; cursor: pointer; font: inherit; text-align: left; }
+.ok { color: #2c7a2a; font-weight: 600; } .conseil { color: #a8761b; font-weight: 600; } .probleme { color: #a3261c; font-weight: 600; }
+.positif { color: #2c7a2a; } .negatif { color: #a3261c; }
+
+/* le compteur −/+ */
+.compteur { display: inline-flex; align-items: center; gap: 2px; }
+.compteur button { width: 26px; height: 26px; border: 2px solid var(--bois-clair); border-radius: 3px; background: #fffaf0; color: var(--bois-fonce); font: 700 16px/1 var(--texte); cursor: pointer; }
+.compteur button:disabled { opacity: .35; cursor: not-allowed; }
+.compteur output { min-width: 2.2em; text-align: center; font: 600 1rem var(--texte); }
+
+/* les tableaux */
+.table-caracs, .table-points, .table-cadre { border-collapse: collapse; width: 100%; font-size: 14px; }
+.table-caracs th, .table-points th, .table-cadre th { text-align: left; font: 500 .85rem var(--titre); color: var(--bois-fonce); padding: 3px 6px; }
+.table-caracs td, .table-points td, .table-cadre td { padding: 3px 6px; border-top: 1px solid #d8c59c; vertical-align: middle; }
+.table-caracs abbr { text-decoration: none; font: 700 1rem var(--titre); }
+.table-points td:last-child { text-align: right; white-space: nowrap; }
+.table-points tr.total td { font-weight: 700; border-top: 2px solid var(--bois-clair); }
+.table-cadre td:first-child { width: 60%; }
+.nombre { width: 5em; }
+.paire { display: inline-flex; gap: 4px; align-items: center; }
+.liste-cadre { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 2px; }
+
+/* les capacités */
+.capacite-fiche { border: 2px solid var(--bois-clair); border-radius: 4px; padding: 8px 10px; display: grid; gap: 8px; background: #faf1dc; }
+.capacite-fiche header { display: flex; align-items: center; gap: 10px; }
+.capacite-fiche header strong { font: 700 1rem var(--titre); color: var(--bois-fonce); }
+.points-cap { font: 500 .8rem var(--titre); color: #fff7e6; background: var(--bois); border-radius: 3px; padding: 1px 6px; }
+.capacite-fiche header .bouton-jeu { margin-left: auto; }
+.degats { display: block; font: 600 14px/26px ui-monospace, Consolas, monospace; padding: 2px 6px; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; min-height: 26px; }
+.accroches { border: 2px solid #d8c59c; border-radius: 4px; padding: 4px 8px 6px; display: flex; flex-wrap: wrap; gap: 2px 10px; }
+.accroches legend { font: 500 .85rem var(--titre); color: var(--bois-fonce); padding: 0 4px; }
+.coche { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; }
+
+/* le look, la fiche */
+.portrait-terrain { image-rendering: pixelated; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; }
+.portrait-grand { display: flex; justify-content: center; }
+.portrait-grand .portrait-terrain { width: 128px; height: 128px; }
+.fiche { margin: 0; white-space: pre-wrap; font: 12px/1.4 ui-monospace, Consolas, monospace; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; padding: 8px; max-height: 60vh; overflow: auto; }
+
+/* l'aperçu du build */
+.apercu-armurerie { position: sticky; top: 10px; padding: 10px 12px; display: grid; gap: 8px; font-size: 13px; }
+.tete-apercu { display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; }
+.tete-apercu .portrait-terrain, .portrait-vide { width: 56px; height: 56px; }
+.portrait-vide { display: block; background: #e9dcbd; border: 2px dashed var(--bois-clair); border-radius: 3px; box-sizing: border-box; }
+.nom-apercu { display: block; font: 700 1.1rem var(--titre); color: var(--bois-fonce); }
+.role-apercu { color: var(--parchemin-doux); }
+.chiffres-apercu { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.chiffres-apercu .grand { background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; padding: 4px; text-align: center; display: grid; }
+.chiffres-apercu strong { font: 700 1.2rem var(--titre); color: var(--bois-fonce); }
+.chiffres-apercu small { color: var(--parchemin-doux); font-size: 11px; }
+.mods-apercu { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; text-align: center; }
+.mods-apercu li { display: grid; background: #fffaf0; border: 1px solid #d8c59c; border-radius: 3px; padding: 2px 0; }
+.mods-apercu span { font: 500 .75rem var(--titre); color: var(--bois-fonce); }
+.mods-apercu strong { font-size: 14px; }
+.mods-apercu small { color: var(--parchemin-doux); font-size: 10px; }
+.budgets-apercu { display: grid; gap: 4px; }
+.budgets-apercu > div { display: grid; gap: 2px; }
+.budgets-apercu .depasse { color: #a3261c; font-weight: 600; }
+.jauge-budget { display: block; height: 8px; background: #c9b48c; border: 1px solid var(--bois-fonce); border-radius: 2px; overflow: hidden; }
+.jauge-budget > span { display: block; height: 100%; background: #3f9a3b; }
+.jauge-budget.classe > span { background: #2f68b8; }
+.depasse .jauge-budget > span { background: #a3261c; }
+.caps-apercu { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.caps-apercu li.bonus { border-left: 3px dashed var(--bois-clair); padding-left: 4px; margin-left: -8px; }
+.caps-apercu li.reaction { border-left: 3px dotted #2f68b8; padding-left: 4px; margin-left: -8px; }
+.degats-apercu { display: block; font: 600 12px ui-monospace, Consolas, monospace; }
+.liens-apercu { display: block; color: #1d5fa8; font-weight: 600; }
+.faiblesse-apercu { margin: 0; color: #8a3d12; }
+.verdict { margin: 0; font: 700 1rem var(--titre); }
+.problemes, .conseils { margin: 0; padding-left: 18px; display: grid; gap: 2px; }
+.problemes li { color: #a3261c; } .conseils li { color: #a8761b; }
+.problemes .lien, .conseils .lien { color: inherit; }
+
+/* le signal (enregistré, copié…) */
+.signal-armurerie { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9; margin: 0; background: var(--bois); color: var(--creme); border: 3px solid var(--bois-fonce); border-radius: 4px; padding: 4px 12px; font: 500 .95rem var(--titre); }
+.signal-armurerie[hidden] { display: none; }
+
+@media (max-width: 900px) {
+  .corps-armurerie { grid-template-columns: 1fr; }
+  .apercu-armurerie { position: static; }
+  .quatre { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) { .deux, .quatre { grid-template-columns: 1fr; } .armurerie { padding: 8px; } }
