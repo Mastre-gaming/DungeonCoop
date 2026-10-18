@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "druide",
+  "nom": "Druide",
+  "auteur": "classe d'essai (#76)",
+  "phrase": "Il ne frappe pas fort, mais il décide où se tient l'ennemi.",
+  "role": "controle",
+  "twist": "attire et inonde",
+  "archetype": "Mage",
+  "caracs": { "FOR": 8, "DEX": 10, "CON": 12, "INT": 13, "SAG": 15, "CHA": 14 },
+  "pv": 130,
+  "vitesse": 6,
+  "ressource": "mana",
+  "capacites": [
+    { "nom": "Fouet de ronce", "sorte": "base", "slot": "action", "portee": "courte", "zone": "aucune", "carac": "SAG", "cout": "", "effet": "", "cree": [], "utilise": [], "renforts": [] },
+    { "nom": "Liane", "sorte": "preparation", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "SAG", "cout": "", "effet": "attire un ennemi de 3 m vers lui", "cree": ["attirer"], "utilise": [], "renforts": [] },
+    { "nom": "Pluie", "sorte": "preparation", "slot": "action", "portee": "longue", "zone": "grande", "carac": "SAG", "cout": "15 Mana", "effet": "une flaque d'eau ; ceux dedans sont Trempés", "cree": ["eau", "trempe"], "utilise": [], "renforts": ["zone"] }
+  ],
+  "faiblesse": "la foudre lui fait ×2, même l'eau électrisée",
+  "sousClasses": [{ "nom": "", "idee": "" }, { "nom": "", "idee": "" }],
+  "look": { "corps": "un vieil homme à barbe blanche", "tenue": "tenue verte, sandales, bâton à boucle", "touche": "", "lien": "", "base": "druide" },
+  "references": ""
+}

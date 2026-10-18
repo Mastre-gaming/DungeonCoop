@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "chevalier",
+  "nom": "Chevalier",
+  "auteur": "classe d'essai (#76)",
+  "phrase": "Lent et solide, il renverse ce qui s'approche et remet ses alliés debout d'un cri.",
+  "role": "tank",
+  "twist": "protège les siens",
+  "archetype": "Fighter",
+  "caracs": { "FOR": 15, "DEX": 8, "CON": 15, "INT": 8, "SAG": 12, "CHA": 13 },
+  "pv": 130,
+  "vitesse": 4,
+  "ressource": "foi",
+  "capacites": [
+    { "nom": "Coup d'épée", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "", "cree": [], "utilise": [], "renforts": [] },
+    { "nom": "Charge au bouclier", "sorte": "preparation", "slot": "bonus", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "pousse de 3 m ; s'il heurte quelque chose, +8 et À terre", "cree": ["poussee", "aterre"], "utilise": [], "renforts": [] },
+    { "nom": "Cri de ralliement", "sorte": "soutien", "slot": "action", "portee": "courte", "zone": "grande", "carac": "CHA", "cout": "", "effet": "+10 PV à chaque allié autour de lui (lui compris), sans jet", "cree": [], "utilise": [], "renforts": [] }
+  ],
+  "faiblesse": "lent (6 m), et la glace le renverse à coup sûr, sans jet",
+  "sousClasses": [{ "nom": "", "idee": "" }, { "nom": "", "idee": "" }],
+  "look": { "corps": "un homme", "tenue": "armure de plaques, grand heaume, cape bleue, épée et bouclier à croix", "touche": "", "lien": "", "base": "chevalier" },
+  "references": ""
+}

@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "voleur-exemple",
+  "nom": "Voleur (l'exemple de la fiche)",
+  "auteur": "CLASS_TEMPLATE.fr.md",
+  "phrase": "Prépare le coup final des autres : de l'huile, une ouverture, et le feu fait le reste.",
+  "role": "controle",
+  "twist": "met en place les mises à mort des autres",
+  "archetype": "Ranged",
+  "caracs": { "FOR": 8, "DEX": 15, "CON": 13, "INT": 12, "SAG": 13, "CHA": 12 },
+  "pv": 100,
+  "vitesse": 6,
+  "ressource": "concentration",
+  "capacites": [
+    { "nom": "Flèche de feu", "sorte": "base", "slot": "action", "portee": "tres-longue", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "enflamme l'Huile", "cree": [], "utilise": ["huile"], "renforts": [] },
+    { "nom": "Fiole d'huile", "sorte": "preparation", "slot": "bonus", "portee": "courte", "zone": "petite", "carac": "DEX", "cout": "", "effet": "de l'Huile au sol, ou Huilé sur une cible", "cree": ["huile"], "utilise": [], "renforts": [] },
+    { "nom": "Ouverture", "sorte": "exploitation", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "DEX", "cout": "2 Concentration pour un Critique", "effet": "la cible est À terre", "cree": ["aterre"], "utilise": [], "renforts": ["critique"] }
+  ],
+  "faiblesse": "prend le feu ×2, même le sien",
+  "sousClasses": [
+    { "nom": "Incendiaire", "idee": "de plus grands feux" },
+    { "nom": "Ombre", "idee": "passe à travers les ennemis, plus de Critiques" }
+  ],
+  "look": { "corps": "une femme, teint olive", "tenue": "capuche et manches vertes, bottes noires", "touche": "", "lien": "", "base": "voleur" },
+  "references": ""
+}
