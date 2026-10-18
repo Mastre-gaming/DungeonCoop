@@ -11,6 +11,7 @@ import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
 import { fr } from '../13_reseau.js';
 import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI } from './regles.js';
+import { arme } from './armes.js';
 
 export const name = 'multi';
 export const always = true;
@@ -84,7 +85,7 @@ let party = null, code = '', hote = false, relie = false, statut = '', essais = 
 let naviguer = (url) => { location.href = url; }, delai = 400;   // (le temps que le dernier message parte avant la page)
 let L = null;
 let calque = null;
-const curseurs = new Map();       // id → l'étiquette qui suit le pointeur d'un ami
+const curseurs = new Map();       // id → le pointeur d'un ami : l'arme de son héros, et ce qu'il prépare
 
 export function init(g, options) {
   game = g;
@@ -228,24 +229,41 @@ export function update(dt) {
   for (const [id, c] of curseurs) if (!party.others.has(id)) { c.remove(); curseurs.delete(id); }
   for (const o of party.others.values()) {
     let c = curseurs.get(o.id);
-    if (!c) { c = document.createElement('div'); c.className = 'curseur-ami'; calque.append(c); curseurs.set(o.id, c); }
+    if (!c) {
+      c = document.createElement('div'); c.className = 'curseur-ami';
+      c.append(Object.assign(document.createElement('img'), { className: 'arme-ami', alt: '' }), Object.assign(document.createElement('span'), { className: 'intention-ami' }));
+      calque.append(c); curseurs.set(o.id, c);
+    }
     const s = o.state, vu = o.shown;
     c.hidden = !(s.x >= 0 && s.y >= 0) || L.phase !== 'combat';
     if (c.hidden) continue;
     c.style.setProperty('--couleur', couleurDe(o.id));
-    const texte = `${o.name}${intention(s)}`;
-    if (c.textContent !== texte) c.textContent = texte;
+    // l'arme du héros qu'il a choisi (ou de son premier héros), le bout de l'arme sur son pointeur ; une flèche sinon
+    const a = arme(herosDe(o.id, s)), img = c.firstChild, etiquette = c.lastChild;
+    c.classList.toggle('sans-arme', !a);
+    img.hidden = !a;
+    if (a && img.getAttribute('src') !== a.src) { img.src = a.src; img.style.left = `${-a.x}px`; img.style.top = `${-a.y}px`; }
+    const texte = intention(s);
+    if (etiquette.textContent !== texte) etiquette.textContent = texte;
+    etiquette.hidden = !texte;
     const p = vue.versEcran(vu.x * T, vu.y * T);
     c.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px)`;
   }
 }
-// ce qu'un ami prépare, d'après son pointeur : « : Foudre → Sbire 2 »
+// ce qu'un ami prépare, d'après son pointeur : « Foudre → Sbire 2 » (rien s'il n'a pas choisi de capacité)
 function intention(s) {
   const h = combat.U(PLACES[Math.round(s.h) - 1]);
   if (!h) return '';
   const cap = CAPACITES[HEROS[h.type].capacites[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
-  if (!cap) return ` (${h.nom})`;
-  return ` : ${cap.nom}${cible ? ` → ${cible.nom}` : ''}`;
+  if (!cap) return '';
+  return `${cap.nom}${cible ? ` → ${cible.nom}` : ''}`;
+}
+// la classe dont un ami montre l'arme : le héros qu'il a choisi, sinon le premier qu'il joue
+function herosDe(id, s) {
+  const h = combat.U(PLACES[Math.round(s.h) - 1]);
+  if (h) return h.type;
+  const k = L.proprio.indexOf(id);
+  return k >= 0 ? combat.U(PLACES[k])?.type ?? L.equipe[k] ?? null : null;
 }
 function couleurDe(id) { const ids = joueurs().map((j) => j.id); return COULEURS[Math.max(0, ids.indexOf(id)) % COULEURS.length]; }
 function joueurs() {
