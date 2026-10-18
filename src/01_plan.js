@@ -9,7 +9,8 @@ export const LIEUX = [
   { id: 'interface', lieu: "le tableau d'affichage", axe: 'Interface et UX', porte: [27, 16] },
   { id: 'histoire', lieu: 'le coin des récits', axe: 'Histoire et narration', porte: [5, 8] },
   { id: 'level', lieu: 'la table des cartes', axe: 'Level design', porte: [13, 8] },
-  { id: 'combat', lieu: "le terrain d'entraînement", axe: 'Combat et combos', porte: [27, 7] },
+  // le terrain d'entraînement est un enclos plus grand (#77) : son emprise à lui, et sa porte est l'entrée de l'enclos
+  { id: 'combat', lieu: "le terrain d'entraînement", axe: 'Combat et combos', porte: [27, 9], emprise: [24, 2, 32, 10] },
   { id: 'classes', lieu: "l'armurerie", axe: 'Classes et personnages', porte: [35, 7] },
   { id: 'son', lieu: "l'estrade", axe: 'Son et musique', porte: [25, 24] },
   { id: 'art', lieu: "l'atelier", axe: 'Direction artistique', porte: [33, 23] },
@@ -17,7 +18,18 @@ export const LIEUX = [
 ];
 
 // L'emprise du niveau 4 (6 x 5 cases), réservée dès le départ : [x0, y0, x1, y1] en cases, x1 et y1 exclus.
-export const emprise = ([px, py]) => [px - 2, py - 4, px + 4, py + 1];
+// emprise(lieu) : la sienne s'il en a une (l'enclos du terrain d'entraînement), sinon celle autour de sa porte ;
+// emprise([px, py]) : celle autour d'une porte.
+export const emprise = (l) => {
+  if (l.emprise) return l.emprise;
+  const [px, py] = l.porte ?? l;
+  return [px - 2, py - 4, px + 4, py + 1];
+};
+
+// L'enclos du terrain d'entraînement (#77), 8 x 8 cases dans la clairière des héros, entre le bois et l'armurerie.
+// Une clôture de cordes et de poteaux (comme la salle du combat d'entraînement), un sol de terre battue, et l'entrée au
+// sud, 2 cases de large, au bout du sentier. En cases : la ligne des pieds de la clôture, et l'entrée (x de début et de fin).
+export const ENCLOS = { ouest: 24.5, est: 31.5, nord: 3.3, sud: 9.3, entree: [27, 29], sol: [25, 3, 31, 9] };
 
 export const FEU = [20, 14];             // le centre du feu (un coin de case)
 export const APPARITION = [18, 17];      // où les héros arrivent (un coin de case)
@@ -29,7 +41,7 @@ export const PLACES = [[20.5, 14.5, 4.4], ...LIEUX.map(({ porte: [px, py] }) => 
 // Les sentiers : des lignes brisées, 2 cases de large (le point (x, y) est le centre de la case).
 export const CHEMINS = [
   [[14.5, 27], [14.5, 19], [20, 14.5]], [[20, 14], [14.5, 11], [5.5, 11], [5.5, 8]], [[13.5, 11], [13.5, 8]],
-  [[20, 14], [24, 10.4], [35.5, 10.4], [35.5, 7]], [[27.5, 10.4], [27.5, 7]],
+  [[20, 14], [24, 10.4], [35.5, 10.4], [35.5, 7]], [[27.5, 10.4], [27.5, 9]],
   [[20, 14], [22, 18.6], [38.5, 18.6], [38.5, 25.6], [33.5, 25.6], [33.5, 23]], [[22.4, 18.6], [22.4, 25.6], [25.5, 25.6], [25.5, 24]],
   [[27.5, 18.6], [27.5, 16]], [[14.5, 25.6], [8.5, 25.6], [8.5, 24]],
 ];
@@ -68,6 +80,8 @@ function distSegment(px, py, ax, ay, bx, by) {
   return Math.hypot(px - ax - t * dx, py - ay - t * dy);
 }
 export function terre(i, j) {
+  const [sx0, sy0, sx1, sy1] = ENCLOS.sol;
+  if (i >= sx0 && i <= sx1 && j >= sy0 && j <= sy1) return true;         // le sol de l'enclos
   for (const [cx, cy, r] of PLACES) if (Math.hypot(i - cx, j - cy) <= r) return true;
   for (const ch of CHEMINS) {
     for (let k = 0; k + 1 < ch.length; k++) {

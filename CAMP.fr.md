@@ -85,7 +85,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Axe (label GitHub) | Lieu (provisoire) | Ce qu'on y trouve plus tard dans le jeu |
 |---|---|---|
 | Chapitres et histoire (`axe: histoire`) | le coin des récits | le journal de campagne, les récits |
-| Combats (`axe: combats`) | le terrain d'entraînement | la salle d'entraînement de Paolitus : déjà ouverte, E devant lui lance le combat d'entraînement sans cases (`entrainement.html`, mission #14) ; son enclos agrandi dans le camp est la mission #77 |
+| Combats (`axe: combats`) | le terrain d'entraînement | la salle d'entraînement de Paolitus : déjà ouverte, E à son entrée lance le combat d'entraînement sans cases (`entrainement.html`, mission #14) ; dans le camp, c'est un enclos de 8 × 8 cases (mission #77, plus bas) |
 | Classes et personnages (`axe: classes`) | l'armurerie | choisir et équiper son héros |
 | Salles et carte (`axe: salles`, avec la structure des runs) | la table des cartes | la carte du chapitre, le départ des runs |
 | Pixel art (`axe: pixel art`) | l'atelier | les apparences des héros |
@@ -101,7 +101,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   - les héros : le terrain d'entraînement et l'armurerie ;
   - l'atelier : l'atelier et l'estrade.
 - **La forge (la technique)** est seule, au sud-ouest, près de l'entrée sud (elle prend l'emplacement prévu pour « la porte du camp », avant que les axes ne soient ceux du tableau de travail).
-- **Chaque lieu réserve dès le départ son emprise du niveau 4 (6 × 5 cases),** avec une case de marge : il grandit sans écraser son voisin. Les façades sont tournées vers le bas (vue trois-quarts LPC) et chaque sentier arrive devant la porte.
+- **Chaque lieu réserve dès le départ son emprise du niveau 4 (6 × 5 cases),** avec une case de marge : il grandit sans écraser son voisin. Les façades sont tournées vers le bas (vue trois-quarts LPC) et chaque sentier arrive devant la porte. Seule exception : le terrain d'entraînement, un enclos de 8 × 8 cases (plus bas).
 - **Vérifié par un contrôle automatique :** aucun chevauchement, aucun sentier qui traverse un lieu, et jamais plus de 2 lieux entiers dans le cadre de la caméra au zoom moyen.
 - Écartés : « le carré » (des rangées autour d'une place, trop lotissement) et « le chemin » (une longue rue, trop longue à parcourir et petite dans le dashboard).
 
@@ -110,11 +110,18 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | tableau d'affichage | 27, 16 | le centre, à côté du feu (20, 14) |
 | coin des récits | 5, 8 | le monde (nord-ouest) |
 | table des cartes | 13, 8 | le monde (nord-ouest) |
-| terrain d'entraînement | 27, 7 | les héros (nord-est) |
+| terrain d'entraînement | 27, 9 (l'entrée de l'enclos, emprise 24, 2 à 32, 10) | les héros (nord-est) |
 | armurerie | 35, 7 | les héros (nord-est) |
 | estrade | 25, 24 | l'atelier (sud-est) |
 | atelier | 33, 23 | l'atelier (sud-est) |
 | forge | 8, 24 | l'entrée (sud-ouest) |
+
+### Le terrain d'entraînement : un enclos (mission #77, proposé le 18 oct, à valider par le propriétaire du camp)
+- **Un enclos de 8 × 8 cases** dans la clairière des héros, entre le bois et l'armurerie, à une case de marge de l'une comme de l'autre. Le terrain, c'est déjà la salle de combat d'entraînement (#14) : dans le camp, il prend la place qu'il lui faut, plus grande que l'emprise de 6 × 5 des autres lieux.
+- **Une clôture de cordes et de poteaux,** les mêmes pièces LPC que la salle du combat d'entraînement, et un **sol de terre battue**. **L'entrée** est au sud : 2 cases de large, entre deux poteaux, au bout du sentier, avec la pancarte à sa gauche. E à l'entrée lance le combat.
+- **Ce qui grandit, c'est ce qu'il y a dedans** (le même modèle que le tableau d'affichage) : au niveau 1 une cible sur son trépied ; au 2 une botte de foin et sa cible, un épouvantail ; au 3 le râtelier, les arcs et un tonneau de flèches ; au 4 des torches sur les poteaux de l'entrée et un second épouvantail. Le milieu reste libre. Au niveau 0, l'enclos est vide.
+- **Vérifié** comme le reste du plan (`?test` et `design/camp/plans/verifier.py`) : aucun chevauchement, aucun sentier qui traverse un lieu, au plus 2 lieux entiers dans le cadre. On y entre par l'entrée, et la clôture arrête le héros partout ailleurs.
+- **Les captures** sont dans `design/camp/enclos/` : l'entrée, l'enclos entier au niveau d'aujourd'hui, les niveaux 0 et 4, et la vue du dashboard.
 
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.

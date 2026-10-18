@@ -1,7 +1,7 @@
 // Les vérifications du camp (?test) : elles jouent comme un joueur (le manuel §3).
 // Le test de marche part de l'apparition et va à pied jusqu'à chaque lieu puis au feu, en tenant les touches
 // (de vrais événements clavier, comme un joueur) ; il donne les coordonnées exactes de tout endroit où le héros reste coincé.
-import { T, W, H, LIEUX, BOIS, FEU, APPARITION, emprise } from './01_plan.js';
+import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, emprise } from './01_plan.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 import { LIEUX_AXES } from './10_missions.js';
 
@@ -53,11 +53,31 @@ export async function selfTest(t, game) {
   game.dbg.freeze(true);
 
   t.group('le plan');
-  const E = Object.fromEntries(LIEUX.map((l) => [l.id, emprise(l.porte)]));
+  const E = Object.fromEntries(LIEUX.map((l) => [l.id, emprise(l)]));
   const inter = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+  const marge = ([x0, y0, x1, y1]) => [x0 - 1, y0 - 1, x1 + 1, y1 + 1];
   let chevauche = [];
-  for (const a of LIEUX) for (const b of LIEUX) if (a.id < b.id && inter(E[a.id], E[b.id])) chevauche.push(`${a.id}/${b.id}`);
-  t.eq(chevauche, [], 'aucune emprise de niveau 4 ne chevauche une autre');
+  for (const a of LIEUX) for (const b of LIEUX) if (a.id < b.id && inter(marge(E[a.id]), E[b.id])) chevauche.push(`${a.id}/${b.id}`);
+  t.eq(chevauche, [], 'aucune emprise de niveau 4 ne chevauche une autre, même à une case près');
+  t.eq(E.combat, [24, 2, 32, 10], 'le terrain d’entraînement a son emprise à lui : l’enclos de 8 x 8 cases (#77)');
+  // (comme design/camp/plans/verifier.py) un sentier ne passe pas dans un lieu, sauf le bout qui mène à sa porte ;
+  // le bas de l'emprise (1,3 case) est le devant du lieu, où les sentiers passent
+  const traverse = [];
+  CHEMINS.forEach((ch, k) => {
+    const fin = ch[ch.length - 1];
+    for (let s = 0; s + 1 < ch.length; s++) {
+      const [x0, y0] = ch[s], [x1, y1] = ch[s + 1], n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 4) + 1;
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + ((x1 - x0) * i) / n + 0.5, y = y0 + ((y1 - y0) * i) / n + 0.5;
+        for (const l of LIEUX) {
+          if (Math.abs(l.porte[0] + 0.5 - fin[0]) < 1 && Math.abs(l.porte[1] - fin[1]) < 1) continue;
+          const e = E[l.id];
+          if (e[0] + 0.3 < x && x < e[2] - 0.3 && e[1] + 0.3 < y && y < e[3] - 1.3 && !traverse.includes(`${k}/${l.id}`)) traverse.push(`${k}/${l.id}`);
+        }
+      }
+    }
+  });
+  t.eq(traverse, [], 'aucun sentier ne traverse un lieu');
   const surArbre = LIEUX.filter((l) => BOIS.some(([i, j]) => inter(E[l.id], [i, j, i + 1, j + 1]))).map((l) => l.id);
   t.eq(surArbre, [], 'aucun arbre dans une emprise de lieu');
   t.eq([collision.largeur, collision.hauteur], [W * T, H * T], 'le camp fait 42 x 28 cases');
@@ -131,6 +151,20 @@ export async function selfTest(t, game) {
     t.ok(!r.traverse, `vers ${e.nom} : jamais à travers un obstacle${r.traverse ? ` (dedans en ${r.traverse})` : ''}`);
   }
   api.rapportMarche = rapport;
+
+  t.group('l’enclos du terrain d’entraînement (#77)');
+  const { ouest, est, nord, sud, entree: [g, d] } = ENCLOS;
+  const dedans = [((g + d) / 2) * T, (nord + 3) * T];
+  heros.placer(...devant(LIEUX.find((l) => l.id === 'combat')), 'haut'); camera.snap();
+  const entrer = marcherVers(...dedans);
+  t.ok(entrer.arrive && !entrer.traverse, `depuis le sentier, on entre dans l’enclos par l’entrée${entrer.arrive ? ` (${entrer.temps.toFixed(1)} s)` : ''}`);
+  t.ok([[g - 0.6, sud], [d + 0.6, sud], [ouest, nord + 1.5], [est, nord + 4.5], [(ouest + est) / 2, nord]].every(([x, y]) => collision.bloque(x * T, y * T)),
+    'la clôture bloque partout ailleurs (au sud de part et d’autre de l’entrée, à l’ouest, à l’est, au nord)');
+  t.ok(!collision.bloque((g + 1) * T, sud * T) && !collision.bloque((g + 1) * T, (sud + 0.8) * T), 'l’entrée est ouverte, 2 cases de large');
+  heros.placer(dedans[0], dedans[1], 'bas'); camera.snap();
+  tenir(['ArrowLeft']); game.dbg.advance(4); tenir([]);
+  t.ok(h.x / T > ouest, `vers l’ouest, la clôture arrête le héros (x ${(h.x / T).toFixed(1)})`);
+  heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
 
   t.group('le clic');
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas');
