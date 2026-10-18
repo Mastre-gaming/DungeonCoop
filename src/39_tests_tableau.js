@@ -4,7 +4,7 @@
 import { T, LIEUX, APPARITION, terre, emprise } from './01_plan.js';
 
 export function testsTableau(t, ctx, game) {
-  const { lieux, collision, crieur, missions } = ctx;
+  const { lieux, collision, crieur, missions, heros } = ctx;
   const l = LIEUX.find((x) => x.id === 'interface');
   const devant = [(l.porte[0] + 1) * T, (l.porte[1] + 1.4) * T];
   const sprites = () => lieux.etat.interface.sprites;
@@ -51,14 +51,46 @@ export function testsTableau(t, ctx, game) {
   t.ok(!crieur.bulle.hidden && crieur.bulle.textContent === 'Oyez ! Une nouvelle !', 'sa bulle dit la nouvelle');
   game.dbg.advance(4);
   t.ok(!crieur.criant && crieur.bulle.hidden, 'puis il se tait');
-  // une mission qui rentre : il la crie
+  // les derniers push (la rubrique « Derniers push » du dashboard, lue par la chronique) : il les crie et les recense
+  const { chronique } = ctx, avantChronique = chronique.entrees;
+  const ev = (id, qui, branche, message, min) => ({ id, activity_type: 'push', actor: { login: qui }, ref: `refs/heads/${branche}`, depot: 'jeu', timestamp: new Date(Date.now() - min * 60000).toISOString(), commit: { commit: { message } } });
+  chronique.charger([ev(901, 'Paolitus', 'camp-v0', 'Le panneau des missions', 30)]);
+  for (let k = 0; k < 20 && (crieur.criant || crieur.file.length); k++) game.dbg.advance(0.5);   // (il crie ce push-là, puis se tait)
+  t.eq(crieur.derniersPush().map((p) => p.qui), ['Paolitus'], 'il recense les derniers push de la chronique');
+  chronique.charger([ev(902, 'Fraps', 'hud-quetes', 'La barre d’action et ses loups sculptés dans le bois du camp', 0), ev(901, 'Paolitus', 'camp-v0', 'Le panneau des missions', 30)]);
+  game.dbg.advance(0.05);
+  t.ok(crieur.criant && crieur.sorte === 'push' && crieur.phrase.startsWith('Oyez ! Fraps a forgé sur hud-quetes (jeu) : « La barre') && crieur.phrase.length < 110, `un push arrive : il le crie tout de suite (« ${crieur.phrase} »)`);
+  t.eq(crieur.derniersPush().map((p) => p.qui), ['Fraps', 'Paolitus'], 'du plus récent au plus ancien');
+  game.dbg.advance(4);
+  // près de lui, sans nouvelle : le tour des derniers push d'abord
+  heros.placer(crieur.place().x, crieur.place().devant + 24, 'haut');
+  for (let k = 0; k < 14 * 10 && !crieur.criant; k++) game.dbg.advance(0.1);
+  t.ok(crieur.criant && crieur.sorte === 'tour' && crieur.phrase.includes('a forgé sur'), `près de lui, il refait le tour des derniers push (« ${crieur.phrase} »)`);
+  t.ok(!crieur.ecouter.hidden, 'devant son estrade : « E : les derniers push »');
+  game.dbg.advance(4);
+  // une mission rentrée et un push en même temps : le push passe d'abord
   const issues = missions.etat.issues;
   const tache = issues.find((i) => i.state !== 'closed' && i.labels?.some((x) => (x.name ?? x).startsWith('axe')));
   if (tache) {
+    crieur.crier('Oyez ! Une autre nouvelle !');
     missions.charger(issues.map((i) => ({ ...i })));
     missions.charger(issues.map((i) => (i.number === tache.number ? { ...i, state: 'closed' } : i)));
+    chronique.charger([ev(903, 'DonBabaa', 'tableau-pierre', 'Le crieur', 0), ...chronique.entrees]);
+    t.eq(crieur.file.map((f) => f.sorte), ['push', 'nouvelle'], 'dans sa file, le push passe avant la mission rentrée');
+    game.dbg.advance(4);
+    t.ok(crieur.criant && crieur.phrase.includes('DonBabaa'), 'il crie le push d’abord');
+    game.dbg.advance(4);
+    t.ok(crieur.criant && crieur.phrase.includes(`#${tache.number}`), `puis la mission rentrée (« ${crieur.phrase} »)`);
+    missions.charger(issues);
+    game.dbg.advance(4);
+  }
+  chronique.charger(avantChronique);
+  heros.placer(...devant, 'haut');
+  // une mission qui rentre seule : il la crie
+  if (tache) {
+    missions.charger(issues.map((i) => (i.number === tache.number ? { ...i, state: 'closed' } : i)));
     game.dbg.advance(0.05);
-    t.ok(crieur.criant && crieur.phrase.includes(`#${tache.number}`), `une mission rentre : il la crie (« ${crieur.phrase} »)`);
+    t.ok(crieur.criant && crieur.phrase.includes(`#${tache.number}`), 'une mission rentre : il la crie');
     missions.charger(issues);
     game.dbg.advance(4);
   }

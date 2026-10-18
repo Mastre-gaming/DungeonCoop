@@ -96,6 +96,7 @@ async function demarrer() {
   hud.brancher('campagne', campagne);
   const chronique = game.use(chroniqueSkill, { missions, visite, horsLigne: query.has('test') });
   hud.brancher('chronique', chronique);
+  crieur.brancher(chronique, () => hud.activer('chronique'));   // le crieur crie et recense les derniers push
   const sacoche = creerSacoche({ horsLigne: query.has('test') });
   hud.brancher('sacoche', sacoche);
   const rumeurs = creerRumeurs({ missions, bus: game.bus });

@@ -30,6 +30,8 @@
 .bulle-perso { position: fixed; z-index: 6; pointer-events: none; transform: translate(-50%, -100%); white-space: nowrap;
   background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce); border-radius: 4px; padding: 3px 10px; font: 500 1rem var(--titre); }
 .bulle-perso[hidden] { display: none; }
+/* Le crieur du tableau d'affichage : ses nouvelles (les derniers push) tiennent sur deux ou trois lignes */
+.bulle-crieur { white-space: normal; width: max-content; max-width: min(320px, calc(100vw - 24px)); text-align: center; line-height: 1.25; }
 
 /* Les noms au-dessus des héros */
 #noms { position: fixed; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }
