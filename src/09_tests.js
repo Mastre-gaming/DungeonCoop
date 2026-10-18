@@ -155,6 +155,7 @@ export function selfTest(t, game) {
   testsReseau(t, game);
   testsRenommee(t, game);
   testsHud(t, game);
+  testsBoite(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -704,4 +705,29 @@ function testsHud(t, game) {
   sentinelle.etat.qui = { nom: 'Zorg', github: null, saisie: 'Zorg' }; hud.majSuivi();
   t.ok(hud.suivi.hidden, 'un visiteur n’a pas de suivi (il n’a pas de compte GitHub dans l’équipe)');
   sentinelle.etat.qui = garde; missions.charger([]); hud.majSuivi();
+}
+
+// La boîte aux lettres du camp : le drapeau et le « ! » quand des messages attendent, et elle ouvre la messagerie.
+function testsBoite(t, game) {
+  const { boite, messagerie, heros, camera, collision, rendu } = ctx, h = heros.heros;
+  t.group('la boîte aux lettres');
+  const P = boite.POSTE;
+  t.ok(collision.bloque(P.x, P.y), 'son poteau bloque le passage');
+  t.ok(!collision.bloque(P.x, P.y + 24), 'on peut se tenir devant');
+  game.bus.emit('messagerie:nonlus', { n: 0 }); game.dbg.advance(0.05);
+  t.ok(!boite.drapeauLeve && boite.excl.hidden, 'pas de message en attente : drapeau baissé, pas de « ! »');
+  game.bus.emit('messagerie:nonlus', { n: 2 }); game.dbg.advance(0.05);
+  t.ok(boite.drapeauLeve && !boite.excl.hidden, 'deux messages non lus : le drapeau se lève, un « ! » doré au-dessus');
+  heros.placer(P.x, P.y + 20, 'haut'); camera.snap(); game.dbg.advance(0.05);
+  t.ok(!boite.bulle.hidden, 'devant elle : « E : lire le courrier »');
+  messagerie.fermer();
+  window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); game.dbg.advance(0.05); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
+  t.ok(messagerie.ouvert, 'E devant la boîte ouvre la messagerie');
+  messagerie.fermer(); game.dbg.advance(0.05);
+  const c = boite.centreEcran();
+  rendu.renderer.domElement.dispatchEvent(new PointerEvent('pointerdown', { clientX: c.x, clientY: c.y, button: 0, bubbles: true, pointerId: 1 }));
+  t.ok(messagerie.ouvert && !h.route, 'un clic sur la boîte l’ouvre aussi (et le héros ne part pas marcher)');
+  messagerie.fermer();
+  game.bus.emit('messagerie:nonlus', { n: 0 }); game.dbg.advance(0.05);
+  t.ok(!boite.drapeauLeve && boite.excl.hidden, 'les messages lus : le drapeau redescend');
 }
