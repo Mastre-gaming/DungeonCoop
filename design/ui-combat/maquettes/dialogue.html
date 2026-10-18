@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accélérer ou passer le texte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&amp;family=Source+Sans+3:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#85581b}a:hover{color:#3b2716}
+.sol-herbe{background-image:url(../assets/herbe.png);background-size:64px 64px;image-rendering:pixelated}
+img{image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div class="sol-herbe" style="position: relative; width: 1440px; height: 820px; overflow: hidden; font-family: 'Source Sans 3', system-ui, sans-serif; color: #3a2c1a; background-color: #3f7a2c">
+
+  <!-- la scène du camp -->
+  <div style="position: absolute; left: 520px; top: 250px; width: 220px; height: 90px; border-radius: 50%; background: rgba(120,80,30,.35)"></div>
+  <img src="../assets/feu-camp.png" alt="Le feu de camp" style="position: absolute; left: 566px; top: 150px; width: 128px; height: 128px">
+  <img src="../assets/voleur.png" alt="Ton héros" style="position: absolute; left: 330px; top: 180px; width: 160px; height: 160px">
+  <img src="../assets/sentinelle.png" alt="La sentinelle" style="position: absolute; left: 760px; top: 150px; width: 192px; height: 192px">
+  <div style="position: absolute; left: 836px; top: 136px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font: 700 30px 'Pixelify Sans', monospace; color: #ffd35a; text-shadow: 0 3px 0 #2b1c1d, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d">!</div>
+
+  <!-- la légende, en haut à droite -->
+  <div style="position: absolute; right: 30px; top: 30px; width: 380px; padding: 20px 22px; box-sizing: border-box; background: linear-gradient(180deg, #3b2716, #2b1c1d); border: 3px solid #85581b; box-shadow: 0 0 0 3px #2b1c1d, 0 6px 0 3px rgba(0,0,0,.35); border-radius: 3px; display: flex; flex-direction: column; gap: 14px; color: #fff7e6">
+    <div style="display: flex; flex-direction: column; gap: 4px"><span style="font: 500 13px 'Pixelify Sans', monospace; color: #e9d3ad">Rumeur #84</span><b style="font: 700 22px 'Pixelify Sans', monospace; color: #ffd35a; line-height: 1.15">Accélérer ou passer le texte</b></div>
+    <div style="display: flex; gap: 10px"><span style="width: 28px; height: 28px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 14px 'Pixelify Sans', monospace; color: #2b1c1d">1</span><span style="font-size: 14px; line-height: 1.4"><b style="color: #ffe2a8">Un appui affiche tout :</b> Espace, Entrée ou un clic pendant que la réplique s'écrit. Le même appui, ensuite, passe à la suivante.</span></div>
+    <div style="display: flex; gap: 10px"><span style="width: 28px; height: 28px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 14px 'Pixelify Sans', monospace; color: #2b1c1d">2</span><span style="font-size: 14px; line-height: 1.4"><b style="color: #ffe2a8">La vitesse se règle</b> dans le coin de la boîte, gardée dans le navigateur. Normale = 35 lettres/s (aujourd'hui), Rapide = 90.</span></div>
+    <div style="display: flex; gap: 10px"><span style="width: 28px; height: 28px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 14px 'Pixelify Sans', monospace; color: #2b1c1d">3</span><span style="font-size: 14px; line-height: 1.4"><b style="color: #ffe2a8">Tout passer (Échap)</b> saute la conversation, comme « Passer le tour » au camp.</span></div>
+  </div>
+
+  <!-- la boîte de dialogue, en bas, comme dans le jeu -->
+  <div style="position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); width: 1060px; display: flex; gap: 18px; padding: 18px 22px 16px; box-sizing: border-box; background: #f4ead2; border: 4px solid #3b2716; border-radius: 4px; box-shadow: inset 0 0 0 3px #85581b, 0 0 0 3px #2b1c1d, 0 8px 0 3px rgba(0,0,0,.35)">
+    <div style="flex: none; width: 128px; height: 128px; background: #e9dcc0; border: 3px solid #85581b; box-shadow: inset 0 0 0 2px #fffaf0; border-radius: 3px; display: flex; align-items: center; justify-content: center"><img src="../assets/portrait-sentinelle.png" alt="La sentinelle" style="width: 120px; height: 120px"></div>
+    <div style="flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+        <b style="font: 700 18px 'Pixelify Sans', monospace; color: #3b2716">La sentinelle</b>
+        <div style="position: relative; display: flex; align-items: center; gap: 4px; padding: 3px; background: #e9dcc0; border: 2px solid #85581b; border-radius: 4px">
+          <span style="font: 500 12px 'Pixelify Sans', monospace; color: #6f5a3e; padding: 0 6px">Vitesse</span>
+          <button type="button" style="padding: 3px 9px; border: 0; border-radius: 3px; background: transparent; font: 500 12px 'Pixelify Sans', monospace; color: #3b2716">Lente</button>
+          <button type="button" style="padding: 3px 9px; border: 0; border-radius: 3px; background: transparent; font: 500 12px 'Pixelify Sans', monospace; color: #3b2716">Normale</button>
+          <button type="button" aria-pressed="true" style="padding: 3px 9px; border: 0; border-radius: 3px; background: #3b2716; font: 700 12px 'Pixelify Sans', monospace; color: #ffd35a">Rapide</button>
+          <button type="button" style="padding: 3px 9px; border: 0; border-radius: 3px; background: transparent; font: 500 12px 'Pixelify Sans', monospace; color: #3b2716">D'un coup</button>
+          <span style="position: absolute; left: -14px; top: -16px; width: 28px; height: 28px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 14px 'Pixelify Sans', monospace; color: #2b1c1d">2</span>
+        </div>
+      </div>
+      <span style="font-size: 21px; line-height: 1.4; color: #3a2c1a">Magne-toi ! Suis-moi, je te fais faire le t<span style="display: inline-block; width: 11px; height: 21px; background: #3b2716; vertical-align: -4px"></span></span>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: auto">
+        <span style="font: 500 13px 'Pixelify Sans', monospace; color: #6f5a3e">Réplique 2 / 7</span>
+        <div style="display: flex; align-items: center; gap: 10px">
+          <a href="#" style="position: relative; font: 500 13px 'Pixelify Sans', monospace; color: #3b2716; text-decoration: none; padding: 4px 10px; border: 2px solid #85581b; border-radius: 4px; background: #fffaf0">Tout passer · Échap
+            <span style="position: absolute; left: -14px; top: -16px; width: 28px; height: 28px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 14px 'Pixelify Sans', monospace; color: #2b1c1d">3</span></a>
+          <span style="position: relative; display: flex; align-items: center; gap: 8px; padding: 5px 12px; background: #3b2716; border-radius: 4px; color: #ffe2a8; font: 500 14px 'Pixelify Sans', monospace"><span style="padding: 0 6px; border: 1px solid #ffe2a8; border-bottom-width: 3px; border-radius: 3px; font: 12px ui-monospace, Consolas, monospace">Espace</span>tout afficher <b style="color: #ffd35a">▸▸</b>
+            <span style="position: absolute; left: -14px; top: -16px; width: 28px; height: 28px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 14px 'Pixelify Sans', monospace; color: #2b1c1d">1</span></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

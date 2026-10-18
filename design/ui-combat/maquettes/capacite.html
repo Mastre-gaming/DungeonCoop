@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Voir ce que fait une attaque</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&amp;family=Source+Sans+3:wght@400;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#85581b}a:hover{color:#3b2716}
+.sol-herbe{background-image:url(../assets/herbe.png);background-size:64px 64px;image-rendering:pixelated}
+img{image-rendering:pixelated}
+</style>
+</head>
+<body>
+<div style="width: 1440px; height: 820px; display: flex; font-family: 'Source Sans 3', system-ui, sans-serif; color: #3a2c1a; background: #2b1c1d">
+
+  <!-- la scène -->
+  <div class="sol-herbe" style="position: relative; width: 1040px; height: 820px; overflow: hidden; background-color: #3f7a2c; flex: none">
+    <!-- l'huile sous le sbire visé -->
+    <div style="position: absolute; left: 640px; top: 300px; width: 230px; height: 120px; border-radius: 48% 52% 46% 54%; background: rgba(30,22,14,.75); box-shadow: inset 0 0 0 3px rgba(150,110,200,.4)"></div>
+    <!-- la ligne de tir -->
+    <div style="position: absolute; left: 300px; top: 352px; width: 400px; height: 0; border-top: 3px dashed rgba(255,211,90,.9); transform: rotate(-3deg); transform-origin: 0 0"></div>
+    <!-- le Voleur choisi -->
+    <div style="position: absolute; left: 218px; top: 388px; width: 64px; height: 20px; border-radius: 50%; border: 3px solid #7ce0ff; box-shadow: 0 0 10px #7ce0ff; box-sizing: border-box"></div>
+    <img src="../assets/voleur.png" alt="Voleur" style="position: absolute; left: 186px; top: 272px; width: 128px; height: 128px">
+    <!-- les ennemis -->
+    <div style="position: absolute; left: 710px; top: 358px; width: 68px; height: 22px; border-radius: 50%; border: 3px solid #ffd35a; box-shadow: 0 0 12px #ffd35a; box-sizing: border-box"></div>
+    <img src="../assets/sbire.png" alt="Sbire 2, Huilé" style="position: absolute; left: 678px; top: 244px; width: 128px; height: 128px">
+    <img src="../assets/sbire.png" alt="Sbire 1" style="position: absolute; left: 790px; top: 290px; width: 128px; height: 128px">
+    <img src="../assets/chef.png" alt="Chef" style="position: absolute; left: 860px; top: 140px; width: 128px; height: 128px">
+    <img src="../assets/tonneau.png" alt="Tonneau" style="position: absolute; left: 560px; top: 180px; width: 68px; height: 100px">
+
+    <!-- 3 + 4 : la carte de la cible visée -->
+    <div style="position: absolute; left: 400px; top: 30px; width: 310px; padding: 12px 14px; box-sizing: border-box; background: linear-gradient(180deg, #3b2716 0%, #2b1c1d 100%); border: 3px solid #1e161e; border-radius: 2px; box-shadow: inset 0 0 0 2px #85581b, inset 0 0 0 4px #2b1c1d, 0 5px 0 rgba(0,0,0,.4); display: flex; flex-direction: column; gap: 8px; color: #fff7e6">
+      <div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font: 700 16px 'Pixelify Sans', monospace; color: #ffe2a8">Sbire 2</b><span style="font: 500 13px 'Pixelify Sans', monospace; color: #e9d3ad">20 / 30 PV</span></div>
+      <span style="align-self: flex-start; display: flex; align-items: center; gap: 5px; font: 500 12px 'Pixelify Sans', monospace; padding: 2px 6px 2px 3px; background: #2a2134; box-shadow: inset 0 0 0 1px #8a6ab8; color: #d9c6ff"><img src="../icones/enseigne-vase.png" alt="" style="width: 13px; height: 14px">Huilé : feu ×2</span>
+      <div style="display: flex; height: 12px; border: 2px solid #1e161e; overflow: hidden"><span style="width: 5%; background: #6f5a3e"></span><span style="width: 30%; background: #d9a35a"></span><span style="width: 60%; background: #e9dcc0"></span><span style="width: 5%; background: #ffd35a"></span></div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px">
+        <div style="padding: 4px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 1px"><span style="font: 500 11px 'Pixelify Sans', monospace; color: #ff8a7a">Raté</span><b style="font: 700 15px 'Pixelify Sans', monospace">5 %</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">0</span></div>
+        <div style="padding: 4px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 1px"><span style="font: 500 11px 'Pixelify Sans', monospace; color: #f3c48a">Éraflure</span><b style="font: 700 15px 'Pixelify Sans', monospace">30 %</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">10–14</span></div>
+        <div style="padding: 4px 6px; background: #1e161e; box-shadow: inset 0 0 0 2px #85581b; display: flex; flex-direction: column; gap: 1px"><span style="font: 500 11px 'Pixelify Sans', monospace; color: #9fe28f">Touché</span><b style="font: 700 15px 'Pixelify Sans', monospace">60 %</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">22–28</span></div>
+        <div style="padding: 4px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 1px"><span style="font: 500 11px 'Pixelify Sans', monospace; color: #ffd35a">Critique</span><b style="font: 700 15px 'Pixelify Sans', monospace">5 %</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">44–56</span></div>
+      </div>
+      <div style="padding: 6px 10px; background: #1e161e; box-shadow: inset 0 0 0 1px #3f9a3b; font: 700 14px 'Pixelify Sans', monospace; color: #9fe28f">Le tue dans 65 % des cas</div>
+      <div style="position: relative; display: flex; align-items: center; gap: 8px; padding: 5px 8px 5px 5px; background: #4a1f0c; box-shadow: inset 0 0 0 1px #c4621f; font: 500 13px 'Pixelify Sans', monospace; color: #ffb37a"><img src="../icones/enseigne-fleche.png" alt="" style="width: 24px; height: 26px; flex: none"><span>L'huile s'enflamme : 6 et Brûlure à Sbire 1</span>
+        <span style="position: absolute; right: -18px; top: -14px; width: 30px; height: 30px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; box-shadow: 0 3px 0 rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">4</span>
+      </div>
+      <span style="position: absolute; left: -18px; top: -16px; width: 30px; height: 30px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; box-shadow: 0 3px 0 rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">3</span>
+    </div>
+
+    <!-- 2 : la fiche de la capacité, sans cible -->
+    <div style="position: absolute; left: 60px; bottom: 122px; width: 600px; padding: 12px 14px; box-sizing: border-box; background: linear-gradient(180deg, #3b2716 0%, #2b1c1d 100%); border: 3px solid #1e161e; border-radius: 2px; box-shadow: inset 0 0 0 2px #85581b, inset 0 0 0 4px #2b1c1d, 0 5px 0 rgba(0,0,0,.4); display: flex; flex-direction: column; gap: 10px; color: #fff7e6">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap">
+        <img src="../icones/enseigne-fleche.png" alt="" style="width: 36px; height: 39px">
+        <b style="font: 700 20px 'Pixelify Sans', monospace; color: #ffe2a8">Flèche de feu</b>
+        <span style="font: 700 11px 'Pixelify Sans', monospace; letter-spacing: .06em; padding: 2px 6px; background: #ffd35a; color: #2b1c1d">ACTION</span>
+        <span style="display: flex; gap: 4px; margin-left: auto">
+          <span style="font: 500 12px 'Pixelify Sans', monospace; padding: 2px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; color: #e9d3ad">Portée 12 m</span>
+          <span style="font: 500 12px 'Pixelify Sans', monospace; padding: 2px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; color: #e9d3ad">Sans coût</span>
+          <span style="font: 500 12px 'Pixelify Sans', monospace; padding: 2px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; color: #e9d3ad">DEX +2</span>
+        </span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+        <div style="padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 2px"><span style="font: 500 12px 'Pixelify Sans', monospace; color: #ff8a7a">Raté</span><b style="font: 700 20px 'Pixelify Sans', monospace; color: #fff7e6">0</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">d20 = 1</span></div>
+        <div style="padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 2px"><span style="font: 500 12px 'Pixelify Sans', monospace; color: #f3c48a">Éraflure</span><b style="font: 700 20px 'Pixelify Sans', monospace; color: #fff7e6">5–7</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">d20 2–7</span></div>
+        <div style="padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 2px #85581b; display: flex; flex-direction: column; gap: 2px"><span style="font: 500 12px 'Pixelify Sans', monospace; color: #9fe28f">Touché</span><b style="font: 700 20px 'Pixelify Sans', monospace; color: #fff7e6">11–14</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">d20 8–19</span></div>
+        <div style="padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 2px"><span style="font: 500 12px 'Pixelify Sans', monospace; color: #ffd35a">Critique</span><b style="font: 700 20px 'Pixelify Sans', monospace; color: #fff7e6">22–28</b><span style="font: 500 11px 'Pixelify Sans', monospace; color: #a8956f">d20 = 20</span></div>
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap">
+        <span style="display: flex; align-items: center; gap: 6px; font: 500 13px 'Pixelify Sans', monospace; padding: 3px 8px 3px 4px; background: #4a1f0c; box-shadow: inset 0 0 0 1px #c4621f; color: #ffb37a"><img src="../icones/enseigne-fleche.png" alt="" style="width: 18px; height: 19.5px">Sur Huilé : ×2 et Brûlure</span>
+        <span style="display: flex; align-items: center; gap: 6px; font: 500 13px 'Pixelify Sans', monospace; padding: 3px 8px 3px 4px; background: #4a1f0c; box-shadow: inset 0 0 0 1px #c4621f; color: #ffb37a"><img src="../assets/tonneau.png" alt="" style="width: 11px; height: 16px">Enflamme l'huile et les tonneaux</span>
+        <span style="display: flex; align-items: center; gap: 6px; font: 500 13px 'Pixelify Sans', monospace; padding: 3px 8px 3px 4px; background: #2a2134; box-shadow: inset 0 0 0 1px #8a6ab8; color: #d9c6ff"><img src="../icones/enseigne-vase.png" alt="" style="width: 15px; height: 16px">Combo : Fiole d'huile</span>
+      </div>
+      <span style="position: absolute; left: -18px; top: -16px; width: 30px; height: 30px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; box-shadow: 0 3px 0 rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">2</span>
+    </div>
+
+    <!-- 1 : la barre des capacités -->
+    <div style="position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 6px; padding: 8px; background: linear-gradient(180deg, #3b2716 0%, #2b1c1d 100%); border: 3px solid #1e161e; border-radius: 2px; box-shadow: inset 0 0 0 2px #85581b, inset 0 0 0 4px #2b1c1d, 0 4px 0 rgba(0,0,0,.4)">
+      <button type="button" style="position: relative; width: 170px; height: 68px; padding: 6px 8px; text-align: left; background: #2a1d10; border: 0; border-radius: 0; box-shadow: inset 0 0 0 2px #ffd35a, 0 0 14px 2px rgba(255,211,90,.35); display: flex; align-items: center; gap: 8px; color: #fff7e6"><img src="../icones/enseigne-fleche.png" alt="" style="width: 36px; height: 39px; flex: none"><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><b style="font: 700 14px 'Pixelify Sans', monospace; color: #ffd35a">Flèche de feu</b><span style="display: flex; gap: 6px; align-items: center; font: 500 12px 'Pixelify Sans', monospace; color: #a8956f"><span style="padding: 0 4px; background: #ffd35a; color: #2b1c1d; font-size: 10px">ACT</span>11–14</span></span><span style="position: absolute; top: 4px; right: 5px; min-width: 14px; padding: 0 2px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; font: 700 10px 'Pixelify Sans', monospace; color: #e9d3ad; text-align: center">1</span>
+        <span style="position: absolute; left: -16px; top: -18px; width: 30px; height: 30px; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; box-shadow: 0 3px 0 rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">1</span></button>
+      <button type="button" style="position: relative; width: 170px; height: 68px; padding: 6px 8px; text-align: left; background: #1e161e; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; align-items: center; gap: 8px; color: #fff7e6"><img src="../icones/enseigne-vase.png" alt="" style="width: 36px; height: 39px; flex: none"><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><b style="font: 700 14px 'Pixelify Sans', monospace; color: #ffe2a8">Fiole d'huile</b><span style="display: flex; gap: 6px; align-items: center; font: 500 12px 'Pixelify Sans', monospace; color: #a8956f"><span style="padding: 0 4px; background: #2f5fa8; color: #dbe8ff; font-size: 10px">BONUS</span>zone Huile</span></span><span style="position: absolute; top: 4px; right: 5px; min-width: 14px; padding: 0 2px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; font: 700 10px 'Pixelify Sans', monospace; color: #e9d3ad; text-align: center">2</span></button>
+      <button type="button" style="position: relative; width: 170px; height: 68px; padding: 6px 8px; text-align: left; background: #1e161e; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; align-items: center; gap: 8px; color: #fff7e6"><img src="../icones/enseigne-epee.png" alt="" style="width: 36px; height: 39px; flex: none"><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><b style="font: 700 14px 'Pixelify Sans', monospace; color: #ffe2a8">Ouverture</b><span style="display: flex; gap: 6px; align-items: center; font: 500 12px 'Pixelify Sans', monospace; color: #a8956f"><span style="padding: 0 4px; background: #ffd35a; color: #2b1c1d; font-size: 10px">ACT</span>11–14</span></span><span style="position: absolute; top: 4px; right: 5px; min-width: 14px; padding: 0 2px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; font: 700 10px 'Pixelify Sans', monospace; color: #e9d3ad; text-align: center">3</span></button>
+      <button type="button" style="position: relative; width: 170px; height: 68px; padding: 6px 8px; text-align: left; background: #1e161e; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; align-items: center; gap: 8px; color: #fff7e6"><img src="../icones/enseigne-pousser.png" alt="" style="width: 36px; height: 39px; flex: none"><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><b style="font: 700 14px 'Pixelify Sans', monospace; color: #ffe2a8">Pousser</b><span style="display: flex; gap: 6px; align-items: center; font: 500 12px 'Pixelify Sans', monospace; color: #a8956f"><span style="padding: 0 4px; background: #2f5fa8; color: #dbe8ff; font-size: 10px">BONUS</span>3 m · +8</span></span><span style="position: absolute; top: 4px; right: 5px; min-width: 14px; padding: 0 2px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; font: 700 10px 'Pixelify Sans', monospace; color: #e9d3ad; text-align: center">4</span></button>
+      <button type="button" style="position: relative; width: 170px; height: 68px; padding: 6px 8px; text-align: left; background: #1e161e; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; align-items: center; gap: 8px; color: #fff7e6"><img src="../icones/enseigne-fiole.png" alt="" style="width: 36px; height: 39px; flex: none"><span style="display: flex; flex-direction: column; gap: 3px; flex: 1"><b style="font: 700 14px 'Pixelify Sans', monospace; color: #ffe2a8">Potion</b><span style="display: flex; gap: 6px; align-items: center; font: 500 12px 'Pixelify Sans', monospace; color: #a8956f"><span style="padding: 0 4px; background: #2f5fa8; color: #dbe8ff; font-size: 10px">BONUS</span>+20 PV</span></span><span style="position: absolute; top: 4px; right: 5px; min-width: 14px; padding: 0 2px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; font: 700 10px 'Pixelify Sans', monospace; color: #e9d3ad; text-align: center">5</span></button>
+    </div>
+  </div>
+
+  <!-- la légende -->
+  <div style="flex: 1; padding: 36px 30px; box-sizing: border-box; background: linear-gradient(180deg, #3b2716, #2b1c1d); box-shadow: inset 4px 0 0 #85581b, inset 7px 0 0 #2b1c1d; display: flex; flex-direction: column; gap: 22px; color: #fff7e6">
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <span style="font: 500 13px 'Pixelify Sans', monospace; color: #e9d3ad">Rumeur #85</span>
+      <b style="font: 700 26px 'Pixelify Sans', monospace; color: #ffd35a; line-height: 1.15">Voir ce que fait une attaque</b>
+    </div>
+    <div style="display: flex; gap: 12px"><span style="width: 30px; height: 30px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">1</span><span style="font-size: 15px; line-height: 1.4"><b style="color: #ffe2a8">Le bouton dit déjà l'essentiel :</b> l'icône LPC, la touche, le type (action ou bonus) et les dégâts d'un touché.</span></div>
+    <div style="display: flex; gap: 12px"><span style="width: 30px; height: 30px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">2</span><span style="font-size: 15px; line-height: 1.4"><b style="color: #ffe2a8">La fiche, sans chercher de cible :</b> portée, coût, dégâts selon le d20, effets et combos possibles. Elle reste au-dessus de la barre.</span></div>
+    <div style="display: flex; gap: 12px"><span style="width: 30px; height: 30px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">3</span><span style="font-size: 15px; line-height: 1.4"><b style="color: #ffe2a8">En visant, les vraies chances :</b> sur cette cible-là, avec ses états, et une ligne qui dit ce que ça donne.</span></div>
+    <div style="display: flex; gap: 12px"><span style="width: 30px; height: 30px; flex: none; border-radius: 50%; background: #ffd35a; border: 3px solid #2b1c1d; display: flex; align-items: center; justify-content: center; font: 700 15px 'Pixelify Sans', monospace; color: #2b1c1d">4</span><span style="font-size: 15px; line-height: 1.4"><b style="color: #ffe2a8">Les effets autour :</b> l'huile qui s'enflamme, qui d'autre est touché.</span></div>
+    <p style="margin: auto 0 0; padding-top: 14px; border-top: 1px solid #85581b; font-size: 13px; line-height: 1.4; color: #e9d3ad">Exemple : la Flèche de feu du Voleur sur un sbire Huilé dans l'huile, à 20 / 30 PV. Règles actuelles du terrain d'entraînement.</p>
+  </div>
+</div>
+</body>
+</html>
