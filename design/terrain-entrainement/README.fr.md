@@ -16,7 +16,9 @@ Le combat D1 de la Salle d'essai de Fraps (`design/combat-d1/`, PR #74), devenu 
 | `4-attaque-et-d20.png` | une Étincelle de la Mage : le d20 en grand, et le journal |
 | `5-surfaces.png` | l'huile enflammée, la glace et l'eau, dessinées sans cases |
 | `6-pixel-art-zoom.png` | le terrain zoomé : les personnages LPC |
+| `7-choix-de-l-equipe.png` | l'accueil : la classe de chaque héros, ◀ ▶ (#76) |
+| `8-equipe-d-essai.png` | une équipe d'essai en jeu : Éclaireuse (10,5 m), Chevalier (6 m), Druide, Barde |
 
 ## La suite
-- **#76 :** les classes d'essai à choisir à l'entrée.
+- **#76 :** les classes d'essai à choisir à l'entrée. C'est fait : à l'accueil, ◀ ▶ sur chaque héros, « Le kit D1 », « Au hasard ». Les fiches sont dans `CLASSES_ESSAI.fr.md`.
 - **#77 :** l'enclos agrandi du terrain dans le camp. C'est une proposition de plan, que le propriétaire du camp doit choisir.

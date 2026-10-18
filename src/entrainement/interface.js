@@ -3,7 +3,7 @@
 // de mesure (à copier, comme dans la Salle d'essai). Les clics sur le terrain deviennent des actions du combat.
 //   clic : choisir un héros, marcher (on voit le chemin et sa longueur), viser · Échap ou clic droit : annuler
 //   1 à 9 : une capacité · Tab : le héros suivant · molette : zoom · clic droit glissé : déplacer la vue
-import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, ORDRE_HEROS } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis } from './regles.js';
 import { CONTACT, metres } from './geometrie.js';
 
 export const name = 'interface';
@@ -30,7 +30,11 @@ export function init(g, options) {
   game = g;
   ({ combat, vue, canvas } = options);
   if (options.horloge) ui.horloge = options.horloge;
+  // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
+  ui.choix = (new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe).slice();
   construire();
+  if (options.mode === 'initiative') dom.accueil.querySelector('input[value=initiative]').checked = true;
+  if (options.demarrer) commencer();
   vue.surEvenement(surEvenement);
   canvas.addEventListener('pointermove', (e) => { ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.sale = true; });
   canvas.addEventListener('pointerleave', () => { ui.survol = null; ui.sale = true; });
@@ -66,9 +70,13 @@ function construire() {
   dom.accueil = el('div', { class: 'fond-terrain', id: 'accueil' }, el('section', { class: 'cadre-terrain' },
     el('h1', {}, 'Le terrain d’entraînement'),
     el('p', {}, 'Le combat D1 du kit papier (la Salle d’essai de Fraps), joué ', el('strong', {}, 'sans cases'),
-      ' : chaque héros a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
-    el('ul', { class: 'heros-accueil' }, ORDRE_HEROS.map((id) => el('li', {}, vue.portrait(id, 48),
-      el('span', {}, el('strong', {}, HEROS[id].nom), ` · ${HEROS[id].role} · ${HEROS[id].pv} PV · `, el('strong', {}, `${metres(HEROS[id].vitesse)} m par tour`))))),
+      ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
+    el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
+    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, ou des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester ; les vraies classes restent celles de chacun). ◀ ▶ pour changer.'),
+    dom.places = el('div', { class: 'places-accueil' }),
+    el('div', { class: 'boutons' },
+      el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { ui.choix = EQUIPE_KIT.slice(); dessinerPlaces(); } }, 'Le kit D1'),
+      el('button', { type: 'button', class: 'bouton-jeu discret', id: 'au-hasard', onclick: auHasard }, 'Au hasard')),
     el('fieldset', { class: 'mode-tour' }, el('legend', {}, 'Le mode de tour'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'equipe', checked: true }), ' Tour d’équipe : tous les héros, puis tous les ennemis'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'initiative' }), ' Ordre d’initiative : d20 + DEX, deux héros qui se suivent jouent ensemble')),
@@ -87,14 +95,51 @@ function construire() {
       el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => location.reload() }, 'Rejouer'),
       el('a', { class: 'bouton-jeu discret', href: RETOUR_CAMP }, 'Retour au camp'))));
   document.body.append(dom.haut, dom.equipe, dom.droite, dom.barre, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
+  dessinerPlaces();
   dessinerTout();
 }
+
+// --- Le choix de l'équipe (#76) ---------------------------------------------------------------------------------
+const CLE_CHOIX = 'dungeoncoop:equipe-entrainement';
+function lireChoix() { try { return equipeDepuis(localStorage.getItem(CLE_CHOIX)); } catch { return null; } }
+function changerClasse(k, sens) {
+  const i = CLASSES_ESSAI.indexOf(ui.choix[k]);
+  ui.choix[k] = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  dessinerPlaces();
+}
+function auHasard() {
+  const melange = CLASSES_ESSAI.slice().sort(() => Math.random() - 0.5);
+  ui.choix = melange.slice(0, 4);
+  dessinerPlaces();
+}
+function dessinerPlaces() {
+  dom.places.replaceChildren(...ui.choix.map((type, k) => {
+    const H = HEROS[type];
+    return el('article', { class: 'place-heros', dataset: { place: k, classe: type } },
+      el('header', {},
+        el('button', { type: 'button', class: 'fleche', 'aria-label': `Héros ${k + 1} : la classe d’avant`, onclick: () => changerClasse(k, -1) }, '◀'),
+        el('span', { class: 'qui-place' }, `Héros ${k + 1}`),
+        el('button', { type: 'button', class: 'fleche', 'aria-label': `Héros ${k + 1} : la classe d’après`, onclick: () => changerClasse(k, 1) }, '▶')),
+      vue.portrait(type, 56),
+      el('strong', { class: 'classe' }, H.nom, H.essai ? el('span', { class: 'essai' }, 'essai') : null),
+      el('span', { class: 'role' }, H.role),
+      el('span', { class: 'chiffres' }, `${H.pv} PV · `, el('strong', {}, `${metres(H.vitesse)} m par tour`)),
+      el('span', { class: 'liste-capacites' }, H.capacites.slice(0, 3).map((c) => CAPACITES[c].nom).join(' · ')),
+      el('span', { class: 'faiblesse' }, `Faiblesse : ${H.faiblesse}`));
+  }));
+}
+// l'adresse qui lance le combat avec cette équipe et ce mode
+export const adresseEquipe = (equipe, mode) => `?equipe=${equipe.join(',')}&mode=${mode}&go`;
 const notes = () => Object.fromEntries([...dom.fin.querySelectorAll('input')].map((i) => [{ fun: 'Fun sur 10', lent: 'Ce qui a semblé lent', cases: 'Sans cases', regle: 'Une règle à changer' }[i.name], i.value.trim()]));
 
 // --- Le déroulé -------------------------------------------------------------------------------------------------
 function vider() { const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true; }
 function commencer() {
-  combat.S.mode = dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe';
+  const mode = dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe';
+  try { localStorage.setItem(CLE_CHOIX, ui.choix.join(',')); } catch {}
+  // une autre équipe que celle de la page : on recharge avec elle (les personnages se préparent au chargement)
+  if (ui.choix.join(',') !== combat.S.equipe.join(',')) { location.search = adresseEquipe(ui.choix, mode); return; }
+  combat.S.mode = mode;
   dom.accueil.hidden = true;
   combat.commencer();
   vider();
@@ -112,7 +157,7 @@ function annuler() {
 }
 function surEvenement(e) {
   if (e.type === 'de') montrerDe(e);
-  else if (e.type === 'combo') banniere(`Combo ! ${HEROS[e.a].nom} → ${HEROS[e.b].nom} : ${e.quoi}`, 'combo');
+  else if (e.type === 'combo') banniere(`Combo ! ${combat.U(e.a)?.nom} → ${combat.U(e.b)?.nom} : ${e.quoi}`, 'combo');
   else if (e.type === 'round') banniere(`Round ${e.r}`);
   else if (e.type === 'phase' && e.phase === 'ennemis') banniere('Les ennemis jouent', 'ennemi');
   else if (e.type === 'phase' && e.phase === 'heros') {
@@ -258,11 +303,11 @@ function dessinerTout() {
     : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`;
   if (S.phase !== 'heros') dom.chrono.textContent = '';
   // les fiches des héros
-  dom.equipe.replaceChildren(...ORDRE_HEROS.map((id) => {
-    const u = combat.U(id), H = HEROS[id], actif = groupe.includes(id) && !u.ko;
+  dom.equipe.replaceChildren(...S.heros.map((id) => {
+    const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
     const etats = Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean).concat(u.expose ? ['Exposé'] : []);
     return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
-      vue.portrait(id, 40),
+      vue.portrait(u.type, 40),
       el('span', { class: 'fh-corps' },
         el('strong', {}, H.nom, u.ko ? ' · KO' : ''),
         el('span', { class: 'fh-pv' }, el('span', { class: 'jauge' }, el('span', { style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })), ` ${Math.max(0, u.pv)}/${u.pvMax}`),
