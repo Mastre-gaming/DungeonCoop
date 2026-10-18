@@ -37,6 +37,8 @@ import * as terrainSkill from './23_terrain.js';
 import * as armurerieSkill from './26_armurerie.js';
 import * as murailleSkill from './32_muraille.js';
 import './jeu.css';
+import './cadres.css';   // les jetons de DESIGN.fr.md
+import './hud.css';      // l'habillage épique du HUD (DESIGN.fr.md), après tout le reste
 
 const query = new URLSearchParams(location.search);
 const visite = query.has('visite');

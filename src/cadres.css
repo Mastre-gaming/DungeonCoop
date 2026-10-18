@@ -1,0 +1,13 @@
+/* Les jetons du look (DESIGN.fr.md §2 et §3), les seuls à employer, pour toutes les pages : le camp, le terrain
+   d'entraînement, l'armurerie. Chargé après panneau.css et jeu.css (qui gardent d'anciennes valeurs), avant le CSS de la page.
+   Les textures (--tex-bois, --cadre-bois, --cadre-fin…) sont dessinées par src/33_cadres.js (habiller()). */
+:root {
+  --bois-fonce: #2b1c1d; --bois: #573726; --bois-clair: #85581b; --bois-creux: #3b2716; --bois-nuit: #1e130c;
+  --parchemin: #f4ead2; --parchemin-encre: #2a2333; --encre: #2a2333; --or: #ffd35a; --or-jauge: #e0b04a; --creme: #fff3dc;
+  --rouge-cire: #b8322a; --erreur: #a3261c; --braise: #e8792a; --herbe: #2f5a2a;
+  --laiton: #b78c41; --laiton-clair: #ccbd7b; --laiton-fonce: #986a20;
+  --titre: "Pixelify Sans", "Courier New", monospace; --texte: "Source Sans 3", system-ui, sans-serif;
+  --contour-or: 0 2px 0 var(--bois-nuit), 2px 0 0 var(--bois-nuit), -2px 0 0 var(--bois-nuit), 0 -1px 0 var(--bois-nuit);
+  --contour-noir: 0 2px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+}
+body { font-family: var(--texte); }

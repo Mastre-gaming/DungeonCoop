@@ -1,0 +1,152 @@
+/* Le HUD « épique » du camp (DESIGN.fr.md §1, direction C) : bois veiné, coins de laiton, double liseré or, loups sculptés.
+   Les textures (--tex-bois, --cadre-bois, --rivet…) sont dessinées en pixels par src/33_cadres.js et posées sur <html>.
+   Chargé après jeu.css et panneau.css : il habille toutes les pièces du HUD et range l'écran (DESIGN §6). */
+
+/* (les jetons de couleur et de police : cadres.css) */
+
+/* --- Le cadre de bois épique : toutes les boîtes du HUD ------------------------------------------------------------------ */
+.cadre-epique, .banniere-campagne, .barre-action, .groupe-jeu, .cadres-groupe, .chronique-camp, .messagerie-jeu, .sacoche, .rumeurs,
+.carte-campagne, .dialogue, .renommee-jeu, .panneau-missions {
+  border: 14px solid var(--bois-fonce); border-radius: 0;
+  border-image: var(--cadre-bois) 32 / 32px / 6px repeat;
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois);
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .35);
+  image-rendering: pixelated;
+}
+/* dedans, le parchemin : la chronique et la carte de campagne se lisent */
+.chronique-camp, .carte-campagne { background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); }
+
+/* --- En haut au centre : la bannière de campagne ------------------------------------------------------------------------- */
+.banniere-campagne { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); z-index: 9; box-sizing: border-box; min-width: 400px; max-width: calc(100vw - 760px);
+  display: grid; justify-items: center; gap: 4px; padding: 0 18px 4px; cursor: pointer; color: var(--creme); }
+.banniere-campagne[hidden] { display: none; }
+.banniere-campagne .titre-campagne { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 15px/20px var(--titre); color: var(--or); letter-spacing: .08em; text-transform: uppercase; text-shadow: var(--contour-or); }
+.jauge-campagne, .jauge-heros { position: relative; display: block; box-sizing: border-box; overflow: hidden;
+  background: var(--bois-nuit); border: 2px solid var(--bois-fonce); box-shadow: 0 0 0 2px var(--bois-clair); }
+.jauge-campagne { width: min(340px, 100%); height: 16px; }
+.jauge-campagne .rempli, .jauge-heros .rempli { position: absolute; inset: 0 auto 0 0; background: var(--or-jauge); box-shadow: inset 0 2px 0 var(--or), inset 0 -3px 0 var(--laiton-fonce); }
+.jauge-campagne .texte, .jauge-heros .texte { position: relative; display: block; text-align: center; white-space: nowrap; color: #fff7e6; text-shadow: var(--contour-noir); }
+.jauge-campagne .texte { font: 500 11px/12px var(--titre); }
+/* les deux flammes rouges qui pendent sous la bannière */
+.banniere-campagne .flamme { position: absolute; top: calc(100% + 4px); width: 20px; height: 44px; background: var(--flamme) 0 0 / 20px 44px; pointer-events: none; }
+.banniere-campagne .flamme.gauche { left: 6px; }
+.banniere-campagne .flamme.droite { right: 6px; }
+.banniere-campagne:hover .titre-campagne { color: #fff1b0; }
+.banniere-campagne:focus-visible { outline: 3px solid var(--or); outline-offset: 8px; }
+
+/* --- En haut à gauche : le médaillon du héros, puis « Jouer à plusieurs » et les panneaux de gauche ------------------- */
+.colonne-gauche { position: fixed; left: 14px; top: 12px; bottom: 132px; z-index: 8; width: 362px; display: flex; flex-direction: column; align-items: flex-start; gap: 18px; pointer-events: none; }
+.colonne-gauche > * { pointer-events: auto; flex: none; }
+.cadre-heros { position: relative; width: 360px; height: 136px; }
+.cadre-heros[hidden] { display: none; }
+.cadre-heros .medaillon { position: absolute; left: 0; top: 0; width: 120px; height: 120px; image-rendering: pixelated; filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .45)); }
+/* le bout arrondi fait 42 px : le texte et la jauge s'arrêtent avant la courbe (padding droit 46 px) */
+.bandeau-heros { position: absolute; left: 70px; top: 22px; width: 290px; height: 82px; box-sizing: border-box; padding: 8px 46px 8px 60px;
+  display: grid; align-content: center; gap: 5px; color: var(--creme);
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); border: 4px solid var(--bois-nuit); border-radius: 6px 42px 42px 6px;
+  box-shadow: inset 0 0 0 2px var(--laiton-clair), inset 0 0 0 3px var(--laiton-fonce), inset 0 0 0 5px var(--bois-fonce), 0 5px 0 rgba(0, 0, 0, .4); image-rendering: pixelated; }
+.bandeau-heros p { margin: 0; display: flex; justify-content: space-between; gap: 8px; white-space: nowrap; }
+.bandeau-heros .ligne-nom { font: 700 16px/18px var(--titre); text-shadow: var(--contour-or); }
+.bandeau-heros .nom { overflow: hidden; text-overflow: ellipsis; }
+.bandeau-heros .total { color: var(--or); }
+.jauge-heros { height: 16px; }
+.jauge-heros .texte { font: 500 11px/12px var(--titre); }
+.bandeau-heros .ligne-titre { font: 500 12px/14px var(--titre); color: var(--laiton-clair); }
+.bandeau-heros .ligne-titre span:first-child { overflow: hidden; text-overflow: ellipsis; }
+.bandeau-heros .quetes { color: var(--creme); }
+.cadre-heros .ecu { position: absolute; left: 44px; top: 108px; width: 32px; height: 28px; margin: 0; box-sizing: border-box; padding-top: 3px;
+  background: var(--ecu) 0 0 / 32px 28px; image-rendering: pixelated; text-align: center; font: 700 13px/16px var(--titre); color: #fff7e6; text-shadow: 0 1px 0 var(--bois-nuit); }
+
+/* « Jouer à plusieurs » et les panneaux de gauche, dans la colonne */
+.colonne-gauche .groupe-jeu, .colonne-gauche .cadres-groupe, .colonne-gauche .chronique-camp, .colonne-gauche .messagerie-jeu {
+  position: static; inset: auto; width: 100%; max-height: none; box-sizing: border-box; padding: 4px 6px; }
+.colonne-gauche .groupe-jeu { width: 268px; }
+.colonne-gauche .cadres-groupe, .colonne-gauche .chronique-camp { flex: 0 1 auto; min-height: 0; overflow: auto; }
+/* les messages : une colonne souple, le fil prend la place qui reste (quel que soit le nombre de rangées, onglets compris) */
+.colonne-gauche .messagerie-jeu { flex: 1 1 auto; min-height: 220px; display: flex; flex-direction: column; gap: 6px; }
+.colonne-gauche .messagerie-jeu > * { flex: none; }
+.colonne-gauche .messagerie-jeu > .fil-messages { flex: 1 1 auto; min-height: 60px; }
+.colonne-gauche > [hidden] { display: none; }
+
+/* --- À droite : la renommée, le suivi des quêtes en or (sans cadre), les annonces --------------------------------------- */
+.colonne-droite { right: 14px; top: 14px; width: 268px; gap: 14px; }
+.colonne-droite .renommee-jeu { padding: 2px 6px; }
+.suivi-quetes { background: none; border: 0; padding: 0 4px; gap: 6px; text-shadow: var(--contour-noir); font: 14px/1.3 var(--texte); }
+.suivi-quetes h2 { font: 700 15px var(--titre); color: var(--or); }
+.suivi-quetes ol { gap: 8px; }
+.suivi-quetes li { display: grid; grid-template-columns: 1fr; gap: 1px; }
+.suivi-quetes .titre-q { font: 700 14px/1.25 var(--titre); color: var(--or); }
+.suivi-quetes .taille { grid-column: 1; font: 500 12px var(--titre); color: var(--laiton-clair); }
+.suivi-quetes .num { font: 500 12px var(--titre); color: var(--creme); }
+.suivi-quetes .petit { font-size: 13px; color: var(--creme); }
+.suivi-quetes .urgence-haute { color: #ff9c80; }
+.suivi-quetes .urgence-moyenne { color: var(--or); }
+.suivi-quetes .urgence-basse { color: var(--creme); }
+.annonce-renommee { background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); image-rendering: pixelated; }
+
+/* --- En bas : la barre d'action entre ses embouts et ses deux loups sculptés --------------------------------------------- */
+.socle-barre { position: fixed; left: 50%; bottom: 6px; transform: translateX(-50%); z-index: 9; display: flex; align-items: flex-end; pointer-events: none; }
+.socle-barre[hidden] { display: none; }
+.socle-barre > * { pointer-events: auto; }
+.socle-barre .barre-action { position: relative; left: auto; bottom: auto; transform: none; gap: 5px; padding: 8px 10px; margin-bottom: 0; }
+.barre-action .rivet { position: absolute; width: 10px; height: 10px; background: var(--rivet) 0 0 / 10px 10px; image-rendering: pixelated; pointer-events: none; }
+.barre-action .rivet.hg { left: 25%; top: -12px; } .barre-action .rivet.hd { right: 25%; top: -12px; }
+.barre-action .rivet.bg { left: 25%; bottom: -12px; } .barre-action .rivet.bd { right: 25%; bottom: -12px; }
+/* la case (DESIGN §5) : 52 × 52, un creux de bois, la touche en bas à droite */
+.barre-action .case { width: 52px; height: 52px; background: var(--bois-creux); border: 2px solid var(--bois-nuit); border-radius: 4px;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .08), inset 0 -3px 0 rgba(0, 0, 0, .35); }
+.barre-action .case kbd { right: 3px; bottom: 2px; font: 700 11px var(--titre); color: #ffe2a8; }
+.barre-action .case:hover:not(.bientot) { border-color: var(--or); }
+.barre-action .case.active { border-color: var(--or); box-shadow: 0 0 0 2px var(--or), inset 0 -3px 0 rgba(0, 0, 0, .35); }
+.barre-action .case .pastille { background: var(--rouge-cire); border-color: var(--bois-fonce); }
+.socle-barre .embout { align-self: center; width: 16px; height: 88px; background: var(--embout) 0 0 / 16px 88px; image-rendering: pixelated; position: relative; z-index: 1; }
+.socle-barre .embout.gauche { margin-right: -2px; }
+.socle-barre .embout.droite { margin-left: -2px; transform: scaleX(-1); }
+.socle-barre .loup { display: flex; flex-direction: column; align-items: center; }
+.socle-barre .loup.gauche { margin-right: -6px; }
+.socle-barre .loup.droite { margin-left: -6px; }
+.socle-barre .loup-bois { width: 124px; height: 82px; margin-bottom: -2px; background: var(--loup) -2px -46px / 128px 128px no-repeat; image-rendering: pixelated;
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .5)); }
+.socle-barre .loup.droite .loup-bois { transform: scaleX(-1); }
+.socle-barre .socle { width: 116px; height: 12px; background: var(--socle) 0 0 / 116px 12px; image-rendering: pixelated; }
+
+/* --- Les panneaux : au milieu, au-dessus de la barre ; à gauche, dans la colonne ----------------------------------------- */
+.sacoche, .rumeurs, .carte-campagne { bottom: 136px; max-height: calc(100vh - 260px); padding: 4px 8px; }
+.carte-campagne .chemin::before { border-top-color: var(--laiton-fonce); }
+.sacoche .case-objet { background: var(--bois-creux); border-color: var(--bois-nuit); }
+.sacoche h2, .rumeurs h2, .cadres-groupe h2, .messagerie-jeu h2, .groupe-jeu h2 { font: 700 16px var(--titre); color: var(--or); letter-spacing: .04em; text-shadow: var(--contour-or); }
+.chronique-camp h2, .carte-campagne h2 { font: 700 16px var(--titre); color: #7a3b10; letter-spacing: .04em; }
+.dialogue { bottom: 128px; padding: 4px; }
+.dialogue .dial-corps { background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); }
+.renommee-jeu .qui { text-shadow: var(--contour-or); }
+.renommee-jeu h2 { border-top-color: var(--laiton-fonce); color: var(--laiton-clair); }
+
+/* Ce qui était en haut au milieu passe sous la bannière ; ce qui était en bas passe au-dessus de la barre */
+.bandeau-radio { top: 112px; }
+.annonce-terrain { top: 150px; }
+.crieur { bottom: 136px; left: 372px; }
+
+/* L'aide en bas à gauche : un parchemin, seulement sur un écran assez large pour ne pas toucher les loups */
+#aide { background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); image-rendering: pixelated; border-color: var(--bois-fonce); }
+@media (max-width: 1520px) { #aide { display: none; } }
+
+/* --- Petits écrans : pas de loups, une barre plus courte, le médaillon seul ---------------------------------------------- */
+@media (max-width: 1100px) {
+  .socle-barre .loup { display: none; }
+  .banniere-campagne { min-width: 0; max-width: calc(100vw - 420px); }
+  .banniere-campagne .flamme { display: none; }
+}
+@media (max-width: 900px) {
+  .colonne-droite { display: none; }
+  .banniere-campagne { left: auto; right: 14px; transform: none; max-width: calc(100vw - 400px); }
+}
+@media (max-width: 640px) {
+  .socle-barre .embout { display: none; }
+  .barre-action .case { width: 40px; height: 40px; }
+  .barre-action .case .icone { width: 28px; height: 28px; }
+  .bandeau-heros { width: 220px; }
+  .banniere-campagne { display: none; }
+  .colonne-gauche { bottom: 90px; width: calc(100vw - 28px); }
+}
+@media (prefers-reduced-motion: reduce) { .banniere-campagne:hover .titre-campagne { color: var(--or); } }

@@ -1,7 +1,8 @@
 // La campagne (C) : l'avancée du projet, façon RPG (CAMP §8 bis). C'est « Avancée du projet » du dashboard
 // (src/widgets/avancee.js), avec les mêmes sources : le tableau « Milestones » de GAME_SPEC.md (le statut de chaque
 // jalon, la source officielle) et les jalons GitHub (la part de missions rentrées de chacun).
-//   la barre de campagne : toujours visible au-dessus de la barre d'action, comme une barre d'expérience ;
+//   la bannière de campagne : toujours visible en haut au centre (DESIGN.fr.md §1, direction C), le chapitre en cours
+//     en lettres d'or et sa jauge, dans un cadre de bois à coins de laiton, deux flammes rouges qui pendent dessous ;
 //   la carte de campagne : les jalons D1 à M4 comme des étapes sur un chemin, le détail au clic.
 
 export const name = 'campagne';
@@ -82,7 +83,8 @@ async function lire() {
 export function init(g, options) {
   game = g;
   visite = options.visite;
-  barre = el('div', { id: 'barre-campagne', class: 'barre-campagne', role: 'button', tabindex: '0', title: 'La campagne (C)', onclick: () => options.ouvrirCarte?.() });
+  barre = el('div', { id: 'barre-campagne', class: 'banniere-campagne', role: 'button', tabindex: '0', title: 'La campagne (C)', onclick: () => options.ouvrirCarte?.(),
+    onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); options.ouvrirCarte?.(); } } });
   carte = el('section', { id: 'carte-campagne', class: 'carte-campagne', hidden: true, role: 'dialog', 'aria-label': 'La carte de campagne' });
   document.body.append(barre, carte);
   if (visite) barre.hidden = true;
@@ -95,8 +97,11 @@ function dessinerBarre() {
   const r = etat.resultat, j = r?.courant;
   const pct = j ? Math.round(j.part * 100) : 0;
   barre.replaceChildren(
-    el('span', { class: 'rempli', style: `width:${pct}%` }),
-    el('span', { class: 'texte' }, j ? `${j.id} · ${j.titre} ― ${j.fermees}/${j.total} missions · ${pct} %` : r ? 'La campagne est terminée !' : 'La campagne…'));
+    el('span', { class: 'flamme gauche', 'aria-hidden': 'true' }), el('span', { class: 'flamme droite', 'aria-hidden': 'true' }),
+    el('span', { class: 'titre-campagne' }, j ? `${j.id} · ${j.titre}` : r ? 'La campagne est terminée !' : 'La campagne'),
+    el('span', { class: 'jauge-campagne' },
+      el('span', { class: 'rempli', style: `width:${pct}%` }),
+      el('span', { class: 'texte' }, j ? `${j.fermees}/${j.total} missions · ${pct} %` : r ? 'tous les chapitres sont faits' : 'la carte se lit…')));
   barre.setAttribute('aria-label', j ? `La campagne : ${j.id}, ${pct} %` : 'La campagne');
 }
 

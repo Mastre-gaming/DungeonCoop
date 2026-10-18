@@ -1,8 +1,12 @@
-// Le HUD du camp, façon RPG (CAMP §8 bis) : une barre d'action en bas de l'écran, une case par partie du dashboard,
-// chacune avec son icône (des pièces LPC) et sa touche ; un seul panneau ouvert à la fois.
-// Et le suivi de quêtes, toujours visible sous la renommée : tes missions en cours.
-// Porte T : le journal de quêtes d'abord ; les autres cases s'allument une à une, chacune validée sur capture.
+// Le HUD du camp, façon RPG (CAMP §8 bis), habillé « épique » (DESIGN.fr.md §1, direction C) :
+//   en haut à gauche, le médaillon du héros (le vrai sprite LPC devant une scène du camp de nuit, l'anneau de laiton),
+//     son bandeau (nom, renommée, la jauge de la phase) et l'écu du niveau ; dessous, « Jouer à plusieurs », puis les panneaux de gauche ;
+//   en bas, la barre d'action entre deux loups sculptés sur leur socle de laiton : une case par partie du dashboard,
+//     chacune avec son icône (des pièces LPC) et sa touche ; un seul panneau ouvert à la fois ;
+//   à droite, la renommée, puis le suivi de quêtes en or, sans cadre, puis les annonces.
+// La bannière de campagne, en haut au centre, est dans 18_campagne.js ; les textures et les pièces dessinées, dans 33_cadres.js.
 import { etatDe, tailleDe, urgenceDe, URGENCES, POINTS } from './10_missions.js';
+import { habiller, medaillon } from './33_cadres.js';
 
 export const name = 'hud';
 export const always = true;
@@ -54,28 +58,41 @@ function icone(images, src) {
   return c;
 }
 
-let game, missions, sentinelle, panneau, images, visite, barre, suivi, panneaux = {};
+let game, missions, sentinelle, panneau, images, visite, renommee, barre, socleBarre, suivi, colonneGauche, cadreHeros, panneaux = {};
+let signature = '', attente = 0;
+
+// Les panneaux qui s'ouvrent à gauche, sous « Jouer à plusieurs » (les autres s'ouvrent au milieu, au-dessus de la barre).
+const A_GAUCHE = ['#groupe', '#groupe-cadres', '#chronique', '#messagerie'];
 
 export function init(g, options) {
   game = g;
-  ({ missions, sentinelle, panneau, images, visite } = options);
+  ({ missions, sentinelle, panneau, images, visite, renommee } = options);
+  habiller();
   for (const c of CASES) game.input.bindings[`hud-${c.id}`] = [c.touche];
   game.input.bindings['fermer-hud'] = ['Escape'];
   panneaux = { journal: panneau, ...(options.panneaux ?? {}) };
   for (const c of CASES) c.pret = !!panneaux[c.id];
 
   barre = el('nav', { id: 'barre-action', class: 'barre-action', 'aria-label': 'Barre d’action' },
+    ['hg', 'hd', 'bg', 'bd'].map((p) => el('span', { class: `rivet ${p}`, 'aria-hidden': 'true' })),
     CASES.map((c) => el('button', {
       class: `case${c.pret ? '' : ' bientot'}`, type: 'button', 'data-case': c.id,
       title: c.pret ? `${c.nom} (${c.touche.replace('Key', '')})` : `${c.nom} : bientôt`,
       'aria-label': c.pret ? c.nom : `${c.nom}, bientôt`, 'aria-disabled': c.pret ? null : 'true',
       onclick: () => activer(c.id),
     }, icone(images, c.icone), el('kbd', { 'data-key': c.touche }, c.touche.replace('Key', '')))));
+  // la barre entre ses embouts de laiton et ses deux loups sculptés, chacun sur son socle, tournés vers elle
+  const loup = (cote) => el('div', { class: `loup ${cote}`, 'aria-hidden': 'true' }, el('div', { class: 'loup-bois' }), el('div', { class: 'socle' }));
+  socleBarre = el('div', { class: 'socle-barre' }, loup('gauche'), el('span', { class: 'embout gauche', 'aria-hidden': 'true' }), barre,
+    el('span', { class: 'embout droite', 'aria-hidden': 'true' }), loup('droite'));
   suivi = el('section', { id: 'suivi', class: 'suivi-quetes', 'aria-label': 'Tes quêtes en cours' });
+  // la colonne de gauche : le médaillon du héros, puis « Jouer à plusieurs » et les panneaux de gauche (rangés plus tard)
+  cadreHeros = el('section', { id: 'cadre-heros', class: 'cadre-heros', 'aria-label': 'Ton héros' });
+  colonneGauche = el('div', { class: 'colonne-gauche' }, cadreHeros);
   // la colonne de droite : la plaque de renommée, le suivi, puis les annonces
   const colonne = el('div', { class: 'colonne-droite' }, options.renommee?.plaque, suivi, options.renommee?.annonces);
-  document.body.append(barre, colonne);
-  if (visite) { barre.hidden = true; suivi.hidden = true; }
+  document.body.append(socleBarre, colonneGauche, colonne);
+  if (visite) { socleBarre.hidden = true; barre.hidden = true; suivi.hidden = true; cadreHeros.hidden = true; }   // (la barre aussi : d'autres parties lisent barre.hidden)
   // les messages non lus : une pastille sur la case M
   game.bus.on('messagerie:nonlus', ({ n }) => {
     const c = barre.querySelector('[data-case="lettres"]');
@@ -88,7 +105,52 @@ export function init(g, options) {
   game.bus.on('missions:maj', dessinerSuivi);
   game.bus.on('nom:change', dessinerSuivi);
   dessinerSuivi();
+  dessinerHeros();
   return api;
+}
+
+// Range dans la colonne de gauche « Jouer à plusieurs » et les panneaux de gauche, créés après le HUD.
+function ranger() {
+  for (const sel of A_GAUCHE) {
+    const n = document.querySelector(sel);
+    if (n && n.parentNode !== colonneGauche) colonneGauche.append(n);
+  }
+}
+
+// Ce que montre le médaillon : qui tu es, ta renommée, ta place dans la phase, tes missions rentrées (le niveau).
+export function fiche(qui, r, taches = []) {
+  const login = qui?.github ?? null, l = login?.toLowerCase();
+  const total = login && r ? r.parPersonne?.[login] ?? 0 : null;
+  const phase = r?.parPhase?.[r.phaseEnCours] ?? {}, moiPhase = login ? phase[login] ?? 0 : 0;
+  const tete = Math.max(0, ...Object.values(phase));
+  const rang = login && moiPhase ? 1 + Object.values(phase).filter((n) => n > moiPhase).length : null;
+  const niveau = login && r ? Object.values(r.gains ?? {}).filter((g) => g.qui.some((q) => q.toLowerCase() === l)).length : null;
+  const enCours = login ? taches.filter((t) => etatDe(t) === 'encours' && (t.assignees ?? []).some((a) => a.login.toLowerCase() === l)).length : 0;
+  return { nom: qui?.nom ?? 'Voyageur', login, total, titre: login ? r?.titres?.[login] ?? null : null, moiPhase, tete, rang, niveau, enCours };
+}
+
+// Le médaillon et son bandeau. Redessiné seulement quand ce qu'il montre change.
+function dessinerHeros() {
+  if (!cadreHeros || visite) return;
+  const f = fiche(sentinelle?.qui, renommee?.resultat, missions.taches());
+  const sig = JSON.stringify(f);
+  if (sig === signature) return;
+  signature = sig;
+  const part = f.tete ? Math.round((f.moiPhase / f.tete) * 100) : 0;
+  const jauge = f.login
+    ? el('div', { class: 'jauge-heros', role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(f.tete || 1), 'aria-valuenow': String(f.moiPhase), 'aria-label': 'Ta renommée dans la phase, face à la tête du podium' },
+      el('span', { class: 'rempli', style: `width:${part}%` }),
+      el('span', { class: 'texte' }, f.rang === 1 ? `✦ ${f.moiPhase} · en tête de la phase` : `✦ ${f.moiPhase} / ${f.tete} · la tête de la phase`))
+    : null;
+  cadreHeros.replaceChildren(
+    el('div', { class: 'bandeau-heros' },
+      el('p', { class: 'ligne-nom' }, el('span', { class: 'nom' }, f.nom), f.total != null ? el('span', { class: 'total', title: 'Toute ta renommée' }, `✦ ${f.total}`) : null),
+      jauge,
+      el('p', { class: 'ligne-titre' },
+        el('span', {}, f.login ? `${f.titre ?? 'Bâtisseur'}${f.rang ? ` · ${f.rang}${f.rang === 1 ? 'er' : 'e'}` : ''}` : 'Dis ton nom à la sentinelle'),
+        f.login ? el('span', { class: 'quetes' }, `⚔ ${f.enCours} quête${f.enCours > 1 ? 's' : ''}`) : null)),
+    Object.assign(medaillon(images.heros), { className: 'medaillon', role: 'img', ariaLabel: `Le portrait de ${f.nom}` }),
+    ...(f.niveau != null ? [el('p', { class: 'ecu', title: 'Ton niveau : tes missions rentrées', 'aria-label': `Niveau ${f.niveau} : ${f.niveau} mission${f.niveau > 1 ? 's' : ''} rentrée${f.niveau > 1 ? 's' : ''}` }, String(f.niveau))] : []));   // (replaceChildren écrirait « null »)
 }
 
 // Une case : ouvre son panneau (et ferme les autres : un seul à la fois), ou le referme s'il est ouvert.
@@ -109,6 +171,7 @@ function brancher(id, p) {
   const b = barre.querySelector(`[data-case="${id}"]`);
   b.classList.remove('bientot'); b.removeAttribute('aria-disabled');
   b.title = `${c.nom} (${c.touche.replace('Key', '')})`; b.setAttribute('aria-label', c.nom);
+  ranger();
 }
 
 const rangUrgence = (t) => ({ haute: 0, moyenne: 1, basse: 2 })[urgenceDe(t)] ?? 3;
@@ -122,8 +185,9 @@ function dessinerSuivi() {
   suivi.hidden = false;
   const lignes = miennes.slice(0, 4).map((t) => {
     const taille = tailleDe(t), u = urgenceDe(t);
-    return el('li', {}, el('span', { class: 'num' }, `#${t.number}`), el('span', { class: 'titre-q' }, t.title),
-      taille || u ? el('span', { class: 'taille' }, taille ? `${taille} · ✦${POINTS[taille]}` : '', u ? el('span', { class: `urgence urgence-${u}` }, `${taille ? ' · ' : ''}urgence ${URGENCES[u]}`) : null) : null);
+    // comme le suivi d'objectifs d'un RPG : le titre en or, puis le numéro, la taille et l'urgence
+    return el('li', {}, el('span', { class: 'titre-q' }, t.title),
+      el('span', { class: 'taille' }, el('span', { class: 'num' }, `#${t.number}`), taille ? ` · ${taille} · ✦${POINTS[taille]}` : '', u ? el('span', { class: `urgence urgence-${u}` }, ` · urgence ${URGENCES[u]}`) : null));
   });
   suivi.replaceChildren(...[
     el('h2', {}, 'Tes quêtes'),
@@ -132,19 +196,25 @@ function dessinerSuivi() {
   ].filter(Boolean));   // (replaceChildren écrirait « null » en texte)
 }
 
-export function update() {
+export function update(dt) {
   if (visite) return;
+  if ((attente -= dt) <= 0) { attente = 0.5; ranger(); dessinerHeros(); }   // deux fois par seconde : le médaillon suit la renommée et le nom
   // les touches de la barre (pas pendant la saisie d'un nom : l'entrée ignore les touches tapées dans un champ)
   for (const c of CASES) if (game.input.take(`hud-${c.id}`)) activer(c.id);
   for (const [id, p] of Object.entries(panneaux)) barre.querySelector(`[data-case="${id}"]`)?.classList.toggle('active', !!p.ouvert);
   if (game.input.take('fermer-hud')) for (const p of Object.values(panneaux)) if (p.ouvert && p !== panneau) p.fermer();
 }
 
-export function dispose() { barre?.remove(); suivi?.remove(); }
+export function dispose() { socleBarre?.remove(); suivi?.remove(); colonneGauche?.remove(); }
 
 export const api = {
-  CASES, activer, brancher,
+  CASES, activer, brancher, fiche,
   get barre() { return barre; },
+  get socleBarre() { return socleBarre; },
   get suivi() { return suivi; },
+  get cadreHeros() { return cadreHeros; },
+  get colonneGauche() { return colonneGauche; },
   majSuivi: dessinerSuivi,
+  majHeros() { signature = ''; dessinerHeros(); },
+  ranger,
 };

@@ -1,11 +1,13 @@
 /* Le terrain d'entraînement : le bois et le parchemin du camp (panneau.css, jeu.css), posés autour du terrain.
    Le bois sombre (la barre, la fiche de la capacité, la carte de la cible) vient des maquettes : design/ui-combat/. */
-.plaque { position: fixed; z-index: 8; background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce);
-  box-shadow: inset 0 0 0 2px var(--bois-clair), 0 3px 0 rgba(0,0,0,.25); border-radius: 4px; font: 14px/1.35 var(--texte); }
+/* L'habillage épique (DESIGN.fr.md §1) : les plaques de parchemin dans un cadre fin à coins de laiton ; le bois sombre (la barre,
+   la fiche de la capacité, la carte de la cible, la fin de phase) dans le grand cadre de bois veiné. Textures : src/33_cadres.js. */
+.plaque { position: fixed; z-index: 8; background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); color: var(--parchemin-encre); image-rendering: pixelated;
+  border: 8px solid var(--bois-fonce); border-image: var(--cadre-fin) 20 / 20px / 4px repeat; border-radius: 0; box-shadow: 0 4px 0 rgba(0,0,0,.3); font: 14px/1.35 var(--texte); }
 .bois { --bois-sombre: #2b1c1d; --encoche: #1e161e; --filet: #85581b; --filet-doux: #5a3b22; --gris-chaud: #a8956f;
-  background: linear-gradient(180deg, #3b2716 0%, var(--bois-sombre) 100%); color: #fff7e6; border: 3px solid var(--encoche); border-radius: 2px;
-  box-shadow: inset 0 0 0 2px var(--filet), inset 0 0 0 4px var(--bois-sombre), 0 4px 0 rgba(0,0,0,.4); font: 500 13px/1.3 var(--titre); }
-.bois h2 { margin: 0; font: 700 1.25rem var(--titre); color: var(--creme); }
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); color: #fff7e6; image-rendering: pixelated;
+  border: 14px solid var(--bois-nuit); border-image: var(--cadre-bois) 32 / 32px / 6px repeat; border-radius: 0; box-shadow: 0 6px 0 rgba(0,0,0,.4); font: 500 13px/1.3 var(--titre); }
+.bois h2 { margin: 0; font: 700 1.25rem var(--titre); color: var(--or); text-shadow: var(--contour-or); }
 /* les tampons carrés : action en or, bonus en bleu */
 .tampon { font: 700 11px var(--titre); letter-spacing: .06em; padding: 1px 6px; background: #ffd35a; color: #2b1c1d; }
 .tampon.bonus { background: #2f5fa8; color: #dbe8ff; }
@@ -33,7 +35,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .haut-terrain .bouton-jeu, .barre-terrain .bouton-jeu, .cadre-terrain .bouton-jeu { font-size: .9rem; padding: 4px 10px; text-decoration: none; display: inline-block; }
 
 /* les héros, à gauche : PV et ressource sur une ligne, la jauge dessous */
-.equipe-terrain { position: fixed; left: 8px; top: 60px; z-index: 8; display: grid; gap: 6px; width: 284px; }
+.equipe-terrain { position: fixed; left: 8px; top: 72px; z-index: 8; display: grid; gap: 12px; width: 284px; }   /* (12 px : les coins de laiton ne se touchent pas) */
 .fiche-heros { position: static; display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 6px 8px; text-align: left; cursor: pointer; }
 .fiche-heros .portrait-terrain { width: 40px; height: 40px; image-rendering: pixelated; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; }
 .fiche-heros .fh-corps { display: grid; gap: 2px; min-width: 0; font: 500 12px var(--titre); }
@@ -50,7 +52,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .fiche-heros.attend { opacity: .72; }
 .fiche-heros.ko { filter: grayscale(.9); opacity: .6; }
 .fh-etats { color: #8a3d12; font-weight: 600; }
-.jauge { display: block; height: 6px; background: #c9b48c; border: 1px solid var(--bois-fonce); border-radius: 2px; overflow: hidden; }
+.jauge { display: block; height: 7px; background: var(--bois-nuit); border: 2px solid var(--bois-fonce); box-shadow: 0 0 0 1px var(--bois-clair); overflow: hidden; }
 .jauge > span { display: block; height: 100%; background: #3f9a3b; transition: width .25s; }
 .jauge > span.bas { background: #d8742c; }
 
@@ -163,9 +165,10 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 /* l'accueil et la fin */
 .fond-terrain { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; background: rgba(20, 14, 8, .55); overflow: auto; }
 .fond-terrain[hidden] { display: none; }
-.cadre-terrain { width: min(720px, 100%); box-sizing: border-box; background: var(--parchemin); color: var(--parchemin-encre); border: 6px solid var(--bois-fonce);
-  box-shadow: inset 0 0 0 3px var(--bois-clair), 0 10px 0 rgba(0,0,0,.25); border-radius: 6px; padding: 16px 20px; font: 15px/1.45 var(--texte); display: grid; gap: 10px; }
-.cadre-terrain h1 { margin: 0; font: 700 1.5rem var(--titre); color: var(--bois-fonce); }
+.cadre-terrain { width: min(720px, 100%); box-sizing: border-box; background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); color: var(--parchemin-encre); image-rendering: pixelated;
+  border: 14px solid var(--bois-fonce); border-image: var(--cadre-bois) 32 / 32px / 6px repeat; border-radius: 0; box-shadow: 0 8px 0 rgba(0,0,0,.3);
+  padding: 8px 14px; font: 15px/1.45 var(--texte); display: grid; gap: 10px; }
+.cadre-terrain h1 { margin: 0; font: 700 1.5rem var(--titre); color: #7a3b10; letter-spacing: .04em; }
 .cadre-terrain p { margin: 0; }
 .heros-accueil { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .heros-accueil li { display: flex; gap: 10px; align-items: center; }

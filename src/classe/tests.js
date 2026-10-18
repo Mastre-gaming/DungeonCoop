@@ -2,6 +2,7 @@
 // les 4 classes d'essai du terrain : leurs PV et leurs points doivent retomber juste), les règles du cadre une à une,
 // puis l'éditeur piloté comme une personne (vrais clics sur les compteurs, les onglets, l'import, le cadre retouché).
 import { budgetCaracs, budgetClasse, fiche, verifier, degats, ficheTexte, normaliser, classeVide, capaciteVide, coutCarac, modificateur } from './budget.js';
+import { testsHabillage } from '../34_tests_hud.js';
 
 export const name = 'armurerie';
 let ctx;
@@ -16,6 +17,8 @@ const saisir = (input, valeur) => { input.value = valeur; input.dispatchEvent(ne
 export async function selfTest(t) {
   const { editeur, cadre, exemples } = ctx;
   const X = Object.fromEntries(Object.entries(exemples).map(([k, v]) => [k, normaliser(clone(v), cadre)]));
+
+  testsHabillage(t, { '.haut-armurerie': 'le bandeau', '.page-armurerie': 'la page', '.apercu-armurerie': 'l’aperçu du build' });
 
   // --- Le budget, sur les fiches connues ------------------------------------------------------------------------
   t.group('le budget : les fiches connues retombent juste');

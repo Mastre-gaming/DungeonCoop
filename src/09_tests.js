@@ -4,6 +4,7 @@
 import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, MURAILLE, emprise } from './01_plan.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 import { LIEUX_AXES } from './10_missions.js';
+import { testsHudEpique } from './34_tests_hud.js';
 
 export const name = 'camp';
 let ctx;
@@ -237,6 +238,7 @@ export async function selfTest(t, game) {
   testsReseau(t, game);
   testsRenommee(t, game);
   testsHud(t, game);
+  testsHudEpique(t, ctx, game);   // le HUD épique (DESIGN.fr.md) : src/34_tests_hud.js
   testsBoite(t, game);
   await testsDirect(t, game);
   await testsTableauGithub(t, game);

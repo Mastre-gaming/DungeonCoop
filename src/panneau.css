@@ -12,7 +12,8 @@
 .panneau-missions h3, .panneau-missions h4, .panneau-missions h5 { margin: 0; }
 .panneau-missions p { margin: 0; }
 .tete { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
-.tete h3 { font: 700 1.3rem var(--titre); color: var(--creme); margin-right: auto; }
+.tete h3 { font: 700 1.3rem var(--titre); color: #ffd35a; margin-right: auto; letter-spacing: .06em; text-transform: uppercase;
+  text-shadow: 0 2px 0 #1e130c, 2px 0 0 #1e130c, -2px 0 0 #1e130c, 0 -1px 0 #1e130c; }
 .tete .total { font: 500 .95rem var(--titre); color: var(--creme-doux); }
 .provisoire { font: 500 .75rem var(--titre); color: #3a2c1a; background: #ffd36b; border-radius: 3px; padding: 1px 6px; cursor: help; }
 .fermer { font: 500 .9rem var(--titre); color: #fff7e6; background: var(--bois-fonce); border: 2px solid var(--bois-clair); border-radius: 4px; padding: 4px 10px; cursor: pointer; }
@@ -33,7 +34,7 @@
 .zone .lvl { font: 500 .85rem var(--titre); text-align: right; }
 .barre { grid-column: 2 / 4; height: 6px; border-radius: 3px; background: rgba(0,0,0,.35); overflow: hidden; }
 .zone[aria-pressed="true"] .barre { background: #d8c9a4; }
-.barre i { display: block; height: 100%; background: #7fc06a; }
+.barre i { display: block; height: 100%; background: #e0b04a; }
 .zone .reste { grid-column: 2 / 4; font-size: .78rem; opacity: .85; }
 .detail { display: grid; gap: 12px; align-content: start; }
 .apercu { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; background: #4a311c; border-radius: 4px; padding: 10px; }
@@ -42,9 +43,12 @@
 .apercu figcaption { font: 500 .8rem var(--titre); color: var(--creme-doux); }
 .etatzone { display: grid; gap: 4px; color: var(--creme-doux); font-size: .92rem; }
 .etatzone b { font: 500 1.05rem var(--titre); color: var(--creme); }
-.liege { background: repeating-linear-gradient(90deg, #7a5432 0 22px, #6f4b2c 22px 44px); border-radius: 3px; padding: 14px 12px; display: grid; gap: 14px; }
+/* le parchemin où les missions sont épinglées (DESIGN §1 : « dedans, le parchemin et ses notes épinglées ») */
+.liege { background: var(--tex-parchemin, none) 0 0 / 64px 64px, var(--parchemin); border: 3px solid #1e130c; box-shadow: inset 0 0 0 2px #cdb68c; image-rendering: pixelated;
+  border-radius: 0; padding: 14px 12px; display: grid; gap: 14px; }
+.liege .rien { color: var(--parchemin-doux); }
 .groupe { display: grid; gap: 10px; }
-.groupe h4 { font: 500 .9rem var(--titre); color: var(--creme); }
+.groupe h4 { font: 700 .9rem var(--titre); color: #573726; border-bottom: 2px dashed #b78c41; padding-bottom: 2px; }
 .parchemins { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
 .mission { position: relative; background: var(--parchemin); color: var(--parchemin-encre); border-radius: 2px; padding: 16px 12px 10px; display: grid; gap: 6px; box-shadow: 0 2px 0 rgba(0,0,0,.28); min-width: 0; }
 .mission:nth-child(2n) { transform: rotate(.7deg); } .mission:nth-child(2n+1) { transform: rotate(-.8deg); }
