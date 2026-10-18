@@ -24,15 +24,16 @@ function el(tag, attrs = {}, ...enfants) {
   return n;
 }
 
-let game, boite, reglages = { ...DEFAUT };
+let game, visite = false, boite, reglages = { ...DEFAUT };
 const curseurs = {};
 const LIGNES = [
   ['musique', 'Musique', 'La radio du barde, près du feu (plus forte près de son enceinte).'],
   ['effets', 'Effets', 'Le grésillement de la radio ; les bruitages du camp et des combats, plus tard.'],
 ];
 
-export function init(g) {
+export function init(g, options = {}) {
   game = g;
+  visite = !!options.visite;
   reglages = lireReglages();
   boite = el('section', { id: 'reglages', class: 'sacoche reglages', hidden: true, 'aria-label': 'Les réglages' },
     el('header', {}, el('h2', {}, 'Réglages'), el('button', { class: 'fermer', type: 'button', onclick: () => api.fermer(), 'aria-label': 'Fermer' }, '✕')),
@@ -78,6 +79,7 @@ export const api = {
 export function selfTest(t) {
   const { radio, hud } = game.dbg;
   t.group('le menu Réglages (#95)');
+  if (visite) { t.ok(!hud || hud.barre.hidden, 'en visite (la carte du dashboard) : pas de barre, donc pas de réglages à ouvrir'); return; }
   let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
   const avant = { ...reglages };
   // (le jeu ignore les touches tapées dans un champ : on en sort d'abord)
