@@ -343,7 +343,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     if (att.st.inspire) delete att.st.inspire;          // le chant ne sert qu'une fois
     const qui = `${att.nom} → ${cible.nom} · ${A.nom}`;
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
-    ev({ type: 'attaque', de: att.id, vers: cible.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
+    ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
     if (g === 'rate') { log(`${qui} · d20 ${label} : Raté !`, att.camp === 'e' ? 'ennemi' : 'mauvais'); rate(att); return g; }
     const jet = d(A.de);
     let n = A.base + jet + A.dmod;
@@ -703,14 +703,14 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     if (cap.type === 'zone') {
       if (!zonePossible(h, cap, cible)) return false;
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, anim: cap.anim, x: cible.x, y: cible.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: cible.x, y: cible.y });
       log(`${h.nom} · ${cap.nom} à ${metres(dist(h, cible))} m.`);
       poserZone(h, cap, cible);
       return true;
     }
     if (cap.type === 'soinZone') {                // le Cri de ralliement : tous les alliés autour, sans cible à choisir
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, anim: cap.anim, x: h.x, y: h.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: h.x, y: h.y });
       ev({ type: 'zone', x: h.x, y: h.y, r: cap.rayon, surf: 'soin' });
       log(`${h.nom} pousse un cri de ralliement.`, 'bon');
       for (const u of herosVivants().filter((u) => dist(u, h) <= cap.rayon)) {
@@ -723,31 +723,31 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     if (cap.type === 'potion') {
       payer(h, cap); h.potion--;
       const a = Math.min(20, h.pvMax - h.pv); h.pv += a;
-      ev({ type: 'soin', id: h.id, n: a, pv: h.pv });
+      ev({ type: 'soin', id: h.id, n: a, pv: h.pv, potion: true });
       log(`${h.nom} boit sa potion : +${a} PV.`, 'bon');
       return true;
     }
     const u = cible.id ? U(cible.id) : null, b = cible.id ? S.tonneaux.find((o) => o.id === cible.id) : null;
     if (cap.type === 'attaque') {
-      if (b && aPortee(h, cap, b)) { payer(h, cap); ev({ type: 'lance', id: h.id, anim: cap.anim, x: b.x, y: b.y }); log(`${h.nom} · ${cap.nom} sur le tonneau.`); eclaterTonneau(b, h.id, cap.el === 'feu'); return true; }
-      if (!u && cible.x != null && huileVisable(h, cap, cible)) { payer(h, cap); ev({ type: 'lance', id: h.id, anim: cap.anim, x: cible.x, y: cible.y }); log(`${h.nom} tire dans l’huile.`); enflammer(cible, h.id); return true; }
+      if (b && aPortee(h, cap, b)) { payer(h, cap); ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: b.x, y: b.y }); log(`${h.nom} · ${cap.nom} sur le tonneau.`); eclaterTonneau(b, h.id, cap.el === 'feu'); return true; }
+      if (!u && cible.x != null && huileVisable(h, cap, cible)) { payer(h, cap); ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: cible.x, y: cible.y }); log(`${h.nom} tire dans l’huile.`); enflammer(cible, h.id); return true; }
       if (!u || u.camp === 'h' || u.mort || !aPortee(h, cap, u)) return false;
       payer(h, cap);
-      attaquer(h, u, attaqueHeros(cap));
+      attaquer(h, u, { ...attaqueHeros(cap), id: capId });
       return true;
     }
     if (cap.type === 'poussee') {
       const t = u ?? b;
       if (!t || dist(h, t) > CONTACT || (u && (u.ko || u.mort || u === h))) return false;
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, anim: 'attaque', x: t.x, y: t.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: 'attaque', x: t.x, y: t.y });
       pousser(h, t, { longueur: cap.longueur, proj: cap.proj });
       return true;
     }
     if (cap.type === 'soin' && u && u.camp === 'h' && !u.ko && u !== h && dist(h, u) <= cap.portee) {
       payer(h, cap);
       const r = d(6), a = Math.min(15 + r + 2, u.pvMax - u.pv); u.pv += a;
-      ev({ type: 'lance', id: h.id, anim: 'sort', x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: 'sort', x: u.x, y: u.y });
       ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
       log(`${h.nom} soigne ${u.nom} : 15 + ${r} + 2, +${a} PV.`, 'bon');
       h.res.v = Math.min(h.res.max, h.res.v + 1);
@@ -763,34 +763,34 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     const ennemiVise = u && u.camp === 'e' && !u.mort && aPortee(h, cap, u);
     if (cap.type === 'etatCible' && ennemiVise) {          // le Filet : Gelé
       payer(h, cap); u.st[cap.etat] = { n: 1, par: h.id };
-      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'texte', id: u.id, texte: NOM_ETAT[cap.etat] });
       log(`${h.nom} · ${cap.nom} : ${u.nom} est ${NOM_ETAT[cap.etat]}.`);
       return true;
     }
     if (cap.type === 'attraction' && ennemiVise) {         // la Liane : attire vers soi
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       attirer(h, u, cap.longueur);
       return true;
     }
     if (cap.type === 'moquerie' && ennemiVise) {           // Exposé : la prochaine attaque contre lui a l'avantage
       payer(h, cap); u.expose = { par: h.id };
-      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'texte', id: u.id, texte: 'Exposé !' });
       log(`${h.nom} se moque de ${u.nom} : il est Exposé.`);
       return true;
     }
     if (cap.type === 'inspiration' && u && u.camp === 'h' && !u.ko && u !== h && dist(h, u) <= cap.portee) {
       payer(h, cap); u.st.inspire = { par: h.id };
-      ev({ type: 'lance', id: h.id, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'texte', id: u.id, texte: 'Inspiré !' });
       log(`${h.nom} chante pour ${u.nom} : avantage à sa prochaine attaque.`, 'bon');
       return true;
     }
     if (cap.type === 'huileCible' && u && !u.mort && !u.ko && u !== h && aPortee(h, cap, u)) {
       payer(h, cap); u.st.huile = { ttl: 3, par: h.id };
-      ev({ type: 'lance', id: h.id, anim: 'tir', x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: 'tir', x: u.x, y: u.y });
       log(`${h.nom} lance une fiole : ${u.nom} est Huilé.`);
       return true;
     }

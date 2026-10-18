@@ -3,10 +3,12 @@
 // la caméra (molette : zoom fin et animé, clic droit glissé : déplacer la vue), et la file des événements du combat, jouée dans
 // l'ordre : une marche, une attaque et son d20 en grand (la remarque de la partie D1), des dégâts, un KO…
 // Les barres de vie au-dessus des têtes, avec le nom : V pour les ennemis, Maj+V pour les alliés (gardé dans ce navigateur).
+// Les effets des capacités (projectiles, impacts, foudre, soins) et les états en boucle sur les créatures : effets.js (#134).
 import * as THREE from 'three';
 import { T } from '../01_plan.js';
 import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
+import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 
 export const name = 'vue';
 export const always = true;
@@ -28,6 +30,8 @@ const tonneaux = new Map();
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
+let fx = null, etatsVus = new Map();   // les effets joués, et les états montrés (relus quand la file est vide)
+export const effets = () => fx;
 // La caméra : son centre (cx, cy), l'échelle affichée (s) qui glisse vers celle des crans (base × 2^(crans/4), #122),
 // le point de l'écran qui reste sous la souris pendant le zoom (ancre), la molette pas encore comptée (des petits pas).
 const cam = { s: 2, base: 2, crans: 0, ancre: null, molette: 0, cx: 0, cy: 0, cible: null, glisse: null };
@@ -59,6 +63,7 @@ export function init(g, options) {
   document.body.append(calquePlaques);
   try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); plaques.e = !!lu?.e; plaques.h = !!lu?.h; } catch {}
 
+  fx = creerEffets(rendu, images);
   peupler();
 
   // la caméra : molette (zoom fin et animé, sous la souris), clic droit glissé (déplacer la vue)
@@ -105,7 +110,7 @@ function peupler() {
 export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
-  aff.clear(); tonneaux.clear(); file = []; courant = null;
+  aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map();
   combat = nouveau;
   peupler();
   redessinerSurfaces();
@@ -280,7 +285,9 @@ function scene(e) {
     case 'poussee': {
       const cible = e.tonneau ? tonneaux.get(e.id) : a, dep = { x: cible.x, y: cible.y };
       const pts = e.chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
-      return { duree: Math.min(0.6, 0.12 + Math.hypot(fin.x - dep.x, fin.y - dep.y) / (12 * T)), maj(t, k) {
+      const duree = Math.min(0.6, 0.12 + Math.hypot(fin.x - dep.x, fin.y - dep.y) / (12 * T));
+      fx.jouer('poussiere', { x: dep.x, y: dep.y }); fx.jouer('poussiere', { x: fin.x, y: fin.y, retard: duree });
+      return { duree, maj(t, k) {
         cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k; if (!e.tonneau) a.anim = 'blesse';
       }, fin() { if (!e.tonneau) a.anim = 'repos'; } };
     }
@@ -290,20 +297,30 @@ function scene(e) {
       att.anim = e.anim ?? 'attaque'; att.t = 0;
       viser((att.x + cible.x) / 2, (att.y + cible.y) / 2);
       if (e.type === 'attaque') pourEcouteurs({ ...e, type: 'de' });
-      return { duree: e.type === 'attaque' ? 0.6 : 0.45, maj() {}, fin() { att.anim = 'repos'; } };
+      // l'effet de la capacité : la scène dure jusqu'à ce que le coup arrive (les dégâts s'affichent après)
+      const genre = att.camp === 'e' ? (e.anim === 'tir' ? 'tir' : ['brt', 'chef'].includes(att.type) ? 'lourd' : 'taille') : null;
+      const d = e.type === 'attaque' ? effetsAttaque(fx, e.cap, att, cible, genre) : effetsLance(fx, e.cap, att, cible, e.cap === 'fioleCible' ? cible : null);
+      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj() {}, fin() { att.anim = 'repos'; } };
     }
     case 'degats': {
       a.pv = e.pv; a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
       flottant(a, `−${e.n}`, 'degats');
       return { duree: 0.32, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };
     }
-    case 'soin': a.pv = e.pv; flottant(a, `+${e.n}`, 'soin'); return { duree: 0.3 };
+    case 'soin':
+      a.pv = e.pv; flottant(a, `+${e.n}`, 'soin');
+      fx.jouer('croix-soin', { x: a.x, y: a.y });
+      if (e.potion) { fx.jouer('bulles-potion', { x: a.x, y: a.y }); fx.jouer('coeur', { x: a.x, y: a.y - 50, duree: 0.8 }); }
+      return { duree: 0.3 };
     case 'ko': a.anim = 'tombe'; a.t = 0; if (a.camp === 'h') a.ko = true; else a.mort = true; return { duree: 0.55 };
-    case 'ranime': a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, '+25', 'soin'); return { duree: 0.4 };
+    case 'ranime':
+      a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, '+25', 'soin');
+      fx.jouer('colonne-doree', { x: a.x, y: a.y }); fx.jouer('croix-soin', { x: a.x, y: a.y, retard: 0.2 });
+      return { duree: 0.5 };
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
-    case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); } return { duree: 0.25 }; }
+    case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
     case 'zone': marques.zone = { x: e.x, y: e.y, r: e.r, surf: e.surf }; dessinerMarques(); return { duree: 0.35, fin() { marques.zone = null; dessinerMarques(); } };
     case 'menace': marques.menace = { x: e.x, y: e.y, r: e.r }; dessinerMarques(); viser(e.x * T, e.y * T); return { duree: 0.85, fin() { marques.menace = null; dessinerMarques(); } };
@@ -395,6 +412,13 @@ export function update(dt) {
     poserPlaque(a);
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
+  // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
+  if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
+  for (const [id, liste] of etatsVus) {
+    const a = aff.get(id); if (!a || a.cache || a.mort) continue;
+    for (const [k, brique, dy] of liste) if (!(a.ko && k !== 'aTerre')) fx.garder(`${id}:${k}`, brique, a.x, a.y + dy);
+  }
+  fx.update(dt);
   for (let k = flottants.length - 1; k >= 0; k--) {
     const f = flottants[k]; f.t += dt;
     const p = versEcran(f.x, f.y - f.t * 30);
@@ -455,7 +479,7 @@ export function dispose() { for (const f of flottants) f.el.remove(); calquePlaq
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces, remplacer, basculerPlaques,
+  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces, remplacer, basculerPlaques, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },
