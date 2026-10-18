@@ -1,4 +1,4 @@
-// L'entrée du terrain d'entraînement (mission #14) : devant son lieu dans le camp (CAMP §4, porte en 27, 7), une bulle
+// L'entrée du terrain d'entraînement (mission #14) : à l'entrée de son enclos dans le camp (CAMP §4, #77 : porte en 27, 9), une bulle
 // « E : entrer au terrain d'entraînement » ; E, ou un clic sur la bulle, ouvre le combat (entrainement.html).
 // En revenant (« Retour au camp »), on réapparaît devant lui (?spot=combat).
 // À plusieurs (#80) : E emmène tout le groupe. L'hôte prévient les autres (le code du groupe) et y va ; un ami qui

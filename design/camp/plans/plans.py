@@ -22,6 +22,13 @@ def svg(plan):
     for i in range(W+1): o.append(f'<line x1="{i*T}" y1="0" x2="{i*T}" y2="{H*T}" stroke="#000" stroke-opacity=".07"/>')
     for j in range(H+1): o.append(f'<line x1="0" y1="{j*T}" x2="{W*T}" y2="{j*T}" stroke="#000" stroke-opacity=".07"/>')
     for n,(px,py) in plan['lieux'].items():   # (px,py) = case de la porte (bas centre)
+        if n in plan.get('emprises',{}):       # un lieu qui a son emprise à lui (l'enclos du terrain, #77)
+            x0,y0,x1,y1=plan['emprises'][n]
+            o.append(f'<rect x="{x0*T}" y="{y0*T}" width="{(x1-x0)*T}" height="{(y1-y0)*T}" fill="#efe6cf" fill-opacity=".55" stroke="#6b4f2c" stroke-dasharray="4 3"/>')
+            o.append(f'<rect x="{px*T}" y="{py*T}" width="{2*T}" height="{T}" fill="#7a5230"/>')
+            cx=(x0+x1)/2*T; cy=y0*T+6
+            o.append(f'<circle cx="{cx}" cy="{cy+10}" r="8" fill="#26215C"/><text x="{cx}" y="{cy+14}" font-size="11" fill="#fff" text-anchor="middle">{n}</text>')
+            continue
         for lv,(w,h) in enumerate(LV[::-1]):
             niv=4-lv; x=px+1-w/2; y=py+1-h
             if niv==4: o.append(f'<rect x="{x*T}" y="{y*T}" width="{w*T}" height="{h*T}" fill="#efe6cf" fill-opacity=".55" stroke="#6b4f2c" stroke-dasharray="4 3"/>')
@@ -69,11 +76,13 @@ plans['B']=dict(taille=(W,H),feu=(26,11),apparition=(24,13),entree=(1.6,8.2),cam
   arbres=bord(W,H,{(0,9),(0,10)})+amas(26,1,5,4)+amas(39,1,5,4,1)+amas(2,12,7,4,2)+amas(19,14,3,3,1)+amas(48,12,5,4)+amas(25,15,3,2))
 # C. Les clairières : le feu et le tableau au centre ; trois clairières reliées par des sentiers, des bois entre elles ; la porte à l'entrée.
 W,H=42,28
-lieuxC={1:(5,8),5:(13,8),2:(27,7),3:(35,7),7:(27,16),8:(25,24),6:(33,23),4:(8,24)}
+lieuxC={1:(5,8),5:(13,8),2:(27,9),3:(35,7),7:(27,16),8:(25,24),6:(33,23),4:(8,24)}
+# le terrain d'entraînement (2) est un enclos de 8 x 8 cases, ouvert au sud (mission #77, le 18 oct) : sa porte est l'entrée
+enclosC=[[(27,9.3),(24.5,9.3),(24.5,3.3),(31.5,3.3),(31.5,9.3),(29,9.3)]]
 plans['C']=dict(taille=(W,H),feu=(20,14),apparition=(18,17),entree=(14.6,27.6),camera=(1,0),
-  lieux=lieuxC,places=[(20.5,14.5,4.4),(9.5,6.5,4.6),(31.5,5.5,4.6),(29.5,21.5,4.4),(9.5,22.5,3.6)],
+  lieux=lieuxC,emprises={2:(24,2,32,10)},palissade=enclosC,places=[(20.5,14.5,4.4),(9.5,6.5,4.6),(31.5,5.5,4.6),(29.5,21.5,4.4),(9.5,22.5,3.6)],
   chemins=[[(14.5,27),(14.5,19),(20,14.5)],[(20,14),(14.5,11),(5.5,11),(5.5,8)],[(13.5,11),(13.5,8)],
-           [(20,14),(24,10.4),(35.5,10.4),(35.5,7)],[(27.5,10.4),(27.5,7)],
+           [(20,14),(24,10.4),(35.5,10.4),(35.5,7)],[(27.5,10.4),(27.5,9)],
            [(20,14),(22,18.6),(38.5,18.6),(38.5,25.6),(33.5,25.6),(33.5,23)],[(22.4,18.6),(22.4,25.6),(25.5,25.6),(25.5,24)],[(27.5,18.6),(27.5,16)],[(14.5,25.6),(8.5,25.6),(8.5,24)]],
   arbres=bord(W,H,{(14,27),(15,27)})+amas(18,1,6,6)+amas(1,11,6,7,1)+amas(33,11,7,6,2)+amas(16,21,6,6,3)+amas(2,1,2,2))
 for k,p in plans.items(): open(f'plan_{k}.svg','w',encoding='utf-8').write(svg(p))

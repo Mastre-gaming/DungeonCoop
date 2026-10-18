@@ -27,4 +27,4 @@ Le combat D1 de la Salle d'essai de Fraps (`design/combat-d1/`, PR #74), devenu 
 ## La suite
 - **#76 :** les classes d'essai à choisir à l'entrée. C'est fait : à l'accueil, ◀ ▶ sur chaque héros, « Le kit D1 », « Au hasard ». Les fiches sont dans `CLASSES_ESSAI.fr.md`.
 - **#80 :** le terrain à plusieurs. C'est fait : le lobby, le combat partagé, « Je suis prêt ».
-- **#77 :** l'enclos agrandi du terrain dans le camp. C'est une proposition de plan, que le propriétaire du camp doit choisir.
+- **#77 :** dans le camp, le terrain est un enclos de 8 × 8 cases, avec son entrée au bout du sentier (`CAMP.fr.md` §4, captures dans `design/camp/enclos/`). C'est une proposition de plan, que le propriétaire du camp valide.

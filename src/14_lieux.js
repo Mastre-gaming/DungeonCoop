@@ -3,13 +3,13 @@
 // Un niveau montre ses pièces et celles des niveaux d'avant. Une pièce peut s'animer (lanternes, torches) et bloquer
 // le passage (sa base). Quand un lieu monte de niveau en direct, il s'illumine un instant.
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
-import { T, LIEUX } from './01_plan.js';
+import { T, LIEUX, emprise } from './01_plan.js';
 
 export const name = 'lieux';
 export const always = true;
 
 // Une pièce : la case de la planche des décorations (sx, sy, en cases), sa taille (w, h), sa place dans l'emprise du
-// lieu (dx, dy, en cases, depuis le coin haut-gauche de l'emprise 6 x 5), et :
+// lieu (dx, dy, en cases, depuis le coin haut-gauche de son emprise : 6 x 5, ou l'enclos 8 x 8), et :
 //   anim : les colonnes de ses images (elle les parcourt en boucle), pas : la durée d'une image
 //   bloque : sa base bloque le passage   pied : où elle se trie (en cases depuis le haut de l'emprise ; par défaut, son bas)
 const P = (sx, sy, w, h, dx, dy, plus = {}) => ({ sx, sy, w, h, dx, dy, ...plus });
@@ -30,6 +30,21 @@ export const NIVEAUX = {
       P(13, 5, 1, 1, 4.0, 2.2, { ...TORCHE, pied: 4.55 }),               //     et un étal couvert : de la lumière et de la vie
       P(8, 5, 1, 1, 5.05, 3.95, { bloque: true })],
   ],
+  // Le terrain d'entraînement, dans son enclos (#77, proposition à choisir par le propriétaire du camp) : au fond, de
+  // quoi viser et frapper ; devant, les armes ; au niveau 4, les torches de l'entrée. Le milieu reste libre.
+  // L'enclos va de dx 0,5 à 7,5 et de dy 1,3 à 7,3 ; l'entrée est entre dx 3 et 5.
+  combat: [
+    [],
+    [P(4, 47, 2, 2, 1.0, 1.35, { bloque: true })],                       // 1 : une cible sur son trépied
+    [P(3, 47, 1, 2, 3.5, 1.3, { bloque: true }),                        // 2 : une botte de foin et sa cible,
+      P(10, 4, 1, 2, 5.7, 1.25, { bloque: true })],                     //     un épouvantail pour frapper
+    [P(1, 47, 2, 1, 0.9, 4.7, { bloque: true }),                        // 3 : le râtelier, les arcs,
+      P(2, 48, 1, 2, 6.2, 3.95, { bloque: true }),                      //     un tonneau de flèches
+      P(3, 49, 1, 1, 5.3, 4.95, { bloque: true })],
+    [P(13, 5, 1, 1, 2.5, 4.55, { ...TORCHE, pied: 7.4 }),                // 4 : des torches sur les poteaux de l'entrée,
+      P(13, 5, 1, 1, 4.5, 4.55, { ...TORCHE, pied: 7.4 }),               //     un autre épouvantail
+      P(10, 4, 1, 2, 4.6, 1.25, { bloque: true })],
+  ],
 };
 
 let game, rendu, images, collision, missions, decor;
@@ -37,7 +52,7 @@ const etat = {};            // id → { niveau, sprites: [], obstacles: [], ecla
 const forces = {};          // dbg : un niveau imposé, pour voir et faire voir
 let temps = 0;
 
-const empriseDe = (l) => ({ x: (l.porte[0] - 2) * T, y: (l.porte[1] - 4) * T });
+const empriseDe = (l) => { const [x0, y0] = emprise(l); return { x: x0 * T, y: y0 * T }; };
 
 function retirer(id) {
   const e = etat[id];
