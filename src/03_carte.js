@@ -147,10 +147,7 @@ export function composerCamp() {
   // Le feu, taille 0 (CAMP §4) : le petit feu animé et une souche pour s'asseoir.
   const fx = FEU[0] * T, fy = FEU[1] * T + 8;
   const feu = { img: 'deco', sx: 8 * T, sy: 47 * T, sw: 32, sh: 64, x: fx - 16, y: fy - 62, pied: fy, images: 5, pas: 0.12 };
-  obstacles.push({ x: fx - 15, y: fy - 12, w: 30, h: 22 });   // assez bas pour qu'on ne se tienne pas dans les flammes
-  const souche = deco(15, 23, 1, 1, fx + 1.2 * T, fy - 0.3 * T - 26);
-  objets.push(souche);
-  obstacles.push({ x: souche.x + 6, y: souche.pied - 10, w: 20, h: 8 });
+  // (ce qui bloque autour du feu, et sa souche, sont à la place du village : src/36_place.js, qui cache ce petit feu)
 
   // Les deux braseros au bout du pont (#123) : animés par la muraille (32_muraille.js) ; leur pied bloque.
   const braseros = ENTREE.braseros.map(([x, y]) => ({ x: x - 8, y, pied: y + 38 }));

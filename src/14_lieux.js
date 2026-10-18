@@ -32,7 +32,7 @@ export const NIVEAUX = {
     [P(11, 0, 1, 2, 4.75, 2.55, { bloque: true, jusqua: 3 }),            // 2 : une potence, sa lanterne allumée ;
       P(13, 0, 1, 1, 5.35, 2.95, { ...LANTERNE, pied: 4.6 }),            //     les premiers pavés, des socles de pierre
       P(3, 4, 3, 0.5, 1.5, 4.1, { ...PIERRE, pied: 4.63 })],             //     au pied des poteaux
-    [P(6, 34, 2, 1, 0.1, 4.45, { bloque: true }),                        // 3 : un banc pour lire les missions, deux buis,
+    [P(6, 34, 2, 1, -0.3, 4.45, { bloque: true }),                        // 3 : un banc pour lire les missions, deux buis,
       P(7, 1, 1, 2, 0.7, 3.0, { ...PIERRE, bloque: true }),              //     l'estrade du crieur
       P(7, 1, 1, 2, 4.12, 3.0, { ...PIERRE, bloque: true }),
       P(7, 30, 2, 2, ESTRADE.dx, ESTRADE.dy, { bloque: true })],

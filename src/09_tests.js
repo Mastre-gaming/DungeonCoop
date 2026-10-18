@@ -6,6 +6,7 @@ import { createLoopback, createParty } from './skills/party-net/module/03_skill.
 import { LIEUX_AXES } from './10_missions.js';
 import { testsHudEpique } from './34_tests_hud.js';
 import { testsArmurerie } from './35_tests_armurerie.js';
+import { testsPlace } from './37_tests_place.js';
 import { testsTableau } from './39_tests_tableau.js';
 
 export const name = 'camp';
@@ -38,9 +39,11 @@ function marcherVers(bx, by, { courir = false, limite = 40 } = {}) {
       const autre = collision.chemin(h.x, h.y, bx, by);
       if (autre) { route = autre; k = 0; proche = Infinity; sansProgres = 0; reprises++; continue; }
     }
-    const l = [];
-    if (vx < -1) l.push(touches.gauche); else if (vx > 1) l.push(touches.droite);
-    if (vy < -1) l.push(touches.haut); else if (vy > 1) l.push(touches.bas);
+    // les flèches de la direction voulue, en huit directions (secteurs de 45°) : une route presque horizontale se suit
+    // avec une seule flèche, comme le ferait un joueur, au lieu de partir en diagonale et de quitter la route
+    const l = [], s8 = 0.38 * d;
+    if (vx < -s8) l.push(touches.gauche); else if (vx > s8) l.push(touches.droite);
+    if (vy < -s8) l.push(touches.haut); else if (vy > s8) l.push(touches.bas);
     if (courir) l.push(touches.courir);
     tenir(l);
     const x0 = h.x, y0 = h.y;
@@ -250,6 +253,7 @@ export async function selfTest(t, game) {
   testsHudEpique(t, ctx, game);   // le HUD épique (DESIGN.fr.md) : src/34_tests_hud.js
   testsBoite(t, game);
   testsArmurerie(t, ctx);   // l'armurerie et ses 5 niveaux : src/35_tests_armurerie.js
+  testsPlace(t, ctx);       // la place du village et ses 5 niveaux : src/37_tests_place.js
   testsTableau(t, ctx, game);   // le tableau d'affichage qui devient pierre, et son crieur : src/39_tests_tableau.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);

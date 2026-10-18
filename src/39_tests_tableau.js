@@ -64,7 +64,11 @@ export function testsTableau(t, ctx, game) {
   game.dbg.advance(4);
   // près de lui, sans nouvelle : le tour des derniers push d'abord
   heros.placer(crieur.place().x, crieur.place().devant + 24, 'haut');
-  for (let k = 0; k < 14 * 10 && !crieur.criant; k++) game.dbg.advance(0.1);
+  // (un cri sur trois dit ce qui reste à prendre : on écoute jusqu'à trois cris)
+  for (let n = 0; n < 3 && !(crieur.criant && crieur.phrase.includes('a forgé sur')); n++) {
+    if (crieur.criant) game.dbg.advance(4);
+    for (let k = 0; k < 14 * 10 && !crieur.criant; k++) game.dbg.advance(0.1);
+  }
   t.ok(crieur.criant && crieur.sorte === 'tour' && crieur.phrase.includes('a forgé sur'), `près de lui, il refait le tour des derniers push (« ${crieur.phrase} »)`);
   t.ok(!crieur.ecouter.hidden, 'devant son estrade : « E : les derniers push »');
   game.dbg.advance(4);
