@@ -11,6 +11,7 @@ The two files imported above are the owner's standing calls and what failed befo
 - **9/10 for it looks like:** the four friends beat the boss with a combo between two players, previewed before anyone committed. Reference: Baldur's Gate 3, Grease then Fire Bolt.
 - **The slice:** one room on a grid, four heroes, a few enemies and a leader; in the first round two heroes can set up and finish a combo.
 - **The design:** CORE_LOOP.md, FIGHT_RULES.md, LEVEL_STRUCTURE.md, STORY_STRUCTURE.md, CLASS_TEMPLATE.md. Change a rule there first, then in code.
+- **The look:** `DESIGN.fr.md` is the visual template for every screen and every build (colours, fonts, pixel art, frames, HUD layout, check list). Read it before touching anything the player sees; a look that is not in it goes in it first.
 - **Out of scope:** real-time action, PvP, a phone version, in-game chat, open world. New ideas go in GAME_SPEC.md's parking lot.
 - **(if it fits) calls this game takes on:** 14 (a game for friends) only. **Overrides of the manual:** 2D, not 3D; a mouse cursor, not locked-mouse look; heroes come from the LPC generator through `lpc-sprite-mods`, not the Blender MCP; the story is the team's to write, never Claude's.
 - **Players:** co-op for 1 to 4; the party is always four heroes · **Live build:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, Workers Builds from `main`, a preview per PR) · **The owner's route:** live link → Host → share the five-letter code → friends join → the fight.
