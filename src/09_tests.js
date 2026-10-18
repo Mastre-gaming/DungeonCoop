@@ -239,6 +239,7 @@ export async function selfTest(t, game) {
   testsHud(t, game);
   testsBoite(t, game);
   await testsDirect(t, game);
+  await testsTableauGithub(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -332,7 +333,7 @@ function testsMissions(t, game) {
   panneau.marquerVu(etaitVu);
 }
 
-export const api = { marcherVers, rapportMarche: null, fauxWorker: () => fauxWorker(), JETON_TEST: 'v1.9999999999999.QmFiYQ.signature-de-test' };   // (le faux Worker : aussi pour les captures)
+export const api = { marcherVers, rapportMarche: null, fauxWorker: () => fauxWorker(), JETON_TEST: 'v1.9999999999999.QmFiYQ.signature-de-test', fauxGithub: (login) => fauxGithub(login), JETON_GITHUB_TEST: 'ghu_jeton-de-test' };   // (le faux Worker : aussi pour les captures)
 
 // La sentinelle : la scène de la première arrivée, le nom relié à GitHub, le retour, changer de nom.
 function testsSentinelle(t, game) {
@@ -980,4 +981,125 @@ async function testsDirect(t, game) {
   missions.charger([]);
   sentinelle.etat.qui = quiAvant;
   game.bus.emit('messagerie:nonlus', { n: 0 });
+}
+
+// --- Le tableau des missions écrit dans GitHub (27_github.js), avec un faux GitHub : rien ne part sur le réseau -------
+// Le faux GitHub répond comme le vrai : GET /user, POST et PATCH /repos/…/issues, et la mutation GraphQL deleteIssue
+// (refusée quand on n'est pas admin du repo).
+const JETON_GITHUB_TEST = 'ghu_jeton-de-test';
+function fauxGithub(login = 'DonBabaa') {
+  const g = { issues: new Map(), appels: [], admin: true, prochain: 200 };
+  const rep = (status, corps) => ({ ok: status < 300, status, json: async () => JSON.parse(JSON.stringify(corps)) });
+  const labels = (l) => l.map((name) => ({ name })), personnes = (l) => l.map((x) => ({ login: x }));
+  g.fetch = async (url, o = {}) => {
+    const u = new URL(url), m = o.method ?? 'GET', corps = o.body ? JSON.parse(o.body) : null;
+    g.appels.push({ hote: u.host, m, chemin: u.pathname, corps });
+    if (u.host !== 'api.github.com') return rep(404, {});
+    if (o.headers?.Authorization !== `Bearer ${JETON_GITHUB_TEST}`) return rep(401, { message: 'Bad credentials' });
+    if (u.pathname === '/user') return rep(200, { login });
+    let k;
+    if (m === 'POST' && u.pathname === '/repos/Mastre-gaming/DungeonCoop/issues') {
+      const n = { number: ++g.prochain, node_id: `I_test${g.prochain}`, title: corps.title, body: corps.body, state: 'open', state_reason: null, html_url: '#', labels: labels(corps.labels ?? []), assignees: personnes(corps.assignees ?? []) };
+      g.issues.set(n.number, n); return rep(201, n);
+    }
+    if (m === 'PATCH' && (k = /^\/repos\/Mastre-gaming\/DungeonCoop\/issues\/(\d+)$/.exec(u.pathname))) {
+      const n = g.issues.get(Number(k[1]));
+      if (!n) return rep(404, { message: 'Not Found' });
+      if ('title' in corps) n.title = corps.title;
+      if ('body' in corps) n.body = corps.body;
+      if (corps.labels) n.labels = labels(corps.labels);
+      if (corps.assignees) n.assignees = personnes(corps.assignees);
+      if (corps.state) { n.state = corps.state; n.state_reason = corps.state_reason ?? null; }
+      return rep(200, n);
+    }
+    if (m === 'POST' && u.pathname === '/graphql') {
+      if (!g.admin) return rep(200, { errors: [{ message: `${login} does not have the correct permissions to execute \`DeleteIssue\`` }] });
+      const n = [...g.issues.values()].find((x) => x.node_id === corps.variables?.id);
+      if (!n) return rep(200, { errors: [{ message: 'Could not resolve to a node' }] });
+      g.issues.delete(n.number); return rep(200, { data: { deleteIssue: { clientMutationId: null } } });
+    }
+    return rep(404, { message: 'Not Found' });
+  };
+  g.ajouter = (n) => { g.issues.set(n.number, JSON.parse(JSON.stringify(n))); return n; };
+  return g;
+}
+
+async function testsTableauGithub(t, game) {
+  const { missions, panneau, github } = ctx;
+  if (!github) return;
+  const g = fauxGithub();
+  const avec = (n, labels, o = {}) => ({ ...issue(n, labels, o), node_id: `I_test${n}`, body: '' });
+  const m50 = g.ajouter(avec(50, ['axe: menus', 'taille: S', 'priorité: haute']));
+  const m51 = g.ajouter(avec(51, ['axe: menus', 'taille: M'], { qui: ['PCrrfng'] }));
+  missions.charger([m50, m51].map((x) => JSON.parse(JSON.stringify(x))), [{ github: 'DonBabaa', nom: 'Baba' }, { github: 'PCrrfng', nom: 'Paul' }]);
+  github.relier({ fetch: g.fetch });
+  const carteDe = (n) => [...panneau.boite.querySelectorAll('article.mission')].find((a) => a.querySelector('.num')?.textContent === `#${n}`);
+  const bouton = (racine, texte) => [...(racine?.querySelectorAll('button') ?? [])].find((b) => b.textContent.trim() === texte);
+  const issueDe = (n) => missions.etat.issues.find((x) => x.number === n);
+  const derniere = () => g.appels[g.appels.length - 1];
+
+  t.group('le tableau des missions écrit dans GitHub (faux GitHub)');
+  t.eq(panneau.labelsAvec([{ name: 'idée' }, { name: 'axe: interface' }, { name: 'taille: S' }, { name: 'priorité: haute' }], { lieu: 'forge', taille: 'L' }).filter((l) => !l.startsWith('axe')),
+    ['idée', 'priorité: haute', 'taille: L'], 'les labels : le lieu et la taille changent, les autres (idée, priorité) restent');
+  panneau.ouvrir('interface');
+  t.ok(bouton(panneau.boite, 'Se connecter à GitHub') && !panneau.boite.querySelector('.actions') && !panneau.boite.querySelector('.ecrire-mission'), 'sans connexion GitHub : le panneau ne fait que lire, et propose « Se connecter à GitHub »');
+  t.ok(github.adresseConnexion('http://localhost:4173/').endsWith('/auth/connexion?retour=http%3A%2F%2Flocalhost%3A4173%2F'), 'la connexion passe par le Worker direct, comme le dashboard, et revient au camp');
+  await github.poserJeton(JETON_GITHUB_TEST);
+  t.ok(github.login === 'DonBabaa' && panneau.boite.textContent.includes('GitHub : DonBabaa') && panneau.boite.querySelector('.ecrire-mission'), 'connecté : le panneau dit qui on est, et offre « + Nouvelle mission ici »');
+
+  bouton(carteDe(50), 'Je prends').click();
+  t.ok(await attendre(() => issueDe(50)?.assignees.some((a) => a.login === 'DonBabaa')), '« Je prends » : GitHub assigne la mission à moi');
+  t.ok(panneau.boite.textContent.includes('En cours · 2') && bouton(carteDe(50), 'Je lâche'), 'le panneau la range en cours tout de suite, avec « Je lâche »');
+
+  bouton(carteDe(51), 'Modifier').click();
+  let f = panneau.boite.querySelector('form.fiche');
+  t.ok(f && f.querySelector('input[name=titre]').value === 'Mission inventée 51', 'Modifier : la fiche de la mission s’ouvre, remplie');
+  f.querySelector('input[name=titre]').value = 'Le menu des réglages';
+  f.querySelector('textarea[name=corps]').value = 'Fini quand la musique se coupe.';
+  f.querySelector('select[name=taille]').value = 'L';
+  for (const c of f.querySelectorAll('input[name=qui]')) c.checked = c.value === 'DonBabaa' || c.value === 'PCrrfng';
+  f.requestSubmit();
+  t.ok(await attendre(() => issueDe(51)?.title === 'Le menu des réglages'), 'Enregistrer : le titre change dans GitHub et au camp');
+  const p51 = g.appels.filter((a) => a.m === 'PATCH' && a.chemin.endsWith('/51')).pop()?.corps;
+  t.ok(p51?.labels.includes('taille: L') && !p51.labels.includes('taille: M') && p51.labels.includes('axe: menus'), `la taille passe à L, le lieu reste (${p51?.labels})`);
+  t.eq(p51?.assignees, ['DonBabaa', 'PCrrfng'], 'assigner : on choisit qui s’en occupe dans l’équipe');
+  t.ok(p51?.body === 'Fini quand la musique se coupe.', 'et la description');
+
+  bouton(panneau.boite, '+ Nouvelle mission ici').click();
+  f = panneau.boite.querySelector('form.fiche[data-numero="nouvelle"]');
+  t.ok(!!f, '« + Nouvelle mission ici » ouvre une fiche vide');
+  f.querySelector('input[name=titre]').value = 'Une mission créée au camp';
+  f.querySelector('select[name=taille]').value = 'S';
+  f.requestSubmit();
+  t.ok(await attendre(() => missions.taches().some((x) => x.title === 'Une mission créée au camp')), 'Créer : la mission part dans GitHub et apparaît au camp');
+  const cree = missions.etat.issues.find((x) => x.title === 'Une mission créée au camp');
+  t.ok(derniere().m === 'POST' && derniere().corps.labels.includes('axe: menus') && derniere().corps.labels.includes('taille: S'), 'rangée dans le lieu ouvert (axe: menus), avec sa taille');
+  t.ok(panneau.nouvelle?.texte === `#${cree.number} créée.`, `et le panneau le dit (« ${panneau.nouvelle?.texte} »)`);
+
+  bouton(carteDe(cree.number), 'Fait ✓').click();
+  t.ok(await attendre(() => issueDe(cree.number)?.state === 'closed'), '« Fait ✓ » : la mission est rentrée dans GitHub');
+  t.ok(derniere().corps.state_reason === 'completed' && panneau.boite.textContent.includes('Rentrées · 1'), 'rentrée (completed), rangée dans les rentrées');
+  bouton(carteDe(cree.number), 'Rouvrir').click();
+  t.ok(await attendre(() => issueDe(cree.number)?.state === 'open'), '« Rouvrir » la remet en jeu');
+
+  bouton(carteDe(cree.number), 'Supprimer').click();
+  t.ok(bouton(carteDe(cree.number), 'Oui, supprimer') && issueDe(cree.number), 'Supprimer demande d’abord « pour de bon ? »');
+  bouton(carteDe(cree.number), 'Oui, supprimer').click();
+  t.ok(await attendre(() => !issueDe(cree.number)), 'admin du repo : la mission est supprimée (GraphQL deleteIssue) et quitte le camp');
+  t.ok(derniere().chemin === '/graphql' && derniere().corps.variables.id === cree.node_id && !g.issues.has(cree.number), 'avec son identifiant GitHub, et elle n’existe plus');
+
+  g.admin = false;
+  bouton(carteDe(50), 'Supprimer').click(); bouton(carteDe(50), 'Oui, supprimer').click();
+  t.ok(await attendre(() => panneau.nouvelle?.grave && !panneau.occupe), 'pas admin : GitHub refuse la suppression');
+  t.ok(panneau.nouvelle.texte.includes('GitHub refuse') && issueDe(50) && bouton(carteDe(50), 'Fermer (abandonnée)'), 'le panneau le dit, garde la mission, et propose « Fermer (abandonnée) »');
+  bouton(carteDe(50), 'Fermer (abandonnée)').click();
+  t.ok(await attendre(() => issueDe(50)?.state_reason === 'not_planned'), 'abandonnée : fermée « not planned » dans GitHub');
+  t.ok(!missions.taches().some((x) => x.number === 50) && !carteDe(50), 'elle disparaît du camp (et ne rapporte aucune renommée)');
+  t.ok(g.appels.every((a) => a.hote === 'api.github.com'), `rien d’autre que le faux GitHub (${g.appels.length} appels)`);
+
+  await github.poserJeton(null);
+  t.ok(!panneau.boite.querySelector('.actions') && bouton(panneau.boite, 'Se connecter à GitHub'), 'déconnecté : le panneau redevient en lecture seule');
+  github.delier();
+  panneau.fermer();
+  missions.charger([]);
 }

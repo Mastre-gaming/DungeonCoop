@@ -76,3 +76,24 @@
 .puce.urgence-moyenne { border-color: #c98a1e; }
 .puce.urgence-moyenne::before { content: "▲ "; color: #c98a1e; }
 .puce.urgence-basse::before { content: "▽ "; }
+
+/* Gérer les missions depuis le camp (connecté à GitHub) : les boutons sous chaque parchemin, la fiche à remplir */
+.connexion-github { background: #2b3a4a; border-color: #4f6b86; }
+.connecte-github { font: 500 .85rem var(--titre); color: var(--creme-doux); }
+.connecte-github b { color: var(--creme); }
+.lien-discret { background: none; border: 0; padding: 0; color: var(--creme-doux); font: inherit; text-decoration: underline; cursor: pointer; }
+.ecrire-mission { justify-self: start; font: 500 .95rem var(--titre); color: var(--parchemin-encre); background: var(--parchemin); border: 2px dashed #b89a68; border-radius: 3px; padding: 6px 14px; cursor: pointer; }
+.mission .actions { display: flex; flex-wrap: wrap; gap: 6px; border-top: 1px dashed #cdb68c; padding-top: 6px; align-items: center; }
+.mission .actions.confirmer span { font-size: .82rem; font-weight: 600; margin-right: auto; }
+.action { font: 500 .78rem var(--titre); color: var(--parchemin-encre); background: #e8d9b4; border: 1px solid #b89a68; border-radius: 3px; padding: 2px 8px; cursor: pointer; }
+.action:hover:not(:disabled) { background: #f6ebcf; }
+.action:disabled { opacity: .55; cursor: wait; }
+.action.fait { background: #cfe3b8; border-color: #6c9a52; }
+.action.danger { color: #8a2a1c; border-color: #c98f84; }
+.action:focus-visible, .ecrire-mission:focus-visible, .fiche input:focus-visible, .fiche textarea:focus-visible, .fiche select:focus-visible { outline: 3px solid #ffd35a; outline-offset: 1px; }
+.mission.fiche { transform: none; gap: 8px; }
+.fiche input[type=text], .fiche textarea, .fiche select { width: 100%; box-sizing: border-box; font: 15px/1.35 var(--texte); color: var(--parchemin-encre); background: #fffaf0; border: 1px solid #b89a68; border-radius: 3px; padding: 4px 6px; }
+.fiche input[name=titre] { font-weight: 600; }
+.ligne-fiche { display: flex; gap: 6px; }
+.qui-fiche { border: 1px dashed #cdb68c; border-radius: 3px; margin: 0; padding: 4px 8px; display: flex; flex-wrap: wrap; gap: 2px 12px; font-size: .85rem; }
+.qui-fiche legend { font: 500 .78rem var(--titre); color: var(--parchemin-doux); padding: 0 4px; }
