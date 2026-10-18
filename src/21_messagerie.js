@@ -65,10 +65,20 @@ export const versDashboard = (ici = location.origin + location.pathname + locati
 // Le jeu en ligne (le lien des annonces de partie : il rejoint le groupe avec ?code=…).
 export const JEU = 'https://dungeoncoop.0xbaba-eth.workers.dev';
 const PARTIE = /héberge une partie au camp : code ([A-Z0-9]{5})\b/;
+// « … a fermé la partie ABCDE. » / « … a fermé les parties ABCDE, FGHIJ. » : seul son auteur peut fermer une partie.
+const FERMETURE = /a fermé (?:la partie|les parties) ([A-Z0-9]{5}(?:, [A-Z0-9]{5})*)/;
 const HEURE = 60 * 60_000;
 // Une annonce de partie : { code } ; null pour un autre message.
 export function partieDe(m) { const r = PARTIE.exec(String(m?.texte ?? '')); return r ? { code: r[1] } : null; }
 const recente = (m) => Date.now() - (m.t ?? 0) < HEURE;
+// Les codes qu'un message ferme ([] si ce n'en est pas une fermeture).
+export function fermeturesDe(m) { const r = FERMETURE.exec(String(m?.texte ?? '')); return r ? r[1].split(', ') : []; }
+// Une annonce encore ouverte : de moins d'une heure, et pas fermée depuis par son auteur.
+function partieOuverte(m) {
+  const p = partieDe(m);
+  if (!p || !recente(m)) return false;
+  return ![...etat.messages.values()].some((x) => x.id > m.id && norm(x.auteur) === norm(m.auteur) && fermeturesDe(x).includes(p.code));
+}
 
 let game, missions, sentinelle, boite, fil, zone, info, erreur, statut, entree, liste, form, onglets, onglet = 'messages', ouvert = false, nonLusAvant = -1;
 const etat = { messages: new Map(), statut: 'sans-jeton', raison: '', nom: null, jeton: null, vu: Number(lire(CLE_VU) ?? 0), enAttente: new Map(), compteur: 0 };
@@ -201,7 +211,7 @@ function dessiner() {
     ? tries.map((m) => el('li', { class: `msg${estMoi(m.auteur) ? ' mien' : ''}`, 'data-id': m.id },
       el('p', { class: 'qui' }, el('b', {}, missions?.nomDe ? missions.nomDe(m.auteur) : m.auteur), el('span', { class: 'quand' }, ` ${heure(m.t)}`)),
       el('p', { class: 'texte' }, formater(m.texte)),
-      partieDe(m) && recente(m) && !estMoi(m.auteur) ? boutonRejoindre(partieDe(m).code) : null))
+      partieOuverte(m) && !estMoi(m.auteur) ? boutonRejoindre(partieDe(m).code) : null))
     : [el('li', { class: 'vide' }, etat.statut === 'ouverte' ? 'Pas encore de message. Le premier, c’est toi ?' : '…')]));
   if (enBas) fil.scrollTop = fil.scrollHeight;
   info.replaceChildren(...(etat.statut === 'refusee' ? [etat.raison]
@@ -218,12 +228,14 @@ function dessiner() {
 
 // Les onglets « Messages » et « Parties » (les annonces de la dernière heure, la plus récente en haut).
 function dessinerParties() {
-  const parties = [...etat.messages.values()].filter((m) => partieDe(m) && recente(m)).sort((a, b) => b.id - a.id);
+  const parties = [...etat.messages.values()].filter(partieOuverte).sort((a, b) => b.id - a.id);
   const tab = (id, texte) => el('button', { type: 'button', role: 'tab', class: 'onglet', 'aria-selected': String(onglet === id), onclick: () => { onglet = id; dessiner(); } }, texte);
   onglets.replaceChildren(tab('messages', 'Messages'), tab('parties', `Parties${parties.length ? ` (${parties.length})` : ''}`));
   liste.replaceChildren(...(parties.length ? parties.map((m) => el('li', { class: 'partie' },
     el('span', {}, el('b', {}, missions?.nomDe ? missions.nomDe(m.auteur) : m.auteur), ` · ${heure(m.t)} · code `, el('b', {}, partieDe(m).code)),
-    estMoi(m.auteur) ? el('span', { class: 'petit' }, 'ta partie') : boutonRejoindre(partieDe(m).code)))
+    estMoi(m.auteur) ? el('span', { class: 'mienne' }, el('span', { class: 'petit' }, 'ta partie'),
+      el('button', { class: 'bouton-jeu discret fermer-partie', type: 'button', title: 'La retirer de la liste (un message le dit à l’équipe)', onclick: () => game.bus.emit('parties:fermer', { codes: [partieDe(m).code] }) }, 'Fermer'))
+      : boutonRejoindre(partieDe(m).code)))
     : [el('li', { class: 'vide' }, 'Aucune partie dans l’heure. Pour en ouvrir une : « Héberger », dans « Jouer à plusieurs ».')]));
   const parMessages = onglet === 'messages';
   fil.hidden = !parMessages; liste.hidden = parMessages; form.hidden = !parMessages;
@@ -237,7 +249,7 @@ export function update() {}
 export function dispose() { boite?.remove(); }
 
 export const api = {
-  etat, ouvrir, fermer, envoyer, recevoir, nonLus, lireLaissezPasser, extraireJeton, estMoi,
+  etat, ouvrir, fermer, envoyer, recevoir, nonLus, lireLaissezPasser, extraireJeton, estMoi, partieOuverte,
   nomDe: (login) => (missions?.nomDe ? missions.nomDe(login) : login),
   onglet(id) { onglet = id; dessiner(); },
   get liste() { return liste; },

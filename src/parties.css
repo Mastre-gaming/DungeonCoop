@@ -15,3 +15,5 @@
   box-shadow: inset 0 0 0 2px #c9a86a, 0 6px 0 rgba(0,0,0,.25); padding: 6px 10px; font: 600 .95rem var(--titre, monospace); }
 .bulle-partie[hidden] { display: none; }
 .bulle-partie .plus-tard { background: none; border: 0; color: var(--parchemin-doux, #6f5a3e); font: 700 1rem var(--titre, monospace); cursor: pointer; }
+.messagerie-jeu .partie .mienne { display: flex; align-items: center; gap: 8px; }
+.messagerie-jeu .fermer-partie { font-size: .78rem; padding: 2px 8px; }
