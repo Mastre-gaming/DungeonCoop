@@ -78,11 +78,13 @@ async function lireJson(url) {
 async function lire() {
   if (horsLigne) return;
   const chemin = `/repos/${DEPOT}/issues?state=all&per_page=100`;
+  // toutes les pages (100 issues et PR par page) : sans ça, les plus anciennes missions sortent du compte
+  const pages = async (base) => { const l = []; for (let p = 1; p <= 10; p++) { const r = await lireJson(`${base}${chemin}&page=${p}`); l.push(...r); if (r.length < 100) break; } return l; };
   etat.lueA = Date.now();
   try {
-    etat.issues = await lireJson(`${reseau.worker}/api${chemin}`); etat.source = 'worker'; etat.erreur = null;
+    etat.issues = await pages(`${reseau.worker}/api`); etat.source = 'worker'; etat.erreur = null;
   } catch (e) {
-    try { etat.issues = await lireJson(`${GITHUB}${chemin}`); etat.source = 'github'; etat.erreur = null; }
+    try { etat.issues = await pages(GITHUB); etat.source = 'github'; etat.erreur = null; }
     catch (e2) { etat.erreur = 'Les missions ne se lisent pas pour l’instant.'; console.warn(e, e2); }
   }
   etat.lueA = Date.now();

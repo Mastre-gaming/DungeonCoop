@@ -7,10 +7,16 @@
 // La taille automatique se lit aux lignes changées (ajoutées + retirées) : S sous 150, M sous 600, L au-dessus.
 // Une taille ou une personne déjà posées à la main ne sont jamais changées.
 //
-// À blanc, sans rien écrire (lecture seule, pour vérifier) :
+// Le rattrapage (--historique) : tout ce qui est déjà sur main, chaque PR fusionnée et chaque push direct, passe par
+// les mêmes règles ; ce qui a déjà sa mission rentrée, assignée et taillée n'est pas touché, rien n'est créé deux fois.
+// Lancé à la main depuis l'onglet Actions (« Run workflow », historique coché), ou à blanc ici.
+//
+// À blanc, sans rien écrire (lecture seule, pour vérifier) ; le bilan dit les points que chacun gagnerait :
 //   node .github/scripts/missions-auto.mjs --a-blanc --pr 72 [--pr 75] [--sha <commit>]
+//   node .github/scripts/missions-auto.mjs --a-blanc --historique
 
 import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
 
 export const SEUILS = { S: 150, M: 600 };
 export const tailleAuto = (lignes) => (lignes < SEUILS.S ? 'S' : lignes < SEUILS.M ? 'M' : 'L');
@@ -28,6 +34,14 @@ export function missionsCitees(texte, sauf) {
 // La marque laissée dans une mission créée ici : elle évite d'en créer deux pour la même PR ou le même commit.
 export const marque = (cle) => `<!-- missions-auto: ${cle} -->`;
 const estRobot = (u) => !u || u.type === 'Bot' || /\[bot\]$/.test(u.login ?? '');
+const POINTS = { S: 1, M: 3, L: 8 };   // les mêmes que le jeu (src/10_missions.js) et RENOMMEE.fr.md
+
+// Le bilan : les points que chaque personne gagne (missions créées ou devenues comptables), sans les bonus de phase.
+export const bilan = new Map();
+function gagner(qui, taille, numero) {
+  const base = POINTS[taille], bonus = qui.length > 1 ? Math.ceil(base / 2) : 0;
+  for (const q of qui) { const b = bilan.get(q) ?? { points: 0, missions: [] }; b.points += base + bonus; b.missions.push(`${numero} ${taille}`); bilan.set(q, b); }
+}
 
 // --- GitHub -------------------------------------------------------------------------------------------------------
 function client({ depot, jeton, aBlanc, journal = console.log }) {
@@ -58,6 +72,10 @@ async function rentrer(gh, n, { auteur, taille, pourquoi, journal }) {
   if (!i) return journal(`  #${n} : introuvable, rien à faire.`);
   if (i.pull_request) return journal(`  #${n} : c'est une PR, pas une mission.`);
   const faits = [];
+  const tailleAvant = (i.labels ?? []).map(nom).find((l) => /^taille\s*:/i.test(l))?.split(':')[1].trim().toUpperCase();
+  const quiAvant = (i.assignees ?? []).map((a) => a.login);
+  const comptait = i.state === 'closed' && tailleAvant && quiAvant.length;
+  if (!comptait && (tailleAvant ?? taille) && (quiAvant.length || auteur)) gagner(quiAvant.length ? quiAvant : [auteur], tailleAvant ?? taille, `#${n}`);
   if (!(i.assignees ?? []).length && auteur) { await gh.api(`/issues/${n}/assignees`, { method: 'POST', body: { assignees: [auteur] } }); faits.push(`assignée à ${auteur}`); }
   if (!aUneTaille(i.labels ?? [])) { await gh.api(`/issues/${n}/labels`, { method: 'POST', body: { labels: [`taille: ${taille}`] } }); faits.push(`taille ${taille}`); }
   if (i.state === 'open') {
@@ -72,6 +90,7 @@ async function rentrer(gh, n, { auteur, taille, pourquoi, journal }) {
 async function creer(gh, { cle, titre, axes, auteur, taille, corps, journal }) {
   const deja = await dejaCreee(gh, cle);
   if (deja) return journal(`  déjà une mission pour ${cle} : #${deja}.`);
+  if (auteur) gagner([auteur], taille, cle);
   const i = await gh.api('/issues', { method: 'POST', body: { title: titre, labels: [...axes, `taille: ${taille}`], body: `${corps}\n\n${marque(cle)}` } });
   const n = i.number ?? '(nouvelle)';
   if (auteur) { try { await gh.api(`/issues/${n}/assignees`, { method: 'POST', body: { assignees: [auteur] } }); } catch (e) { journal(`  ${auteur} ne peut pas être assigné : ${e.message}`); } }
@@ -129,6 +148,29 @@ export async function traiterPush(gh, shas, journal = console.log) {
   if (directs.length) await traiterDirects(gh, directs, journal);
 }
 
+// GitHub répond parfois 500 : on réessaie deux fois.
+async function essayer(f) { for (let k = 0; ; k++) { try { return await f(); } catch (e) { if (k >= 2) throw e; await new Promise((r) => setTimeout(r, 2000)); } } }
+
+// Le rattrapage : chaque PR fusionnée sur main, puis les commits de main poussés sans PR.
+async function toutes(gh, chemin) {
+  const l = [];
+  for (let page = 1; ; page++) { const p = (await essayer(() => gh.api(`${chemin}${chemin.includes('?') ? '&' : '?'}per_page=100&page=${page}`))) ?? []; l.push(...p); if (p.length < 100) return l; }
+}
+export async function traiterHistorique(gh, journal = console.log) {
+  const prs = (await toutes(gh, '/pulls?state=closed&base=main')).filter((p) => p.merged_at).sort((a, b) => a.number - b.number);
+  journal(`Historique : ${prs.length} PR fusionnées sur main.`);
+  for (const p of prs) await traiterPR(gh, p.number, journal);
+  // les commits de la ligne de main (sans ceux des branches fusionnées) : chacun vient d'une PR ou d'un push direct
+  const shas = execSync('git log --first-parent --no-merges --format=%H origin/main', { encoding: 'utf8' }).split(/\s+/).filter(Boolean);
+  const directs = [];
+  for (const sha of shas) {
+    const liees = (await essayer(() => gh.api(`/commits/${sha}/pulls`))) ?? [];
+    if (!liees.some((p) => p.merged_at)) directs.push(await essayer(() => gh.api(`/commits/${sha}`)));
+  }
+  journal(`Historique : ${directs.length} commit(s) poussé(s) sur main sans PR.`);
+  if (directs.length) await traiterDirects(gh, directs, journal);
+}
+
 // --- Lancement -----------------------------------------------------------------------------------------------------
 if (process.argv[1]?.replace(/\\/g, '/').endsWith('.github/scripts/missions-auto.mjs')) {
   const args = process.argv.slice(2), aBlanc = args.includes('--a-blanc');
@@ -136,7 +178,9 @@ if (process.argv[1]?.replace(/\\/g, '/').endsWith('.github/scripts/missions-auto
   const gh = client({ depot: process.env.GH_REPO ?? 'Mastre-gaming/DungeonCoop', jeton: process.env.GH_TOKEN, aBlanc });
   if (aBlanc) console.log('À blanc : rien n’est écrit sur GitHub.');
   const prs = valeurs('--pr').map(Number), shas = valeurs('--sha');
-  if (prs.length || shas.length) {
+  if (args.includes('--historique')) {
+    await traiterHistorique(gh);
+  } else if (prs.length || shas.length) {
     for (const n of prs) await traiterPR(gh, n);
     if (shas.length) await traiterPush(gh, shas);
   } else {
@@ -145,4 +189,6 @@ if (process.argv[1]?.replace(/\\/g, '/').endsWith('.github/scripts/missions-auto
     console.log(`Push sur ${ev.ref} : ${commits.length} commit(s).`);
     await traiterPush(gh, commits);
   }
+  console.log(`
+Bilan${aBlanc ? ' (à blanc)' : ''} : ${bilan.size ? [...bilan].map(([q, b]) => `${q} +${b.points} (${b.missions.length} mission${b.missions.length > 1 ? 's' : ''})`).join(' · ') : 'personne ne gagne de points'}.`);
 }
