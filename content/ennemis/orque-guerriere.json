@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "id": "orque-guerriere",
+  "nom": "Orque guerrière",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "soldat",
+  "pv": 45,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "plus-proche"
+  },
+  "capacites": [
+    {
+      "nom": "Estoc",
+      "slot": "action",
+      "portee": "2 cases",
+      "zone": "aucune",
+      "base": 10,
+      "de": 6,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Balayage",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "la cible À terre",
+      "cree": [],
+      "utilise": [],
+      "recharge": 2
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      3,
+      8
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_green&head=Orc_female_green&clothes=Sleeveless_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Spear_medium",
+    "planche": ""
+  }
+}

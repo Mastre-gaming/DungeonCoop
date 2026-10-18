@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "id": "grand-pretre",
+  "nom": "Grand prêtre du culte",
+  "auteur": "",
+  "famille": "humain",
+  "rang": "boss",
+  "pv": 230,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": true,
+  "habitude": {
+    "type": "chef"
+  },
+  "capacites": [
+    {
+      "nom": "Rituel",
+      "slot": "action",
+      "portee": "autel",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "3 tours pour l’interrompre, sinon l’Avatar (wartotaure, 200 PV)",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [
+    "100 % : cultistes et prêtre en garde",
+    "50 % : Rituel, 3 tours pour l’interrompre (atteindre l’autel)",
+    "raté : il devient l’Avatar (wartotaure, 200 PV)"
+  ],
+  "mecanique_combo": "Interrompre le rituel demande deux héros sur les deux cercles en même temps (attaque en duo).",
+  "butin": {
+    "or": [
+      20,
+      40
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_Elderly_light&clothes=Longsleeve_white&legs=Pants_white&weapon=Diamond_staff_gold",
+    "planche": ""
+  }
+}

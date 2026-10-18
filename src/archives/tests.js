@@ -1,7 +1,7 @@
 // Les vérifications des archives (?test) : le catalogue (tout y est, rien n'est inventé), les images des planches
 // (chaque planche se charge, chaque aperçu dessine), puis la page pilotée comme une personne (onglets, cartes,
 // recherche, réglages, liens d'un rayon à l'autre).
-import { catalogue, sceneDe, utilise, ANIMS_LPC, ESQUISSES, BRIQUES, HEROS, CAPACITES, PERSOS } from './catalogue.js';
+import { catalogue, MOBS, sceneDe, utilise, ANIMS_LPC, ESQUISSES, BRIQUES, HEROS, CAPACITES, PERSOS } from './catalogue.js';
 import { cadreDe, image, etat } from './apercus.js';
 import { texteDe } from './vue.js';
 
@@ -19,7 +19,9 @@ export async function selfTest(t, game) {
 
   // --- Le catalogue --------------------------------------------------------------------------------------------
   t.group('le catalogue : tous les assets du projet');
-  t.eq(C.personnages.filter((p) => p.groupe !== 'Le camp').length, Object.keys(PERSOS).length, `les ${Object.keys(PERSOS).length} personnages du terrain d’entraînement`);
+  t.eq(C.personnages.filter((p) => p.ennemi).length, MOBS.length, `une carte par fichier de content/ennemis/ (${MOBS.length})`);
+  t.ok(MOBS.every((m) => m.id && m.nom && m.rang && m.pv > 0 && m.capacites?.length && (m.rang !== 'boss' || m.mecanique_combo)), 'chaque ennemi a son rang, ses PV, ses attaques (et un boss, sa mécanique de combo)');
+  t.eq(C.personnages.filter((p) => p.groupe !== 'Le camp' && !p.ennemi).length, Object.keys(PERSOS).length, `les ${Object.keys(PERSOS).length} personnages du terrain d’entraînement`);
   t.ok(['heros-camp', 'sentinelle', 'barde-camp', 'rat-conflit', 'rat-tests', 'rat-relecture'].every((id) => C.personnages.some((p) => p.id === id)), 'et ceux du camp : le héros de départ, la sentinelle, le barde, les 3 rats');
   t.eq(C.classes.filter((c) => c.source === 'regles').length, Object.keys(HEROS).length, 'les 8 classes jouables au terrain');
   t.ok(C.classes.filter((c) => c.source === 'armurerie').length >= 5, 'les fiches de l’armurerie (content/classes/)');

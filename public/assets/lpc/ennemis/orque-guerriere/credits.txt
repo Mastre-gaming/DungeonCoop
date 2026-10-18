@@ -1,0 +1,59 @@
+Character: Orque guerrière
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_green&head=Orc_female_green&clothes=Sleeveless_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Spear_medium
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/female/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Benjamin K. Smith (BenCreating), bluecarrot16, TheraHedwig, Evert, MuffinElZangano, Durrani, Pierre Vigier (pvigier), ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/orc/female/walk.png
+
+human head adapted to orc by madmarcel, hurt/cast animations made by makrohn, headless version and tweaks by bluecarrot16
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Matthew Krohn (makrohn), Marcel van de Steeg (MadMarcel), Stephen Challener (Redshrike)
+
+torso/clothes/sleeveless/sleeveless/female/walk/brown.png
+
+"pirate shirt" by MadMarcel, edited to all poses by makrohn, edited from tube-top/tanktop to sleeveless by JaidynReiman, cleanup and re-drawing by ElizaWy, edits for v3 bases and further cleanup by bluecarrot16
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: ElizaWy, JaidynReiman, Matthew Krohn (makrohn), Marcel van de Steeg (MadMarcel), Stephen Challener (Redshrike), Johannes Sjölund (wulax)
+
+legs/pants/thin/walk.png
+
+original male pants by wulax, edited for female by Joe White, recolors and edits to v3 base by bluecarrot16, teen legs by ElizaWy derived from base, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Joe White, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+feet/boots/basic/thin/walk.png
+
+original by Nila122, edited for male and v3 bases by bluecarrot16, Jump/Sit/Emote/Run/Revised Combat by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0
+
+Authors: JaidynReiman, bluecarrot16, Nila122
+
+weapon/polearm/spear/foreground/walk/medium.png
+
+original by wulax, walk animations redone by pvigier, split into layers and tweaked for v3 character bases by bluecarrot16
+
+Licenses: CC-BY-SA 3.0
+
+Authors: Pierre Vigier (pvigier), Johannes Sjölund (wulax), Inboxninja
+
+Download TXT
+Download CSV

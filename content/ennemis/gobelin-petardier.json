@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "id": "gobelin-petardier",
+  "nom": "Gobelin pétardier",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "sbire",
+  "pv": 15,
+  "vitesse": 9,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "kamikaze"
+  },
+  "capacites": [
+    {
+      "nom": "Boum",
+      "slot": "action",
+      "portee": "soi",
+      "zone": "2,5 m",
+      "base": 16,
+      "de": 6,
+      "effet": "zone 2,5 m autour de lui, il meurt",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [
+    "feu"
+  ],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      1,
+      4
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Goblin_green&clothes=TShirt_red&legs=Pants_brown&shoes=Basic_Boots_brown",
+    "planche": ""
+  }
+}

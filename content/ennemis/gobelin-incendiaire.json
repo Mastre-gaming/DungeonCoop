@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "id": "gobelin-incendiaire",
+  "nom": "Gobelin incendiaire",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "sbire",
+  "pv": 20,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "distance"
+  },
+  "capacites": [
+    {
+      "nom": "Fiole d’huile",
+      "slot": "action",
+      "portee": "9 m",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "surface Huile 1,7 m",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Torche",
+      "slot": "action",
+      "portee": "9 m",
+      "zone": "aucune",
+      "base": 6,
+      "de": 4,
+      "effet": "enflamme l’Huile",
+      "cree": [],
+      "utilise": [],
+      "recharge": 2
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      1,
+      4
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Goblin_green&clothes=Sleeveless_brown&legs=Pants_brown&shoes=Basic_Boots_brown",
+    "planche": ""
+  }
+}

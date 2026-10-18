@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "id": "liche",
+  "nom": "Liche",
+  "auteur": "",
+  "famille": "mort-vivant",
+  "rang": "boss",
+  "pv": 250,
+  "vitesse": 6,
+  "dex": 0,
+  "coriace": true,
+  "habitude": {
+    "type": "invocateur"
+  },
+  "capacites": [
+    {
+      "nom": "Lever les morts",
+      "slot": "action",
+      "portee": "soi",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "chaque tour sous 66 %",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Nova de givre",
+      "slot": "action",
+      "portee": "zone 5 m",
+      "zone": "5 m",
+      "base": 0,
+      "de": 0,
+      "effet": "Gelé, surface Glace",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [
+    "feu"
+  ],
+  "phases": [
+    "100 % : 2 nécromanciens en garde",
+    "66 % : Lever les morts chaque tour",
+    "33 % : Nova de givre zone 5 m, Gelé, surface Glace"
+  ],
+  "mecanique_combo": "Pousser ses squelettes sur la Glace les fait glisser jusqu’à lui ; faible au feu quand il canalise.",
+  "butin": {
+    "or": [
+      20,
+      40
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Skeleton_white&head=Skeleton_white&hat=Crown_crown_gold&clothes=Longsleeve_black&legs=Pants_black&weapon=Loop_staff_light",
+    "planche": ""
+  }
+}

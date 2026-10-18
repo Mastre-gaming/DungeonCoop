@@ -1,0 +1,43 @@
+Character: Matriarche des loups
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_brown&head=Wolf_female_brown&armour=Leather_brown&legs=Pants_brown
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/female/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Benjamin K. Smith (BenCreating), bluecarrot16, TheraHedwig, Evert, MuffinElZangano, Durrani, Pierre Vigier (pvigier), ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/wolf/female/walk.png
+
+original wolf animation by Redshrike, commissioned by William.Thompsonj; wolfman sprite by BenCreating, commissioned by castelonia; tweaks and headless version by bluecarrot16
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Sander Frenken (castelonia), Benjamin K. Smith (BenCreating), William.Thompsonj, Stephen Challener (Redshrike)
+
+torso/armour/leather/female/walk.png
+
+adapted to v3 bases by bluecarrot16, reduced colors and climb/emote/jump by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Johannes Sjölund (wulax), bluecarrot16, JaidynReiman
+
+legs/pants/thin/walk.png
+
+original male pants by wulax, edited for female by Joe White, recolors and edits to v3 base by bluecarrot16, teen legs by ElizaWy derived from base, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Joe White, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+Download TXT
+Download CSV

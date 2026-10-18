@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "id": "troll",
+  "nom": "Troll",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "elite",
+  "pv": 80,
+  "vitesse": 6,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "plus-proche"
+  },
+  "capacites": [
+    {
+      "nom": "Gourdin",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 16,
+      "de": 6,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Régénération",
+      "slot": "passif",
+      "portee": "soi",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "+8 PV au début de son tour, sauf s’il a pris du feu",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [
+    "feu"
+  ],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      6,
+      12
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Troll_green&clothes=Sleeveless_brown&legs=Pants_brown&weapon=Club_club",
+    "planche": ""
+  }
+}

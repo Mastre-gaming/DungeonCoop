@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "id": "bandit",
+  "nom": "Bandit",
+  "auteur": "",
+  "famille": "humain",
+  "rang": "sbire",
+  "pv": 25,
+  "vitesse": 9,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "lache"
+  },
+  "capacites": [
+    {
+      "nom": "Coup de dague",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 8,
+      "de": 4,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Vol",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "prend une potion à un héros, fuit",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      1,
+      4
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&hat=Hood_forest&clothes=Longsleeve_brown&legs=Pants_black&shoes=Basic_Boots_black&weapon=Dagger_dagger",
+    "planche": ""
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "id": "vampire",
+  "nom": "Vampire",
+  "auteur": "",
+  "famille": "mort-vivant",
+  "rang": "elite",
+  "pv": 60,
+  "vitesse": 9,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "lache"
+  },
+  "capacites": [
+    {
+      "nom": "Morsure",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 12,
+      "de": 6,
+      "effet": "il récupère la moitié",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Brume",
+      "slot": "bonus",
+      "portee": "soi",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "se téléporte à 9 m",
+      "cree": [],
+      "utilise": [],
+      "recharge": 3
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [
+    "feu"
+  ],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      6,
+      12
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Vampire_light&clothes=Longsleeve_black&legs=Pants_black&shoes=Basic_Boots_black&cape=Solid_red",
+    "planche": ""
+  }
+}

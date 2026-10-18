@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "matriarche-des-loups",
+  "nom": "Matriarche des loups",
+  "auteur": "",
+  "famille": "bete",
+  "rang": "boss",
+  "pv": 240,
+  "vitesse": 12,
+  "dex": 0,
+  "coriace": true,
+  "habitude": {
+    "type": "meute"
+  },
+  "capacites": [
+    {
+      "nom": "Hurlement de la lune",
+      "slot": "action",
+      "portee": "salle",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "tous les loups Inspirés et se relèvent à 15 PV",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [
+    "100 % : 3 loups",
+    "50 % : Hurlement de la lune, les loups Inspirés et se relèvent à 15 PV"
+  ],
+  "mecanique_combo": "Séparer la meute : un loup seul n’attaque plus ; la tuer seule fait fuir les loups.",
+  "butin": {
+    "or": [
+      20,
+      40
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_brown&head=Wolf_female_brown&armour=Leather_brown&legs=Pants_brown",
+    "planche": ""
+  }
+}

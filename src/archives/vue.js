@@ -1,7 +1,7 @@
 // Les archives du camp : quatre onglets (Personnages, Classes, Sorts, Animations), des cartes avec un petit aperçu
 // animé, une recherche, et à droite le détail de ce qu'on a choisi (un grand aperçu, ses réglages et tout ce qu'on sait).
 // L'adresse garde l'onglet et le choix (?onglet=sorts&id=foudre), pour partager un lien vers un asset.
-import { catalogue, classesDuNavigateur, ANIMS_LPC, DIRECTIONS, ESQUISSES, BRIQUES, HEROS, CAPACITES } from './catalogue.js';
+import { catalogue, classesDuNavigateur, RANGS, ANIMS_LPC, DIRECTIONS, ESQUISSES, BRIQUES, HEROS, CAPACITES } from './catalogue.js';
 import { creerApercu, retirer, avancer, brancherVisibilite, etat } from './apercus.js';
 import { icone } from '../entrainement/fiches.js';
 import { fiche } from '../classe/budget.js';
@@ -184,7 +184,36 @@ function detailPerso(x) {
       x.lien ? ligne('Son look', el('a', { href: x.lien, target: '_blank', rel: 'noopener' }, 'ouvrir dans le générateur LPC')) : null,
       x.credits ? ligne('Les crédits', el('a', { href: x.credits, target: '_blank', rel: 'noopener' }, 'qui a dessiné chaque pièce')) : null),
     x.classe ? el('button', { type: 'button', class: 'bouton-jeu', onclick: () => { changerOnglet('classes'); choisir(x.classe); } }, `Voir la classe ${HEROS[x.classe].nom}`) : null,
+    x.ennemi ? ficheEnnemi(x.ennemi) : null,
   ];
+}
+// La fiche d'un ennemi ou d'un boss (content/ennemis/<id>.json) : ses chiffres, son habitude, ses attaques et sorts.
+const HABITUDES = {
+  'plus-proche': 'va au héros le plus proche et frappe', distance: 'garde ses distances et tire sur le plus proche qu’il voit',
+  'charge-faible': 'charge le héros le plus blessé et le repousse', chef: 'soutient ses alliés, puis lâche une grosse attaque de zone',
+  meute: 'attaque surtout la cible qu’un allié touche déjà', lache: 'fuit sous 30 % de PV, revient deux tours plus tard',
+  soigneur: 'reste derrière et soigne l’allié le plus blessé', invocateur: 'fait entrer des sbires ; s’il tombe, ils tombent',
+  surface: 'crée une surface sous les héros', garde: 'colle à un allié précieux et prend les coups à sa place',
+  embuscade: 'invisible jusqu’à ce qu’un héros passe à 3 m', kamikaze: 'court au groupe le plus serré et explose', immobile: 'ne bouge pas',
+};
+const virg = (n) => String(n).replace('.', ',');
+function ficheEnnemi(m) {
+  const h = m.habitude?.type;
+  const attaque = (c) => el('li', {}, el('strong', {}, c.nom), ` · ${c.slot === 'bonus' ? 'bonus' : c.slot === 'reaction' ? 'réaction' : 'action'} · ${c.portee}`,
+    c.zone && c.zone !== 'aucune' ? ` · zone ${c.zone}` : '', c.base ? ` · ${c.base}+d${c.de}` : '', c.recharge ? ` · recharge ${c.recharge}` : '', c.effet ? ` : ${c.effet}` : '');
+  return el('section', { class: 'fiche-ennemi' },
+    el('p', { class: 'statut' }, m.valide ? '✓ validé' : 'proposé, à valider'),
+    el('dl', { class: 'infos' },
+      ligne('Rang', RANGS[m.rang] ?? m.rang),
+      ligne('Points de vie', `${m.pv} PV${m.coriace ? ' · coriace' : ''}`),
+      ligne('Vitesse', `${virg(m.vitesse)} m par tour`),
+      ligne('Habitude', h ? `${h} : ${HABITUDES[h] ?? ''}` : null),
+      ligne('Résiste', (m.resiste ?? []).join(', ')),
+      ligne('Faiblesse', (m.faiblesse ?? []).join(', ')),
+      ligne('Butin', m.butin?.or ? `${m.butin.or[0]} à ${m.butin.or[1]} or` : null)),
+    el('h3', {}, 'Attaques et sorts'), el('ul', { class: 'effets' }, (m.capacites ?? []).map(attaque)),
+    m.phases?.length ? [el('h3', {}, 'Phases'), el('ul', { class: 'effets' }, m.phases.map((p) => el('li', {}, typeof p === 'string' ? p : `${p.seuil} % : ${p.texte}`)))] : null,
+    m.mecanique_combo ? [el('h3', {}, 'Mécanique de combo'), el('p', { class: 'phrase' }, m.mecanique_combo)] : null);
 }
 
 function detailClasse(x) {

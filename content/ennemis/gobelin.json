@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "id": "gobelin",
+  "nom": "Gobelin",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "sbire",
+  "pv": 20, "vitesse": 9, "dex": 2, "coriace": false,
+  "habitude": { "type": "meute" },
+  "capacites": [
+    { "nom": "Coup bas", "slot": "action", "portee": "contact", "zone": "aucune", "base": 6, "de": 4, "effet": "avantage si un allié a touché la même cible ce tour", "cree": [], "utilise": [], "recharge": 0 },
+    { "nom": "Pas de côté", "slot": "bonus", "portee": "soi", "zone": "aucune", "base": 0, "de": 0, "effet": "se décale de 3 m sans provoquer d'attaque", "cree": [], "utilise": [], "recharge": 2 }
+  ],
+  "resiste": [], "faiblesse": ["poussee"],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": { "or": [1, 4] },
+  "look": { "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Goblin_green&clothes=Sleeveless_brown&legs=Pants_brown&shoes=Basic_Boots_brown&weapon=Dagger_dagger", "planche": "" }
+}
