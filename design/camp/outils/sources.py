@@ -3,7 +3,8 @@ import os
 from png import lire
 
 ICI = os.path.dirname(os.path.abspath(__file__))
-DL = os.path.normpath(os.path.join(ICI, '..', '..', '..', 'dl', 'lpc'))
+# DUNGEON_DL : un autre dossier dl/lpc (par exemple depuis une autre copie de travail du repo)
+DL = os.environ.get('DUNGEON_DL') or os.path.normpath(os.path.join(ICI, '..', '..', '..', 'dl', 'lpc'))
 PIECES = os.path.normpath(os.path.join(ICI, '..', 'pieces'))
 TUILES = os.path.join(DL, 'base', 'extrait', 'LPC Base Assets', 'tiles')
 
@@ -18,6 +19,8 @@ PLANCHES = {
     'rock': os.path.join(TUILES, 'rock.png'),
     'humain': os.path.join(DL, 'heros', 'sheet.png'),
     'sentinelle': os.path.join(DL, 'sentinelle', 'sheet.png'),
+    'rat': os.path.join(DL, 'rats', 'extrait', 'PNG', '32x32', 'rat.png'),
+    'souris': os.path.join(DL, 'rats', 'extrait', 'PNG', '32x32', 'mouse.png'),
 }
 
 _cache = {}

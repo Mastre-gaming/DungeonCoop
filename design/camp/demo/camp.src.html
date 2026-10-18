@@ -36,6 +36,19 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
 .bouton-jeu[aria-pressed="true"]{background:#c4621f;border-color:#7a3b10}
 .bouton-jeu:focus-visible{outline:3px solid var(--feu);outline-offset:2px}
 .etat-heros{font:500 .95rem var(--titre);color:var(--doux)}
+.jeu{position:relative}
+.bulle-rat{position:absolute;transform:translate(-50%,-100%);pointer-events:none;background:#f3e7c9;color:#3a2c1a;border:3px solid #3b2716;border-radius:4px;padding:4px 8px;font:600 .82rem/1.3 var(--texte);max-width:260px;white-space:normal;box-shadow:0 2px 0 rgba(0,0,0,.3)}
+.bulle-rat b{font:500 .85rem var(--titre);color:#6f5a3e;display:block}
+.rats{display:grid;gap:10px;margin-top:12px}
+.rats h3{font-size:1.05rem}
+.especes{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.95rem}
+.especes li{display:flex;align-items:center;gap:8px}
+.espece{width:32px;height:32px;image-rendering:pixelated;flex:none}
+.liste-rats{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.liste-rats li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;background:var(--papier);border:1px solid var(--trait);border-radius:6px;padding:6px 10px;font-size:.92rem}
+.liste-rats a{color:var(--herbe);font-weight:600}
+.liste-rats .etiquette{font:500 .8rem var(--titre);border-radius:3px;padding:0 6px;background:#f3e7c9;color:#3a2c1a}
+.liste-rats .exemple{background:#ffd36b}
 .spawn{position:relative}
 .spawn canvas#scene-spawn{border-radius:6px;border:1px solid var(--trait)}
 .excl{position:absolute;font:700 2.6rem var(--titre);color:#ffd35a;text-shadow:0 3px 0 #3b2716,2px 0 0 #3b2716,-2px 0 0 #3b2716,0 -2px 0 #3b2716;transform:translate(-50%,-100%);pointer-events:none;animation:saut .5s ease-out}
@@ -193,7 +206,7 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
   </section>
 
   <section aria-labelledby="t-heros">
-    <h2 id="t-heros">Ton héros dans le camp</h2>
+    <h2 id="t-heros">Ton héros dans le camp, et les rats</h2>
     <p class="note">Un humain de base fait avec le générateur LPC, avec ses vraies animations de marche (8 images) et de course (8 images), dans les 4 directions. Flèches ou ZQSD pour marcher, Maj pour courir. Sur iPad : touche la scène et garde le doigt pour marcher vers lui, et le bouton « Courir » pour courir. La caméra suit avec la zone morte décidée (30 % au centre) et s'arrête aux bords.</p>
     <div class="jeu">
       <canvas id="scene-heros" width="512" height="288" tabindex="0" aria-label="Le héros dans le camp. Flèches ou ZQSD pour marcher, Maj pour courir."></canvas>
@@ -202,6 +215,24 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
         <label class="appel"><input type="checkbox" id="voir-zone"> Montrer la zone morte</label>
         <span class="etat-heros" id="etat-heros" aria-live="polite"></span>
       </div>
+      <div class="bulle-rat" id="bulle-rat" hidden></div>
+    </div>
+    <div class="rats" aria-labelledby="t-rats">
+      <h3 id="t-rats">Les rats : les PR et les conflits à résoudre</h3>
+      <p class="note">Chaque PR ouverte qui attend quelque chose devient un rat. Il apparaît avec un « ! » et <b>chasse surtout la personne qui a poussé la PR</b> : il la suit et lui mordille les talons. Les autres, il les laisse passer en rôdant, et ne mord que si on lui marche dessus. Clique dessus : la PR s'ouvre sur GitHub. Quand elle est résolue, le rat détale. Le plus grave décide de l'animal :</p>
+      <ul class="especes">
+        <li><span class="espece" data-espece="0" aria-hidden="true"></span><b>Rat gris aux yeux rouges</b> : un conflit à régler</li>
+        <li><span class="espece" data-espece="1" aria-hidden="true"></span><b>Rat vert</b> : des tests rouges</li>
+        <li><span class="espece" data-espece="2" aria-hidden="true"></span><b>Souris</b> : une relecture attendue</li>
+      </ul>
+      <div class="commandes">
+        <label class="appel" for="joueur">Tu joues</label>
+        <select id="joueur"></select>
+        <button class="bouton-jeu" id="rats-reels" type="button">Lire les vraies PR</button>
+        <button class="bouton-jeu discret" id="rats-exemple" type="button">Rats d'exemple</button>
+        <span class="etat-heros" id="etat-rats" aria-live="polite"></span>
+      </div>
+      <ul class="liste-rats" id="liste-rats"></ul>
     </div>
   </section>
 
@@ -396,7 +427,8 @@ function imageHeros(){
 }
 function dessinerHeros(c,temps,niv){
   const g=c.getContext('2d');g.imageSmoothingEnabled=false;
-  const cx=Math.round(camera.x),cy=Math.round(camera.y);
+  const sx=secousse>0?Math.round((Math.random()*2-1)*2):0, sy=secousse>0?Math.round((Math.random()*2-1)*2):0;
+  const cx=Math.round(camera.x)+sx,cy=Math.round(camera.y)+sy;
   g.setTransform(1,0,0,1,-cx,-cy);
   g.clearRect(cx,cy,VUE.w,VUE.h);
   const i0=Math.floor(cx/T),j0=Math.floor(cy/T);
@@ -408,8 +440,10 @@ function dessinerHeros(c,temps,niv){
   for(const d of DECOR_HEROS)objets.push({bas:d.y+charges[d.n].height,f:()=>g.drawImage(charges[d.n],Math.round(d.x),Math.round(d.y))});
   const im=imageHeros();
   objets.push({bas:heros.y,f:()=>{g.fillStyle='rgba(0,0,0,.22)';g.fillRect(Math.round(heros.x)-9,Math.round(heros.y)-2,18,4);
-    g.drawImage(charges.heros,im.col*H_FRAME,im.ligne*H_FRAME,H_FRAME,H_FRAME,Math.round(heros.x)-32,Math.round(heros.y)-60,H_FRAME,H_FRAME)}});
+    g.drawImage(herosTouche>0&&herosRouge?herosRouge:charges.heros,im.col*H_FRAME,im.ligne*H_FRAME,H_FRAME,H_FRAME,Math.round(heros.x)-32,Math.round(heros.y)-60,H_FRAME,H_FRAME)}});
+  objets.push(...objetsRats(g,temps));
   objets.sort((a,b)=>a.bas-b.bas).forEach(o=>o.f());
+  for(const d of degats)dessinerDegat(g,d);
   g.setTransform(1,0,0,1,0,0);
   if($('#voir-zone').checked){const zw=VUE.w*.3,zh=VUE.h*.3;g.setLineDash([4,4]);g.strokeStyle='rgba(255,255,255,.8)';g.strokeRect(Math.round((VUE.w-zw)/2)+.5,Math.round((VUE.h-zh)/2)+.5,Math.round(zw),Math.round(zh));g.setLineDash([])}
   $('#etat-heros').textContent=heros.bouge?(heros.court?'il court':'il marche'):'il attend';
@@ -426,6 +460,175 @@ function brancherHeros(){
   const fin=()=>{doigt.actif=false};c.addEventListener('pointerup',fin);c.addEventListener('pointercancel',fin);
   const b=$('#courir');b.addEventListener('click',()=>{courirBouton=!courirBouton;b.setAttribute('aria-pressed',String(courirBouton))});
   camera.x=Math.max(0,Math.min(MONDE.w-VUE.w,heros.x-VUE.w/2));camera.y=Math.max(0,Math.min(MONDE.h-VUE.h,heros.y-VUE.h/2));
+}
+
+/* --- Les rats : chaque PR ouverte qui attend quelque chose (dashboard « PR et conflits ») --- */
+const DEPOTS_PR=['Mastre-gaming/DungeonCoop','Mastre-gaming/DungeonCoop-dashboard'];
+const DIRECT='https://dungeoncoop-direct.mastredev.workers.dev';   // le Worker du dashboard (CORS ouvert, mêmes chemins)
+const ESPECES=[{nom:'conflit',texte:'conflit à régler',vitesse:80},{nom:'tests',texte:'tests rouges',vitesse:70},{nom:'relecture',texte:'relecture attendue',vitesse:60}];
+const R_DIR={haut:0,droite:1,bas:2,gauche:3}, R_ELAN={haut:[0,-1],droite:[1,0],bas:[0,1],gauche:[-1,0]};
+const rats=[];
+let joueurGithub=null;   // qui joue : le pseudo GitHub reconnu par la sentinelle, ou choisi dans la liste
+function quiJoue(){return joueurGithub}
+const vise=r=>!!joueurGithub&&String(r.pr.auteur||'').toLowerCase()===joueurGithub.toLowerCase();
+let secousse=0; const degats=[];   // la secousse de l'écran, et les « −1 » qui montent           // { cle, pr, espece, x, y, dir, phase, t, mord, exemple }
+let herosTouche=0, herosRouge=null, ratSurvole=null;
+
+async function lireApi(chemin){
+  try{const r=await fetch(DIRECT+'/api'+chemin,{cache:'no-store'});if(r.ok)return r.json()}catch{}
+  const r=await fetch('https://api.github.com'+chemin,{cache:'no-store'});if(!r.ok)throw new Error(`GitHub ${r.status}`);return r.json();
+}
+// le plus grave décide : conflit, puis tests rouges, puis relecture attendue ; un brouillon ne fait pas de rat
+async function lirePRs(){
+  const sortie=[];
+  for(const depot of DEPOTS_PR){
+    const prs=await lireApi(`/repos/${depot}/pulls?state=open&per_page=50`);
+    for(const pr of prs){
+      if(pr.draft)continue;
+      const [detail,checks]=await Promise.all([lireApi(`/repos/${depot}/pulls/${pr.number}`).catch(()=>pr),
+        lireApi(`/repos/${depot}/commits/${pr.head.sha}/check-runs?per_page=100`).catch(()=>({check_runs:[]}))]);
+      const conflit=detail.mergeable===false||detail.mergeable_state==='dirty';
+      const tests=(checks.check_runs||[]).some(c=>c.conclusion==='failure'||c.conclusion==='timed_out');
+      const relecture=(pr.requested_reviewers||[]).length>0||(pr.requested_teams||[]).length>0;
+      const espece=conflit?0:tests?1:relecture?2:-1;
+      if(espece>=0)sortie.push({cle:`${depot}#${pr.number}`,espece,pr:{numero:pr.number,titre:pr.title,url:pr.html_url,depot:depot.endsWith('dashboard')?'dashboard':'jeu',auteur:pr.user?.login}});
+    }
+  }
+  return sortie;
+}
+const EXEMPLES=[
+  {cle:'ex-12',espece:0,pr:{numero:12,titre:'Ajoute l’événement de la taverne',url:'https://github.com/Mastre-gaming/DungeonCoop/pulls',depot:'jeu',auteur:'DonBabaa'},exemple:true},
+  {cle:'ex-14',espece:1,pr:{numero:14,titre:'Sprite du chevalier : couronne et cape',url:'https://github.com/Mastre-gaming/DungeonCoop/pulls',depot:'jeu',auteur:'PCrrfng'},exemple:true},
+  {cle:'ex-3',espece:2,pr:{numero:3,titre:'Widget des idées : trier par votes',url:'https://github.com/Mastre-gaming/DungeonCoop-dashboard/pulls',depot:'dashboard',auteur:'DonBabaa'},exemple:true}];
+
+// un nouveau rat apparaît au bord de ce qu'on voit, avec un « ! » ; un rat dont la PR est résolue détale
+function accorderRats(liste){
+  const cles=new Set(liste.map(r=>r.cle));
+  for(const r of rats)if(!cles.has(r.cle)&&r.phase!=='fuite'){r.phase='fuite';r.t=0}
+  liste.forEach((n,i)=>{
+    if(rats.some(r=>r.cle===n.cle))return;
+    const cote=(rats.length+i)%4, m=T*.8;
+    const x=cote===1?camera.x+VUE.w-m:cote===3?camera.x+m:camera.x+VUE.w*(.25+.5*Math.random());
+    const y=cote===0?camera.y+m+T:cote===2?camera.y+VUE.h-m:camera.y+VUE.h*(.35+.4*Math.random());
+    const px=Math.max(T,Math.min(MONDE.w-T,x)),py=Math.max(T*1.5,Math.min(MONDE.h-T*.5,y));
+    rats.push({...n,x:px,y:py,ancre:[px,py],dir:'bas',phase:'alerte',t:0,mord:0,rang:rats.length});   // il rôde autour de là où il est apparu
+  });
+  dessinerListeRats();
+}
+function majRats(dt){
+  for(const r of rats){
+    r.t+=dt;
+    const vx=heros.x-r.x, vy=heros.y-r.y, d=Math.hypot(vx,vy);
+    if(r.phase==='alerte'){r.dir=Math.abs(vx)>Math.abs(vy)?(vx<0?'gauche':'droite'):(vy<0?'haut':'bas');if(r.t>1.2){r.phase='suit';r.t=0}continue}
+    if(r.phase==='fuite'){const n=d||1;r.x-=vx/n*150*dt;r.y-=vy/n*150*dt;r.dir=Math.abs(vx)>Math.abs(vy)?(vx<0?'droite':'gauche'):(vy<0?'bas':'haut');continue}
+    let cx,cy,vitesse=ESPECES[r.espece].vitesse;
+    if(vise(r)){
+      // il chasse l'auteur de sa PR : sa place à côté du héros (à droite, à gauche, devant), jamais derrière
+      const PLACES=[[26,2],[-26,2],[18,12],[-18,12],[0,16],[34,10],[-34,10]];
+      const [px,py]=PLACES[r.rang%PLACES.length]; cx=heros.x+px; cy=heros.y+py;
+    }else{
+      // les autres, il les laisse passer : il rôde autour de l'endroit où il est apparu, à petits pas
+      if(!r.but||Math.hypot(r.but[0]-r.x,r.but[1]-r.y)<4||r.t>r.prochainBut){
+        const a=Math.random()*Math.PI*2, d2=T*(1+Math.random()*2.5);
+        r.but=[Math.max(T,Math.min(MONDE.w-T,r.ancre[0]+Math.cos(a)*d2)),Math.max(T*1.5,Math.min(MONDE.h-T*.5,r.ancre[1]+Math.sin(a)*d2*.6))];
+        r.prochainBut=r.t+2+Math.random()*3;
+      }
+      [cx,cy]=r.but; vitesse=38;
+    }
+    const ex=cx-r.x, ey=cy-r.y, de=Math.hypot(ex,ey);
+    if(de>4){const v=vitesse*dt;r.x+=ex/de*Math.min(v,de);r.y+=ey/de*Math.min(v,de);r.dir=Math.abs(ex)>Math.abs(ey)?(ex<0?'gauche':'droite'):(ey<0?'haut':'bas');r.bouge=true}
+    else{r.bouge=false;r.dir=Math.abs(vx)>Math.abs(vy)?(vx<0?'gauche':'droite'):(vy<0?'haut':'bas')}
+    // il mordille les talons quand il est tout près : ramassé, puis bond (pas de secousse ni d'arrêt du jeu)
+    r.mord=Math.max(0,r.mord-dt);
+    // il mord l'auteur dès qu'il est à côté ; les autres, seulement si on lui marche dessus, et moins souvent
+    if(r.mord===0&&(vise(r)?d<38:d<22)){r.mord=vise(r)?1.4+r.rang*.17:3;r.morsure=0}
+    if(r.morsure!=null){r.morsure+=dt;if(r.morsure>.15&&r.morsure-dt<=.15)mordre(r);if(r.morsure>.36)r.morsure=null}
+  }
+  for(let i=rats.length-1;i>=0;i--){const r=rats[i];if(r.phase==='fuite'&&(r.t>2.5||r.x<-T||r.y<-T||r.x>MONDE.w+T||r.y>MONDE.h+T))rats.splice(i,1)}
+  herosTouche=Math.max(0,herosTouche-dt);
+}
+function mordre(r){
+  herosTouche=.12;                                     // éclair rouge sur le héros
+  secousse=.16;                                        // petite secousse de l'écran (2 px, 0,16 s)
+  const vx=heros.x-r.x, vy=heros.y-r.y, n=Math.hypot(vx,vy)||1;   // recul de 5 px, à l'opposé du rat
+  for(let i=0;i<5;i++){const nx=heros.x+vx/n, ny=heros.y+vy/n; if(!bloque(nx,heros.y))heros.x=nx; if(!bloque(heros.x,ny))heros.y=ny}
+  degats.push({x:heros.x+(Math.random()*8-4),y:heros.y-58,t:0});
+}
+function majDegats(dt){
+  secousse=Math.max(0,secousse-dt);
+  for(const d of degats){d.t+=dt;d.y-=18*dt}
+  while(degats.length&&degats[0].t>.9)degats.shift();
+}
+// « −1 » en pixels : 3 x 5 par chiffre, en rouge avec un contour sombre, qui monte puis s'efface
+const GLYPHES={'-':['000','000','111','000','000'],'1':['010','110','010','010','111']};
+function dessinerDegat(g,d){
+  const txt='-1', a=d.t<.6?1:Math.max(0,1-(d.t-.6)/.3);
+  g.globalAlpha=a; let x=Math.round(d.x)-4, y=Math.round(d.y);
+  for(const ch of txt){const m=GLYPHES[ch];
+    for(let j=0;j<5;j++)for(let i=0;i<3;i++)if(m[j][i]==='1'){g.fillStyle='#2b1c1d';g.fillRect(x+i-1,y+j-1,3,3)}
+    for(let j=0;j<5;j++)for(let i=0;i<3;i++)if(m[j][i]==='1'){g.fillStyle=j<2?'#ff8a6a':'#e0423a';g.fillRect(x+i,y+j,1,1)}
+    x+=4}
+  g.globalAlpha=1;
+}
+function imageRat(r){
+  const ligne=r.espece*4+R_DIR[r.dir];
+  if(r.morsure!=null){const bond=r.morsure>.15;return {ligne,col:bond?4:3,elan:bond?3:-1}}
+  if(r.phase==='alerte'||!r.bouge&&r.phase!=='fuite')return {ligne,col:1,elan:0};
+  return {ligne,col:Math.floor(r.t*(r.phase==='fuite'?14:9))%3,elan:0};
+}
+function exclamation(g,x,y,temps){   // le « ! » doré de la sentinelle, en pixels, qui sautille
+  const b=Math.round(Math.sin(temps/120)*1.5);const X=Math.round(x)-2,Y=Math.round(y)-14+b;
+  g.fillStyle='#3b2716';g.fillRect(X-1,Y-1,4,9);g.fillRect(X-1,Y+9,4,4);
+  g.fillStyle='#ffd35a';g.fillRect(X,Y,2,7);g.fillRect(X,Y+10,2,2);g.fillStyle='#fff6c8';g.fillRect(X,Y,1,3);
+}
+function objetsRats(g,temps){
+  return rats.map(r=>({bas:r.y,f:()=>{const im=imageRat(r),[ex,ey]=R_ELAN[r.dir];
+    const x=Math.round(r.x)+ex*im.elan-16,y=Math.round(r.y)+ey*im.elan-28;
+    g.fillStyle='rgba(0,0,0,.2)';g.fillRect(Math.round(r.x)-7,Math.round(r.y)-2,14,3);
+    g.drawImage(charges.rats,im.col*32,im.ligne*32,32,32,x,y,32,32);
+    if(r===ratSurvole){g.strokeStyle='#ffd35a';g.lineWidth=1;g.strokeRect(Math.round(r.x)-12.5,Math.round(r.y)-22.5,25,24)}
+    if(r.phase==='alerte')exclamation(g,r.x,r.y-24,temps)}}));
+}
+function ratSous(px,py){return rats.filter(r=>r.phase!=='fuite').sort((a,b)=>b.y-a.y).find(r=>px>r.x-13&&px<r.x+13&&py>r.y-24&&py<r.y+3)}
+function ouvrirPR(r){const a=document.createElement('a');a.href=r.pr.url;a.target='_blank';a.rel='noopener';document.body.append(a);a.click();a.remove()}
+function teinterHeros(){   // la même planche, en rouge : le héros rougit un instant quand un rat le mord
+  const c=document.createElement('canvas');c.width=charges.heros.width;c.height=charges.heros.height;const g=c.getContext('2d');
+  g.drawImage(charges.heros,0,0);g.globalCompositeOperation='source-atop';g.fillStyle='rgba(220,40,30,.3)';g.fillRect(0,0,c.width,c.height);herosRouge=c;
+}
+function dessinerListeRats(){
+  const vivants=rats.filter(r=>r.phase!=='fuite');
+  $('#liste-rats').replaceChildren(...vivants.map(r=>el('li',{},el('span',{class:'etiquette'+(r.exemple?' exemple':'')},r.exemple?'exemple':r.pr.depot),
+    el('a',{href:r.pr.url,target:'_blank',rel:'noopener'},`#${r.pr.numero} ${r.pr.titre}`),el('span',{},ESPECES[r.espece].texte),
+    el('span',{class:'etiquette'},vise(r)?'te chasse':`rôde (PR de ${nomDe(r.pr.auteur)})`),
+    el('button',{class:'bouton-jeu discret',type:'button',onclick:()=>{r.phase='fuite';r.t=0;dessinerListeRats()}},'Résolue (simuler)'))));
+  $('#etat-rats').textContent=vivants.length?`${vivants.length} rat${vivants.length>1?'s':''} dans le camp`:'Aucun rat : rien à résoudre';
+}
+async function lireVraisRats(){
+  $('#etat-rats').textContent='Lecture des PR…';
+  try{const l=await lirePRs();for(const r of rats)if(r.exemple){r.phase='fuite';r.t=0}accorderRats(l);
+    if(!l.length)$('#etat-rats').textContent='Aucune PR à résoudre en ce moment : pas de rat. « Rats d’exemple » pour les voir.'}
+  catch(e){$('#etat-rats').textContent=`Impossible de lire les PR (${e.message}). « Rats d’exemple » pour les voir.`}
+}
+function nomDe(github){const m=EQUIPE.find(e=>String(e.github).toLowerCase()===String(github||'').toLowerCase());return m?(m.nom||m.github):(github||'?')}
+function brancherRats(){
+  const sel=$('#joueur'), connu=lireNom()?.github;
+  sel.replaceChildren(el('option',{value:''},'personne de l’équipe'),...EQUIPE.map(e=>el('option',{value:e.github},e.nom||e.github)));
+  joueurGithub=connu||EQUIPE[0]?.github||null; sel.value=joueurGithub||'';
+  sel.addEventListener('change',()=>{joueurGithub=sel.value||null;dessinerListeRats()});
+  teinterHeros();
+  document.querySelectorAll('.espece').forEach(sp=>{const c=document.createElement('canvas');c.width=c.height=32;c.className='espece';
+    c.getContext('2d').drawImage(charges.rats,32,(+sp.dataset.espece*4+2)*32,32,32,0,0,32,32);sp.replaceWith(c)});
+  const c=$('#scene-heros'),bulle=$('#bulle-rat');
+  const monde=e=>{const r=c.getBoundingClientRect();return [camera.x+(e.clientX-r.left)/r.width*VUE.w,camera.y+(e.clientY-r.top)/r.height*VUE.h,r]};
+  // un clic sur un rat ouvre sa PR (et ne fait pas marcher le héros)
+  c.addEventListener('pointerdown',e=>{const [x,y]=monde(e),r=ratSous(x,y);if(r){e.stopImmediatePropagation();ouvrirPR(r)}},true);
+  c.addEventListener('pointermove',e=>{const [x,y,rect]=monde(e);ratSurvole=ratSous(x,y)||null;c.style.cursor=ratSurvole?'pointer':'';
+    if(ratSurvole){const r=ratSurvole;bulle.replaceChildren(el('b',{},`#${r.pr.numero} · ${ESPECES[r.espece].texte}`),r.pr.titre);
+      bulle.style.left=((r.x-camera.x)/VUE.w*rect.width)+'px';bulle.style.top=((r.y-30-camera.y)/VUE.h*rect.height)+'px';bulle.hidden=false}else bulle.hidden=true});
+  c.addEventListener('pointerleave',()=>{ratSurvole=null;bulle.hidden=true});
+  $('#rats-reels').addEventListener('click',lireVraisRats);
+  $('#rats-exemple').addEventListener('click',()=>accorderRats([...rats.filter(r=>!r.exemple&&r.phase!=='fuite'),...EXEMPLES]));
+  lireVraisRats();
 }
 
 /* --- La sentinelle au spawn --- */
@@ -521,11 +724,12 @@ function demarrer(){
   const calme=matchMedia('(prefers-reduced-motion: reduce)').matches;
   const vign=[...document.querySelectorAll('canvas.vign')];
   brancherHeros();
+  brancherRats();
   brancherSpawn();
   const boucle=temps=>{const t=calme?0:temps;for(const [c,i] of petits)dessinerFeu(c,i,t);
     for(const c of vign)dessinerDecor(c,c.dataset.scene==='apres'?{combat:1}:{},null,t,c.dataset.scene==='appel');
     const niv=niveauxActuels();dessinerDecor($('#gros-plan'),niv,null,t,$('#appel').checked);
-    const dt=Math.min(.05,(temps-dernier)/1000||0);dernier=temps;majHeros(dt);majCamera();dessinerHeros($('#scene-heros'),t,niv);
+    const dt=Math.min(.05,(temps-dernier)/1000||0);dernier=temps;majHeros(dt);majRats(dt);majDegats(dt);majCamera();dessinerHeros($('#scene-heros'),t,niv);
     majSpawn(dt);dessinerSpawn($('#scene-spawn'),t);const cz=$('#carte-zone');if(cz)dessinerDecor(cz,niv,choisie,t);
     if(!calme)requestAnimationFrame(boucle)};
   requestAnimationFrame(boucle);
