@@ -1,0 +1,1321 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Salle d'essai D1</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Pixelify+Sans:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/* Layout : le plateau à gauche (la table), la troupe et le journal à droite, les mesures du playtest en bas. Un seul thème sombre, voulu : un donjon éclairé à la torche. */
+:root{
+  --bg:#121418; --panel:#1a1d23; --panel2:#22262e; --line:#2e333c; --fg:#ebe5d6; --muted:#959ba5;
+  --accent:#f0a340; --accent-ink:#1c1206; --danger:#ef5b5b; --ok:#5cc777;
+  --floor:#2b2f36; --floor2:#272a31; --wall:#0b0c0f; --wall2:#1b1d22;
+  --water:rgba(64,146,255,.52); --oil:rgba(26,19,12,.86); --ice:rgba(214,240,255,.66);
+  --brute:#5cb85c; --mage:#4f8dff; --voleur:#b06cff; --gardien:#2cb5a8; --enemy:#cf4040; --barrel:#8a5a2b;
+  --f-display:"Pixelify Sans","Courier New",monospace;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--panel)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,textarea:focus-visible,.cell:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:.02em;text-wrap:balance;margin:0}
+h2{font-size:15px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--panel);border-bottom:1px solid var(--line)}
+.top-in{max-width:1320px;margin:0 auto;padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px}
+.top h1{font-size:22px;color:var(--accent);margin-right:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{font-size:12px;padding:3px 8px;border-radius:999px;background:var(--panel2);border:1px solid var(--line);white-space:nowrap}
+.chip b{font-family:var(--f-mono);font-weight:600}
+.chip.live{border-color:#2f6b45;color:#9be0b1}
+.chip.warn{border-color:#7a3434;color:#ffb3b3}
+.chip.phase-h{border-color:var(--accent);color:var(--accent)}
+.chip.phase-e{border-color:var(--enemy);color:#ff9d9d}
+.top .acts{margin-left:auto;display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:1px solid var(--line);background:var(--panel2);border-radius:6px;padding:7px 12px;font-size:14px}
+.btn:hover:not(:disabled){border-color:#4a515d}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.danger{border-color:#7a3434;color:#ffb3b3}
+
+.app{max-width:1320px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:20px;align-items:start}
+@media (max-width:1000px){.app{grid-template-columns:minmax(0,1fr)}}
+.play{display:grid;gap:14px;min-width:0}
+.side{display:grid;gap:14px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;min-width:0}
+.panel>h2{margin-bottom:10px}
+
+.board-wrap{position:relative;width:100%;max-width:760px;aspect-ratio:10/8;border-radius:6px;overflow:hidden;border:2px solid #000;box-shadow:0 10px 30px rgba(0,0,0,.45);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(8,1fr)}
+.cell{position:relative;min-width:0}
+.cell.floor{background:var(--floor)}
+.cell.floor.alt{background:var(--floor2)}
+.cell.wall{background:linear-gradient(180deg,var(--wall2),var(--wall) 70%);box-shadow:inset 0 -4px 0 rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.04)}
+.cell.ledge{background:repeating-linear-gradient(135deg,#050607 0 7px,#0c0e11 7px 14px)}
+.cell .coord{position:absolute;left:4px;top:2px;font-family:var(--f-mono);font-size:10px;color:#5b616b;pointer-events:none}
+.cell.wall .coord{color:#6b7280}
+.surf{position:absolute;inset:2px;border-radius:4px;pointer-events:none}
+.surf.water{background:radial-gradient(circle at 30% 25%,rgba(255,255,255,.18),transparent 40%),var(--water)}
+.surf.oil{background:radial-gradient(circle at 35% 35%,rgba(140,100,190,.35),transparent 45%),var(--oil)}
+.surf.fire{background:radial-gradient(circle at 50% 75%,#ffe08a 0 12%,#ff8a1f 40%,rgba(190,40,20,.9) 80%);animation:flick 1.1s ease-in-out infinite alternate}
+.surf.ice{background:linear-gradient(135deg,rgba(255,255,255,.8),var(--ice) 45%,rgba(150,205,255,.55))}
+.surf .ttl{position:absolute;right:3px;bottom:2px;font-family:var(--f-mono);font-size:10px;color:#fff;text-shadow:0 1px 1px #000}
+.surf.ice .ttl{color:#123}
+@keyframes flick{from{filter:brightness(.9)}to{filter:brightness(1.18)}}
+.hl{position:absolute;inset:0;pointer-events:none}
+.hl.reach{background:rgba(240,163,64,.12);box-shadow:inset 0 0 0 1px rgba(240,163,64,.32)}
+.hl.path{background:rgba(240,163,64,.3)}
+.hl.tgt{box-shadow:inset 0 0 0 2px var(--accent);background:rgba(240,163,64,.14)}
+.hl.tgt.hot{background:rgba(240,163,64,.35)}
+.hl.zone{background:rgba(240,163,64,.4);box-shadow:inset 0 0 0 1px var(--accent)}
+.hl.zone.bad{background:rgba(239,91,91,.32);box-shadow:inset 0 0 0 1px var(--danger)}
+.hl.danger{background:rgba(239,91,91,.5);animation:pulse .5s ease-in-out 2}
+@keyframes pulse{50%{background:rgba(239,91,91,.15)}}
+
+.tokens,.fx{position:absolute;inset:0;pointer-events:none}
+.token{position:absolute;width:10%;height:12.5%;display:grid;place-items:center;transition:left .1s linear,top .1s linear,opacity .5s,transform .5s}
+.disc{width:76%;height:76%;border-radius:50%;background:var(--c);border:2px solid rgba(0,0,0,.65);box-shadow:0 3px 0 rgba(0,0,0,.55),inset 0 -4px 0 rgba(0,0,0,.22),inset 0 3px 0 rgba(255,255,255,.18);display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:clamp(8px,1.45vw,13px);color:#fff;text-shadow:0 1px 0 #000;letter-spacing:.02em}
+.token.tough .disc{box-shadow:0 0 0 2px #000,0 0 0 4px #e8c76a,0 3px 0 4px rgba(0,0,0,.4)}
+.token.barrel .disc{width:62%;height:62%;border-radius:30%;background:repeating-linear-gradient(180deg,var(--barrel) 0 30%,#3d2611 30% 38%);font-size:9px}
+.token.sel .disc{box-shadow:0 0 0 3px var(--accent),0 0 18px rgba(240,163,64,.6)}
+.token.acting .disc{box-shadow:0 0 0 3px var(--danger),0 0 18px rgba(239,91,91,.6)}
+.token.ko .disc{filter:grayscale(1) brightness(.7);color:#ffb3b3}
+.token.dead{opacity:0;transform:scale(.4)}
+.token .hp{position:absolute;left:14%;right:14%;bottom:3%;height:5px;background:rgba(0,0,0,.7);border-radius:2px;overflow:hidden}
+.token .hp i{display:block;height:100%;background:var(--ok)}
+.token.foe .hp i{background:#ff8a5c}
+.token .pips{position:absolute;top:3%;right:6%;display:flex;gap:2px}
+.pip{width:8px;height:8px;border-radius:50%;border:1px solid rgba(0,0,0,.7)}
+.pip.soaked{background:#3d8bff}.pip.oiled{background:#2a1d10;border-color:#b48cff}.pip.burning{background:#ff6a1a}.pip.chilled{background:#d8f0ff}.pip.prone{background:#b9bec6}.pip.exposed{background:#ffd43b}
+.float{position:absolute;width:10%;text-align:center;font-family:var(--f-display);font-weight:700;font-size:clamp(12px,2vw,18px);text-shadow:0 2px 0 #000;animation:rise 1s ease-out forwards}
+.float.dmg{color:#ff7b7b}.float.heal{color:#7ee29a}.float.info{color:var(--accent)}
+@keyframes rise{from{transform:translateY(0);opacity:1}to{transform:translateY(-34px);opacity:0}}
+
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:rgba(8,9,11,.72);padding:16px}
+.overlay[hidden]{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;max-width:440px;width:100%;display:grid;gap:12px}
+.card h3{font-size:20px;color:var(--accent)}
+.card p{margin:0;color:var(--muted);font-size:14px}
+.modes{display:grid;gap:8px}
+.mode{display:flex;gap:10px;align-items:flex-start;text-align:left;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:10px 12px}
+.mode[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.mode b{display:block}
+.mode span{font-size:13px;color:var(--muted)}
+
+.bar{display:grid;gap:10px}
+.bar-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
+.bar-head h3{font-size:19px}
+.bar-head .role{color:var(--muted);font-size:13px}
+.pools{display:flex;flex-wrap:wrap;gap:6px}
+.pool{font-size:12px;padding:3px 8px;border-radius:5px;border:1px solid var(--line);background:var(--panel2)}
+.pool.off{opacity:.4;text-decoration:line-through}
+.abs{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.ab{display:grid;gap:3px;text-align:left;border:1px solid var(--line);background:var(--panel2);border-radius:7px;padding:8px 10px;min-width:0}
+.ab:hover:not(:disabled){border-color:#4a515d}
+.ab:disabled{opacity:.38;cursor:not-allowed}
+.ab.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.ab .n{font-weight:700;display:flex;justify-content:space-between;gap:8px}
+.ab .slot{font-size:11px;font-weight:400;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ab .slot.bonus{color:#9ec5ff}
+.ab .ds{font-size:12px;color:var(--muted)}
+.hint{color:var(--muted);font-size:14px;margin:0}
+.small{font-size:13px;color:var(--muted);margin:0}
+
+.preview{min-height:76px}
+.odds{display:flex;height:12px;border-radius:3px;overflow:hidden;margin:8px 0 6px;background:var(--panel2)}
+.odds i{display:block;height:100%}
+.o-fumble{background:#5d636d}.o-graze{background:#a77c3c}.o-hit{background:#e9dcc0}.o-crit{background:var(--accent)}
+.olegend{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;font-size:12px}
+.olegend div{min-width:0}
+.olegend b{display:block;font-family:var(--f-mono);font-size:13px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:0}
+.notes{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.notes .good{color:var(--accent)}
+
+.party{display:grid;gap:8px}
+.hc{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--panel2);border-radius:8px;padding:8px 10px}
+.hc.sel{border-color:var(--accent)}
+.hc.ko{opacity:.55}
+.hc .dot{width:26px;height:26px;border-radius:50%;background:var(--c);border:2px solid #000;grid-row:span 2}
+.hc .l1{display:flex;justify-content:space-between;gap:8px;font-weight:700}
+.hc .l2{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:12px;color:var(--muted)}
+.bar-hp{height:6px;background:#0d0e11;border-radius:3px;overflow:hidden;grid-column:2}
+.bar-hp i{display:block;height:100%;background:var(--ok)}
+.foes{display:grid;gap:6px}
+.fr{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.fr.dead{opacity:.35;text-decoration:line-through}
+.fr .tag{font-family:var(--f-display);font-weight:700;background:var(--enemy);color:#fff;border-radius:4px;text-align:center;padding:1px 0;font-size:12px}
+.fr .tag.tough{box-shadow:0 0 0 2px #e8c76a}
+.fr .hab{color:var(--muted);font-size:12px}
+.order{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px}
+.order span{font-size:11px;padding:2px 6px;border-radius:4px;background:var(--panel2);border:1px solid var(--line)}
+.order span.cur{border-color:var(--accent);color:var(--accent)}
+.order span.e{color:#ff9d9d}
+
+.log{list-style:none;margin:0;padding:0;display:grid;gap:4px;max-height:340px;overflow:auto;font-size:13px}
+.log li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;padding:3px 0;border-bottom:1px solid #22262d}
+.log .r{font-family:var(--f-mono);font-size:11px;color:#6b717b}
+.log .enemy{color:#ffb0a8}.log .combo{color:var(--accent);font-weight:700}.log .good{color:#9be0b1}.log .bad{color:#ff8a8a}.log .muted{color:var(--muted)}.log .round{color:var(--fg);font-weight:700}
+
+.measures{grid-column:1/-1}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.mgrid>div{min-width:0}
+.mgrid h3{font-family:var(--f-body);font-size:14px;margin-bottom:6px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)}
+td.n,th.n{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.dmg-row{display:grid;grid-template-columns:70px minmax(0,1fr) 74px;gap:8px;align-items:center;font-size:13px;margin-bottom:5px}
+.dmg-row .track{height:8px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.dmg-row .track i{display:block;height:100%}
+.dmg-row .v{text-align:right;font-family:var(--f-mono)}
+.over40{color:var(--danger)}
+label.f{display:grid;gap:4px;font-size:13px;color:var(--muted);margin-bottom:8px}
+textarea{width:100%;min-height:52px;resize:vertical;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;font-size:14px}
+pre.sum{white-space:pre-wrap;word-break:break-word;background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:10px;font-family:var(--f-mono);font-size:12px;max-height:260px;overflow:auto}
+details summary{cursor:pointer;color:var(--muted);font-size:14px}
+details ul{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--muted)}
+.ro{background:#2a1f12;border:1px solid #6b4a1f;color:#ffd59a;border-radius:8px;padding:8px 12px;font-size:14px}
+@media (prefers-reduced-motion: reduce){.surf.fire,.hl.danger,.float{animation:none}.token{transition:none}}
+</style>
+
+<header class="top"><div class="top-in">
+  <h1>Salle d'essai D1</h1>
+  <div class="chips" id="chips"></div>
+  <div class="acts">
+    <button class="btn" id="undoBtn" type="button">Annuler le déplacement</button>
+    <button class="btn primary" id="endBtn" type="button">Fin du tour des héros</button>
+    <button class="btn" id="resumeBtn" type="button" hidden>Faire jouer les ennemis</button>
+    <button class="btn danger" id="newBtn" type="button">Nouvelle partie</button>
+  </div>
+</div></header>
+
+<div class="app">
+  <main class="play">
+    <div id="roBanner" class="ro" hidden>Tu regardes la partie en direct, en lecture seule. Pour jouer aussi, demande à l'hôte un accès Contributeur ou Éditeur.</div>
+    <div class="board-wrap" id="wrap">
+      <div class="board" id="board" aria-label="Salle 10 × 8"></div>
+      <div class="tokens" id="tokens"></div>
+      <div class="fx" id="fx"></div>
+      <div class="overlay" id="overlay"></div>
+    </div>
+    <section class="panel bar" id="bar"></section>
+    <section class="panel preview" id="preview"></section>
+  </main>
+  <aside class="side">
+    <section class="panel"><h2>Les héros</h2><div class="party" id="party"></div></section>
+    <section class="panel"><h2>Les ennemis</h2><div class="foes" id="foes"></div><div class="order" id="order"></div></section>
+    <section class="panel"><h2>Journal</h2><ol class="log" id="log"></ol></section>
+  </aside>
+  <section class="panel measures" id="measures"></section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const W = 10, H = 8;
+const MAP = [
+  "##########",
+  "#....o...#",
+  "#..ww..a.#",
+  "1..ww..gL#",
+  "2......gB#",
+  "3...o..a.#",
+  "4......g.#",
+  "__________",
+];
+const COLS = "ABCDEFGHIJ";
+const DIRS = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const DIRS4 = [[1,0],[-1,0],[0,1],[0,-1]];
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const inB = (x, y) => x >= 0 && y >= 0 && x < W && y < H;
+const tile = (x, y) => inB(x, y) ? MAP[y][x] : "#";
+const isWall = (x, y) => tile(x, y) === "#";
+const isLedge = (x, y) => inB(x, y) && tile(x, y) === "_";
+const walkable = (x, y) => inB(x, y) && !isWall(x, y) && !isLedge(x, y);
+const key = (x, y) => x + "," + y;
+const cheb = (a, b) => Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y));
+const cellName = (x, y) => COLS[x] + (y + 1);
+const d = n => 1 + Math.floor(Math.random() * n);
+const sleep = ms => new Promise(r => setTimeout(r, REDUCED ? Math.min(ms, 30) : ms));
+const fmt = ms => { if (!ms || ms < 0) ms = 0; const s = Math.round(ms / 1000); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+const CLIENT = Math.random().toString(36).slice(2, 10);
+
+const HERO_ORDER = ["brute", "mage", "voleur", "gardien"];
+const ENEMY_ORDER = ["s1", "s2", "s3", "a1", "a2", "br", "chef"];
+const HEROES = {
+  brute: { name: "Brute", short: "BRU", hp: 145, speed: 5, dex: 0, res: { type: "Rage", v: 0, max: 50 }, role: "Tank · lance les ennemis",
+    weak: "Gelé dure deux fois plus longtemps ; aucune attaque à distance.",
+    passive: "Provocation (réaction, automatique) : un ennemi qui attaque un allié à côté de toi t'attaque à la place. Rage : +10 par coup donné ou reçu.",
+    ab: ["fracas", "projection", "projection20", "pousser", "potion", "relever"] },
+  mage: { name: "Mage", short: "MAG", hp: 125, speed: 5, dex: 1, res: { type: "Mana", v: 40, max: 40 }, role: "Dégâts · contrôle l'eau",
+    weak: "Dégâts ×2 quand il se tient dans l'Eau.", passive: "Mana : +5 au début de son tour.",
+    ab: ["etincelle", "eclaboussure", "foudre", "pousser", "potion", "relever"] },
+  voleur: { name: "Voleur", short: "VOL", hp: 115, speed: 6, dex: 2, res: { type: "Concentration", v: 0, max: 3 }, role: "Contrôle · prépare le coup final",
+    weak: "Feu ×2, même le sien.", passive: "Concentration : +1 quand un coéquipier exploite une de ses préparations.",
+    ab: ["fleche", "fiole", "fioleCible", "ouverture", "ouverture2", "pousser", "potion", "relever"] },
+  gardien: { name: "Gardien", short: "GAR", hp: 140, speed: 5, dex: 0, res: { type: "Foi", v: 0, max: 3 }, role: "Soutien · gèle le sol",
+    weak: "Ne peut pas se soigner lui-même.", passive: "Foi : +1 par soin.",
+    ab: ["baton", "soin", "givre", "givre3", "pousser", "potion", "relever"] },
+};
+const HCOL = { brute: "var(--brute)", mage: "var(--mage)", voleur: "var(--voleur)", gardien: "var(--gardien)" };
+const ENEMY_DEF = {
+  sbire: { name: "Sbire", hp: 30, speed: 5, dex: 0, atk: { name: "Coup", base: 8, die: 4, range: 1 }, habit: "frappe le héros le plus proche" },
+  archer: { name: "Archer", hp: 25, speed: 5, dex: 2, atk: { name: "Flèche", base: 8, die: 4, range: 8 }, habit: "reste à 4 cases, tire sur le plus proche qu'il voit" },
+  brt: { name: "Brute ennemie", hp: 60, speed: 5, dex: 0, tough: true, atk: { name: "Charge", base: 14, die: 6, range: 1 }, habit: "charge le héros qui a le moins de PV et le repousse" },
+  chef: { name: "Chef", hp: 90, speed: 5, dex: 1, tough: true, atk: { name: "Frappe du chef", base: 22, die: 8 }, habit: "tours 1–2 : avantage aux ennemis · tour 3 : zone 3×3" },
+};
+const AB = {
+  fracas: { name: "Fracas", slot: "action", type: "attack", range: 1, mod: 2, base: 8, die: 4, ds: "Au contact · 5–7 / 11–14 / 22–28" },
+  projection: { name: "Projection", slot: "bonus", type: "push", range: 1, dist: 3, proj: true, ds: "Pousse de 3 cases ; s'il heurte quelque chose : +8 et À terre" },
+  projection20: { name: "Projection furieuse", slot: "bonus", type: "push", range: 1, dist: 5, proj: true, cost: 20, ds: "20 Rage · pousse de 5 cases" },
+  pousser: { name: "Pousser", slot: "bonus", type: "push", range: 1, dist: 2, ds: "2 cases ; +8 contre un obstacle ; corniche : sbire éliminé, sinon 20" },
+  potion: { name: "Potion", slot: "bonus", type: "potion", ds: "+20 PV · une seule par héros" },
+  relever: { name: "Relever", slot: "action", type: "revive", range: 1, ds: "Un allié KO au contact revient à 25 PV" },
+  etincelle: { name: "Étincelle", slot: "action", type: "attack", range: 6, mod: 2, base: 8, die: 4, ds: "Portée 6 · 5–7 / 11–14 / 22–28" },
+  eclaboussure: { name: "Éclaboussure", slot: "action", type: "zone", surf: "water", size: 2, range: 5, cost: 10, ds: "10 Mana · Eau 2×2 à 5 cases ; ceux dedans sont Trempés" },
+  foudre: { name: "Foudre", slot: "action", type: "attack", range: 6, mod: 2, base: 14, die: 6, el: "lightning", cost: 15, ds: "15 Mana · 8–11 / 17–22 / 34–44 ; ×2 sur Trempé ; électrise l'Eau" },
+  fleche: { name: "Flèche de feu", slot: "action", type: "attack", range: 8, mod: 2, base: 8, die: 4, el: "fire", ds: "Portée 8 · ×2 sur Huilé ; enflamme l'Huile et les tonneaux" },
+  fiole: { name: "Fiole d'huile", slot: "bonus", type: "zone", surf: "oil", size: 2, range: 4, ds: "Huile 2×2 à 4 cases ; ceux dedans sont Huilés" },
+  fioleCible: { name: "Fiole sur une cible", slot: "bonus", type: "oilTarget", range: 4, ds: "Huilé sur une créature à 4 cases" },
+  ouverture: { name: "Ouverture", slot: "action", type: "attack", range: 1, mod: 2, base: 8, die: 4, prone: true, ds: "Au contact · 5–7 / 11–14 / 22–28 ; la cible est À terre" },
+  ouverture2: { name: "Ouverture critique", slot: "action", type: "attack", range: 1, mod: 2, base: 8, die: 4, prone: true, auto: true, cost: 2, ds: "2 Concentration · critique assuré (22–28), À terre" },
+  baton: { name: "Coup de bâton", slot: "action", type: "attack", range: 1, mod: 1, base: 8, die: 4, ds: "Au contact, +1 · 5–6 / 10–13 / 20–26" },
+  soin: { name: "Soin", slot: "action", type: "heal", range: 6, ds: "18–23 PV à un allié à 6 cases, sans jet" },
+  givre: { name: "Garde de givre", slot: "action", type: "zone", surf: "ice", size: 2, range: 5, ds: "Glace 2×2 à 5 cases (l'Eau gèle) ; ennemis dessus Gelés" },
+  givre3: { name: "Grand givre", slot: "action", type: "zone", surf: "ice", size: 3, range: 5, cost: 3, ds: "3 Foi · Glace 3×3" },
+};
+const SL = { water: "l'eau", oil: "l'huile", fire: "le feu", ice: "la glace" };
+const GL = { fumble: "Raté", graze: "Éraflure", hit: "Touché", crit: "Critique" };
+const STL = { soaked: "Trempé", oiled: "Huilé", burning: "Brûlure", chilled: "Gelé", prone: "À terre", exposed: "Exposé" };
+
+let S;
+let lastSeenRev = 0;
+const ui = { sel: null, ab: null, hover: null, busy: false, running: false, acting: null, undo: [], touch: false, flash: null, confirmNew: 0, mode: "team" };
+let actCombos = new Set();
+
+/* ---------- état ---------- */
+function mkUnit(o) { return Object.assign({ ko: false, dead: false, st: {}, exposed: false, tough: false, t: { mv: o.speed, action: true, bonus: true, reaction: true } }, o); }
+function newState(mode) {
+  const units = [], barrels = [], surf = {};
+  let g = 0, a = 0;
+  MAP.forEach((row, y) => [...row].forEach((ch, x) => {
+    if ("1234".includes(ch)) {
+      const id = HERO_ORDER[+ch - 1], h = HEROES[id];
+      units.push(mkUnit({ id, side: "h", kind: id, name: h.name, short: h.short, x, y, hp: h.hp, maxHp: h.hp, speed: h.speed, dex: h.dex, res: { ...h.res }, potion: 1 }));
+    }
+    const foe = (id, kind, short, name) => { const df = ENEMY_DEF[kind]; units.push(mkUnit({ id, side: "e", kind, name, short, x, y, hp: df.hp, maxHp: df.hp, speed: df.speed, dex: df.dex, tough: !!df.tough })); };
+    if (ch === "g") { g++; foe("s" + g, "sbire", "S" + g, "Sbire " + g); }
+    if (ch === "a") { a++; foe("a" + a, "archer", "A" + a, "Archer " + a); }
+    if (ch === "B") foe("br", "brt", "BR", "Brute ennemie");
+    if (ch === "L") foe("chef", "chef", "CHEF", "Chef");
+    if (ch === "o") barrels.push({ id: "b" + barrels.length, x, y });
+    if (ch === "w") surf[key(x, y)] = { t: "water", ttl: null, by: null };
+  }));
+  return { v: 1, rev: 0, by: CLIENT, mode, round: 1, gi: 0, phase: "setup", order: [], units, barrels, surf, log: [],
+    chefTurn: 1, enemyAdv: false, startedAt: null, endedAt: null, phaseStart: null, enemyStart: null, result: null,
+    stats: { dmg: { brute: 0, mage: 0, voleur: 0, gardien: 0 }, combos: [], flanks: 0, ko: 0, revives: 0, rounds: [] },
+    notes: { rules: "", luck: "", scores: "", bored: "", change: "", mode: "" } };
+}
+const U = id => S.units.find(u => u.id === id);
+const unitAt = (x, y) => S.units.find(u => !u.dead && u.x === x && u.y === y);
+const barrelAt = (x, y) => S.barrels.find(b => b.x === x && b.y === y);
+const surfAt = p => S.surf[key(p.x, p.y)];
+const liveHeroes = () => S.units.filter(u => u.side === "h" && !u.ko);
+const liveEnemies = () => S.units.filter(u => u.side === "e" && !u.dead);
+const isHeroId = id => !!(id && HEROES[id]);
+const hname = id => HEROES[id] ? HEROES[id].name : "";
+
+function log(t, c) { S.log.unshift({ r: S.round, t, c: c || "" }); if (S.log.length > 220) S.log.length = 220; }
+function roundEntry() { let e = S.stats.rounds.find(r => r.r === S.round); if (!e) { e = { r: S.round, heroMs: 0 }; S.stats.rounds.push(e); } return e; }
+
+function groups() {
+  if (S.mode === "team") return [{ side: "h", ids: HERO_ORDER.slice() }, { side: "e", ids: ENEMY_ORDER.slice() }];
+  const gs = [];
+  for (const id of S.order) {
+    const u = U(id); if (!u) continue;
+    const last = gs[gs.length - 1];
+    if (last && last.side === u.side) last.ids.push(id); else gs.push({ side: u.side, ids: [id] });
+  }
+  return gs;
+}
+const curGroup = () => groups()[S.gi];
+let readOnly = false;
+function canAct(h) { return !!h && h.side === "h" && !h.ko && S.phase === "heroes" && !ui.busy && !readOnly && !S.result && (curGroup()?.ids || []).includes(h.id); }
+
+/* ---------- dégâts, états, combos ---------- */
+function combo(a, b, what) {
+  if (!isHeroId(a) || !isHeroId(b) || a === b) return;
+  const k = a + ">" + b; if (actCombos.has(k)) return; actCombos.add(k);
+  S.stats.combos.push({ r: S.round, a, b, what });
+  log(`Combo ! ${hname(a)} prépare, ${hname(b)} exploite : ${what}.`, "combo");
+  if (a === "voleur") { const v = U("voleur"); if (v.res.v < v.res.max) { v.res.v++; log("Le Voleur gagne 1 Concentration.", "muted"); } }
+}
+function rage(u, n) { if (u && u.kind === "brute" && u.side === "h") u.res.v = Math.min(u.res.max, u.res.v + n); }
+function hurt(u, amt, by, o = {}) {
+  if (!u || u.dead || u.ko || amt <= 0) return 0;
+  if (!o.noWeak && u.kind === "mage" && surfAt(u)?.t === "water") { amt *= 2; log("Le Mage est dans l'eau : dégâts ×2.", "muted"); }
+  const before = u.hp; u.hp -= amt;
+  if (isHeroId(by) && u.side === "e") S.stats.dmg[by] += Math.min(amt, before);
+  float(u, "−" + amt, "dmg");
+  if (u.hp <= 0) down(u);
+  return amt;
+}
+function down(u) {
+  u.hp = 0; u.st = {}; u.exposed = false;
+  if (u.side === "h") {
+    u.ko = true; S.stats.ko++; log(`${u.name} est KO.`, "bad");
+    if (!liveHeroes().length) endGame("defaite");
+  } else {
+    u.dead = true; log(u.kind === "chef" ? "Le chef est vaincu ! Les autres s'enfuient." : `${u.name} est vaincu.`, "good");
+    if (u.kind === "chef") endGame("victoire");
+  }
+}
+function endGame(r) {
+  if (S.result) return;
+  if (S.phase === "heroes" && S.phaseStart) roundEntry().heroMs += Date.now() - S.phaseStart;
+  S.result = r; S.phase = "over"; S.endedAt = Date.now();
+  log(r === "victoire" ? `Victoire au round ${S.round} !` : `Défaite au round ${S.round} : les quatre héros sont KO.`, r === "victoire" ? "good" : "bad");
+}
+function fireHit(u, amt, by) {
+  let m = 1;
+  if (u.st.oiled) { m *= 2; combo(u.st.oiled.by, by, "Huilé puis feu"); delete u.st.oiled; }
+  if (u.kind === "voleur") m *= 2;
+  hurt(u, amt * m, by);
+  if (u.dead || u.ko) return;
+  if (u.st.soaked) { delete u.st.soaked; log(`${u.name} était Trempé : pas de Brûlure.`, "muted"); }
+  else u.st.burning = { n: 2, by };
+}
+function enterCell(u, x, y, walking) {
+  const s = S.surf[key(x, y)]; if (!s || u.dead || u.ko) return false;
+  if (s.t === "water") { u.st.soaked = { ttl: 3, by: s.by }; if (u.st.burning) { delete u.st.burning; log(`L'eau éteint ${u.name}.`, "muted"); } }
+  else if (s.t === "oil") u.st.oiled = { ttl: 3, by: s.by };
+  else if (s.t === "fire") { log(`${u.name} entre dans le feu.`, u.side === "h" ? "bad" : ""); fireHit(u, 6, s.by); }
+  else if (s.t === "ice" && walking) {
+    const r = d(20);
+    if (r <= 9) { u.st.prone = { by: s.by }; log(`${u.name} glisse sur la glace (d20 : ${r}) : À terre.`, u.side === "h" ? "bad" : "good"); return true; }
+    log(`${u.name} garde l'équilibre sur la glace (d20 : ${r}).`, "muted");
+  }
+  return false;
+}
+function flood(x, y, t) {
+  const out = [], seen = new Set(), st = [[x, y]];
+  while (st.length) {
+    const [cx, cy] = st.pop(), k = key(cx, cy);
+    if (seen.has(k)) continue; seen.add(k);
+    const s = S.surf[k]; if (!s || s.t !== t) continue;
+    out.push([cx, cy]); for (const [dx, dy] of DIRS4) st.push([cx + dx, cy + dy]);
+  }
+  return out;
+}
+function ignite(x, y, by) {
+  const cells = flood(x, y, "oil"); if (!cells.length) return false;
+  new Set(cells.map(([cx, cy]) => S.surf[key(cx, cy)].by)).forEach(a => combo(a, by, "huile enflammée"));
+  for (const [cx, cy] of cells) S.surf[key(cx, cy)] = { t: "fire", ttl: 3, by };
+  log(`L'huile s'enflamme : ${cells.length} case${cells.length > 1 ? "s" : ""} en feu.`);
+  for (const [cx, cy] of cells) { const u = unitAt(cx, cy); if (u && !u.ko) fireHit(u, 6, by); }
+  return true;
+}
+function electrify(x, y, by) {
+  const cells = flood(x, y, "water"); if (!cells.length) return;
+  new Set(cells.map(([cx, cy]) => S.surf[key(cx, cy)].by)).forEach(a => combo(a, by, "eau électrisée"));
+  log(`La foudre électrise l'eau (${cells.length} cases) : 8 dégâts à tous ceux dedans.`);
+  for (const [cx, cy] of cells) { const u = unitAt(cx, cy); if (u && !u.ko) hurt(u, 8, by); }
+}
+function burstBarrel(b, by, fire) {
+  S.barrels = S.barrels.filter(o => o !== b);
+  let n = 0;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+    const x = b.x + dx, y = b.y + dy;
+    if (!walkable(x, y) || barrelAt(x, y)) continue;
+    const old = S.surf[key(x, y)]; if (old && old.t === "fire") continue;
+    S.surf[key(x, y)] = { t: "oil", ttl: 3, by }; n++;
+    const u = unitAt(x, y); if (u && !u.ko) u.st.oiled = { ttl: 3, by };
+  }
+  log(`Le tonneau éclate : Huile sur ${n} cases.`);
+  if (fire) ignite(b.x, b.y, by);
+}
+function zoneCells(ax, ay, size) {
+  const off = Math.floor((size - 1) / 2);
+  const x0 = Math.min(Math.max(ax - off, 0), W - size), y0 = Math.min(Math.max(ay - off, 0), H - size);
+  const cells = [];
+  for (let y = y0; y < y0 + size; y++) for (let x = x0; x < x0 + size; x++) if (walkable(x, y)) cells.push([x, y]);
+  return cells;
+}
+function placeZone(h, ab, cells) {
+  const by = h.id;
+  for (const [x, y] of cells) {
+    const k = key(x, y), old = S.surf[k], u = unitAt(x, y);
+    if (ab.surf === "water") {
+      S.surf[k] = { t: "water", ttl: 3, by };
+      if (u && !u.ko) { u.st.soaked = { ttl: 3, by }; delete u.st.burning; }
+    } else if (ab.surf === "oil") {
+      if (old && old.t === "fire") continue;
+      S.surf[k] = { t: "oil", ttl: 3, by };
+      if (u && !u.ko) u.st.oiled = { ttl: 3, by };
+    } else if (ab.surf === "ice") {
+      if (old && old.t === "water") combo(old.by, by, "eau gelée");
+      if (old && old.t === "fire") { S.surf[k] = { t: "water", ttl: 3, by }; continue; }
+      S.surf[k] = { t: "ice", ttl: 3, by };
+      if (u && u.side === "e" && !u.dead) u.st.chilled = { n: 1, by };
+    }
+  }
+}
+
+/* ---------- attaques ---------- */
+function los(a, b) {
+  let x0 = a.x, y0 = a.y; const x1 = b.x, y1 = b.y;
+  const dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  while (!(x0 === x1 && y0 === y1)) {
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; x0 += sx; }
+    if (e2 < dx) { err += dx; y0 += sy; }
+    if (x0 === x1 && y0 === y1) break;
+    if (isWall(x0, y0)) return false;
+  }
+  return true;
+}
+function flanked(att, tgt) {
+  if (cheb(att, tgt) !== 1) return false;
+  const o = unitAt(tgt.x + (tgt.x - att.x), tgt.y + (tgt.y - att.y));
+  return !!o && o !== att && o.side === att.side && !o.ko && !o.dead;
+}
+function calc(att, tgt, A) {
+  let adv = false, dis = false, mult = 1, flank = false;
+  const notes = [], combos = [];
+  if (tgt.st.prone) { adv = true; notes.push("cible À terre : avantage"); if (tgt.st.prone.by) combos.push([tgt.st.prone.by, "cible À terre"]); }
+  if (tgt.exposed) { adv = true; notes.push("la cible a pris la pose : avantage"); }
+  if (A.melee && flanked(att, tgt)) { adv = true; flank = true; notes.push("prise en tenaille : avantage"); }
+  if (att.side === "e" && S.enemyAdv) { adv = true; notes.push("ordres du chef : avantage"); }
+  if (surfAt(att)?.t === "ice") { dis = true; notes.push("attaque depuis la glace : désavantage"); }
+  if (att.st.chilled) { dis = true; notes.push("attaquant Gelé : désavantage"); }
+  if (A.el === "lightning" && tgt.st.soaked) { mult *= 2; notes.push("Trempé : foudre ×2"); combos.push([tgt.st.soaked.by, "Trempé puis foudre"]); }
+  const oiled = A.el === "fire" && !!tgt.st.oiled;
+  if (oiled) { mult *= 2; notes.push("Huilé : feu ×2, et Brûlure"); combos.push([tgt.st.oiled.by, "Huilé puis feu"]); }
+  if (A.el === "fire" && tgt.kind === "voleur") { mult *= 2; notes.push("faiblesse du Voleur : feu ×2"); }
+  if (tgt.kind === "mage" && surfAt(tgt)?.t === "water") { mult *= 2; notes.push("le Mage est dans l'eau : ×2"); }
+  if (A.el === "lightning" && surfAt(tgt)?.t === "water") notes.push("la cible est dans l'eau : électrise toute la flaque (8 à chacun)");
+  if (A.el === "fire" && surfAt(tgt)?.t === "oil") notes.push("la cible est dans l'huile : tout s'enflamme");
+  if (A.prone) notes.push("la cible sera À terre");
+  return { adv: adv && !dis ? 1 : dis && !adv ? -1 : 0, mult, notes, combos, flank, oiled, tough: !!tgt.tough };
+}
+function grade(k, A, c) {
+  if (A.auto) return "crit";
+  if (k === 1) return "fumble";
+  if (k === 20) return "crit";
+  return k + A.mod <= (c.tough ? 12 : 9) ? "graze" : "hit";
+}
+function odds(A, c) {
+  const o = { fumble: 0, graze: 0, hit: 0, crit: 0 };
+  if (A.auto) { o.crit = 1; return o; }
+  for (let k = 1; k <= 20; k++) o[grade(k, A, c)] += c.adv === 1 ? (2 * k - 1) / 400 : c.adv === -1 ? (41 - 2 * k) / 400 : 1 / 20;
+  return o;
+}
+function dmgRange(A, c, g) {
+  const lo = A.base + 1 + A.dmod, hi = A.base + A.die + A.dmod;
+  const f = v => (g === "graze" ? Math.floor(v / 2) : g === "crit" ? v * 2 : v) * c.mult;
+  return g === "fumble" ? "0" : f(lo) + "–" + f(hi);
+}
+function heroAtk(h, ab) { return { name: ab.name, mod: ab.mod, dmod: ab.mod, base: ab.base, die: ab.die, el: ab.el, melee: ab.range === 1, auto: !!ab.auto, prone: !!ab.prone }; }
+function foeAtk(e) { const a = ENEMY_DEF[e.kind].atk; return { name: a.name, mod: 2, dmod: 0, base: a.base, die: a.die, melee: a.range === 1 }; }
+function fumble(u) {
+  const r = d(6);
+  const T = { 1: "lâche son arme", 2: "glisse : À terre", 3: "pousse un cri de guerre épique… rien ne se passe, l'ennemi le plus proche se moque", 4: "renverse de l'huile sur sa case", 5: "trébuche sur un allié", 6: "prend la pose : la prochaine attaque contre lui a l'avantage" };
+  log(`Raté comique (d6 : ${r}) : ${u.name} ${T[r]}.`, "muted");
+  if (r === 1 && u.t) u.t.bonus = false;
+  if (r === 2) u.st.prone = { by: null };
+  if (r === 4) { S.surf[key(u.x, u.y)] = { t: "oil", ttl: 3, by: null }; u.st.oiled = { ttl: 3, by: null }; }
+  if (r === 6) u.exposed = true;
+  float(u, "Raté !", "info");
+}
+function resolveAttack(att, tgt, A) {
+  const c = calc(att, tgt, A);
+  let k = 20, label = "critique assuré";
+  if (!A.auto) {
+    const r1 = d(20), r2 = d(20);
+    k = c.adv === 1 ? Math.max(r1, r2) : c.adv === -1 ? Math.min(r1, r2) : r1;
+    label = c.adv ? `${r1} et ${r2} (${c.adv === 1 ? "avantage" : "désavantage"}) → ${k}` : String(k);
+  }
+  const g = grade(k, A, c);
+  tgt.exposed = false;
+  const who = `${att.name} → ${tgt.name} · ${A.name}`;
+  if (g === "fumble") { log(`${who} · d20 ${label} : Raté !`, att.side === "e" ? "enemy" : "bad"); fumble(att); return g; }
+  const roll = d(A.die);
+  let dmg = A.base + roll + A.dmod;
+  if (g === "graze") dmg = Math.floor(dmg / 2);
+  if (g === "crit") dmg *= 2;
+  dmg *= c.mult;
+  c.combos.forEach(([a, w]) => combo(a, att.id, w));
+  if (c.flank && att.side === "h") S.stats.flanks++;
+  const sum = A.auto ? "" : ` + ${A.mod} = ${k + A.mod}`;
+  log(`${who} · d20 ${label}${sum} : ${GL[g]} · ${dmg} dégâts${c.mult > 1 ? " (×" + c.mult + ")" : ""}`, att.side === "e" ? "enemy" : "");
+  hurt(tgt, dmg, att.id, { noWeak: true });
+  rage(att, 10); rage(tgt, 10);
+  if (!tgt.dead && !tgt.ko) {
+    if (A.prone) tgt.st.prone = { by: att.id };
+    if (c.oiled) { delete tgt.st.oiled; if (tgt.st.soaked) delete tgt.st.soaked; else tgt.st.burning = { n: 2, by: att.id }; }
+  }
+  if (A.el === "fire") ignite(tgt.x, tgt.y, att.id);
+  if (A.el === "lightning" && surfAt(tgt)?.t === "water") electrify(tgt.x, tgt.y, att.id);
+  return g;
+}
+
+/* ---------- poussées ---------- */
+function simPush(src, tgt, dist) {
+  const dx = Math.sign(tgt.x - src.x), dy = Math.sign(tgt.y - src.y);
+  let x = tgt.x, y = tgt.y, left = dist, stop = null;
+  const path = [], ice = (x, y) => S.surf[key(x, y)]?.t === "ice";
+  for (let guard = 0; guard < 20; guard++) {
+    if (left <= 0 && !ice(x, y)) break;
+    const nx = x + dx, ny = y + dy;
+    if (isLedge(nx, ny)) { stop = "ledge"; break; }
+    if (!inB(nx, ny) || isWall(nx, ny)) { stop = "wall"; break; }
+    const o = unitAt(nx, ny);
+    if ((o && o !== tgt) || barrelAt(nx, ny)) { stop = "unit"; break; }
+    x = nx; y = ny; path.push({ x, y }); left--;
+  }
+  return { path, stop };
+}
+async function doPush(src, tgt, o) {
+  const isUnit = !!tgt.side, byHero = isHeroId(src.id) ? src.id : null;
+  let dist = o.dist;
+  if (isUnit && tgt.st.chilled) { dist += 2; combo(tgt.st.chilled.by, byHero, "Gelé puis poussée"); }
+  const sim = simPush(src, tgt, dist);
+  log(`${src.name} ${o.proj ? "projette" : "pousse"} ${isUnit ? tgt.name : "le tonneau"} de ${sim.path.length} case${sim.path.length > 1 ? "s" : ""}.`, src.side === "e" ? "enemy" : "");
+  for (const p of sim.path) {
+    tgt.x = p.x; tgt.y = p.y;
+    if (isUnit) {
+      const s = surfAt(p);
+      if (s && s.by && byHero && s.by !== byHero) combo(s.by, byHero, "poussé dans " + SL[s.t]);
+      enterCell(tgt, p.x, p.y, false);
+    }
+    renderTokens(); await sleep(110);
+    if (isUnit && (tgt.dead || tgt.ko)) break;
+  }
+  if (!isUnit) { burstBarrel(tgt, byHero, false); return; }
+  if (tgt.dead || tgt.ko) return;
+  if (sim.stop === "ledge") {
+    if (tgt.kind === "sbire") { log(`${tgt.name} tombe de la corniche : éliminé !`, "good"); if (byHero) S.stats.dmg[byHero] += tgt.hp; down(tgt); }
+    else { log(`${tgt.name} tombe de la corniche et remonte : 20 dégâts.`); hurt(tgt, 20, byHero); }
+  } else if (sim.stop) {
+    log(`${tgt.name} heurte ${sim.stop === "wall" ? "le mur" : "un obstacle"} : +8.`);
+    hurt(tgt, 8, byHero);
+    if (o.proj && !tgt.dead && !tgt.ko) { tgt.st.prone = { by: byHero }; log(`${tgt.name} est À terre.`, "muted"); }
+  }
+}
+
+/* ---------- déplacements ---------- */
+function endable(x, y, m) { if (!walkable(x, y) || barrelAt(x, y)) return false; const o = unitAt(x, y); return !o || o === m; }
+function passable(x, y, m) { if (!walkable(x, y) || barrelAt(x, y)) return false; const o = unitAt(x, y); return !o || o === m || o.side === m.side || o.ko; }
+function hazard(x, y, m) {
+  const s = S.surf[key(x, y)]; if (!s) return 0;
+  return m.side === "e" ? ({ fire: 3, ice: 1, oil: .2 }[s.t] || 0) : ({ fire: .05, ice: .03 }[s.t] || 0);
+}
+function dijkstra(sources, m) {
+  const N = W * H, cost = new Array(N).fill(Infinity), steps = new Array(N).fill(Infinity), prev = new Array(N).fill(-1), done = new Array(N).fill(false);
+  for (const s of sources) { const i = s.y * W + s.x; cost[i] = 0; steps[i] = 0; }
+  for (;;) {
+    let bi = -1, bc = Infinity;
+    for (let i = 0; i < N; i++) if (!done[i] && cost[i] < bc) { bc = cost[i]; bi = i; }
+    if (bi < 0) break;
+    done[bi] = true;
+    const x = bi % W, y = (bi / W) | 0;
+    for (const [dx, dy] of DIRS) {
+      const nx = x + dx, ny = y + dy;
+      if (!passable(nx, ny, m)) continue;
+      if (dx && dy && (isWall(x + dx, y) || isWall(x, y + dy))) continue;
+      const ni = ny * W + nx, c = bc + 1 + hazard(nx, ny, m);
+      if (c < cost[ni]) { cost[ni] = c; steps[ni] = steps[bi] + 1; prev[ni] = bi; }
+    }
+  }
+  return { cost, steps, prev };
+}
+function buildPath(prev, i) { const out = []; while (prev[i] !== -1) { out.push({ x: i % W, y: (i / W) | 0 }); i = prev[i]; } return out.reverse(); }
+function reachOf(h) {
+  const D = dijkstra([{ x: h.x, y: h.y }], h), set = new Set();
+  for (let i = 0; i < W * H; i++) if (D.steps[i] > 0 && D.steps[i] <= h.t.mv && endable(i % W, (i / W) | 0, h)) set.add(i);
+  return { D, set };
+}
+async function walk(u, path) {
+  let n = 0;
+  for (const p of path) {
+    u.x = p.x; u.y = p.y; n++;
+    const stop = enterCell(u, p.x, p.y, true);
+    renderTokens(); await sleep(u.side === "h" ? 90 : 120);
+    if (stop || u.dead || u.ko) break;
+  }
+  u.t.mv = Math.max(0, u.t.mv - n);
+  if (u.st.prone) u.t.mv = 0;
+  return n;
+}
+
+/* ---------- tours ---------- */
+function startTurn(u) {
+  if (u.dead || u.ko) return;
+  if (u.st.burning) {
+    const by = u.st.burning.by, a = u.kind === "voleur" ? 10 : 5;
+    u.st.burning.n--; if (u.st.burning.n <= 0) delete u.st.burning;
+    log(`${u.name} brûle : ${a} dégâts.`, u.side === "h" ? "bad" : "");
+    hurt(u, a, by);
+    if (u.dead || u.ko) return;
+  }
+  let mv = u.speed;
+  if (u.st.chilled) mv = Math.max(0, mv - 2);
+  if (u.st.prone) { mv = Math.max(0, mv - Math.floor(u.speed / 2)); delete u.st.prone; log(`${u.name} se relève (la moitié de son déplacement).`, "muted"); }
+  u.t = { mv, action: true, bonus: true, reaction: true };
+  if (u.kind === "mage" && u.side === "h") u.res.v = Math.min(u.res.max, u.res.v + 5);
+}
+function endTurn(u) {
+  if (u.dead || u.ko) return;
+  const s = surfAt(u);
+  if (s && s.t === "fire") { log(`${u.name} finit son tour dans le feu.`, u.side === "h" ? "bad" : ""); fireHit(u, 6, s.by); }
+  if (u.st.chilled && !u.dead && !u.ko) { u.st.chilled.n--; if (u.st.chilled.n <= 0) delete u.st.chilled; }
+}
+function endRound() {
+  for (const k in S.surf) { const s = S.surf[k]; if (s.ttl != null) { s.ttl--; if (s.ttl <= 0) delete S.surf[k]; } }
+  for (const u of S.units) for (const n of ["soaked", "oiled"]) if (u.st[n]) { u.st[n].ttl--; if (u.st[n].ttl <= 0) delete u.st[n]; }
+}
+async function begin() {
+  S.mode = ui.mode; S.startedAt = Date.now(); S.round = 1; S.gi = 0; S.stats.rounds = [];
+  log(`Début du combat · ${S.mode === "team" ? "tour d'équipe" : "ordre d'initiative"}.`, "round");
+  if (S.mode === "init") {
+    const rolls = S.units.map(u => ({ id: u.id, v: d(20) + u.dex, dex: u.dex }));
+    rolls.sort((a, b) => b.v - a.v || b.dex - a.dex || (Math.random() - .5));
+    S.order = rolls.map(r => r.id);
+    log("Initiative : " + rolls.map(r => `${U(r.id).short} ${r.v}`).join(" · "), "muted");
+  }
+  log("Round 1", "round");
+  await runFrom();
+}
+async function runFrom() {
+  if (ui.running) return;
+  ui.running = true;
+  try {
+    for (let guard = 0; guard < 200; guard++) {
+      if (S.result) { commit(); return; }
+      const G = groups();
+      if (S.gi >= G.length) { endRound(); S.round++; S.gi = 0; roundEntry(); log("Round " + S.round, "round"); continue; }
+      const g = G[S.gi];
+      roundEntry();
+      if (g.side === "h") {
+        if (g.ids.every(id => U(id).ko)) { S.gi++; continue; }
+        g.ids.forEach(id => { actCombos = new Set(); startTurn(U(id)); });
+        if (S.result) { commit(); return; }
+        S.phase = "heroes"; S.phaseStart = Date.now();
+        const first = g.ids.map(U).find(u => !u.ko);
+        ui.sel = first ? first.id : null; ui.ab = null; ui.undo = [];
+        commit(); return;
+      }
+      S.phase = "enemies"; S.enemyStart = Date.now(); ui.sel = null; ui.ab = null;
+      commit();
+      ui.busy = true; renderAll();
+      for (const id of g.ids) {
+        const e = U(id); if (!e || e.dead) continue;
+        actCombos = new Set();
+        startTurn(e);
+        if (!e.dead && !S.result) await enemyAct(e);
+        if (!e.dead) endTurn(e);
+        ui.acting = null; renderAll();
+        if (S.result) break;
+        await sleep(220);
+      }
+      ui.busy = false;
+      S.gi++;
+    }
+  } finally { ui.running = false; ui.busy = false; renderAll(); }
+}
+function endHeroes() {
+  if (S.phase !== "heroes" || ui.busy || readOnly) return;
+  roundEntry().heroMs += Date.now() - S.phaseStart;
+  const g = curGroup();
+  g.ids.forEach(id => { actCombos = new Set(); endTurn(U(id)); });
+  ui.sel = null; ui.ab = null; ui.undo = [];
+  S.gi++;
+  runFrom();
+}
+
+/* ---------- les ennemis ---------- */
+function nearestByPath(e, heroes) {
+  const R = dijkstra([{ x: e.x, y: e.y }], e);
+  let best = null, bd = Infinity;
+  for (const h of heroes) {
+    let m = cheb(e, h) <= 1 ? 0 : Infinity;
+    for (const [dx, dy] of DIRS) { const x = h.x + dx, y = h.y + dy; if (inB(x, y)) m = Math.min(m, R.cost[y * W + x]); }
+    if (m === Infinity) m = 100 + cheb(e, h);
+    if (m < bd) { bd = m; best = h; }
+  }
+  return best;
+}
+async function approach(e, t) {
+  if (!t || cheb(e, t) <= 1 || e.t.mv <= 0) return;
+  const goals = [];
+  for (const [dx, dy] of DIRS) { const x = t.x + dx, y = t.y + dy; if (endable(x, y, e)) goals.push({ x, y }); }
+  const R = dijkstra([{ x: e.x, y: e.y }], e);
+  const F = goals.length ? dijkstra(goals, e) : null;
+  const here = e.y * W + e.x;
+  let best = here, bs = F ? F.cost[here] : Infinity;
+  for (let i = 0; i < W * H; i++) {
+    if (R.steps[i] > e.t.mv) continue;
+    const x = i % W, y = (i / W) | 0;
+    if (!endable(x, y, e)) continue;
+    const base = F && F.cost[i] < Infinity ? F.cost[i] : 50 + cheb({ x, y }, t);
+    const sc = base + hazard(x, y, e) * 2 + R.cost[i] * .01;
+    if (sc < bs - 1e-9) { bs = sc; best = i; }
+  }
+  if (best !== here) await walk(e, buildPath(R.prev, best));
+}
+async function enemyAttack(e, tgt) {
+  let t = tgt;
+  const B = U("brute");
+  if (B && !B.ko && B !== t && B.t.reaction && cheb(B, t) <= 1) { B.t.reaction = false; log(`Provocation : ${e.name} attaque la Brute à la place de ${t.name}.`, "combo"); t = B; }
+  const g = resolveAttack(e, t, foeAtk(e));
+  renderTokens(); await sleep(260);
+  if (e.kind === "brt" && g !== "fumble" && !t.ko && !t.dead) await doPush(e, t, { dist: 2 });
+}
+async function meleeAct(e) {
+  const heroes = liveHeroes(); if (!heroes.length) return;
+  let t = e.kind === "brt" ? heroes.slice().sort((a, b) => a.hp - b.hp || cheb(a, e) - cheb(b, e))[0] : nearestByPath(e, heroes);
+  await approach(e, t);
+  if (e.dead || S.result) return;
+  if (!t || t.ko || cheb(e, t) > 1) t = liveHeroes().filter(h => cheb(e, h) <= 1).sort((a, b) => a.hp - b.hp)[0];
+  if (t) await enemyAttack(e, t);
+  else log(`${e.name} avance.`, "muted");
+}
+async function archerAct(e) {
+  const heroes = liveHeroes(); if (!heroes.length) return;
+  const R = dijkstra([{ x: e.x, y: e.y }], e);
+  let best = e.y * W + e.x, bs = Infinity;
+  for (let i = 0; i < W * H; i++) {
+    if (R.steps[i] > e.t.mv) continue;
+    const x = i % W, y = (i / W) | 0, p = { x, y };
+    if (!endable(x, y, e)) continue;
+    let near = Infinity, vis = false;
+    for (const h of heroes) { const dd = cheb(p, h); near = Math.min(near, dd); if (dd <= 8 && los(p, h)) vis = true; }
+    let sc = vis ? Math.abs(near - 4) * 3 + (near < 4 ? 6 : 0) : 100 + near;
+    sc += hazard(x, y, e) * 4 + R.steps[i] * .15;
+    if (sc < bs) { bs = sc; best = i; }
+  }
+  if (best !== e.y * W + e.x) await walk(e, buildPath(R.prev, best));
+  if (e.dead || S.result) return;
+  const vis = liveHeroes().filter(h => cheb(e, h) <= 8 && los(e, h)).sort((a, b) => cheb(e, a) - cheb(e, b));
+  if (vis.length) await enemyAttack(e, vis[0]); else log(`${e.name} ne voit personne.`, "muted");
+}
+async function chefAct(e) {
+  if (S.chefTurn < 3) {
+    S.enemyAdv = true;
+    log(`Le chef donne ses ordres (tour ${S.chefTurn}/3) : les ennemis ont l'avantage.`, "enemy");
+    float(e, "Ordres !", "info");
+    S.chefTurn++; return;
+  }
+  S.enemyAdv = false; S.chefTurn = 1;
+  const pick = () => {
+    let best = null, bs = 0;
+    const hs = liveHeroes();
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (cheb(e, { x, y }) > 6) continue;
+      const n = hs.filter(h => Math.abs(h.x - x) <= 1 && Math.abs(h.y - y) <= 1).length;
+      if (!n) continue;
+      const sc = n * 10 - cheb(e, { x, y }) * .1;
+      if (sc > bs) { bs = sc; best = { x, y }; }
+    }
+    return best;
+  };
+  let c = pick();
+  if (!c) { await approach(e, nearestByPath(e, liveHeroes())); c = pick(); }
+  if (!c) { log("Le chef frappe dans le vide.", "enemy"); return; }
+  const cells = []; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (inB(c.x + dx, c.y + dy)) cells.push(key(c.x + dx, c.y + dy));
+  ui.flash = new Set(cells); renderBoard(); await sleep(650);
+  log(`Le chef frappe la zone 3×3 autour de ${cellName(c.x, c.y)} !`, "enemy");
+  for (const h of liveHeroes().filter(h => Math.abs(h.x - c.x) <= 1 && Math.abs(h.y - c.y) <= 1)) { resolveAttack(e, h, foeAtk(e)); renderTokens(); await sleep(200); }
+  ui.flash = null;
+}
+async function enemyAct(e) {
+  ui.acting = e.id; renderTokens(); await sleep(180);
+  if (!liveHeroes().length) return;
+  if (e.kind === "chef") await chefAct(e);
+  else if (e.kind === "archer") await archerAct(e);
+  else await meleeAct(e);
+}
+
+/* ---------- actions des héros ---------- */
+function canUse(h, ab) {
+  if (!canAct(h)) return false;
+  if (ab.slot === "action" && !h.t.action) return false;
+  if (ab.slot === "bonus" && !h.t.bonus) return false;
+  if (ab.cost && h.res.v < ab.cost) return false;
+  if (ab.type === "potion" && (h.potion < 1 || h.hp >= h.maxHp)) return false;
+  return true;
+}
+function targetsFor(h, ab) {
+  const out = [], seen = new Set(), add = p => { const k = key(p.x, p.y); if (!seen.has(k)) { seen.add(k); out.push({ x: p.x, y: p.y }); } };
+  const inR = p => cheb(h, p) <= ab.range && (ab.range === 1 || los(h, p));
+  if (ab.type === "attack") {
+    liveEnemies().filter(inR).forEach(add);
+    S.barrels.filter(inR).forEach(add);
+    if (ab.el === "fire") for (const k in S.surf) { const s = S.surf[k]; if (s.t !== "oil") continue; const [x, y] = k.split(",").map(Number); if (!unitAt(x, y) && inR({ x, y })) add({ x, y }); }
+  } else if (ab.type === "push") {
+    S.units.filter(u => !u.dead && !u.ko && u !== h && cheb(h, u) === 1).forEach(add);
+    S.barrels.filter(b => cheb(h, b) === 1).forEach(add);
+  } else if (ab.type === "heal") liveHeroes().filter(u => u !== h && cheb(h, u) <= ab.range).forEach(add);
+  else if (ab.type === "revive") S.units.filter(u => u.side === "h" && u.ko && cheb(h, u) === 1).forEach(add);
+  else if (ab.type === "oilTarget") S.units.filter(u => !u.dead && !u.ko && u !== h && inR(u)).forEach(add);
+  return out;
+}
+function zoneFor(h, ab, x, y) { const cells = zoneCells(x, y, ab.size); const ok = cells.length > 0 && cells.some(([cx, cy]) => cheb(h, { x: cx, y: cy }) <= ab.range); return { cells, ok }; }
+function pay(h, ab) { if (ab.slot === "action") h.t.action = false; else h.t.bonus = false; if (ab.cost) h.res.v -= ab.cost; }
+async function useAbility(h, ab, x, y) {
+  actCombos = new Set();
+  ui.undo = []; ui.busy = true;
+  try {
+    if (ab.type === "zone") {
+      const z = zoneFor(h, ab, x, y); if (!z.ok) return;
+      pay(h, ab); placeZone(h, ab, z.cells);
+      log(`${h.name} · ${ab.name} en ${cellName(z.cells[0][0], z.cells[0][1])}.`);
+      if (ab.surf === "ice") for (const [cx, cy] of z.cells) { const u = unitAt(cx, cy); if (u && u.side === "e" && !u.dead) log(`${u.name} est Gelé.`, "muted"); }
+      return;
+    }
+    if (ab.type === "potion") { pay(h, ab); h.potion--; const a = Math.min(20, h.maxHp - h.hp); h.hp += a; float(h, "+" + a, "heal"); log(`${h.name} boit sa potion : +${a} PV.`, "good"); return; }
+    const u = unitAt(x, y), b = barrelAt(x, y);
+    if (ab.type === "attack") {
+      pay(h, ab);
+      if (b) { log(`${h.name} · ${ab.name} sur le tonneau en ${cellName(x, y)}.`); burstBarrel(b, h.id, ab.el === "fire"); return; }
+      if (!u) { log(`${h.name} tire dans l'huile en ${cellName(x, y)}.`); ignite(x, y, h.id); return; }
+      resolveAttack(h, u, heroAtk(h, ab));
+      return;
+    }
+    if (ab.type === "push") { pay(h, ab); await doPush(h, u || b, { dist: ab.dist, proj: ab.proj }); return; }
+    if (ab.type === "heal" && u) {
+      pay(h, ab); const roll = d(6), a = Math.min(15 + roll + 2, u.maxHp - u.hp); u.hp += a; float(u, "+" + a, "heal");
+      log(`${h.name} soigne ${u.name} : 15 + ${roll} + 2, +${a} PV.`, "good");
+      h.res.v = Math.min(h.res.max, h.res.v + 1); return;
+    }
+    if (ab.type === "revive" && u) {
+      pay(h, ab); u.ko = false; u.hp = 25; u.t = { mv: 0, action: false, bonus: false, reaction: false }; S.stats.revives++;
+      float(u, "+25", "heal"); log(`${h.name} relève ${u.name} (25 PV). Il rejouera au prochain tour.`, "good"); return;
+    }
+    if (ab.type === "oilTarget" && u) { pay(h, ab); u.st.oiled = { ttl: 3, by: h.id }; log(`${h.name} lance une fiole : ${u.name} est Huilé.`); return; }
+  } finally {
+    ui.busy = false; ui.ab = null; ui.hover = null;
+    commit();
+  }
+}
+async function moveHero(h, i) {
+  const R = reachOf(h); if (!R.set.has(i)) return;
+  const path = buildPath(R.D.prev, i);
+  const risky = path.some(p => S.surf[key(p.x, p.y)]?.t === "ice");
+  if (risky) ui.undo = []; else ui.undo.push(JSON.stringify(S));
+  actCombos = new Set();
+  ui.busy = true; ui.hover = null;
+  await walk(h, path);
+  ui.busy = false;
+  commit();
+}
+function undo() { if (!ui.undo.length || ui.busy || readOnly) return; const keepRev = S.rev; S = JSON.parse(ui.undo.pop()); S.rev = keepRev; ui.ab = null; commit(); }
+
+/* ---------- synchronisation ---------- */
+let db = null, docRef = null, saving = false, dirty = false, sync = "local";
+function commit() {
+  S.rev = Math.max(S.rev, lastSeenRev) + 1; S.by = CLIENT; lastSeenRev = S.rev;
+  if (!docRef) { try { localStorage.setItem("salle-d1", JSON.stringify(S)); } catch (e) {} }
+  renderAll(); save();
+}
+async function save() {
+  if (!docRef || readOnly) return;
+  if (saving) { dirty = true; return; }
+  saving = true;
+  try { await docRef.set({ json: JSON.stringify(S), rev: S.rev, by: CLIENT, at: Date.now() }); sync = "live"; }
+  catch (e) {
+    if (e && e.code === "invalid_argument") { readOnly = true; sync = "read"; }
+    else if (e && e.code === "unavailable") setTimeout(save, 700 + Math.random() * 800);
+    else sync = "err";
+  }
+  saving = false; renderTop();
+  if (dirty) { dirty = false; save(); }
+}
+async function initDb() {
+  try { db = await window.claude?.use?.("db"); } catch (e) { db = null; }
+  if (!db) { sync = "local"; renderTop(); return; }
+  try { const user = await window.claude.use("user"); const can = user ? await user.can("data.write") : null; if (can === false) readOnly = true; } catch (e) {}
+  docRef = db.doc("parties/courante");
+  sync = readOnly ? "read" : "live";
+  docRef.onSnapshot(snap => {
+    if (!snap.exists) return;
+    const dd = snap.data(); if (!dd || typeof dd.json !== "string") return;
+    lastSeenRev = Math.max(lastSeenRev, dd.rev || 0);
+    if (dd.by === CLIENT && dd.rev === S.rev) return;
+    if (ui.busy || ui.running) return;
+    if (dd.rev < S.rev || (dd.rev === S.rev && dd.by === S.by)) return;
+    try { const prev = S.result; S = JSON.parse(dd.json); ui.mode = S.mode || "team"; ui.undo = []; ui.ab = null; if (!S.result || S.result !== prev) ui.hideResult = false; if (ui.sel && !U(ui.sel)) ui.sel = null; renderAll(); } catch (e) {}
+  }, () => { sync = "err"; renderTop(); });
+  renderAll();
+}
+
+/* ---------- rendu ---------- */
+const $ = id => document.getElementById(id);
+const boardEl = $("board"), tokensEl = $("tokens"), fxEl = $("fx");
+const cells = [];
+function buildBoard() {
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const c = document.createElement("div");
+    const t = tile(x, y);
+    c.className = "cell " + (t === "#" ? "wall" : t === "_" ? "ledge" : "floor" + ((x + y) % 2 ? " alt" : ""));
+    c.dataset.i = y * W + x;
+    const s = document.createElement("div"); s.className = "surf"; s.hidden = true; c.appendChild(s);
+    const hl = document.createElement("div"); hl.className = "hl"; c.appendChild(hl);
+    if (y === 0 || x === 0) { const co = document.createElement("span"); co.className = "coord"; co.textContent = y === 0 ? COLS[x] : String(y + 1); if (y === 0 && x === 0) co.textContent = ""; c.appendChild(co); }
+    boardEl.appendChild(c); cells.push({ c, s, hl });
+  }
+}
+function float(u, text, cls) {
+  if (!fxEl) return;
+  const f = document.createElement("div"); f.className = "float " + cls; f.textContent = text;
+  f.style.left = (u.x * 10) + "%"; f.style.top = (u.y * 12.5) + "%";
+  fxEl.appendChild(f); setTimeout(() => f.remove(), 1000);
+}
+function highlights() {
+  const hl = new Map();
+  const set = (i, c) => hl.set(i, c);
+  const h = ui.sel && U(ui.sel);
+  if (h && canAct(h)) {
+    if (ui.ab) {
+      const ab = AB[ui.ab];
+      if (ab.type === "zone") {
+        if (ui.hover != null) { const z = zoneFor(h, ab, ui.hover % W, (ui.hover / W) | 0); z.cells.forEach(([x, y]) => set(y * W + x, "zone" + (z.ok ? "" : " bad"))); }
+      } else targetsFor(h, ab).forEach(p => { const i = p.y * W + p.x; set(i, "tgt" + (ui.hover === i ? " hot" : "")); });
+    } else if (h.t.mv > 0) {
+      const R = reachOf(h);
+      R.set.forEach(i => set(i, "reach"));
+      if (ui.hover != null && R.set.has(ui.hover)) buildPath(R.D.prev, ui.hover).forEach(p => set(p.y * W + p.x, "path"));
+    }
+  }
+  if (ui.flash) ui.flash.forEach(k => { const [x, y] = k.split(",").map(Number); set(y * W + x, "danger"); });
+  return hl;
+}
+function renderBoard() {
+  const hl = highlights();
+  cells.forEach(({ s, hl: hd }, i) => {
+    const x = i % W, y = (i / W) | 0, sf = S.surf[key(x, y)];
+    if (sf) { s.hidden = false; s.className = "surf " + sf.t; s.innerHTML = sf.ttl != null ? `<span class="ttl">${sf.ttl}</span>` : ""; } else { s.hidden = true; s.className = "surf"; }
+    hd.className = "hl " + (hl.get(i) || "");
+  });
+}
+const tokEls = new Map();
+function tokenEl(id) {
+  let el = tokEls.get(id);
+  if (!el) { el = document.createElement("div"); el.className = "token"; el.innerHTML = `<div class="disc"></div><div class="hp"><i></i></div><div class="pips"></div>`; tokensEl.appendChild(el); tokEls.set(id, el); }
+  return el;
+}
+function renderTokens() {
+  const alive = new Set();
+  for (const u of S.units) {
+    const el = tokenEl(u.id); alive.add(u.id);
+    el.style.left = (u.x * 10) + "%"; el.style.top = (u.y * 12.5) + "%";
+    el.style.setProperty("--c", u.side === "h" ? HCOL[u.id] : "var(--enemy)");
+    el.className = "token " + (u.side === "h" ? "hero" : "foe") + (u.tough ? " tough" : "") + (u.ko ? " ko" : "") + (u.dead ? " dead" : "") + (ui.sel === u.id ? " sel" : "") + (ui.acting === u.id ? " acting" : "");
+    el.querySelector(".disc").textContent = u.ko ? "KO" : u.short;
+    el.querySelector(".hp").hidden = u.dead;
+    el.querySelector(".hp i").style.width = Math.max(0, u.hp / u.maxHp * 100) + "%";
+    const st = Object.keys(u.st).filter(k => STL[k]); if (u.exposed) st.push("exposed");
+    el.querySelector(".pips").innerHTML = st.map(k => `<span class="pip ${k}" title="${STL[k]}"></span>`).join("");
+  }
+  for (const b of S.barrels) {
+    const el = tokenEl(b.id); alive.add(b.id);
+    el.className = "token barrel"; el.style.left = (b.x * 10) + "%"; el.style.top = (b.y * 12.5) + "%";
+    el.querySelector(".disc").textContent = ""; el.querySelector(".hp").hidden = true; el.querySelector(".pips").innerHTML = "";
+  }
+  for (const [id, el] of tokEls) if (!alive.has(id)) { el.remove(); tokEls.delete(id); }
+}
+function renderTop() {
+  const ch = [];
+  ch.push(`<span class="chip">${S.mode === "team" ? "Tour d'équipe" : "Ordre d'initiative"}</span>`);
+  if (S.phase !== "setup") ch.push(`<span class="chip">Round <b>${S.round}</b></span>`);
+  if (S.phase === "heroes") ch.push(`<span class="chip phase-h">Phase des héros <b id="phaseClock">${fmt(Date.now() - S.phaseStart)}</b></span>`);
+  if (S.phase === "enemies") ch.push(`<span class="chip phase-e">Les ennemis jouent…</span>`);
+  if (S.startedAt) { const t = (S.endedAt || Date.now()) - S.startedAt; ch.push(`<span class="chip${t >= 30 * 60000 && !S.result ? " warn" : ""}">Total <b id="totalClock">${fmt(t)}</b>${t >= 30 * 60000 && !S.result ? " · 30 min atteintes" : ""}</span>`); }
+  ch.push(sync === "live" ? `<span class="chip live">Partie partagée, en direct</span>` : sync === "read" ? `<span class="chip warn">Lecture seule</span>` : sync === "err" ? `<span class="chip warn">Synchro coupée</span>` : `<span class="chip">Partie locale</span>`);
+  $("chips").innerHTML = ch.join("");
+  $("endBtn").disabled = !(S.phase === "heroes" && !ui.busy && !readOnly && !S.result);
+  $("endBtn").textContent = S.mode === "team" ? "Fin du tour des héros" : "Fin du tour de ce groupe";
+  $("undoBtn").disabled = !ui.undo.length || ui.busy || readOnly || S.phase !== "heroes";
+  $("resumeBtn").hidden = !(S.phase === "enemies" && !ui.busy && !ui.running && !readOnly && Date.now() - (S.enemyStart || 0) > 15000);
+  $("newBtn").textContent = ui.confirmNew > Date.now() ? "Confirmer : tout effacer ?" : "Nouvelle partie";
+  $("newBtn").disabled = readOnly;
+  $("roBanner").hidden = !readOnly;
+}
+function renderOverlay() {
+  const ov = $("overlay");
+  if (S.phase === "setup") {
+    ov.hidden = false;
+    ov.innerHTML = `<div class="card">
+      <h3>Combat D1 · vaincre le chef</h3>
+      <p>Vous jouez les quatre héros, les ennemis jouent tout seuls en suivant leur habitude. Les dés, les dégâts et les mesures sont automatiques.</p>
+      <div class="modes" role="group" aria-label="Mode de tour">
+        <button type="button" class="mode" data-mode="team" aria-pressed="${ui.mode === "team"}"><span><b>Tour d'équipe</b><span>Les quatre héros jouent dans l'ordre que vous voulez, puis tous les ennemis.</span></span></button>
+        <button type="button" class="mode" data-mode="init" aria-pressed="${ui.mode === "init"}"><span><b>Ordre d'initiative</b><span>Chacun lance d20 + DEX. Les héros qui se suivent partagent leur tour.</span></span></button>
+      </div>
+      <button type="button" class="btn primary" id="startBtn"${readOnly ? " disabled" : ""}>Commencer le combat</button>
+    </div>`;
+  } else if (S.result && !ui.hideResult) {
+    ov.hidden = false;
+    const t = fmt((S.endedAt || Date.now()) - S.startedAt);
+    ov.innerHTML = `<div class="card"><h3>${S.result === "victoire" ? "Victoire !" : "Défaite"}</h3>
+      <p>${S.result === "victoire" ? "Le chef est tombé" : "Les quatre héros sont KO"} au round ${S.round}, en ${t}. ${S.stats.combos.length} combo${S.stats.combos.length > 1 ? "s" : ""} entre héros.</p>
+      <p>Remplissez les notes en bas de la page, puis copiez la fiche pour Claude.</p>
+      <button type="button" class="btn" id="closeOv">Voir le plateau</button></div>`;
+  } else { ov.hidden = true; ov.innerHTML = ""; }
+}
+function pool(label, on) { return `<span class="pool${on ? "" : " off"}">${label}</span>`; }
+function renderBar() {
+  const h = ui.sel && U(ui.sel), el = $("bar");
+  if (S.phase === "setup") { el.innerHTML = `<p class="hint">Choisis le mode de tour sur le plateau, puis lance le combat.</p>`; return; }
+  if (!h) { el.innerHTML = `<p class="hint">${S.phase === "enemies" ? "Les ennemis jouent. Regarde le journal." : "Clique sur un héros (un cercle de couleur) pour le jouer."}</p>`; return; }
+  const live = canAct(h);
+  const H0 = HEROES[h.id];
+  const abs = H0.ab.map(id => {
+    const ab = AB[id], ok = canUse(h, ab);
+    const cost = ab.cost ? ` · ${ab.cost} ${h.res.type}` : "";
+    return `<button type="button" class="ab${ui.ab === id ? " on" : ""}" data-ab="${id}"${ok ? "" : " disabled"}><span class="n">${ab.name}<span class="slot ${ab.slot}">${ab.slot === "action" ? "Action" : "Bonus"}${cost}</span></span><span class="ds">${ab.ds}${id === "potion" ? ` (${h.potion} restante${h.potion > 1 ? "s" : ""})` : ""}</span></button>`;
+  }).join("");
+  el.innerHTML = `<div class="bar-head"><h3 style="color:${HCOL[h.id]}">${h.name}</h3><span class="role">${H0.role}</span>
+    <span class="mono">${h.hp} / ${h.maxHp} PV</span><span class="mono">${h.res.type} ${h.res.v} / ${h.res.max}</span></div>
+    <div class="pools">${pool(`Déplacement ${h.t.mv} / ${h.speed}`, live && h.t.mv > 0)}${pool("Action", live && h.t.action)}${pool("Bonus", live && h.t.bonus)}${h.id === "brute" ? pool("Réaction", h.t.reaction) : ""}
+    ${Object.keys(h.st).filter(k => STL[k]).map(k => `<span class="pool">${STL[k]}</span>`).join("")}</div>
+    ${live ? "" : `<p class="small">${h.ko ? "KO : un allié au contact peut le relever." : S.phase === "heroes" ? "Ce héros ne joue pas dans ce groupe." : "Attends le tour des héros."}</p>`}
+    <div class="abs">${abs}</div>
+    <p class="small">${H0.passive} <b>Faiblesse :</b> ${H0.weak}</p>
+    ${ui.ab ? `<p class="small">Choisis une cible en surbrillance. Échap ou clic droit pour annuler.</p>` : live && h.t.mv > 0 ? `<p class="small">Clique sur une case éclairée pour te déplacer.</p>` : ""}`;
+}
+function previewAttack(h, ab, tgt) {
+  const A = heroAtk(h, ab), c = calc(h, tgt, A), o = odds(A, c);
+  const pc = v => Math.round(v * 100) + " %";
+  const seg = ["fumble", "graze", "hit", "crit"].map(g => `<i class="o-${g}" style="width:${o[g] * 100}%"></i>`).join("");
+  const leg = ["fumble", "graze", "hit", "crit"].map(g => `<div><span class="sw o-${g}"></span>${GL[g]}<b>${pc(o[g])}</b>${dmgRange(A, c, g)} dégâts</div>`).join("");
+  const adv = c.adv === 1 ? " · avantage" : c.adv === -1 ? " · désavantage" : "";
+  return `<h2>${ab.name} → ${tgt.name} (${tgt.hp} PV${tgt.tough ? ", coriace" : ""})${adv}</h2><div class="odds">${seg}</div><div class="olegend">${leg}</div>${c.notes.length ? `<ul class="notes">${c.notes.map(n => `<li class="${/×|avantage|enflamme|électrise/.test(n) && !/désavantage|faiblesse/.test(n) ? "good" : ""}">${n}</li>`).join("")}</ul>` : ""}`;
+}
+function renderPreview() {
+  const el = $("preview"), h = ui.sel && U(ui.sel), i = ui.hover;
+  if (S.phase === "setup") { el.innerHTML = `<h2>Aperçu</h2><p class="hint">Au survol d'une cible, les chances de chaque résultat et les dégâts s'affichent ici.</p>`; return; }
+  const x = i != null ? i % W : 0, y = i != null ? (i / W) | 0 : 0;
+  const u = i != null ? unitAt(x, y) : null;
+  if (h && canAct(h) && ui.ab && i != null) {
+    const ab = AB[ui.ab];
+    if (ab.type === "zone") {
+      const z = zoneFor(h, ab, x, y);
+      const hit = z.cells.map(([cx, cy]) => unitAt(cx, cy)).filter(Boolean);
+      const what = { water: "Trempés", oil: "Huilés", ice: "Gelés (ennemis seulement)" }[ab.surf];
+      const conv = z.cells.filter(([cx, cy]) => S.surf[key(cx, cy)]).map(([cx, cy]) => S.surf[key(cx, cy)].t);
+      el.innerHTML = `<h2>${ab.name} en ${cellName(z.cells[0]?.[0] ?? x, z.cells[0]?.[1] ?? y)}</h2>${z.ok ? "" : `<p class="hint" style="color:var(--danger)">Hors de portée (${ab.range} cases).</p>`}
+        <p class="small">${hit.length ? hit.map(u => u.name).join(", ") + " : " + what + "." : "Personne dans la zone."}${ab.surf === "ice" && conv.includes("water") ? " L'eau gèle." : ""}${ab.surf === "ice" && conv.includes("fire") ? " Le feu devient de l'eau." : ""}${ab.surf === "oil" && conv.includes("fire") ? " L'huile ne tient pas sur le feu." : ""}</p>`;
+      return;
+    }
+    const tg = targetsFor(h, ab).some(p => p.x === x && p.y === y);
+    if (tg) {
+      const b = barrelAt(x, y);
+      if (ab.type === "attack" && u) { el.innerHTML = previewAttack(h, ab, u); return; }
+      if (ab.type === "attack" && b) { el.innerHTML = `<h2>${ab.name} → tonneau</h2><p class="small">Il éclate : Huile sur 3×3${ab.el === "fire" ? ", qui s'enflamme aussitôt (6 dégâts et Brûlure à ceux dedans, ×2 s'ils sont Huilés)" : ""}. Pas de jet.</p>`; return; }
+      if (ab.type === "attack") { el.innerHTML = `<h2>${ab.name} → huile</h2><p class="small">Toute la flaque reliée s'enflamme. Pas de jet.</p>`; return; }
+      if (ab.type === "push") {
+        const t = u || b, dist = ab.dist + (u && u.st.chilled ? 2 : 0), sim = simPush(h, t, dist);
+        const end = sim.stop === "ledge" ? (u && u.kind === "sbire" ? "tombe de la corniche : éliminé" : "tombe de la corniche : 20 dégâts") : sim.stop ? `heurte ${sim.stop === "wall" ? "le mur" : "un obstacle"} : +8${ab.proj ? ", À terre" : ""}` : "s'arrête";
+        const through = [...new Set(sim.path.map(p => S.surf[key(p.x, p.y)]?.t).filter(Boolean))].map(t => SL[t]);
+        el.innerHTML = `<h2>${ab.name} → ${u ? u.name : "tonneau"}</h2><p class="small">Recule de ${sim.path.length} case${sim.path.length > 1 ? "s" : ""}${u && u.st.chilled ? " (Gelé : +2)" : ""}${through.length ? ", traverse " + through.join(", ") : ""}, puis ${b ? "éclate en Huile 3×3" : end}. Pas de jet.</p>`;
+        return;
+      }
+      if (ab.type === "heal") { el.innerHTML = `<h2>Soin → ${u.name}</h2><p class="small">+18 à 23 PV (${u.hp} / ${u.maxHp}). Pas de jet. +1 Foi.</p>`; return; }
+      if (ab.type === "revive") { el.innerHTML = `<h2>Relever ${u.name}</h2><p class="small">Revient à 25 PV, rejoue au prochain tour.</p>`; return; }
+      if (ab.type === "oilTarget") { el.innerHTML = `<h2>Fiole → ${u.name}</h2><p class="small">Huilé pendant 3 rounds : le feu lui fera double et le mettra en Brûlure.</p>`; return; }
+    }
+  }
+  if (h && canAct(h) && !ui.ab && i != null) {
+    const R = reachOf(h);
+    if (R.set.has(i)) {
+      const path = buildPath(R.D.prev, i), through = [...new Set(path.map(p => S.surf[key(p.x, p.y)]?.t).filter(Boolean))];
+      el.innerHTML = `<h2>Déplacement vers ${cellName(x, y)}</h2><p class="small">${path.length} case${path.length > 1 ? "s" : ""} sur ${h.t.mv}.${through.includes("fire") ? " Attention : traverse le feu (6 dégâts et Brûlure)." : ""}${through.includes("ice") ? " Traverse la glace : d20, À terre sur 1 à 9." : ""}${through.includes("oil") ? " Traverse l'huile : Huilé." : ""}${through.includes("water") ? " Traverse l'eau : Trempé." : ""}</p>`;
+      return;
+    }
+  }
+  if (u) {
+    const st = Object.keys(u.st).filter(k => STL[k]).map(k => STL[k]);
+    el.innerHTML = `<h2>${u.name} · ${u.hp} / ${u.maxHp} PV${u.tough ? " · coriace (éraflure jusqu'à 12)" : ""}</h2><p class="small">${u.side === "e" ? "Habitude : " + ENEMY_DEF[u.kind].habit + "." : HEROES[u.id].role + "."}${st.length ? " États : " + st.join(", ") + "." : ""}</p>`;
+    return;
+  }
+  el.innerHTML = `<h2>Aperçu</h2><p class="hint">${ui.ab ? "Survole une cible pour voir les chances et les dégâts." : "Survole une case, un héros ou un ennemi."}</p>`;
+}
+function renderSide() {
+  $("party").innerHTML = HERO_ORDER.map(id => {
+    const h = U(id);
+    const st = Object.keys(h.st).filter(k => STL[k]).map(k => STL[k]);
+    return `<button type="button" class="hc${ui.sel === id ? " sel" : ""}${h.ko ? " ko" : ""}" data-hero="${id}" style="--c:${HCOL[id]}"><span class="dot"></span>
+      <span class="l1"><span>${h.name}${h.ko ? " · KO" : ""}</span><span class="mono">${h.hp} / ${h.maxHp}</span></span>
+      <span class="bar-hp"><i style="width:${h.hp / h.maxHp * 100}%"></i></span>
+      <span></span><span class="l2"><span>${h.res.type} ${h.res.v}/${h.res.max}</span><span>Potion ${h.potion ? "oui" : "non"}</span>${st.length ? `<span>${st.join(", ")}</span>` : ""}</span></button>`;
+  }).join("");
+  $("foes").innerHTML = ENEMY_ORDER.map(id => {
+    const e = U(id), st = Object.keys(e.st).filter(k => STL[k]).map(k => STL[k]);
+    const extra = e.kind === "chef" && !e.dead ? ` · prochain tour : ${S.chefTurn}/3` : "";
+    return `<div class="fr${e.dead ? " dead" : ""}"><span class="tag${e.tough ? " tough" : ""}">${e.short}</span><span><span class="mono">${e.hp} / ${e.maxHp}</span>${st.length ? " · " + st.join(", ") : ""}<br><span class="hab">${ENEMY_DEF[e.kind].habit}${extra}</span></span><span></span></div>`;
+  }).join("");
+  const G = S.phase === "setup" ? [] : groups();
+  $("order").innerHTML = G.length ? `<span>Ordre :</span>` + G.map((g, i) => `<span class="${i === S.gi && S.phase !== "over" ? "cur" : ""} ${g.side}">${g.side === "h" ? (S.mode === "team" ? "Héros" : g.ids.map(id => U(id).short).join("+")) : (S.mode === "team" ? "Ennemis" : g.ids.map(id => U(id).short).join("+"))}</span>`).join("") : "";
+  const lg = $("log"); lg.innerHTML = "";
+  for (const e of S.log.slice(0, 120)) { const li = document.createElement("li"); const r = document.createElement("span"); r.className = "r"; r.textContent = "R" + e.r; const t = document.createElement("span"); t.className = e.c; t.textContent = e.t; li.append(r, t); lg.appendChild(li); }
+}
+function summary() {
+  const st = S.stats, total = Object.values(st.dmg).reduce((a, b) => a + b, 0) || 1;
+  const rounds = st.rounds.filter(r => r.heroMs > 0);
+  const avg = rounds.length ? rounds.reduce((a, r) => a + r.heroMs, 0) / rounds.length : 0;
+  const lines = [];
+  lines.push(`D1 · Salle d'essai · mode : ${S.mode === "team" ? "tour d'équipe" : "ordre d'initiative"}`);
+  lines.push(`Résultat : ${S.result ? (S.result === "victoire" ? "victoire" : "défaite") : "en cours"} au round ${S.round}, durée ${fmt((S.endedAt || Date.now()) - (S.startedAt || Date.now()))}`);
+  lines.push(`Phase des héros par round : ${rounds.map(r => `R${r.r} ${fmt(r.heroMs)}`).join(" · ") || "aucune"} (moyenne ${fmt(avg)})`);
+  lines.push(`Combos entre héros : ${st.combos.length}${st.combos.length ? " (" + st.combos.map(c => `R${c.r} ${hname(c.a)} → ${hname(c.b)} : ${c.what}`).join(" ; ") + ")" : ""}`);
+  lines.push(`Prises en tenaille : ${st.flanks}`);
+  lines.push(`Dégâts : ${HERO_ORDER.map(id => `${hname(id)} ${st.dmg[id]} (${Math.round(st.dmg[id] / total * 100)} %)`).join(" · ")}`);
+  lines.push(`Héros KO : ${st.ko} · relevés : ${st.revives}`);
+  const n = S.notes;
+  lines.push(`Un seul jet a décidé du combat ? ${n.luck || "-"}`);
+  lines.push(`Notes « fun » sur 10 : ${n.scores || "-"}`);
+  lines.push(`Moment d'ennui : ${n.bored || "-"}`);
+  lines.push(`Une règle à changer : ${n.change || "-"}`);
+  lines.push(`Quel mode tous les soirs, et pourquoi : ${n.mode || "-"}`);
+  lines.push(`Questions de règle tranchées : ${n.rules || "-"}`);
+  return lines.join("\n");
+}
+const NOTE_FIELDS = [["luck", "Un seul jet a-t-il décidé du combat ? Lequel ?"], ["scores", "Note « fun » de chacun, sur 10"], ["bored", "Quand vous êtes-vous ennuyés, et combien de temps ?"], ["change", "Une règle que vous changeriez"], ["mode", "Quel mode tous les soirs, et pourquoi ?"], ["rules", "Questions de règle qui se sont posées, et ce que vous avez décidé"]];
+function renderMeasures() {
+  const el = $("measures"), st = S.stats;
+  if (!el.dataset.built) {
+    el.dataset.built = "1";
+    el.innerHTML = `<h2>Mesures du playtest</h2><div class="mgrid">
+      <div><h3>Durée de la phase des héros</h3><div id="mRounds"></div><p class="small">Les ennemis jouent seuls : seule la phase des héros donne le vrai rythme. Objectif : un round complet en 4 min 30 au plus.</p></div>
+      <div><h3>Qui fait les dégâts</h3><div id="mDmg"></div><p class="small">Barre rouge : plus de 40 % des dégâts de l'équipe, donc un héros porte les autres.</p></div>
+      <div><h3>Combos entre héros</h3><div id="mCombos"></div></div>
+      <div><h3>Vos réponses</h3>${NOTE_FIELDS.map(([k, l]) => `<label class="f" for="n-${k}">${l}<textarea id="n-${k}" data-note="${k}"></textarea></label>`).join("")}</div>
+      <div><h3>La fiche à envoyer à Claude</h3><pre class="sum" id="mSum"></pre><button type="button" class="btn primary" id="copyBtn">Copier la fiche</button> <span class="small" id="copyMsg"></span>
+        <details style="margin-top:12px"><summary>Règles fixées pour ce test</summary><ul>
+          <li>À 0 PV, un héros est KO ; « À terre » ne désigne que l'état.</li>
+          <li>Soins, poussées, surfaces et préparations : pas de d20. Seules les attaques à dégâts en lancent un.</li>
+          <li>L'effet d'une attaque s'applique sur une éraflure, un touché ou un critique ; pas sur un raté.</li>
+          <li>Les doubles se cumulent : Foudre sur Trempé avec un critique, c'est ×4.</li>
+          <li>Tonneau touché ou poussé : Huile en 3×3. Avec la Flèche de feu, l'huile s'enflamme aussitôt.</li>
+          <li>Diagonale = 1 case ; on ne coupe pas le coin d'un mur. On traverse ses alliés, pas ses ennemis.</li>
+          <li>Trempé et Huilé : 3 rounds. Brûlure : 2 tours. Gelé : jusqu'à la fin du prochain tour de la cible.</li>
+          <li>Garde de givre : portée 5 (le kit ne la donne pas). L'eau gèle ; le feu devient de l'eau.</li>
+          <li>Provocation : automatique, une fois par round.</li>
+          <li>Prise en tenaille : au contact seulement.</li>
+          <li>Le chef frappe une zone 3×3 à 6 cases au plus ; ses alliés ne sont pas touchés. Ses « ordres » donnent l'avantage jusqu'à sa frappe.</li>
+          <li>Les ennemis évitent le feu et la glace quand ils le peuvent.</li>
+          <li>Un héros relevé rejoue au tour suivant.</li>
+        </ul></details></div>
+    </div>`;
+  }
+  const rounds = st.rounds;
+  $("mRounds").innerHTML = rounds.length ? `<table><thead><tr><th>Round</th><th class="n">Héros</th></tr></thead><tbody>${rounds.map(r => `<tr><td>${r.r}</td><td class="n">${r.r === S.round && S.phase === "heroes" ? fmt(r.heroMs + Date.now() - S.phaseStart) + " …" : fmt(r.heroMs)}</td></tr>`).join("")}</tbody></table>` : `<p class="small">Rien encore : lancez le combat.</p>`;
+  const total = Object.values(st.dmg).reduce((a, b) => a + b, 0);
+  $("mDmg").innerHTML = HERO_ORDER.map(id => { const v = st.dmg[id], p = total ? v / total : 0; return `<div class="dmg-row"><span>${hname(id)}</span><span class="track"><i style="width:${p * 100}%;background:${p > .4 ? "var(--danger)" : HCOL[id]}"></i></span><span class="v${p > .4 ? " over40" : ""}">${v} · ${Math.round(p * 100)} %</span></div>`; }).join("") + `<p class="small">KO : ${st.ko} · relevés : ${st.revives} · prises en tenaille : ${st.flanks}</p>`;
+  $("mCombos").innerHTML = st.combos.length ? `<table><tbody>${st.combos.map(c => `<tr><td>R${c.r}</td><td>${hname(c.a)} → ${hname(c.b)}</td><td>${c.what}</td></tr>`).join("")}</tbody></table>` : `<p class="small">Aucun pour l'instant. Un combo compte quand un héros profite d'un état, d'une surface ou d'un placement créé par un autre.</p>`;
+  for (const [k] of NOTE_FIELDS) { const t = $("n-" + k); if (t && document.activeElement !== t && t.value !== (S.notes[k] || "")) t.value = S.notes[k] || ""; }
+  $("mSum").textContent = summary();
+}
+function renderAll() { renderTop(); renderOverlay(); renderBoard(); renderTokens(); renderBar(); renderPreview(); renderSide(); renderMeasures(); }
+
+/* ---------- événements ---------- */
+let lastPointer = "mouse";
+boardEl.addEventListener("pointerdown", e => { lastPointer = e.pointerType || "mouse"; });
+boardEl.addEventListener("pointermove", e => {
+  if (e.pointerType === "touch") return;
+  const c = e.target.closest(".cell"); const i = c ? +c.dataset.i : null;
+  if (i !== ui.hover) { ui.hover = i; renderBoard(); renderPreview(); }
+});
+boardEl.addEventListener("pointerleave", () => { ui.hover = null; renderBoard(); renderPreview(); });
+boardEl.addEventListener("contextmenu", e => { if (ui.ab) { e.preventDefault(); ui.ab = null; renderAll(); } });
+boardEl.addEventListener("click", e => {
+  const c = e.target.closest(".cell"); if (!c) return;
+  const i = +c.dataset.i, x = i % W, y = (i / W) | 0;
+  if (ui.busy || S.phase === "setup") return;
+  const h = ui.sel && U(ui.sel);
+  const u = unitAt(x, y);
+  // au doigt : un premier appui montre l'aperçu, le second confirme
+  if (lastPointer === "touch" && ui.hover !== i && !(u && u.side === "h" && !ui.ab)) { ui.hover = i; renderBoard(); renderPreview(); return; }
+  if (h && ui.ab && canAct(h)) {
+    const ab = AB[ui.ab];
+    if (ab.type === "zone") { if (zoneFor(h, ab, x, y).ok) useAbility(h, ab, x, y); return; }
+    if (targetsFor(h, ab).some(p => p.x === x && p.y === y)) { useAbility(h, ab, x, y); return; }
+    if (!(u && u.side === "h")) return;
+  }
+  if (u && u.side === "h") { ui.sel = u.id; ui.ab = null; renderAll(); return; }
+  if (h && canAct(h) && h.t.mv > 0 && reachOf(h).set.has(i)) moveHero(h, i);
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape" && ui.ab) { ui.ab = null; renderAll(); } });
+document.addEventListener("click", e => {
+  const ab = e.target.closest("[data-ab]");
+  if (ab) {
+    const h = U(ui.sel), A = AB[ab.dataset.ab];
+    if (!h || !canUse(h, A)) return;
+    if (A.type === "potion") { useAbility(h, A, h.x, h.y); return; }
+    ui.ab = ui.ab === ab.dataset.ab ? null : ab.dataset.ab; renderAll(); return;
+  }
+  const hc = e.target.closest("[data-hero]");
+  if (hc) { ui.sel = hc.dataset.hero; ui.ab = null; renderAll(); return; }
+  const md = e.target.closest("[data-mode]");
+  if (md) { ui.mode = md.dataset.mode; S.mode = ui.mode; renderAll(); return; }
+  if (e.target.id === "startBtn" && !readOnly) { begin(); return; }
+  if (e.target.id === "closeOv") { ui.hideResult = true; renderOverlay(); return; }
+  if (e.target.id === "copyBtn") {
+    const txt = summary(), msg = $("copyMsg");
+    const fallback = () => { const r = document.createRange(); r.selectNodeContents($("mSum")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); msg.textContent = "Texte sélectionné : Ctrl+C pour copier."; };
+    try { navigator.clipboard.writeText(txt).then(() => { msg.textContent = "Copiée."; }, fallback); } catch (err) { fallback(); }
+  }
+});
+$("endBtn").addEventListener("click", endHeroes);
+$("undoBtn").addEventListener("click", undo);
+$("resumeBtn").addEventListener("click", () => { if (!ui.running) runFrom(); });
+$("newBtn").addEventListener("click", () => {
+  if (readOnly) return;
+  if (ui.confirmNew > Date.now()) { ui.confirmNew = 0; const rev = Math.max(S.rev, lastSeenRev); S = newState(ui.mode); S.rev = rev; ui.sel = null; ui.ab = null; ui.undo = []; ui.hideResult = false; commit(); return; }
+  ui.confirmNew = Date.now() + 4000; renderTop(); setTimeout(renderTop, 4100);
+});
+let noteTimer = null;
+document.addEventListener("input", e => {
+  const k = e.target.dataset && e.target.dataset.note; if (!k) return;
+  S.notes[k] = e.target.value; $("mSum").textContent = summary();
+  clearTimeout(noteTimer); noteTimer = setTimeout(() => { if (!readOnly) commit(); }, 800);
+});
+setInterval(() => {
+  if (!S) return;
+  if (S.phase === "heroes" && $("phaseClock")) $("phaseClock").textContent = fmt(Date.now() - S.phaseStart);
+  if (S.startedAt && $("totalClock")) $("totalClock").textContent = fmt((S.endedAt || Date.now()) - S.startedAt);
+  if (S.phase === "enemies" && !ui.busy) renderTop();
+  if (S.phase === "heroes") { const r = S.stats.rounds.find(r => r.r === S.round); if (r && $("mRounds")) renderMeasures(); }
+}, 1000);
+
+/* ---------- démarrage ---------- */
+function start(data) {
+  S = data && data.S ? data.S : null;
+  if (!S) { try { const raw = localStorage.getItem("salle-d1"); if (raw) S = JSON.parse(raw); } catch (e) { S = null; } }
+  if (!S || S.v !== 1) S = newState("team");
+  ui.mode = S.mode || "team";
+  if (S.phase === "enemies") { /* une phase ennemie interrompue reprend avec le bouton */ }
+  buildBoard(); renderAll(); initDb();
+}
+const hot = window.claude && window.claude.hot;
+if (hot && hot.snapshot) hot.snapshot(() => ({ S }));
+if (hot && hot.ready) hot.ready(start); else start(hot && hot.data ? hot.data : {});
+})();
+</script>
+
+</body>
+</html>
