@@ -1,6 +1,8 @@
 // L'interface du terrain d'entraînement, en bois et parchemin comme le camp : l'accueil (le mode de tour), les fiches
-// des héros, la barre des capacités, l'aperçu des chances au survol, le journal, le d20 en grand, la fin et sa fiche
-// de mesure (à copier, comme dans la Salle d'essai). Les clics sur le terrain deviennent des actions du combat.
+// des héros, la barre des capacités (leurs icônes LPC et leurs dégâts), la fiche de la capacité choisie ou survolée,
+// la carte de la cible survolée (ses chances), le journal, le d20 en grand, la fin et sa fiche de mesure (à copier,
+// comme dans la Salle d'essai). Les maquettes : design/ui-combat/ (#113, #129). Les clics sur le terrain deviennent
+// des actions du combat.
 //   clic : choisir un héros, marcher (on voit le chemin et sa longueur), viser · Échap ou clic droit : annuler
 //   1 à 9 : une capacité · Tab : le héros suivant · molette : zoom · clic droit glissé : déplacer la vue
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
@@ -8,6 +10,7 @@
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
 import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
 import { CONTACT, metres } from './geometrie.js';
+import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
 
 export const name = 'interface';
 export const always = true;
@@ -26,7 +29,7 @@ const pct = (x) => `${Math.round(x * 100)} %`;
 const duree = (ms) => { const s = Math.round(Math.max(0, ms) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 let game, combat, vue, canvas, nouveauCombat, reseau = null;
-const ui = { sel: null, cap: null, survol: null, annuler: [], portee: null, fini: false, sale: true, horloge: Date.now };
+const ui = { sel: null, cap: null, capSurvol: null, survol: null, annuler: [], portee: null, fini: false, sale: true, horloge: Date.now };
 const dom = {};
 
 export function init(g, options) {
@@ -39,7 +42,7 @@ export function init(g, options) {
   if (options.mode === 'initiative') dom.accueil.querySelector('input[value=initiative]').checked = true;
   if (options.demarrer) commencer();
   vue.surEvenement(surEvenement);
-  canvas.addEventListener('pointermove', (e) => { ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.sale = true; });
+  canvas.addEventListener('pointermove', (e) => { ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.capSurvol = null; ui.sale = true; });
   canvas.addEventListener('pointerleave', () => { ui.survol = null; ui.sale = true; });
   canvas.addEventListener('pointerdown', (e) => { if (e.button === 0) cliquer(vue.versMonde(e.clientX, e.clientY)); else if (e.button === 2) choisirCapacite(null); });
   window.addEventListener('keydown', clavier);
@@ -53,20 +56,21 @@ function construire() {
     dom.etat = el('span', { class: 'etat-terrain' }, 'Prêt'),
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
+    el('span', { class: 'boutons-phase' },
+      dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
+      dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros')),
     dom.boutonFiche = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => montrerFin(true) }, 'Fiche'),
     el('a', { class: 'bouton-jeu retour-camp', id: 'retour-camp', href: RETOUR_CAMP }, 'Retour au camp'));
   dom.equipe = el('aside', { class: 'equipe-terrain', 'aria-label': 'Les héros' });
   dom.droite = el('aside', { class: 'droite-terrain' },
-    dom.apercu = el('section', { class: 'apercu-terrain plaque', 'aria-live': 'polite' }),
     el('section', { class: 'journal-terrain plaque' }, el('h2', {}, 'Journal'), dom.journal = el('ol', {})));
-  dom.barre = el('nav', { class: 'barre-terrain plaque', 'aria-label': 'Les capacités du héros choisi' },
-    dom.capacites = el('div', { class: 'capacites' }),
-    el('div', { class: 'boutons-phase' },
-      dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
-      dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros')));
+  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
+  dom.bas = el('div', { class: 'bas-terrain' },
+    dom.ficheCap = el('section', { class: 'fiche-capacite bois', hidden: true, 'aria-live': 'polite' }),
+    dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les capacités du héros choisi' }, dom.capacites = el('div', { class: 'capacites' })));
   dom.de = el('div', { class: 'de-grand', hidden: true, 'aria-live': 'polite' });
   dom.banniere = el('div', { class: 'banniere-terrain', hidden: true });
-  dom.info = el('div', { class: 'info-survol plaque', hidden: true });
+  dom.info = el('div', { class: 'carte-cible bois', hidden: true });
   dom.distance = el('div', { class: 'distance-survol', hidden: true });
   dom.aide = el('p', { class: 'aide-terrain plaque' }, 'Clic : choisir, marcher, viser · ', el('kbd', {}, '1'), '–', el('kbd', {}, '9'), ' capacités · ',
     el('kbd', {}, 'Tab'), ' héros suivant · ', el('kbd', {}, 'Échap'), ' annuler · ', el('kbd', {}, 'V'), ' vie des ennemis · ', el('kbd', {}, 'Maj'), '+', el('kbd', {}, 'V'),
@@ -100,7 +104,7 @@ function construire() {
       dom.continuer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { dom.fin.hidden = true; } }, 'Revenir au combat'),
       dom.rejouer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: rejouer }, 'Rejouer'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
-  document.body.append(dom.haut, dom.equipe, dom.droite, dom.barre, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
+  document.body.append(dom.haut, dom.equipe, dom.droite, dom.bas, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
   // à plusieurs, « Retour au camp » passe par multi.js : l'hôte y emmène tout le groupe
   document.addEventListener('click', (e) => { const a = e.target.closest?.('a.retour-camp'); if (a && reseau) { e.preventDefault(); reseau.partirAuCamp(); } });
   dessinerPlaces();
@@ -294,7 +298,11 @@ export function update() {
   if (combat.S.phase === 'heros' && combat.S.debutPhase) dom.chrono.textContent = `phase des héros ${duree(ui.horloge() - combat.S.debutPhase)}`;
   if (ui.fini && libre && dom.fin.hidden && !ui.finMontree) { ui.finMontree = true; montrerFin(false); }
   if (!ui.sale) return;
-  if (!libre) { vue.dessinerMarques({ ...vue.marques, chemin: null, portee: null, zone: null, cibles: null, cercle: null }); dom.distance.hidden = true; dessinerTout(); ui.sale = false; return; }
+  if (!libre) {
+    vue.dessinerMarques({ ...vue.marques, chemin: null, portee: null, zone: null, cibles: null, cercle: null });
+    dom.distance.hidden = true; dom.ficheCap.hidden = true; dom.info.hidden = true;
+    dessinerTout(); ui.sale = false; return;
+  }
   ui.sale = false;
   const h = herosChoisi(), m = { selection: h && !h.ko ? h.id : null, actif: null };
   dom.distance.hidden = true;
@@ -322,8 +330,8 @@ export function update() {
     }
   }
   vue.dessinerMarques(m);
-  dessinerApercu(h, info);
-  dessinerInfo();
+  dessinerFiche(h);
+  dessinerInfo(info);
   dessinerTout();
 }
 
@@ -334,32 +342,63 @@ function joueurFiche(id) {
   return el('span', { class: 'fh-joueur', style: `--couleur:${reseau.couleurDe(p)}` }, aMoi(id) ? 'toi' : reseau.nomDe(p));
 }
 
-function dessinerApercu(h, info) {
-  const cap = ui.cap ? CAPACITES[ui.cap] : null;
-  if (info) {
-    dom.apercu.replaceChildren(el('h2', {}, `${cap.nom} sur ${combat.U(vue.marques.survolCible).nom}`),
-      info.av ? el('p', { class: info.av > 0 ? 'avantage' : 'desavantage' }, info.av > 0 ? 'Avantage : deux d20, le meilleur' : 'Désavantage : deux d20, le pire') : null,
-      el('table', { class: 'chances' }, ['rate', 'eraflure', 'touche', 'critique'].map((g) => el('tr', { class: g }, el('th', {}, NOM_RESULTAT[g]), el('td', {}, pct(info.chances[g])), el('td', {}, `${info.degats[g]} dégâts`)))),
-      info.notes.length ? el('ul', { class: 'notes' }, info.notes.map((n) => el('li', {}, n))) : null);
-  } else if (cap) {
-    dom.apercu.replaceChildren(el('h2', {}, cap.nom), el('p', {}, cap.ds),
-      el('p', { class: 'muet' }, cap.type === 'zone' ? 'Clique là où poser la zone.' : cap.type === 'potion' ? '' : 'Clique sur une cible entourée d’or.'));
-  } else if (combat.S.phase === 'heros' && herosChoisi()) {
-    const h = herosChoisi();
-    dom.apercu.replaceChildren(el('h2', {}, h.nom), el('p', {}, `Il lui reste ${metres(h.t.mv)} m de déplacement : clique sur le sol éclairé pour marcher, ou choisis une capacité.`),
-      el('p', { class: 'muet' }, HEROS[h.type].passif), el('p', { class: 'muet' }, `Faiblesse : ${HEROS[h.type].faiblesse}`));
-  } else dom.apercu.replaceChildren(el('h2', {}, combat.S.phase === 'ennemis' ? 'Les ennemis jouent…' : combat.S.phase === 'fini' ? 'Combat terminé' : 'Le terrain d’entraînement'), el('p', { class: 'muet' }, combat.S.phase === 'preparation' ? 'Choisis le mode de tour, puis commence.' : ''));
+// La fiche de la capacité (#85) : ce qu'elle fait, sans avoir besoin d'une cible. Celle qu'on survole dans la barre,
+// sinon celle qu'on a choisie.
+const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
+function pourquoiPas(h, cap) {
+  if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
+  if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
+  if (cap.cout && h.res.v < cap.cout) return `Pas assez de ${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
+  return 'Pas maintenant.';
+}
+function dessinerFiche(h) {
+  const id = ui.capSurvol ?? ui.cap, cap = id ? CAPACITES[id] : null;
+  if (!cap || !h || combat.S.phase !== 'heros' || vue.occupe()) { dom.ficheCap.hidden = true; return; }
+  const r = resultats(cap), ok = combat.peutUtiliser(h, cap), k = HEROS[h.type].capacites.indexOf(id) + 1;
+  dom.ficheCap.dataset.capacite = id;
+  dom.ficheCap.replaceChildren(
+    el('header', { class: 'fc-tete' },
+      el('img', { class: 'fc-icone', src: icone(id), alt: '' }),
+      el('h2', {}, cap.nom),
+      el('span', { class: `tampon ${cap.slot}` }, cap.slot === 'action' ? 'ACTION' : 'BONUS'),
+      el('span', { class: 'fc-carac' }, caracteristiques(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
+    r ? el('div', { class: `fc-resultats n${r.length}` }, r.map((x) => el('div', { class: `fc-res ${x.g}` },
+      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : null,
+    el('div', { class: 'fc-effets' }, effets(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))),
+    el('p', { class: 'fc-aide' }, !ok ? pourquoiPas(h, cap)
+      : ui.cap === id ? (cap.type === 'zone' ? 'Clique là où poser la zone.' : cap.type === 'potion' ? '' : 'Clique sur une cible entourée d’or.')
+        : `${k ? `Touche ${k} ou clic` : 'Clic'} pour la choisir.${r && !cap.auto ? ` Contre un coriace (Brute ennemie, Chef), l’éraflure va jusqu’à d20 ${12 - cap.mod}.` : ''}`));
+  dom.ficheCap.hidden = false;
 }
 
-function dessinerInfo() {
+// La carte de la créature survolée : avec une attaque choisie, ses chances et ses dégâts ; sinon, qui elle est.
+const etatsDe = (u) => Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean).concat(u.expose && !u.st.expose ? ['Exposé'] : []);
+function dessinerInfo(info) {
   const d = ui.survol && !vue.occupe() ? vue.sous(ui.survol.x, ui.survol.y) : null, u = d ? combat.U(d) : null;
-  if (!u || ui.cap) { dom.info.hidden = true; return; }
-  const etats = Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean);
-  dom.info.replaceChildren(el('strong', {}, u.nom), el('span', {}, ` ${Math.max(0, u.pv)}/${u.pvMax} PV`),
-    etats.length ? el('div', { class: 'fh-etats' }, etats.join(' · ')) : null,
-    el('div', { class: 'muet' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : HEROS[u.type].role));
+  if (!u) { dom.info.hidden = true; return; }
+  const tete = el('div', { class: 'cc-tete' }, el('strong', {}, u.nom), el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`));
+  const etats = etatsDe(u);
+  if (info) {
+    const cap = CAPACITES[ui.cap];
+    dom.info.replaceChildren(tete,
+      el('div', { class: 'cc-barre', 'aria-hidden': 'true' }, RESULTATS.map((g) => el('span', { class: g, style: `width:${(info.chances[g] * 100).toFixed(1)}%` }))),
+      el('div', { class: 'cc-chances' }, RESULTATS.map((g) => el('span', { class: `cc-ligne ${g}` }, el('span', { class: 'cc-nom' }, NOM_RESULTAT[g]), el('b', {}, pct(info.chances[g])), el('span', {}, info.degats[g])))),
+      el('div', { class: 'fc-effets' },
+        info.av ? el('span', { class: `effet ${info.av > 0 ? 'magie' : 'feu'}` }, info.av > 0 ? 'Avantage : deux d20, le meilleur' : 'Désavantage : deux d20, le pire') : null,
+        info.notes.map((n) => el('span', { class: `effet ${effets({ ds: n })[0]?.genre ?? ''}` }, n[0].toUpperCase() + n.slice(1))),
+        etats.length ? el('span', { class: 'effet' }, etats.join(' · ')) : null),
+      el('span', { class: 'cc-cap' }, el('img', { src: icone(ui.cap), alt: '' }), cap.nom));
+  } else {
+    dom.info.replaceChildren(tete,
+      el('div', { class: 'cc-jauge' }, el('span', { class: u.camp === 'e' ? 'ennemi' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
+      etats.length ? el('div', { class: 'fc-effets' }, el('span', { class: 'effet' }, etats.join(' · '))) : null,
+      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : HEROS[u.type].role));
+  }
   dom.info.hidden = false;
-  dom.info.style.left = `${ui.client.x + 16}px`; dom.info.style.top = `${ui.client.y - 10}px`;
+  // à droite du pointeur, ou à gauche s'il n'y a pas la place
+  const w = dom.info.offsetWidth || 240, x = ui.client.x + 18 + w > innerWidth - 8 ? ui.client.x - 18 - w : ui.client.x + 18;
+  dom.info.style.left = `${Math.max(8, x)}px`; dom.info.style.top = `${Math.max(8, ui.client.y - 24)}px`;
 }
 
 function dessinerTout() {
@@ -370,24 +409,32 @@ function dessinerTout() {
   // les fiches des héros
   dom.equipe.replaceChildren(...S.heros.map((id) => {
     const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
-    const etats = Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean).concat(u.expose ? ['Exposé'] : []);
+    const etats = etatsDe(u);
+    // PV et ressource sur une seule ligne, la jauge dessous (les maquettes)
     return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
       vue.portrait(u.type, 40),
       el('span', { class: 'fh-corps' },
-        el('strong', {}, H.nom, u.ko ? ' · KO' : ''),
-        reseau ? joueurFiche(id) : null,
-        el('span', { class: 'fh-pv' }, el('span', { class: 'jauge' }, el('span', { style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })), ` ${Math.max(0, u.pv)}/${u.pvMax}`),
-        el('span', { class: 'fh-ligne' }, `${u.res.type} ${u.res.v}/${u.res.max} · potion ${u.potion}`),
+        el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
+          el('span', { class: `fh-potion${u.potion ? '' : ' bue'}`, title: u.potion ? 'Sa potion' : 'Potion bue' }, el('img', { src: icone('potion'), alt: u.potion ? 'potion' : 'potion bue' }))),
+        el('span', { class: 'fh-chiffres' }, el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`), el('span', { class: `fh-res ${u.res.type}` }, `${u.res.type} ${u.res.v}/${u.res.max}`)),
+        el('span', { class: 'jauge' }, el('span', { class: u.pv <= u.pvMax * 0.3 ? 'bas' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
         el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`),
         etats.length ? el('span', { class: 'fh-etats' }, etats.join(' · ')) : null));
   }));
-  // la barre des capacités
+  // la barre des capacités : l'icône, le nom, action ou bonus, les dégâts d'un touché (ou ce qu'elle fait), la touche
   const h = herosChoisi();
   dom.capacites.replaceChildren(...(h && S.phase === 'heros' ? HEROS[h.type].capacites.map((id, k) => {
     const c = CAPACITES[id], ok = combat.peutUtiliser(h, c);
-    return el('button', { type: 'button', class: `capacite${ui.cap === id ? ' choisie' : ''} ${c.slot}`, disabled: !ok, title: c.ds, dataset: { capacite: id }, onclick: () => choisirCapacite(id) },
-      el('kbd', {}, String(k + 1)), el('span', { class: 'cap-nom' }, c.nom), el('span', { class: 'cap-slot' }, c.slot === 'action' ? 'action' : 'bonus', c.cout ? ` · ${c.cout} ${h.res.type}` : ''));
+    const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
+    return el('button', { type: 'button', class: `capacite ${c.slot}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
+      dataset: { capacite: id }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
+    el('span', { class: 'cap-icone' }, el('img', { src: icone(id), alt: '' }), TAMPONS[id] ? el('span', { class: 'cap-tampon' }, TAMPONS[id]) : null),
+    el('span', { class: 'cap-texte' }, el('span', { class: 'cap-nom' }, c.nom),
+      el('span', { class: 'cap-slot' }, el('span', { class: `tampon ${c.slot}` }, c.slot === 'action' ? 'ACT' : 'BONUS'), el('span', { class: 'cap-resume' }, resume(c)))),
+    el('kbd', {}, String(k + 1)));
   }) : [el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : '')]));
+  const n = dom.capacites.children.length;
+  dom.capacites.style.setProperty('--col', n <= 5 ? n : Math.ceil(n / 2));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
   dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)
