@@ -92,7 +92,7 @@ export function init(g, options) {
   // la colonne de droite : la plaque de renommée, le suivi, puis les annonces
   const colonne = el('div', { class: 'colonne-droite' }, options.renommee?.plaque, suivi, options.renommee?.annonces);
   document.body.append(socleBarre, colonneGauche, colonne);
-  if (visite) { socleBarre.hidden = true; suivi.hidden = true; cadreHeros.hidden = true; }
+  if (visite) { socleBarre.hidden = true; barre.hidden = true; suivi.hidden = true; cadreHeros.hidden = true; }   // (la barre aussi : d'autres parties lisent barre.hidden)
   // les messages non lus : une pastille sur la case M
   game.bus.on('messagerie:nonlus', ({ n }) => {
     const c = barre.querySelector('[data-case="lettres"]');
