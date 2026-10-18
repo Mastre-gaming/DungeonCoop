@@ -1,4 +1,6 @@
-// Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7). Étape 1 : le camp vide, un héros qui marche, la caméra.
+// Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7) : le camp, le héros, la caméra, le panneau des missions,
+// la sentinelle de l'entrée et le jeu à plusieurs.
+//   ?code=ABCDE rejoindre ce groupe
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
 //   ?spot=feu aller à un point nommé (apparition, feu, visite, et chaque lieu : interface, histoire, level, combat…)
@@ -14,6 +16,9 @@ import * as decorSkill from './08_decor.js';
 import * as tests from './09_tests.js';
 import * as missionsSkill from './10_missions.js';
 import * as panneauSkill from './11_panneau.js';
+import * as sentinelleSkill from './12_sentinelle.js';
+import * as reseauSkill from './13_reseau.js';
+import './jeu.css';
 
 const query = new URLSearchParams(location.search);
 const visite = query.has('visite');
@@ -46,8 +51,11 @@ async function demarrer() {
   // les missions (les tâches du tableau de travail) ; en ?test, rien ne part sur le réseau
   const missions = game.use(missionsSkill, { horsLigne: query.has('test') });
   const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite });
+  // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
+  const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
+  const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -55,7 +63,8 @@ async function demarrer() {
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, tests: camptests, lieux: LIEUX.map((l) => l.id) });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, tests: camptests, lieux: LIEUX.map((l) => l.id) });
+  game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
 
   document.documentElement.dataset.pret = '1';

@@ -52,7 +52,8 @@ function amas(x, y, w, h, saut = 0) {
 const MASSIFS = [[18, 1, 6, 6, 0], [1, 11, 6, 7, 1], [33, 11, 7, 6, 2], [16, 21, 6, 6, 3], [2, 1, 2, 2, 0]];
 export const ARBRES = [
   ...bord(new Set(['14,27', '15,27'])).map(([i, j]) => [i, j, j === H - 1 && i > 0 && i < W - 1 ? 2.4 : 0]),
-  ...MASSIFS.flatMap(([x, y, w, h, s]) => amas(x, y, w, h, s).filter(([, j]) => j >= y + 2 || h <= 2).map(([i, j]) => [i, j, 0])),
+  // (et pas de tronc dans les colonnes de bord : les cimes voisines débordent dessus, et un sentier peut longer le massif)
+  ...MASSIFS.flatMap(([x, y, w, h, s]) => amas(x, y, w, h, s).filter(([i, j]) => h <= 2 || (j >= y + 2 && i > x && i < x + w - 1)).map(([i, j]) => [i, j, 0])),
 ];
 // Ce qui bloque : tout le massif (on ne se glisse pas sous les cimes), et la lisière.
 export const BOIS = [

@@ -55,6 +55,8 @@ export async function openPage(url, { size = '1600x900', software = false, timeo
     '--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, `--window-size=${width},${height}`,
     '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions', '--autoplay-policy=no-user-gesture-required', '--allow-file-access-from-files',
     ...(software ? ['--disable-gpu', '--enable-unsafe-swiftshader'] : process.platform === 'win32' ? ['--use-angle=d3d11'] : []),
+    // (Dungeon Co-op) Sur les machines Linux de GitHub, Chrome n'a pas le droit de créer son bac à sable et se ferme aussitôt.
+    ...(process.env.CI && process.platform === 'linux' ? ['--no-sandbox'] : []),
     'about:blank',
   ], { stdio: ['ignore', 'ignore', 'pipe'] });
 

@@ -12,7 +12,8 @@ const MARCHE = 8, COURSE = 38;                            // les rangées de la 
 const DEFAUTS = { marche: 74, course: 138, imagesMarche: 10, imagesCourse: 14 };   // px/s : ~2,3 et ~4,3 cases par seconde
 
 let game, cfg, rendu, collision, sprite, ombre, canvas;
-const heros = { x: 0, y: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0 };
+// controle : false pendant une scène (la sentinelle) : le clavier et les clics ne le font plus bouger, une route oui.
+const heros = { x: 0, y: 0, vx: 0, vy: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0, controle: true };
 const doigt = { tenu: false, x: 0, y: 0, recalcule: 0 };
 
 export function init(g, options) {
@@ -24,7 +25,7 @@ export function init(g, options) {
 
   const versMonde = (e) => rendu.versMonde(e.clientX, e.clientY);
   canvas.addEventListener('pointerdown', (e) => {
-    if (e.button !== 0) return;
+    if (e.button !== 0 || !heros.controle) return;
     try { canvas.setPointerCapture(e.pointerId); } catch {}
     doigt.tenu = true; Object.assign(doigt, versMonde(e)); doigt.recalcule = 0;
     allerA(doigt.x, doigt.y);
@@ -67,7 +68,8 @@ function deplacer(dx, dy, v) {
 
 export function step(h) {
   const inp = game.input;
-  let dx = inp.axis('gauche', 'droite'), dy = inp.axis('haut', 'bas');
+  const x0 = heros.x, y0 = heros.y;
+  let dx = heros.controle ? inp.axis('gauche', 'droite') : 0, dy = heros.controle ? inp.axis('haut', 'bas') : 0;
   if (dx || dy) heros.route = null;                       // le clavier reprend la main
   else if (heros.route) {
     const [tx, ty] = heros.route[0], vx = tx - heros.x, vy = ty - heros.y, d = Math.hypot(vx, vy);
@@ -76,8 +78,8 @@ export function step(h) {
   }
   const n = Math.hypot(dx, dy);
   heros.bouge = n > 0;
-  heros.court = heros.bouge && inp.held('courir');
-  if (!heros.bouge) return;
+  heros.court = heros.bouge && heros.controle && inp.held('courir');
+  if (!heros.bouge) { heros.vx = heros.vy = 0; return; }
   dx /= n; dy /= n;
   heros.dir = Math.abs(dx) > Math.abs(dy) + 0.01 ? (dx < 0 ? 'gauche' : 'droite') : (dy < 0 ? 'haut' : 'bas');
   const v = (heros.court ? cfg.course : cfg.marche) * h;
@@ -85,10 +87,11 @@ export function step(h) {
   const reste = heros.route ? Math.hypot(heros.route[0][0] - heros.x, heros.route[0][1] - heros.y) : Infinity;
   const ok = deplacer(dx, dy, Math.min(v, reste));
   if (!ok && heros.route && (heros.bloqueDepuis += h) > 0.4) heros.route = null;   // coincé sur une route : on abandonne
+  heros.vx = (heros.x - x0) / h; heros.vy = (heros.y - y0) / h;   // (pour le réseau : les copies avancent à cette vitesse)
 }
 
 export function update(dt) {
-  if (doigt.tenu && (doigt.recalcule -= dt) <= 0) { doigt.recalcule = 0.15; allerA(doigt.x, doigt.y); }
+  if (doigt.tenu && heros.controle && (doigt.recalcule -= dt) <= 0) { doigt.recalcule = 0.15; allerA(doigt.x, doigt.y); }
   if (heros.bouge) heros.t += dt; else heros.t = 0;
   const ligne = LIGNES[heros.dir];
   let rang = MARCHE + ligne, col = 0;
@@ -103,7 +106,8 @@ export function dispose() {}
 export const api = {
   heros,
   allerA,
-  placer(x, y, dir = heros.dir) { Object.assign(heros, { x, y, dir, route: null, bouge: false }); update(0); },
+  placer(x, y, dir = heros.dir) { Object.assign(heros, { x, y, dir, route: null, bouge: false, vx: 0, vy: 0 }); update(0); },
+  controle(oui) { heros.controle = !!oui; if (!oui) { heros.route = null; doigt.tenu = false; } },
   cacher(oui = true) { sprite.cacher(oui); ombre.cacher(oui); },
   pied: PIED,
 };

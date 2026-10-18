@@ -1,5 +1,6 @@
 // ?test sur le build, sans écran : affiche réussies/total, les échecs et le rapport du test de marche.
 //   npm run build && npm test          (ajoute --visite pour tester aussi la vue visite)
+//   npm run test:ci                    ce que lance la vérification « tests » de GitHub (CI=1 : rendu logiciel)
 import { servir, ouvrir } from './captures.mjs';
 
 const srv = await servir();

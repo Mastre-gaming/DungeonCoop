@@ -2,7 +2,7 @@
 //   npm run build && node tools/captures.mjs                  toutes les captures nommées, dans shots/
 //   node tools/captures.mjs apparition feu                     seulement celles-là
 //   node tools/test.mjs                                        ?test, affiche réussies/total et le rapport de marche
-// Options : --taille=1600x900   --url=http://…  (par défaut, dist/ servi en local sur le port 4390)
+// Options : --taille=1600x900   --url=http://…  (par défaut, dist/ servi en local sur le port 4390)   --software (sans carte graphique)
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -24,7 +24,8 @@ export async function servir() {
 }
 
 export async function ouvrir(url, query = '', taille = opt.taille || '1600x900') {
-  const page = await openPage(url + (query ? `?${query}` : ''), { size: taille });
+  // Sur les machines de GitHub (CI), pas de carte graphique : WebGL tourne en logiciel (SwiftShader).
+  const page = await openPage(url + (query ? `?${query}` : ''), { size: taille, software: !!process.env.CI || 'software' in opt });
   await page.waitFor('document.documentElement.dataset.pret === "1"');
   await page.eval('new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))');
   return page;
