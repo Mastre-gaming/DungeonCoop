@@ -170,8 +170,20 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
   1. le héros apparaît et monte vers elle ;
   2. elle lève la main, et un « ! » doré apparaît au-dessus d'elle ;
   3. une boîte de dialogue s'ouvre en bas de l'écran, dans le style du panneau des missions (cadre en bois, parchemin), avec son portrait (sa tête, prise sur sa planche), une réplique, le champ « Ton nom de dev » et le bouton « C'est moi ». Un nom vide est refusé avec un message ;
-  4. elle salue, puis s'écarte d'une case et demie, et le tableau d'affichage se met à scintiller.
+  4. elle salue, puis **presse le joueur** : il y a du travail, « Magne-toi ! Suis-moi, je te fais faire le tour. » (bouton « Je te suis ») ;
+  5. elle lui fait faire **le tour du camp** (plus bas), puis retourne à son poste.
 - **Le nom, relié au pseudo GitHub :** par `equipe.json`, le même fichier que l'entrée du dashboard (repo du dashboard). On cherche le nom tapé dans le nom affiché ou dans le pseudo GitHub, sans tenir compte des majuscules ni des accents : « paul » devient Paul, `@PCrrfng`. Un nom inconnu entre quand même, comme **visiteur**, et le camp ne lui attribue pas de mission. Pour être reconnu, on s'ajoute à `equipe.json`.
+- **Le tour du camp (validé le 18 oct) :** elle part devant, et le héros la suit tout seul (il court s'il est loin). À chaque arrêt, elle se tourne vers lui et parle dans la boîte de dialogue ; la caméra cadre ce qu'elle montre dans le haut de l'écran, au-dessus de la boîte.
+
+  | Arrêt | Ce qu'elle explique (texte provisoire) |
+  |---|---|
+  | le feu | c'est l'équipe entière, chaque mission rentrée le nourrit ; « il fait pitié » |
+  | le tableau d'affichage | tout ce qu'il reste à bâtir : les zones et leurs missions ; ses étoiles s'allument |
+  | un terrain vide (piquets, corde, pancarte « ? ») | une PR avec « Ferme #12 », fusionnée, y fait pousser un bâtiment chez tout le monde : « Ce camp, c'est toi qui le construis » |
+  | un rat | un rat d'exemple, d'une PR du joueur, surgit avec son « ! » : chaque PR qui traîne en devient un, on clique dessus pour la régler |
+  | la fin | « Le reste n'existe pas encore : c'est à toi de le bâtir. » Bouton « Au travail ! » : le rat d'exemple détale, elle retourne à son poste, le joueur reprend la main |
+
+  On peut passer le tour (bouton ou Échap) et le refaire plus tard. Les visites suivantes n'ont pas de tour.
 - **Les fois suivantes :** le nom est gardé dans ce navigateur. Elle lève la main, salue (« Rebonjour, Paul ») et s'écarte, sans rien demander.
 - **Ses répliques sont provisoires,** marquées « texte provisoire » à l'écran : les textes du jeu sont à l'équipe (l'axe Histoire).
 
@@ -185,7 +197,7 @@ Le propriétaire l'aime tel quel (`LIKED.md`). On l'ouvre en s'approchant du tab
 
 ### La première connexion
 Il faut comprendre tout de suite que **ce monde ne grandit que si l'équipe le construit**, en codant, en dessinant, en écrivant, puis en commitant.
-1. **La sentinelle :** au spawn, elle arrête le héros et lui demande son nom de dev (plus haut). Elle s'écarte une fois qu'il a répondu.
+1. **La sentinelle :** au spawn, elle arrête le héros, lui demande son nom de dev, le presse (il y a du travail) et lui fait faire le tour du camp (plus haut).
 2. **Un camp vide :** on entre près du feu, au milieu de huit terrains vides (piquets et pancartes). Sur le tableau, la carte est toute grise.
 3. **Le tableau appelle :** des étoiles scintillent dessus, et une seule bulle s'affiche : « Ce camp, c'est vous qui le construisez. » (texte provisoire). Puis on laisse jouer.
 4. **Les zones à construire :** on ouvre le tableau ; les huit zones sont au niveau 0, chacune avec ses premières missions et la façon de les rentrer.
@@ -287,6 +299,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 18 oct | Le héros de départ : un humain LPC de base, avec la marche et la course | le propriétaire |
 | 18 oct | La sentinelle au spawn : un chevalier LPC sans retouche qui demande le nom de dev à la première arrivée, relié au pseudo GitHub par `equipe.json` ; un nom inconnu entre comme visiteur | le propriétaire |
 | 18 oct | « Les premières fois du dev » (l'équipement des héros) : à définir plus tard | le propriétaire |
+| 18 oct | Après le nom, la sentinelle presse le joueur et lui fait faire le tour du camp : le feu, le tableau, un terrain vide, un rat | le propriétaire |
 
 | Question | Qui répond |
 |---|---|

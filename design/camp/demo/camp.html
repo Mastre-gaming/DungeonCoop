@@ -64,6 +64,13 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
 .dial-saisie label{font:500 .9rem var(--titre)}
 .dial-saisie input{font:1rem var(--texte);padding:6px 8px;border:2px solid #7a5432;border-radius:3px;background:#fffaf0;color:#3a2c1a;min-width:0;flex:1 1 140px}
 .dial-saisie input:focus-visible{outline:3px solid #c4621f;outline-offset:1px}
+[hidden]{display:none!important}
+.dial-boutons{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.cadre-jeu{position:relative}
+.dialogue.visite{left:2%;right:2%;bottom:3%;padding:6px;gap:8px}
+.dialogue.visite canvas{width:52px;height:52px;image-rendering:pixelated;background:#f3e7c9;border:3px solid #3b2716;border-radius:3px;cursor:default}
+.dialogue.visite .dial-texte{font-size:.95rem}
+.dialogue.visite .bouton-jeu{padding:5px 12px;font-size:.95rem}
 .dial-erreur{font-size:.85rem;color:#a3261c;font-weight:600}
 .bouton-jeu.discret{background:#3b2716;border-color:#7a5432}
 @media (prefers-reduced-motion:reduce){.excl{animation:none}}
@@ -181,7 +188,7 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
 
   <section aria-labelledby="t-sentinelle">
     <h2 id="t-sentinelle">La sentinelle au spawn</h2>
-    <p class="note">À la toute première arrivée, une sentinelle arrête le héros et lui demande son nom de dev. Le nom est relié au pseudo GitHub par <code>equipe.json</code>, le même fichier que l'entrée du dashboard : « Paul » devient <code>PCrrfng</code>. Le camp sait alors qui rentre quelle mission. Un nom inconnu entre quand même, comme visiteur. À la visite suivante, elle te reconnaît et te salue simplement. Ses répliques sont provisoires : les textes sont à l'équipe.</p>
+    <p class="note">À la toute première arrivée, une sentinelle arrête le héros et lui demande son nom de dev. Le nom est relié au pseudo GitHub par <code>equipe.json</code>, le même fichier que l'entrée du dashboard : « Paul » devient <code>PCrrfng</code>. Le camp sait alors qui rentre quelle mission. Un nom inconnu entre quand même, comme visiteur. Une fois le nom donné, elle te presse (il y a du travail) et te fait faire le tour du camp, dans la scène du héros plus bas. À la visite suivante, elle te reconnaît et te salue simplement. Ses répliques sont provisoires : les textes sont à l'équipe.</p>
     <div class="spawn">
       <canvas id="scene-spawn" width="384" height="256" aria-label="Le spawn : la sentinelle arrête le héros et lui demande son nom."></canvas>
       <div class="excl" id="excl" hidden aria-hidden="true">!</div>
@@ -195,6 +202,7 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
             <input id="nom-dev" name="nom-dev" type="text" autocomplete="nickname" maxlength="40" placeholder="Paul">
             <button class="bouton-jeu" type="submit">C'est moi</button>
           </div>
+          <div class="dial-boutons" id="dial-suite" hidden><button class="bouton-jeu" type="button" id="je-te-suis">Je te suis</button></div>
           <p class="dial-erreur" id="dial-erreur" hidden>Écris ton nom de dev pour entrer.</p>
         </div>
       </form>
@@ -210,9 +218,20 @@ img.px,canvas{image-rendering:pixelated;image-rendering:crisp-edges;display:bloc
     <h2 id="t-heros">Ton héros dans le camp, et les rats</h2>
     <p class="note">Un humain de base fait avec le générateur LPC, avec ses vraies animations de marche (8 images) et de course (8 images), dans les 4 directions. Flèches ou ZQSD pour marcher, Maj pour courir. Sur iPad : touche la scène et garde le doigt pour marcher vers lui, et le bouton « Courir » pour courir. La caméra suit avec la zone morte décidée (30 % au centre) et s'arrête aux bords.</p>
     <div class="jeu">
-      <canvas id="scene-heros" width="512" height="288" tabindex="0" aria-label="Le héros dans le camp. Flèches ou ZQSD pour marcher, Maj pour courir."></canvas>
+      <div class="cadre-jeu">
+        <canvas id="scene-heros" width="512" height="288" tabindex="0" aria-label="Le héros dans le camp. Flèches ou ZQSD pour marcher, Maj pour courir."></canvas>
+        <div class="dialogue visite" id="visite" hidden>
+          <canvas id="portrait-v" width="40" height="40" aria-hidden="true"></canvas>
+          <div class="dial-corps">
+            <p class="dial-qui">La sentinelle <span class="provisoire">texte provisoire</span></p>
+            <p class="dial-texte" id="visite-texte" aria-live="polite"></p>
+            <div class="dial-boutons"><button class="bouton-jeu discret" id="visite-passer" type="button">Passer le tour</button><button class="bouton-jeu" id="visite-suite" type="button">Suivant</button></div>
+          </div>
+        </div>
+      </div>
       <div class="commandes">
         <button class="bouton-jeu" id="courir" type="button" aria-pressed="false">Courir</button>
+        <button class="bouton-jeu discret" id="refaire-visite" type="button">Faire le tour avec la sentinelle</button>
         <label class="appel"><input type="checkbox" id="voir-zone"> Montrer la zone morte</label>
         <span class="etat-heros" id="etat-heros" aria-live="polite"></span>
       </div>
@@ -405,7 +424,9 @@ function majHeros(dt){
   if(touches.has('ArrowUp')||touches.has('z')||touches.has('w'))dy--;
   if(touches.has('ArrowDown')||touches.has('s'))dy++;
   if(!dx&&!dy&&doigt.actif){const vx=doigt.x-heros.x,vy=doigt.y-heros.y,d=Math.hypot(vx,vy);if(d>6){dx=vx/d;dy=vy/d}}
-  const n=Math.hypot(dx,dy);heros.bouge=n>0;heros.court=heros.bouge&&(touches.has('Shift')||courirBouton);
+  let presse=false;
+  if(VISITE.guide){dx=dy=0;const b=butVisite();if(b){const vx=b[0]-heros.x,vy=b[1]-heros.y,d=Math.hypot(vx,vy);if(d>3){dx=vx/d;dy=vy/d;presse=d>64}}}
+  const n=Math.hypot(dx,dy);heros.bouge=n>0;heros.court=heros.bouge&&(touches.has('Shift')||courirBouton||presse);
   if(!heros.bouge){heros.t=0;return}
   dx/=n;dy/=n;
   heros.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'gauche':'droite'):(dy<0?'haut':'bas');
@@ -415,6 +436,9 @@ function majHeros(dt){
   heros.t+=dt;
 }
 function majCamera(){
+  // pendant que la sentinelle parle, la caméra cadre ce qu'elle montre dans le haut de la vue (la boîte de dialogue occupe le bas)
+  const a=VISITE.guide&&VISITE.phase==='parle'&&ARRETS[VISITE.etape].vue;
+  if(a){const tx=Math.max(0,Math.min(MONDE.w-VUE.w,a[0]-VUE.w/2)),ty=Math.max(0,Math.min(MONDE.h-VUE.h,a[1]-VUE.h*.35));camera.x+=(tx-camera.x)*.08;camera.y+=(ty-camera.y)*.08;return}
   const zw=VUE.w*.3,zh=VUE.h*.3,zx=camera.x+(VUE.w-zw)/2,zy=camera.y+(VUE.h-zh)/2;
   let tx=camera.x,ty=camera.y;const hx=heros.x,hy=heros.y-20;
   if(hx<zx)tx-=zx-hx;if(hx>zx+zw)tx+=hx-(zx+zw);if(hy<zy)ty-=zy-hy;if(hy>zy+zh)ty+=hy-(zy+zh);
@@ -434,8 +458,13 @@ function dessinerHeros(c,temps,niv){
   g.clearRect(cx,cy,VUE.w,VUE.h);
   const i0=Math.floor(cx/T),j0=Math.floor(cy/T);
   for(let j=j0;j<=j0+9;j++)for(let i=i0;i<=i0+16;i++){g.drawImage(charges.herbe,i*T,j*T);if((i*7+j*3)%11===0)g.drawImage(charges.touffes,((i+j)%3)*T,0,T,T,i*T,j*T,T,T)}
+  dessinerTerrain(g);
   const objets=[];
-  objets.push({bas:6*T+80,f:()=>{dessinerPanneau(g,13*T,6*T,niv,null,temps);if($('#appel').checked&&temps)etoiles(c,g,13*T,6*T,temps)}});
+  objets.push({bas:LOT.y+LOT.h,f:()=>pancarteTerrain(g)});
+  if(VISITE.visible){const s=imageSentinelleVisite();objets.push({bas:VISITE.sy,f:()=>{g.fillStyle='rgba(0,0,0,.22)';g.fillRect(Math.round(VISITE.sx)-10,Math.round(VISITE.sy)-2,20,4);
+    g.drawImage(charges.sentinelle,s.c*64,s.l*64,64,64,Math.round(VISITE.sx)-32,Math.round(VISITE.sy)-60,64,64);
+    if(VISITE.phase==='appel')exclamation(g,VISITE.sx,VISITE.sy-60,temps)}})}
+  objets.push({bas:6*T+80,f:()=>{dessinerPanneau(g,13*T,6*T,niv,null,temps);if(($('#appel').checked||VISITE.etoiles)&&temps)etoiles(c,g,13*T,6*T,temps)}});
   const f=Math.floor(temps/120)%5;
   objets.push({bas:9*T+6,f:()=>g.drawImage(charges.feu_grand,f*64,0,64,64,20*T-32,9*T-58,64,64)});
   for(const d of DECOR_HEROS)objets.push({bas:d.y+charges[d.n].height,f:()=>g.drawImage(charges[d.n],Math.round(d.x),Math.round(d.y))});
@@ -647,6 +676,7 @@ const SP={phase:'arrivee',t:0,hx:6*T,hy:7.8*T,sx:6*T,sy:2.9*T,sdir:2,qui:null};
 const S_CAST=0,S_MARCHE=4;
 function demarrerSpawn(){
   Object.assign(SP,{phase:'arrivee',t:0,hx:6*T,hy:7.8*T,sx:6*T,sy:2.9*T,sdir:2});$('#nom-dev').value='';
+  SP.nouveau=false;$('#dial-texte').textContent='Halte. Avant d\'entrer au camp : quel est ton nom de dev ?';$('.dial-saisie').hidden=false;$('#dial-suite').hidden=true;
   SP.qui=lireNom();$('#dialogue').hidden=true;$('#excl').hidden=true;$('#dial-erreur').hidden=true;
   $('#etat-spawn').textContent=SP.qui?`Elle te connaît déjà : ${SP.qui.nom}`:'Première arrivée';
 }
@@ -654,7 +684,7 @@ function majSpawn(dt){
   SP.t+=dt;
   if(SP.phase==='arrivee'){SP.hy-=72*dt;if(SP.hy<=4.4*T){SP.hy=4.4*T;SP.phase='halte';SP.t=0;montrerExcl()}}
   else if(SP.phase==='halte'&&SP.t>.9){if(SP.qui){SP.phase='salut';SP.t=0;$('#etat-spawn').textContent=`Rebonjour, ${SP.qui.nom}`}else{SP.phase='question';ouvrirDialogue()}}
-  else if(SP.phase==='salut'&&SP.t>1.1){SP.phase='ecart';SP.t=0;SP.sdir=3;$('#excl').hidden=true}
+  else if(SP.phase==='salut'&&SP.t>1.1){if(SP.nouveau){SP.nouveau=false;SP.phase='presse';SP.t=0;ouvrirPresse()}else{SP.phase='ecart';SP.t=0;SP.sdir=3;$('#excl').hidden=true}}
   else if(SP.phase==='ecart'){SP.sx+=60*dt;if(SP.sx>=7.6*T){SP.sx=7.6*T;SP.sdir=2;SP.phase='libre';SP.t=0}}
 }
 function montrerExcl(){const c=$('#scene-spawn'),e=$('#excl');e.style.left=(SP.sx/c.width*100)+'%';e.style.top=((SP.sy-58)/c.height*100)+'%';e.hidden=false}
@@ -662,7 +692,7 @@ function ouvrirDialogue(){const d=$('#dialogue');d.hidden=false;dessinerPortrait
 function dessinerPortrait(){const g=$('#portrait').getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,40,40);g.drawImage(charges.sentinelle,0,2*64+6,64,40,-12,0,64,40)}
 function imageSentinelle(){
   const ph=SP.phase;
-  if(ph==='halte'||ph==='question'||ph==='salut'){const k=Math.min(5,Math.floor(SP.t/.12));return {l:S_CAST+2,c:k}}
+  if(ph==='halte'||ph==='question'||ph==='salut'||ph==='presse'){const k=Math.min(5,Math.floor(SP.t/.12));return {l:S_CAST+2,c:k}}
   if(ph==='ecart')return {l:S_MARCHE+SP.sdir,c:1+Math.floor(SP.t*10)%8};
   return {l:S_MARCHE+SP.sdir,c:0};
 }
@@ -678,14 +708,123 @@ function dessinerSpawn(c,temps){
   objets.sort((a,b)=>a.bas-b.bas).forEach(o=>o.f());
 }
 function brancherSpawn(){
-  $('#dialogue').addEventListener('submit',e=>{e.preventDefault();const v=$('#nom-dev').value.trim();
+  $('#dialogue').addEventListener('submit',e=>{e.preventDefault();if(SP.phase==='presse'){suivreSentinelle();return}const v=$('#nom-dev').value.trim();
     if(!v){$('#dial-erreur').hidden=false;$('#nom-dev').focus();return}
-    const qui=reconnaitre(v);SP.qui=qui;ecrireNom(qui);$('#dialogue').hidden=true;SP.phase='salut';SP.t=0;
+    const qui=reconnaitre(v);SP.qui=qui;ecrireNom(qui);if(qui.github){joueurGithub=qui.github;$('#joueur').value=qui.github;dessinerListeRats()}
+    $('#dialogue').hidden=true;SP.phase='salut';SP.t=0;SP.nouveau=true;
     $('#etat-spawn').textContent=qui.github?`Bienvenue, ${qui.nom} : relié à GitHub @${qui.github}`:`Bienvenue, ${qui.nom} : tu entres comme visiteur (pas dans equipe.json)`});
   $('#nom-dev').addEventListener('input',()=>{$('#dial-erreur').hidden=true});
   $('#rejouer-spawn').addEventListener('click',demarrerSpawn);
   $('#oublier-nom').addEventListener('click',()=>{ecrireNom(null);demarrerSpawn()});
   demarrerSpawn();
+}
+
+// une fois le nom donné : il y a du travail, magne-toi (texte provisoire)
+function ouvrirPresse(){
+  $('#dial-texte').textContent=`Bien, ${SP.qui.nom}. Ne reste pas planté là : ce camp ne va pas se construire tout seul, et le travail ne manque pas. Magne-toi ! Suis-moi, je te fais faire le tour.`;
+  $('.dial-saisie').hidden=true;$('#dial-erreur').hidden=true;$('#dial-suite').hidden=false;$('#dialogue').hidden=false;dessinerPortrait();
+  setTimeout(()=>$('#je-te-suis').focus({preventScroll:true}),50);
+}
+function suivreSentinelle(){
+  $('#dialogue').hidden=true;SP.phase='ecart';SP.t=0;SP.sdir=3;$('#excl').hidden=true;
+  demarrerVisite();$('#scene-heros').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
+}
+
+/* --- Le tour du camp : la sentinelle guide le nouveau venu (textes provisoires : ils sont à l'équipe) --- */
+const LOT={x:4*T,y:4*T,w:4*T,h:2.5*T};   // un terrain à construire : piquets, corde, pancarte
+const VISITE={actif:false,guide:false,visible:false,etape:0,phase:'',t:0,sx:0,sy:0,sdir:'bas',chemin:[],etoiles:false,rat:null};
+const dirDe=(vx,vy)=>Math.abs(vx)>Math.abs(vy)?(vx<0?'gauche':'droite'):(vy<0?'haut':'bas');
+// chaque arrêt : le chemin de la sentinelle, la place du héros à côté d'elle, ce qu'elle dit
+const ARRETS=[
+  {chemin:[[17.4*T,11*T],[18.5*T,10.3*T]],heros:[17.2*T,10.6*T],vue:[18*T,9.3*T],
+   texte:()=>`Le feu, c'est l'équipe entière. Chaque mission rentrée le nourrit. Regarde-le : il fait pitié. C'est à vous de le faire grandir.`},
+  {chemin:[[15.9*T,9.7*T]],heros:[14.5*T,9.9*T],vue:[15*T,8.6*T],etoiles:true,
+   texte:()=>`Le tableau d'affichage. Tout ce qu'il reste à bâtir est écrit là : les zones du camp, et les missions de chacune. Quand il scintille, c'est qu'il y a du travail à prendre. Et il y en a.`},
+  {chemin:[[11*T,10.2*T],[7.6*T,7.4*T]],heros:[6.1*T,7.7*T],vue:[6.5*T,6*T],
+   texte:()=>`Et ça, c'est un terrain. Vide. Il attend quelqu'un. Tu prends une mission, ta PR dit « Ferme #12 », elle est fusionnée : un bâtiment pousse ici, chez tout le monde. Ce camp, c'est toi qui le construis.`},
+  {chemin:[],heros:[6.1*T,7.7*T],vue:[6.5*T,6*T],rat:true,
+   texte:()=>`Ah, un rat. Chaque PR qui traîne en devient un, et il court après celui qui l'a poussée. Clique dessus : il te mène à la PR à régler. Une fois réglée, il détale.`},
+  {chemin:[],heros:[6.1*T,7.7*T],vue:[6.5*T,6*T],fin:true,bouton:'Au travail !',
+   texte:()=>`Voilà le tour, ${lireNom()?.nom||'l\'ami'}. Le reste n'existe pas encore : c'est à toi de le bâtir. Allez, magne-toi !`},
+];
+function demarrerVisite(){
+  for(const r of rats)if(r.cle==='visite'){r.phase='fuite';r.t=0}
+  Object.assign(heros,{x:8*T,y:12.5*T,dir:'droite',t:0});
+  Object.assign(VISITE,{actif:true,guide:true,visible:true,etape:0,phase:'appel',t:0,sx:9.3*T,sy:12.3*T,sdir:'gauche',chemin:ARRETS[0].chemin.map(p=>[...p]),etoiles:false,rat:null});
+  camera.x=Math.max(0,Math.min(MONDE.w-VUE.w,heros.x-VUE.w/2));camera.y=Math.max(0,Math.min(MONDE.h-VUE.h,heros.y-20-VUE.h/2));
+  $('#visite').hidden=true;
+}
+function butVisite(){   // où le héros doit aller : derrière la sentinelle quand elle marche, à sa place quand elle s'arrête
+  if(VISITE.phase==='appel')return null;
+  if(VISITE.phase==='marche'&&VISITE.chemin.length){const [ex,ey]=R_ELAN[VISITE.sdir];return [VISITE.sx-ex*30,VISITE.sy-ey*22]}
+  return ARRETS[VISITE.etape].heros;
+}
+function majVisite(dt){
+  if(!VISITE.actif)return;
+  VISITE.t+=dt;
+  if(VISITE.phase==='appel'){VISITE.sdir=dirDe(heros.x-VISITE.sx,heros.y-VISITE.sy);if(VISITE.t>1.1){VISITE.phase='marche';VISITE.t=0}}
+  else if(VISITE.phase==='marche'){
+    const b=VISITE.chemin[0];
+    if(b){const vx=b[0]-VISITE.sx,vy=b[1]-VISITE.sy,d=Math.hypot(vx,vy),v=78*dt;
+      if(d<=v){VISITE.sx=b[0];VISITE.sy=b[1];VISITE.chemin.shift()}else{VISITE.sx+=vx/d*v;VISITE.sy+=vy/d*v;VISITE.sdir=dirDe(vx,vy)}}
+    else{const a=ARRETS[VISITE.etape];
+      if(Math.hypot(a.heros[0]-heros.x,a.heros[1]-heros.y)<4||VISITE.t>8){VISITE.phase='parle';VISITE.t=0;parlerVisite()}}
+  }
+  else if(VISITE.phase==='parle'){VISITE.sdir=dirDe(heros.x-VISITE.sx,heros.y-VISITE.sy);if(!heros.bouge)heros.dir=dirDe(VISITE.sx-heros.x,VISITE.sy-heros.y)}
+  else if(VISITE.phase==='sortie'){VISITE.sx-=90*dt;VISITE.sdir='gauche';if(VISITE.sx<camera.x-T||VISITE.sx<-T){VISITE.actif=false;VISITE.visible=false}}
+}
+function parlerVisite(){
+  const a=ARRETS[VISITE.etape];
+  if(a.etoiles)VISITE.etoiles=true;
+  if(a.rat&&!VISITE.rat){   // un rat d'exemple, de ta PR : il apparaît avec son « ! » et te court après
+    const r={cle:'visite',espece:2,pr:{numero:7,titre:'Exemple : ta PR qui attend une relecture',url:'https://github.com/Mastre-gaming/DungeonCoop/pulls',depot:'jeu',auteur:joueurGithub||''},exemple:true,
+      x:heros.x+4*T,y:heros.y+.2*T,dir:'gauche',phase:'alerte',t:0,mord:0,rang:rats.length};
+    r.ancre=[r.x,r.y];rats.push(r);VISITE.rat=r;dessinerListeRats();
+  }
+  $('#visite-texte').textContent=a.texte();$('#visite-suite').textContent=a.bouton||'Suivant';$('#visite').hidden=false;
+  const g=$('#portrait-v').getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,40,40);g.drawImage(charges.sentinelle,0,2*64+6,64,40,-12,0,64,40);
+  $('#visite-suite').focus({preventScroll:true});
+}
+function suiteVisite(){
+  if(!VISITE.actif||VISITE.phase!=='parle')return;
+  const a=ARRETS[VISITE.etape];
+  $('#visite').hidden=true;
+  if(a.fin){finVisite();return}
+  VISITE.etape++;VISITE.phase='marche';VISITE.t=0;VISITE.chemin=ARRETS[VISITE.etape].chemin.map(p=>[...p]);
+}
+function finVisite(){   // elle retourne à son poste ; le rat du tour détale ; le joueur reprend la main
+  $('#visite').hidden=true;VISITE.guide=false;VISITE.phase='sortie';VISITE.t=0;VISITE.etoiles=true;
+  if(VISITE.rat&&VISITE.rat.phase!=='fuite'){VISITE.rat.phase='fuite';VISITE.rat.t=0;dessinerListeRats()}
+  $('#scene-heros').focus({preventScroll:true});
+}
+function imageSentinelleVisite(){
+  if(VISITE.phase==='appel'){const k=Math.min(5,Math.floor(VISITE.t/.12));return {l:S_CAST+2,c:k}}
+  const marche=(VISITE.phase==='marche'&&VISITE.chemin.length)||VISITE.phase==='sortie';
+  return {l:S_MARCHE+H_DIR[VISITE.sdir],c:marche?1+Math.floor(VISITE.t*10)%8:0};
+}
+// le terrain vide : de la terre retournée, quatre piquets et une corde, et une pancarte sans nom
+function dessinerTerrain(g){
+  const {x,y,w,h}=LOT;
+  g.fillStyle='rgba(87,55,38,.22)';g.fillRect(x+4,y+4,w-8,h-8);
+  const corde=(x1,y1,x2,y2)=>{const n=Math.max(Math.abs(x2-x1),Math.abs(y2-y1));for(let i=0;i<=n;i++){const t=i/n,sag=Math.sin(t*Math.PI)*(y1===y2?3:0);
+    const px=Math.round(x1+(x2-x1)*t),py=Math.round(y1+(y2-y1)*t+sag);g.fillStyle='#2b1c1d';g.fillRect(px,py+1,1,1);g.fillStyle='#ccbd7b';g.fillRect(px,py,1,1)}};
+  const P=[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+  corde(x,y-8,x+w,y-8);corde(x+w,y-8,x+w,y+h-8);corde(x,y+h-8,x+w,y+h-8);corde(x,y-8,x,y+h-8);
+  for(const [px,py] of P){g.fillStyle='#2b1c1d';g.fillRect(px-2,py-12,5,13);g.fillStyle='#85581b';g.fillRect(px-1,py-11,3,11);g.fillStyle='#b78c41';g.fillRect(px-1,py-11,1,10)}
+}
+function pancarteTerrain(g){
+  const x=LOT.x+12,y=LOT.y+LOT.h-6;
+  g.fillStyle='rgba(0,0,0,.2)';g.fillRect(x-1,y,8,3);
+  g.fillStyle='#2b1c1d';g.fillRect(x+1,y-16,4,17);g.fillStyle='#85581b';g.fillRect(x+2,y-15,2,15);
+  g.fillStyle='#2b1c1d';g.fillRect(x-9,y-28,24,15);g.fillStyle='#986a20';g.fillRect(x-8,y-27,22,13);g.fillStyle='#f3e7c9';g.fillRect(x-6,y-25,18,9);
+  g.fillStyle='#6f5a3e';for(const [i,j] of [[1,0],[2,0],[3,1],[2,2],[2,4]])g.fillRect(x+1+i,y-25+1+j,1,1);   // « ? » : rien n'y est encore écrit
+}
+function brancherVisite(){
+  $('#je-te-suis').addEventListener('click',suivreSentinelle);
+  $('#visite-suite').addEventListener('click',suiteVisite);
+  $('#visite-passer').addEventListener('click',finVisite);
+  $('#refaire-visite').addEventListener('click',()=>{demarrerVisite();$('#scene-heros').focus({preventScroll:true})});
+  $('#scene-heros').addEventListener('keydown',e=>{if(!VISITE.actif)return;if(e.key==='Escape'&&VISITE.guide)finVisite();else if((e.key==='Enter'||e.key===' ')&&VISITE.phase==='parle'){e.preventDefault();suiteVisite()}});
 }
 
 /* --- Le feu : 5 tailles selon le total de l'équipe --- */
@@ -727,10 +866,11 @@ function demarrer(){
   brancherHeros();
   brancherRats();
   brancherSpawn();
+  brancherVisite();
   const boucle=temps=>{const t=calme?0:temps;for(const [c,i] of petits)dessinerFeu(c,i,t);
     for(const c of vign)dessinerDecor(c,c.dataset.scene==='apres'?{combat:1}:{},null,t,c.dataset.scene==='appel');
     const niv=niveauxActuels();dessinerDecor($('#gros-plan'),niv,null,t,$('#appel').checked);
-    const dt=Math.min(.05,(temps-dernier)/1000||0);dernier=temps;majHeros(dt);majRats(dt);majDegats(dt);majCamera();dessinerHeros($('#scene-heros'),t,niv);
+    const dt=Math.min(.05,(temps-dernier)/1000||0);dernier=temps;majVisite(dt);majHeros(dt);majRats(dt);majDegats(dt);majCamera();dessinerHeros($('#scene-heros'),t,niv);
     majSpawn(dt);dessinerSpawn($('#scene-spawn'),t);const cz=$('#carte-zone');if(cz)dessinerDecor(cz,niv,choisie,t);
     if(!calme)requestAnimationFrame(boucle)};
   requestAnimationFrame(boucle);
