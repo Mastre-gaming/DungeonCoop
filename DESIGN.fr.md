@@ -83,6 +83,8 @@ Copier ces recettes ; ne pas en inventer une nouvelle sans l'ajouter ici.
 
 **Annonce** : bande de parchemin, bordure or sombre `#b8892a`, apparaît en haut au centre puis s'efface ; une seule à la fois.
 
+**Barre de vie sous un perso** (combat) : sous les pieds, sans cadre derrière ni nom. Jauge bois nuit, bordure noire 1 px et anneau bois clair 1 px (la recette de la jauge, en petit), remplissage rouge pour un ennemi, vert pour un allié, braise sous 30 % ; de près, les PV écrits dedans (Pixelify 10 px, ombre noire). Dessous, une icône par état en pixel art (rampes des icônes des capacités, contour sombre), ×1 de loin, ×2 de près, les tours qui restent en chiffre en bas à droite. Le détail de chaque état est dans la carte de survol. (à confirmer)
+
 **Étiquette au-dessus d'un perso** : bois foncé à 78 %, Pixelify 13 px ; la tienne bordée d'or.
 
 **Focus clavier** : toujours visible, `outline: 3px solid var(--or); outline-offset: 2px`.
