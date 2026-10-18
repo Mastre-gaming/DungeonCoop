@@ -834,9 +834,10 @@ function fauxWorker() {
   srv.couper = () => { for (const p of [...srv.pages]) p.close(); };
   return srv;
 }
+// On compte les tours (de 10 ms au moins), pas l'heure : sur les machines de GitHub (rendu logiciel), la page se fige
+// parfois de longues secondes, et un délai à l'horloge expirait avant que le faux Worker ait pu répondre une seule fois.
 const attendre = async (cond, ms = 4000) => {
-  const t0 = performance.now();
-  while (!cond()) { if (performance.now() - t0 > ms) return false; await new Promise((r) => setTimeout(r, 10)); }
+  for (let tour = 0; !cond(); tour++) { if (tour * 10 > ms) return false; await new Promise((r) => setTimeout(r, 10)); }
   return true;
 };
 
