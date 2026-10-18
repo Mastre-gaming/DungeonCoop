@@ -19,7 +19,7 @@ const VIE = [0, 1, 2, 3, 2, 1, 0];
 const ZONES_ETOILE = [[6, 8, 90, 17], [18, 19, 77, 58], [10, 3, 17, 30], [79, 3, 86, 30]];
 
 let feu, spriteFeu, panneau, spritePanneau, gPanneau, images, temps = 0, niveaux = {};
-const etoiles = { liste: [], prochaine: 0, appel: false };
+const etoiles = { liste: [], prochaine: 0, appel: false, force: false };   // force : la sentinelle le montre (le tour)
 
 export function init(game, { rendu, camp, images: im }) {
   images = im;
@@ -65,7 +65,8 @@ export const api = {
   // Les niveaux des lieux, pour colorier la carte du panneau (tout gris au départ).
   niveaux(n) { niveaux = { ...n }; },
   // Le tableau appelle quand des missions attendent d'être prises.
-  appeler(oui) { etoiles.appel = !!oui; if (!oui) etoiles.liste.length = 0; },
+  appeler(oui) { etoiles.appel = !!oui || etoiles.force; if (!etoiles.appel) etoiles.liste.length = 0; },
+  forcerAppel(oui) { etoiles.force = !!oui; if (oui) etoiles.appel = true; },
   get appel() { return etoiles.appel; },
   get nbEtoiles() { return etoiles.liste.length; },
   zoneVisee: null,           // une zone qui clignote sur la carte (celle choisie dans le panneau des missions)
