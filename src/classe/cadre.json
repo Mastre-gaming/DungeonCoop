@@ -1,0 +1,157 @@
+{
+  "version": "0.1 · première base du 18 octobre 2026, à confirmer avec les joueurs",
+  "source": "CLASS_FRAMEWORK.fr.md (le cadre lisible) ; CLASS_TEMPLATE.fr.md et FIGHT_RULES.md (les règles d'où il vient)",
+
+  "caracs": {
+    "points": 27,
+    "base": 8,
+    "min": 8,
+    "max": 15,
+    "couts": { "9": 1, "10": 2, "11": 3, "12": 4, "13": 5, "14": 7, "15": 9 },
+    "liste": [
+      { "id": "FOR", "nom": "Force", "effet": "au d20 et aux dégâts des attaques de force ; poussée +1 case à 14+" },
+      { "id": "DEX", "nom": "Dextérité", "effet": "au d20 et aux dégâts des attaques de finesse et à distance ; à l'initiative" },
+      { "id": "CON", "nom": "Constitution", "effet": "+5 PV par point de modificateur, au niveau 1 et à chaque niveau" },
+      { "id": "INT", "nom": "Intelligence", "effet": "au d20 et aux dégâts des capacités arcaniques ; les surfaces durent +1 round à 14+" },
+      { "id": "SAG", "nom": "Sagesse", "effet": "aux soins et aux capacités de nature ou divines ; repère les pièges et les salles cachées" },
+      { "id": "CHA", "nom": "Charisme", "effet": "aux capacités de présence (provocations, inspiration) ; meilleurs prix et choix d'événements" }
+    ]
+  },
+
+  "pointsClasse": {
+    "total": 10,
+    "pvBase": 100, "pvMin": 70, "pvMax": 130, "pvPas": 10, "pvCoutHausse": 1, "pvRenduBaisse": 1,
+    "pvParPointRestant": 5,
+    "vitesseBase": 5, "vitesseMin": 4, "vitesseMax": 7, "vitesseCoutHausse": 2, "vitesseRenduBaisse": 1,
+    "metresParCase": 1.5
+  },
+
+  "capacites": {
+    "nombre": 3,
+    "attaqueDeBaseObligatoire": true,
+    "sortes": [
+      { "id": "base", "nom": "Attaque de base", "cout": 0, "slot": "action", "palier": "T1", "note": "gratuite, une seule" },
+      { "id": "preparation", "nom": "Préparation", "cout": 2, "slot": "bonus", "palier": null, "note": "pose un statut, une surface, une poussée ou une attirance" },
+      { "id": "exploitation", "nom": "Exploitation", "cout": 3, "slot": "action", "palier": "T2", "note": "plus forte sur une préparation (×2 ou un effet en plus)" },
+      { "id": "reaction", "nom": "Bonus ou réaction", "cout": 2, "slot": "reaction", "palier": null, "note": "une seule réaction par classe" },
+      { "id": "soutien", "nom": "Soin, bouclier ou buff", "cout": 3, "slot": "action", "palier": null, "note": "un soin vaut au plus 25 PV au niveau 1" }
+    ],
+    "renforts": [
+      { "id": "zone", "nom": "Zone plus grande", "cout": 1 },
+      { "id": "effet", "nom": "Un effet en plus", "cout": 1 },
+      { "id": "degats", "nom": "Plus de dégâts (un palier)", "cout": 2 },
+      { "id": "critique", "nom": "Critique assuré contre la ressource", "cout": 1 }
+    ],
+    "slots": [
+      { "id": "action", "nom": "Action" },
+      { "id": "bonus", "nom": "Action bonus" },
+      { "id": "reaction", "nom": "Réaction" }
+    ]
+  },
+
+  "paliers": {
+    "degats": [
+      { "id": "T1", "nom": "Attaque de base", "base": 8, "de": 4 },
+      { "id": "T2", "nom": "Forte", "base": 14, "de": 6 },
+      { "id": "T3", "nom": "Grosse (niveau 5 et plus)", "base": 22, "de": 8 }
+    ],
+    "portees": [
+      { "id": "contact", "nom": "Contact", "m": 2.25 },
+      { "id": "courte", "nom": "Courte", "m": 4.5 },
+      { "id": "moyenne", "nom": "Moyenne", "m": 7.5 },
+      { "id": "longue", "nom": "Longue", "m": 9 },
+      { "id": "tres-longue", "nom": "Très longue", "m": 12 }
+    ],
+    "zones": [
+      { "id": "aucune", "nom": "Une cible", "rayon": 0 },
+      { "id": "petite", "nom": "Petite zone (2×2)", "rayon": 1.7 },
+      { "id": "grande", "nom": "Grande zone (3×3)", "rayon": 2.5 }
+    ],
+    "soinMax": 25
+  },
+
+  "ressources": [
+    { "id": "rage", "nom": "Rage", "remplit": "+10 par coup donné ou reçu", "max": 50, "depart": 0 },
+    { "id": "mana", "nom": "Mana", "remplit": "40 par combat, +5 à chaque tour", "max": 40, "depart": 40 },
+    { "id": "concentration", "nom": "Concentration", "remplit": "+1 par préparation qu'un coéquipier exploite", "max": 3, "depart": 0 },
+    { "id": "foi", "nom": "Foi", "remplit": "+1 par soin ou protection", "max": 3, "depart": 0 },
+    { "id": "energie", "nom": "Énergie", "remplit": "3 à chaque tour, perdue si elle n'est pas dépensée", "max": 3, "depart": 3 },
+    { "id": "elan", "nom": "Élan", "remplit": "+1 par case parcourue, se vide si on reste immobile", "max": 5, "depart": 0 }
+  ],
+
+  "accroches": {
+    "statuts": [
+      { "id": "trempe", "nom": "Trempé", "effet": "éteint Brûlant", "exploite": "la foudre fait ×2" },
+      { "id": "huile", "nom": "Huilé", "effet": "", "exploite": "le feu fait ×2 et enflamme" },
+      { "id": "brulant", "nom": "Brûlant", "effet": "5 dégâts au début de son tour, 2 tours", "exploite": "" },
+      { "id": "gele", "nom": "Gelé", "effet": "−3 m de déplacement, désavantage aux attaques", "exploite": "une poussée le déplace de 3 m de plus" },
+      { "id": "aterre", "nom": "À terre", "effet": "se relever coûte la moitié du déplacement", "exploite": "avantage aux attaques contre lui" },
+      { "id": "expose", "nom": "Exposé", "effet": "", "exploite": "la prochaine attaque contre lui a l'avantage" }
+    ],
+    "surfaces": [
+      { "id": "huile", "nom": "Huile", "effet": "Huilé en entrant", "devient": "le feu l'enflamme" },
+      { "id": "eau", "nom": "Eau", "effet": "Trempé en entrant", "devient": "la foudre l'électrise (8 à tous) ; le froid la gèle" },
+      { "id": "feu", "nom": "Feu", "effet": "6 dégâts en entrant ou en y finissant son tour, Brûlant", "devient": "l'eau l'éteint" },
+      { "id": "glace", "nom": "Glace", "effet": "glissante : d20 en entrant, À terre sur 1–9 ; une poussée fait glisser", "devient": "le feu la fait fondre" }
+    ],
+    "positions": [
+      { "id": "poussee", "nom": "Poussée", "effet": "3 m tout droit ; +8 contre un obstacle ; le fossé élimine un sbire" },
+      { "id": "attirer", "nom": "Attirer", "effet": "3 m vers soi : dans une surface, le feu, le fossé" },
+      { "id": "tenaille", "nom": "Tenaille", "effet": "un allié de l'autre côté de la cible donne l'avantage" },
+      { "id": "avantage", "nom": "Donner l'avantage", "effet": "un allié a l'avantage à sa prochaine attaque" }
+    ]
+  },
+
+  "roles": [
+    { "id": "tank", "nom": "Tank", "pv": [120, 155], "vitesse": [4, 6], "caracConseillee": ["FOR", "CON"],
+      "conseil": "protège : encaisse, provoque, renverse. Sa préparation est souvent une poussée ou À terre." },
+    { "id": "degats", "nom": "Dégâts", "pv": [100, 125], "vitesse": [5, 7], "caracConseillee": ["DEX", "FOR", "INT"],
+      "conseil": "finit ce que les autres préparent : une exploitation qui fait ×2 sur un statut." },
+    { "id": "soutien", "nom": "Soutien", "pv": [105, 140], "vitesse": [5, 6], "caracConseillee": ["SAG", "CHA"],
+      "conseil": "fait gagner les autres : un soin ou un buff, et une préparation pour la table." },
+    { "id": "controle", "nom": "Contrôle", "pv": [100, 135], "vitesse": [5, 7], "caracConseillee": ["INT", "SAG", "DEX"],
+      "conseil": "décide où se tient l'ennemi et dans quel état : surfaces, statuts, attirances." }
+  ],
+
+  "faiblessesExemples": [
+    "ne tient pas debout sur la Glace",
+    "prend le feu ×2, même le sien",
+    "perd toute sa Rage quand on le soigne",
+    "un ennemi à son contact : ses tirs ont le désavantage",
+    "lent, et la glace le renverse à coup sûr",
+    "la foudre lui fait ×2, même l'eau électrisée",
+    "fragile : chaque coup reçu au contact lui fait 3 dégâts de plus",
+    "ne peut pas se soigner lui-même"
+  ],
+
+  "interdits": [
+    { "id": "T3", "texte": "pas de palier T3 (22 + d8) au niveau 1 : il vient au niveau 5 et plus" },
+    { "id": "deuxBases", "texte": "une seule attaque de base, et elle ne monte jamais au-dessus de T1" },
+    { "id": "deuxReactions", "texte": "au plus une réaction par classe" },
+    { "id": "soin", "texte": "un soin ne rend pas plus de 25 PV au niveau 1" },
+    { "id": "avantagePermanent", "texte": "pas d'avantage permanent : l'avantage se gagne (tenaille, statut, préparation d'un allié)" },
+    { "id": "nouvelleRessource", "texte": "pas de nouvelle ressource sans l'accord du groupe" },
+    { "id": "equipement", "texte": "aucun équipement de départ : tout se trouve en jeu" },
+    { "id": "deplacement", "texte": "rien qui change le temps, la caméra ou la vitesse de la partie (porte Q)" }
+  ],
+
+  "barres": {
+    "portageMax": 0.40,
+    "combosParCombat": 1,
+    "roundMaxMinutes": 4.5,
+    "combatMinutes": 7
+  },
+
+  "niveaux": {
+    "max": 20,
+    "pvParNiveau": 5,
+    "nouvelleCapacite": [2, 5, 9, 13, 17],
+    "sousClasse": 3,
+    "cheminsSousClasse": 2,
+    "paliersSousClasse": [3, 7, 11, 15],
+    "ameliorationCarac": [4, 8, 12, 16, 19],
+    "caracMax": 20,
+    "coupEquipe": 6,
+    "signature": 20
+  }
+}

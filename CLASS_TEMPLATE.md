@@ -1,6 +1,6 @@
 # CLASS TEMPLATE: design your own class
 
-Remade from the owner's answers on 17 Oct 2026. Anyone can design **as many classes as they like**; the group picks which ones go in. Rules: `FIGHT_RULES.md`. French version: `CLASS_TEMPLATE.fr.md`. All numbers are first drafts for the paper fight.
+Remade from the owner's answers on 17 Oct 2026. Anyone can design **as many classes as they like**; the group picks which ones go in. Rules: `FIGHT_RULES.md`. The frame (how far a class can go, enforced by the armoury, the class creator): `CLASS_FRAMEWORK.fr.md`. French version: `CLASS_TEMPLATE.fr.md`. All numbers are first drafts for the paper fight.
 
 ## How a class is built
 | Part | Rule |
@@ -103,7 +103,7 @@ One real drawback that the enemies or the room can use, e.g. "can't stand on Ice
 
 ## Example: the test rogue, remade
 - **Role:** control, twist: sets up kills for others · **Resource:** Focus · **Weakness:** takes double damage from Fire, including their own.
-- **Stats:** STR 8, DEX 15, CON 13, INT 12, WIS 10, CHA 12 (27 points). CON +1 means +5 health.
+- **Stats:** STR 8, DEX 15, CON 13, INT 12, WIS 13, CHA 12 (27 points: 9 + 5 + 4 + 5 + 4). CON +1 means +5 health.
 - **Class points (10):** Oil flask, a setup (2) · Opening, a payoff (3) · Opening made stronger, with a Critical for 2 Focus (+1) · movement 6 (2) · 2 left over = +10 health. **Health: 100 + 10 + 5 = 115.**
 
 | # | Name | Kind | Points | Cost | Range | What it does | Combo hook | Stat |

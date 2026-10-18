@@ -1,7 +1,10 @@
 // L'affichage : three.js avec une caméra orthographique (GAME_SPEC : « three.js with a flat camera »).
 // Le monde est en pixels du pixel art (1 unité = 1 pixel LPC, y vers le bas dans le jeu, retourné pour three.js).
-// Rendu net : textures sans lissage, échelle entière (chaque pixel LPC fait exactement n x n pixels d'écran),
-// position de la caméra arrondie au pixel d'écran, pour que rien ne scintille en mouvement.
+// Rendu net : textures sans lissage, et position de la caméra arrondie, pour que rien ne scintille en mouvement.
+// À une échelle entière, chaque pixel LPC fait exactement n x n pixels d'écran. ENTRE deux échelles entières (le zoom fin
+// et animé, #122) : grossir au plus proche ferait des pixels de 2 et de 3 points d'écran, qui scintillent. Le monde est
+// alors dessiné à l'échelle entière juste au-dessus, dans une image à part, puis réduit en douceur à l'écran (le
+// « sharp bilinear » des émulateurs de jeux rétro) : chaque pixel LPC garde sa taille, avec un bord adouci d'un point.
 // L'ordre d'affichage suit le pied de chaque objet : plus il est bas à l'écran, plus il est devant.
 import * as THREE from 'three';
 
@@ -11,7 +14,7 @@ export const ECHELLE_MAX = 8;   // le zoom le plus fort : un pixel LPC = 8 x 8 p
 function texture(source) {
   const t = source instanceof HTMLCanvasElement ? new THREE.CanvasTexture(source) : new THREE.Texture(source);
   t.magFilter = THREE.NearestFilter; t.minFilter = THREE.NearestFilter; t.generateMipmaps = false;
-  t.colorSpace = THREE.SRGBColorSpace; t.needsUpdate = true;
+  t.needsUpdate = true;   // (pas d'espace de couleurs : voir creerRendu)
   return t;
 }
 
@@ -24,7 +27,13 @@ function poserQuad(pos, uv, k, o, tw, th) {
 }
 
 export function creerRendu(canvas) {
+  // Les couleurs passent TELLES QUELLES (#122) : pas de gestion des couleurs de three.js (sRGB décodé puis réencodé).
+  // Un pixel sort comme dans sa planche, et ce qui est translucide (une ombre, une marque) se mêle à ce qu'il couvre
+  // comme sur l'écran. Avec la gestion des couleurs, l'image à part du zoom fin mêlait en couleurs linéaires : les
+  // ombres y sortaient plus claires qu'à une échelle entière, et « sautaient » quand le zoom passait par un entier.
+  THREE.ColorManagement.enabled = false;
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false, preserveDrawingBuffer: true });
+  renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
   renderer.setClearColor(0x2f5a2a);
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, -1000, 1000);
@@ -32,10 +41,17 @@ export function creerRendu(canvas) {
   const textures = new Map();
   const tex = (nom, source) => { if (!textures.has(nom)) textures.set(nom, texture(source)); return textures.get(nom); };
   const matiere = (t) => new THREE.MeshBasicMaterial({ map: t, transparent: false, alphaTest: 0.5, depthTest: true, depthWrite: true });
+  // L'image à part (entre deux échelles entières) et le rectangle qui la réduit à l'écran.
+  let image = null;
+  const ecran = { scene: new THREE.Scene(), camera: new THREE.OrthographicCamera(0, 1, 1, 0, -1, 1) };
+  const plaque = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ depthTest: false, depthWrite: false }));
+  plaque.position.set(0.5, 0.5, 0);
+  ecran.scene.add(plaque);
 
   const rendu = {
     renderer, scene, camera,
-    echelle: 1,                  // pixels d'écran (réels) par pixel LPC
+    echelle: 1,                  // pixels d'écran (réels) par pixel LPC (entre deux entiers : le zoom fin)
+    echelleRendu: 1,             // l'échelle entière à laquelle le monde est dessiné (la même, ou celle juste au-dessus)
     echelleBase: 1,              // l'échelle du zoom moyen, avant la molette
     vue: { w: 1, h: 1 },         // ce que la caméra montre, en pixels du monde
     cam: { x: 0, y: 0 },         // le coin haut-gauche de la vue, dans le monde
@@ -91,12 +107,14 @@ export function creerRendu(canvas) {
       return { poser(x, y) { m.position.set(Math.round(x), -Math.round(y), -50); }, cacher(oui = true) { m.visible = !oui; }, retirer() { scene.remove(m); m.geometry.dispose(); m.material.dispose(); } };
     },
 
-    // La taille de l'écran : l'échelle est choisie entière (le pixel art reste net).
-    //   `zoom`  : combien de cases on veut voir en largeur et en hauteur (on prend l'échelle entière la plus proche)
+    // La taille de l'écran et l'échelle.
+    //   `zoom`  : combien de cases on veut voir en largeur et en hauteur (on prend l'échelle entière la plus proche :
+    //             echelleBase, le zoom moyen)
     //   `tout`  : la taille du monde à faire tenir en entier (vue visite) ; l'échelle peut alors être fractionnaire si l'écran est petit
-    //   `ecart` : des crans de zoom en plus (+) ou en moins (-) par rapport à l'échelle de base (la molette), bornés à [1, ECHELLE_MAX]
-    //   `echelle` : une échelle imposée (le terrain d'entraînement choisit la sienne)
-    ajuster({ zoom = null, tout = null, ecart = 0, echelle = null } = {}) {
+    //   `ecart` : des échelles entières en plus (+) ou en moins (-) par rapport à l'échelle de base, bornées à [1, ECHELLE_MAX]
+    //   `echelle` : une échelle imposée, entière ou non (le zoom fin de la caméra, le terrain d'entraînement)
+    //   `image` : (tests) passer par l'image à part même à une échelle entière
+    ajuster({ zoom = null, tout = null, ecart = 0, echelle = null, image: forcer = false } = {}) {
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
       const cw = canvas.clientWidth || window.innerWidth, ch = canvas.clientHeight || window.innerHeight;
       renderer.setPixelRatio(dpr);
@@ -109,16 +127,36 @@ export function creerRendu(canvas) {
         rendu.echelleBase = Math.max(1, Math.round(Math.min(bw / (zoom.w * 32), bh / (zoom.h * 32))));
         s = Math.max(1, Math.min(ECHELLE_MAX, rendu.echelleBase + ecart));
       }
+      if (zoom && echelle) rendu.echelleBase = Math.max(1, Math.round(Math.min(bw / (zoom.w * 32), bh / (zoom.h * 32))));
       rendu.echelle = s;
       rendu.vue = { w: bw / s, h: bh / s };
-      camera.left = 0; camera.right = rendu.vue.w; camera.top = 0; camera.bottom = -rendu.vue.h;
+      const entiere = Math.abs(s - Math.round(s)) < 1e-6;
+      const n = entiere ? Math.round(s) : Math.ceil(s);
+      rendu.echelleRendu = (entiere && !forcer) || s < 1 ? s : n;
+      if ((entiere && !forcer) || s < 1) {
+        // le monde va droit à l'écran
+        if (image) { image.dispose(); image = null; }
+        camera.left = 0; camera.right = rendu.vue.w; camera.top = 0; camera.bottom = -rendu.vue.h;
+      } else {
+        // l'image à part : un nombre entier de pixels par pixel LPC ; on n'en montre que la partie qui tient dans la vue
+        // (un rien en dessous : 1600 / 3 × 3 vaut 1600,0000000000002 en flottants, et l'image aurait un pixel de trop, étirée)
+        const W = Math.ceil(rendu.vue.w * n - 1e-6), H = Math.ceil(rendu.vue.h * n - 1e-6);
+        if (!image || image.width !== W || image.height !== H) {
+          image?.dispose();
+          image = new THREE.WebGLRenderTarget(W, H, { minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter, generateMipmaps: false, depthBuffer: true });
+          plaque.material.map = image.texture; plaque.material.needsUpdate = true;
+        }
+        camera.left = 0; camera.right = W / n; camera.top = 0; camera.bottom = -H / n;
+        const u = (rendu.vue.w * n) / W, v = (rendu.vue.h * n) / H;
+        image.texture.repeat.set(u, v); image.texture.offset.set(0, 1 - v);
+      }
       camera.updateProjectionMatrix();
       return rendu.vue;
     },
 
-    // Place la vue (coin haut-gauche dans le monde), arrondie au pixel d'écran.
+    // Place la vue (coin haut-gauche dans le monde), arrondie au pixel d'écran (ou de l'image à part).
     viser(x, y) {
-      const s = rendu.echelle;
+      const s = rendu.echelleRendu;
       rendu.cam.x = Math.round(x * s) / s; rendu.cam.y = Math.round(y * s) / s;
       camera.position.x = rendu.cam.x; camera.position.y = -rendu.cam.y;
     },
@@ -129,7 +167,14 @@ export function creerRendu(canvas) {
       return { x: rendu.cam.x + (clientX - r.left) / r.width * rendu.vue.w, y: rendu.cam.y + (clientY - r.top) / r.height * rendu.vue.h };
     },
 
-    dessiner() { renderer.render(scene, camera); },
+    dessiner() {
+      if (!image) { renderer.render(scene, camera); return; }
+      renderer.setRenderTarget(image);
+      renderer.render(scene, camera);
+      renderer.setRenderTarget(null);
+      renderer.render(ecran.scene, ecran.camera);
+    },
+    get parImage() { return !!image; },
   };
   return rendu;
 }

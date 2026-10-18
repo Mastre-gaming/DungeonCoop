@@ -1,6 +1,6 @@
 # FICHE DE CLASSE : crée ta propre classe
 
-Refaite à partir des réponses du 17 oct. 2026. Chacun peut créer **autant de classes qu'il veut** ; le groupe choisit celles qui entrent dans le jeu. Règles : `FIGHT_RULES.md`. Version anglaise : `CLASS_TEMPLATE.md`. Tous les chiffres sont des premiers jets à tester sur papier.
+Refaite à partir des réponses du 17 oct. 2026. Chacun peut créer **autant de classes qu'il veut** ; le groupe choisit celles qui entrent dans le jeu. Règles : `FIGHT_RULES.md`. **Le cadre** (jusqu'où une classe peut aller, et l'armurerie qui le fait respecter) : `CLASS_FRAMEWORK.fr.md`. Version anglaise : `CLASS_TEMPLATE.md`. Tous les chiffres sont des premiers jets à tester sur papier.
 
 ## Comment une classe se construit
 | Partie | Règle |
@@ -103,7 +103,7 @@ Un vrai défaut que les ennemis ou la salle peuvent exploiter, par ex. « ne tie
 
 ## Exemple : le voleur de test, refait
 - **Rôle :** contrôle, particularité : prépare le coup final pour les autres · **Ressource :** Concentration · **Faiblesse :** prend double dégâts de Feu, y compris le sien.
-- **Caractéristiques :** FOR 8, DEX 15, CON 13, INT 12, SAG 10, CHA 12 (27 points). CON +1 donne +5 PV.
+- **Caractéristiques :** FOR 8, DEX 15, CON 13, INT 12, SAG 13, CHA 12 (27 points : 9 + 5 + 4 + 5 + 4). CON +1 donne +5 PV.
 - **Points de classe (10) :** Fiole d'huile, une préparation (2) · Ouverture, une exploitation (3) · Ouverture renforcée, Critique pour 2 Concentration (+1) · déplacement 6 (2) · 2 restants = +10 PV. **PV : 100 + 10 + 5 = 115.**
 
 | # | Nom | Sorte | Points | Coût | Portée | Ce qu'elle fait | Lien de combo | Carac. |

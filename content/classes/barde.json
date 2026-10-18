@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "barde",
+  "nom": "Barde",
+  "auteur": "classe d'essai (#76)",
+  "phrase": "Elle ne gagne pas les combats seule ; elle fait gagner les autres.",
+  "role": "soutien",
+  "twist": "donne l'avantage",
+  "archetype": "Support",
+  "caracs": { "FOR": 8, "DEX": 15, "CON": 12, "INT": 11, "SAG": 10, "CHA": 15 },
+  "pv": 130,
+  "vitesse": 6,
+  "ressource": "energie",
+  "capacites": [
+    { "nom": "Dague", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "", "cree": [], "utilise": [], "renforts": [] },
+    { "nom": "Chant de bataille", "sorte": "soutien", "slot": "bonus", "portee": "longue", "zone": "aucune", "carac": "CHA", "cout": "1 Énergie", "effet": "un allié a l'avantage à sa prochaine attaque", "cree": ["avantage"], "utilise": [], "renforts": [] },
+    { "nom": "Moquerie", "sorte": "preparation", "slot": "bonus", "portee": "longue", "zone": "aucune", "carac": "CHA", "cout": "2 Énergie", "effet": "un ennemi est Exposé", "cree": ["expose"], "utilise": [], "renforts": [] }
+  ],
+  "faiblesse": "fragile : chaque coup reçu au contact lui fait 3 dégâts de plus",
+  "sousClasses": [{ "nom": "", "idee": "" }, { "nom": "", "idee": "" }],
+  "look": { "corps": "une femme", "tenue": "chapeau à plume rouge, chemise rouge, pantalon noir, dague", "touche": "", "lien": "", "base": "barde" },
+  "references": ""
+}

@@ -6,8 +6,8 @@ import { servir, ouvrir } from './captures.mjs';
 const srv = await servir();
 let rate = 0;
 try {
-  // le camp (et sa vue visite), puis le terrain d'entraînement (entrainement.html)
-  const pages = [['', 'test'], ...(process.argv.includes('--visite') ? [['', 'test&visite']] : []), ['entrainement.html', 'test']];
+  // le camp (et sa vue visite), puis le terrain d'entraînement (entrainement.html) et l'armurerie (classe.html)
+  const pages = [['', 'test'], ...(process.argv.includes('--visite') ? [['', 'test&visite']] : []), ['entrainement.html', 'test'], ['classe.html', 'test']];
   for (const [chemin, q] of pages) {
     const page = await ouvrir(srv.url + chemin, q);
     await page.waitFor('document.documentElement.dataset.test', 120000);

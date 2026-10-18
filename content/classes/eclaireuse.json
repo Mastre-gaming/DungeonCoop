@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "id": "eclaireuse",
+  "nom": "Éclaireuse",
+  "auteur": "classe d'essai (#76)",
+  "phrase": "Elle court plus vite que tout le monde, entrave une cible de loin et la finit d'un tir lesté.",
+  "role": "degats",
+  "twist": "harcèle et entrave",
+  "archetype": "Ranged",
+  "caracs": { "FOR": 8, "DEX": 15, "CON": 13, "INT": 10, "SAG": 14, "CHA": 12 },
+  "pv": 100,
+  "vitesse": 7,
+  "ressource": "energie",
+  "capacites": [
+    { "nom": "Tir rapide", "sorte": "base", "slot": "action", "portee": "tres-longue", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "", "cree": [], "utilise": [], "renforts": [] },
+    { "nom": "Filet", "sorte": "preparation", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "DEX", "cout": "2 Énergie", "effet": "la cible est Gelée (−3 m, désavantage)", "cree": ["gele"], "utilise": [], "renforts": [] },
+    { "nom": "Tir lesté", "sorte": "exploitation", "slot": "action", "portee": "tres-longue", "zone": "aucune", "carac": "DEX", "cout": "1 Énergie", "effet": "×2 sur une cible Gelée", "cree": [], "utilise": ["gele"], "renforts": [] }
+  ],
+  "faiblesse": "un ennemi à son contact : ses tirs ont le désavantage",
+  "sousClasses": [{ "nom": "", "idee": "" }, { "nom": "", "idee": "" }],
+  "look": { "corps": "une femme", "tenue": "bonnet de cuir à plume, tenue brune, arc recourbé", "touche": "", "lien": "", "base": "eclaireuse" },
+  "references": ""
+}

@@ -2,6 +2,7 @@
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis } from './regles.js';
 import { adresseEquipe } from './interface.js';
+import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
@@ -228,9 +229,22 @@ export async function selfTest(t, game) {
     t.ok(['victoire', 'defaite'].includes(C.S.resultat), `une équipe d’essai (${equipe.join(', ')}) joue jusqu’au bout : ${C.S.resultat} au round ${C.S.round}`);
   }
 
+  // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------
+  t.group('les fiches des capacités');
+  t.eq(resultats(CAPACITES.etincelle).map((r) => `${r.degats} ${r.d20}`), ['0 d20 = 1', '5–7 d20 2–7', '11–14 d20 8–19', '22–28 d20 = 20'],
+    'Étincelle : raté, éraflure, touché, critique, et les d20 qui y mènent (comme sa description : 5–7 / 11–14 / 22–28)');
+  t.eq(resultats(CAPACITES.baton).map((r) => r.degats).slice(1), ['5–6', '10–13', '20–26'], 'Coup de bâton (+1) : ses dégâts suivent sa description');
+  t.eq(resultats(CAPACITES.ouverture2).map((r) => r.degats), ['22–28'], 'Ouverture critique : un critique assuré, sans jet');
+  t.ok(resultats(CAPACITES.soin) === null && resume(CAPACITES.soin) === '+18–23 PV', 'une capacité sans jet n’a pas de tableau, mais un résumé');
+  t.eq([resume(CAPACITES.ouverture), resume(CAPACITES.pousser), resume(CAPACITES.fiole)], ['11–14 · À terre', '3 m · +8', 'zone Huile'], 'les résumés de la barre');
+  t.eq(caracteristiques(CAPACITES.foudre, 'Mana'), ['Portée 9 m', '15 Mana', 'd20 +2'], 'Foudre : sa portée, son coût, son bonus au d20');
+  t.eq(effets(CAPACITES.foudre).map((e) => `${e.texte} (${e.genre})`), ['×2 sur Trempé (eau)', 'Électrise l’eau (foudre)'], 'ses effets, sans les chiffres déjà montrés, chacun avec sa couleur');
+  t.ok(Object.keys(CAPACITES).every((id) => icone(id).startsWith('./assets/lpc/icones/enseigne-')) && icone('fiole') !== icone('potion'), 'chaque capacité a son icône LPC');
+
   // --- L'interface, comme un joueur ------------------------------------------------------------------------------
   t.group('l’interface');
   const { combat, vue: V, ihm } = ctx, canvas = document.querySelector('#jeu');
+  const survoler = (x, y) => { const p = V.versEcran(x * 32, y * 32); canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: p.x, clientY: p.y, bubbles: true })); };
   const jouerFile = () => { for (let k = 0; k < 400 && V.occupe(); k++) game.dbg.advance(0.1); game.dbg.advance(0.05); };
   const clic = (x, y, bouton = 0) => {
     const p = V.versEcran(x * 32, y * 32);
@@ -274,6 +288,18 @@ export async function selfTest(t, game) {
   t.eq(ihm.ui.cap, 'etincelle', 'la touche 1 : sa première capacité, Étincelle');
   game.dbg.advance(0.05);
   t.ok(V.marques.cibles?.includes('s1') && V.marques.cercle?.r === 6, 'la portée (9 m) et la cible à portée sont montrées');
+  t.ok(!ihm.dom.ficheCap.hidden && ihm.dom.ficheCap.dataset.capacite === 'etincelle' && ihm.dom.ficheCap.textContent.includes('11–14') && ihm.dom.ficheCap.textContent.includes('d20 8–19'),
+    'la fiche d’Étincelle (#85) : les dégâts d’un touché et les d20 qui y mènent, avant de viser');
+  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite')];
+  t.ok(boutons.length === HEROS.mage.capacites.length && boutons.every((b) => b.querySelector('img')?.getAttribute('src').includes('icones/enseigne-')) && boutons[0].classList.contains('choisie'),
+    'la barre : chaque capacité avec son icône LPC, Étincelle choisie');
+  boutons[2].dispatchEvent(new MouseEvent('mouseenter')); game.dbg.advance(0.05);
+  t.ok(ihm.dom.ficheCap.dataset.capacite === 'foudre' && ihm.dom.ficheCap.textContent.includes('15 Mana') && ihm.dom.ficheCap.textContent.includes('Trempé'), 'survoler Foudre dans la barre montre sa fiche : son coût, ses effets');
+  ihm.dom.capacites.querySelectorAll('.capacite')[2].dispatchEvent(new MouseEvent('mouseleave')); game.dbg.advance(0.05);
+  t.eq(ihm.dom.ficheCap.dataset.capacite, 'etincelle', 'en quittant la barre, la fiche revient à la capacité choisie');
+  survoler(s1.x, s1.y - 0.8); game.dbg.advance(0.05);
+  t.ok(!ihm.dom.info.hidden && ihm.dom.info.textContent.includes('Sbire 1') && /\d+ %/.test(ihm.dom.info.textContent) && ihm.dom.info.textContent.includes('11–14'),
+    'la carte de la cible survolée : ses chances en % et les dégâts de chaque résultat');
   clic(s1.x, s1.y - 0.8);
   for (let k = 0; k < 40 && ihm.dom.de.hidden; k++) game.dbg.advance(0.05);
   t.ok(!ihm.dom.de.hidden && /\d/.test(ihm.dom.de.textContent), 'l’attaque : le d20 s’affiche en grand sur le plateau');
@@ -286,6 +312,44 @@ export async function selfTest(t, game) {
   t.ok(!ihm.dom.fin.hidden && ihm.dom.fiche.textContent.includes('sans cases') && ihm.dom.fiche.textContent.includes('Phase des héros par round'), 'la fiche de mesure, comme dans la Salle d’essai');
   ihm.dom.fin.hidden = true;
   await pause(0);
+
+  // --- Le zoom fin et animé (#122) : sous la souris, quatre crans pour doubler ---------------------------------------
+  t.group('le zoom fin et animé (#122)');
+  {
+    const toile = document.querySelector('#jeu'), r = toile.getBoundingClientRect();
+    const px = r.left + r.width * 0.3, py = r.top + r.height * 0.4;
+    const roulette = (deltaY) => toile.dispatchEvent(new WheelEvent('wheel', { deltaY, clientX: px, clientY: py, bubbles: true, cancelable: true }));
+    const s0 = V.cam.s;
+    roulette(-100); game.dbg.advance(0.05);
+    const enRoute = V.cam.s;
+    game.dbg.advance(0.6);
+    t.ok(enRoute > s0 && enRoute < s0 * 2 ** 0.25 - 0.005 && Math.abs(V.cam.s - s0 * 2 ** 0.25) < 1e-6, `un cran : ×1,19, et il glisse (${s0} → ${enRoute.toFixed(2)} → ${V.cam.s.toFixed(2)})`);
+    for (let k = 0; k < 3; k++) roulette(-100);
+    game.dbg.advance(0.8);
+    t.ok(Math.abs(V.cam.s - Math.min(5, s0 * 2)) < 1e-6, `quatre crans : le zoom double (${V.cam.s})`);
+    for (let k = 0; k < 30; k++) roulette(-100);
+    game.dbg.advance(1.5);
+    t.eq(V.cam.s, 5, 'jamais plus près que 5');
+    for (let k = 0; k < 40; k++) roulette(100);
+    game.dbg.advance(1.5);
+    t.eq(V.cam.s, 1, 'jamais plus loin que 1');
+    for (let k = 0; k < 40; k++) roulette(-100);
+    game.dbg.advance(0.2);
+    V.ajusterCamera(true); game.dbg.advance(0.1);
+    // l'ancrage, là où la vue peut défiler (au départ, elle montre presque toute la salle : elle bute sur ses bords)
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+    while (V.versMonde(r.right, r.bottom).x - V.versMonde(r.left, r.top).x > 26 * 0.85 || V.versMonde(r.right, r.bottom).y - V.versMonde(r.left, r.top).y > 20 * 0.85) {
+      toile.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: cx, clientY: cy, bubbles: true, cancelable: true })); game.dbg.advance(0.8);
+      if (V.cam.s >= 5) break;
+    }
+    const qx = r.left + r.width * 0.42, qy = r.top + r.height * 0.45, avantQ = V.versMonde(qx, qy);
+    toile.dispatchEvent(new WheelEvent('wheel', { deltaY: -100, clientX: qx, clientY: qy, bubbles: true, cancelable: true }));
+    game.dbg.advance(0.8);
+    const apresQ = V.versMonde(qx, qy);
+    t.ok(Math.abs(apresQ.x - avantQ.x) < 0.05 && Math.abs(apresQ.y - avantQ.y) < 0.05, `le point sous la souris y reste (${(Math.hypot(apresQ.x - avantQ.x, apresQ.y - avantQ.y) * 32).toFixed(1)} px)`);
+    V.ajusterCamera(true); game.dbg.advance(0.1);
+    t.eq(V.cam.s, s0, 'et l’on revient à l’échelle de départ');
+  }
 
   // --- Rejouer, une autre équipe : un nouveau combat sans recharger la page ----------------------------------------
   t.group('rejouer, changer d’équipe, sans recharger');
