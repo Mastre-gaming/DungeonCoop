@@ -79,6 +79,8 @@ export function selfTest(t, game) {
   t.ok(!h.bouge, 'touches lâchées : il s’arrête');
 
   t.group('la caméra');
+  const zoomJoueur = camera.ecart;
+  camera.zoomMoyen();
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   const c0 = { ...camera.cam }; tenir(['ArrowDown']); game.dbg.advance(0.3); tenir([]); game.dbg.advance(0.5);
   t.ok(Math.abs(camera.cam.y - c0.y) < 0.5, 'quelques pas dans la zone morte : l’image ne bouge pas');
@@ -90,6 +92,31 @@ export function selfTest(t, game) {
   t.ok(Number.isInteger(rendu.echelle), `échelle entière (${rendu.echelle}) : le pixel art reste net`);
   const cases = [v.w / T, v.h / T];
   t.ok(cases[0] >= 14 && cases[0] <= 28 && cases[1] >= 8 && cases[1] <= 16, `zoom moyen : ${cases[0].toFixed(1)} x ${cases[1].toFixed(1)} cases à l'écran`);
+
+  t.group('le zoom à la molette');
+  const toile = rendu.renderer.domElement, r = toile.getBoundingClientRect();
+  const molette = (deltaY) => { toile.dispatchEvent(new WheelEvent('wheel', { deltaY, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true })); game.dbg.advance(0.2); };
+  heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
+  const base = rendu.echelle, ecranX = () => (h.x - rendu.cam.x) / rendu.vue.w;
+  const avantX = ecranX();
+  molette(-100);
+  t.eq(rendu.echelle, base + 1, 'molette vers le haut : un cran plus près');
+  t.ok(Number.isInteger(rendu.echelle), 'le zoom reste à une échelle entière (pixel art net)');
+  t.near(ecranX(), avantX, 0.02, 'le héros garde sa place à l’écran');
+  molette(100); molette(100);
+  t.eq(rendu.echelle, Math.max(1, base - 1), 'molette vers le bas : plus loin');
+  for (let k = 0; k < 12; k++) molette(100);
+  t.eq(rendu.echelle, 1, 'jamais en dessous de 1 pixel d’écran par pixel LPC');
+  for (let k = 0; k < 12; k++) molette(-100);
+  t.eq(rendu.echelle, 8, 'jamais au-dessus de 8');
+  let garde = null; try { garde = localStorage.getItem('dungeoncoop:zoom'); } catch {}
+  t.eq(garde, String(8 - rendu.echelleBase), 'le zoom choisi est gardé dans le navigateur');
+  t.ok(toile.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true })) === false, 'la molette ne fait pas défiler la page');
+  game.dbg.advance(0.2);
+  game.solo = 'panneau'; const e0 = rendu.echelle; molette(100); game.solo = null;
+  t.eq(rendu.echelle, e0, 'panneau ouvert : la molette ne zoome pas');
+  camera.zoomMoyen();
+  t.eq(rendu.echelle, base, 'retour au zoom moyen');
 
   t.group('le test de marche (à pied, depuis l’apparition)');
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
@@ -123,6 +150,7 @@ export function selfTest(t, game) {
   testsMissions(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
+  for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
   game.dbg.freeze(false);
 }
 

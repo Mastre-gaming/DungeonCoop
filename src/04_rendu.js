@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 
 const PROFONDEUR = 0.01;   // z = pied * PROFONDEUR : l'objet le plus bas passe devant
+export const ECHELLE_MAX = 8;   // le zoom le plus fort : un pixel LPC = 8 x 8 pixels d'écran
 
 function texture(source) {
   const t = source instanceof HTMLCanvasElement ? new THREE.CanvasTexture(source) : new THREE.Texture(source);
@@ -35,6 +36,7 @@ export function creerRendu(canvas) {
   const rendu = {
     renderer, scene, camera,
     echelle: 1,                  // pixels d'écran (réels) par pixel LPC
+    echelleBase: 1,              // l'échelle du zoom moyen, avant la molette
     vue: { w: 1, h: 1 },         // ce que la caméra montre, en pixels du monde
     cam: { x: 0, y: 0 },         // le coin haut-gauche de la vue, dans le monde
 
@@ -91,7 +93,8 @@ export function creerRendu(canvas) {
     // La taille de l'écran : l'échelle est choisie entière (le pixel art reste net).
     //   `zoom`  : combien de cases on veut voir en largeur et en hauteur (on prend l'échelle entière la plus proche)
     //   `tout`  : la taille du monde à faire tenir en entier (vue visite) ; l'échelle peut alors être fractionnaire si l'écran est petit
-    ajuster({ zoom = null, tout = null } = {}) {
+    //   `ecart` : des crans de zoom en plus (+) ou en moins (-) par rapport à l'échelle de base (la molette), bornés à [1, ECHELLE_MAX]
+    ajuster({ zoom = null, tout = null, ecart = 0 } = {}) {
       const dpr = Math.min(window.devicePixelRatio || 1, 3);
       const cw = canvas.clientWidth || window.innerWidth, ch = canvas.clientHeight || window.innerHeight;
       renderer.setPixelRatio(dpr);
@@ -99,7 +102,10 @@ export function creerRendu(canvas) {
       const bw = Math.round(cw * dpr), bh = Math.round(ch * dpr);
       let s;
       if (tout) { const f = Math.min(bw / tout.w, bh / tout.h); s = f >= 1 ? Math.floor(f) : f; }
-      else s = Math.max(1, Math.round(Math.min(bw / (zoom.w * 32), bh / (zoom.h * 32))));
+      else {
+        rendu.echelleBase = Math.max(1, Math.round(Math.min(bw / (zoom.w * 32), bh / (zoom.h * 32))));
+        s = Math.max(1, Math.min(ECHELLE_MAX, rendu.echelleBase + ecart));
+      }
       rendu.echelle = s;
       rendu.vue = { w: bw / s, h: bh / s };
       camera.left = 0; camera.right = rendu.vue.w; camera.top = 0; camera.bottom = -rendu.vue.h;
