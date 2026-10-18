@@ -239,6 +239,7 @@ export async function selfTest(t, game) {
   testsHud(t, game);
   testsBoite(t, game);
   await testsDirect(t, game);
+  await testsParties(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   for (let k = 0; k < Math.abs(zoomJoueur); k++) camera.zoomer(Math.sign(zoomJoueur));   // le zoom du joueur revient
@@ -978,6 +979,64 @@ async function testsDirect(t, game) {
   try { dash.close(); } catch {}
   messagerie.laissezPasser(null);
   missions.charger([]);
+  sentinelle.etat.qui = quiAvant;
+  game.bus.emit('messagerie:nonlus', { n: 0 });
+}
+
+// --- Les parties dans la messagerie (28_parties.js) : le faux Worker et un fil « loopback » (rien sur le réseau) -----
+async function testsParties(t, game) {
+  const { messagerie, missions, reseau, parties, sentinelle } = ctx;
+  if (!parties) return;
+  const srv = fauxWorker();
+  const quiAvant = sentinelle.etat.qui;
+  sentinelle.etat.qui = { nom: 'Baba', github: 'DonBabaa', saisie: 'Baba' };
+  parties.oublier();
+  messagerie.laissezPasser(api.JETON_TEST);
+  missions.relier({ fetch: srv.fetch, WebSocket: srv.WebSocket, worker: 'https://faux-worker.test' });
+  await attendre(() => messagerie.etat.statut === 'ouverte');
+  const hub = createLoopback({ latency: 0.03, jitter: 0.01 });
+  const jouer = (s) => { for (let k = 0; k < Math.round(s * 60); k++) { hub.advance(1 / 60); game.dbg.advance(1 / 60); } };
+  const rejoints = [], rejoindreAvant = reseau.rejoindre;
+  const annoncesDe = (code) => srv.messages.filter((m) => m.texte.includes(`code ${code}`));
+
+  t.group('les parties dans la messagerie (faux Worker)');
+  const party = reseau.brancherTest(hub);
+  reseau.heberger(); jouer(0.1);
+  t.ok(party.hosting && await attendre(() => annoncesDe(party.code).length === 1), `héberger poste le code dans la messagerie, tout seul (${party.code})`);
+  const annonce = annoncesDe(party.code)[0];
+  t.ok(annonce.texte.includes('Baba héberge une partie') && annonce.texte.includes(`https://dungeoncoop.0xbaba-eth.workers.dev/?code=${party.code}`), 'avec le nom, et un lien qui rejoint (pour le dashboard)');
+  t.ok(parties.bulle.hidden, 'ma propre partie ne me propose pas de la rejoindre');
+  game.bus.emit('party:status', { status: 'Give your friends the code' }); await attendre(() => false, 50);
+  t.eq(annoncesDe(party.code).length, 1, 'une seule annonce par code');
+  reseau.quitter(); jouer(0.1);
+
+  reseau.rejoindre = (code) => { rejoints.push(code); return true; };
+  srv.depuisDashboard('PCrrfng', parties.texteAnnonce('Paul', 'QWERT'));
+  t.ok(await attendre(() => !parties.bulle.hidden), 'Paul héberge : au camp, une bulle le dit tout de suite');
+  t.ok(parties.bulle.textContent.includes('héberge une partie') && parties.bulle.textContent.includes('Rejoindre'), `« ${parties.bulle.textContent} »`);
+  const msgPaul = [...messagerie.boite.querySelectorAll('.msg')].find((li) => li.textContent.includes('code QWERT'));
+  t.ok(msgPaul?.querySelector('button.rejoindre'), 'dans le fil aussi, l’annonce porte un bouton « Rejoindre »');
+  messagerie.onglet('parties');
+  t.ok(!messagerie.liste.hidden && messagerie.liste.textContent.includes('QWERT') && messagerie.liste.textContent.includes(party.code), 'l’onglet « Parties » liste celles de l’heure (la sienne et la mienne)');
+  t.ok(messagerie.boite.querySelector('.onglet[aria-selected="true"]')?.textContent.startsWith('Parties (2)'), 'avec leur nombre sur l’onglet');
+  messagerie.onglet('messages');
+  [...parties.bulle.querySelectorAll('button')].find((b) => b.textContent === 'Rejoindre').click();
+  t.ok(rejoints[0] === 'QWERT' && parties.bulle.hidden, '« Rejoindre » rejoint le groupe de Paul, avec son code, et la bulle part');
+  msgPaul.querySelector('button.rejoindre').click();
+  t.eq(rejoints[1], 'QWERT', 'le bouton du fil rejoint aussi');
+
+  srv.depuisDashboard('Ana', parties.texteAnnonce('Ana', 'ZXCVB'));
+  await attendre(() => !parties.bulle.hidden);
+  parties.bulle.querySelector('.plus-tard').click();
+  t.ok(parties.bulle.hidden && rejoints.length === 2, '✕ : plus tard, sans rejoindre');
+  messagerie.recevoir({ type: 'message', message: { id: 990, auteur: 'Ana', texte: parties.texteAnnonce('Ana', 'VIEUX'), t: Date.now() - 2 * 3600_000 } });
+  t.ok(parties.bulle.hidden && !messagerie.liste.textContent.includes('VIEUX'), 'une annonce de plus d’une heure : ni bulle, ni dans la liste');
+
+  reseau.rejoindre = rejoindreAvant;
+  reseau.rebrancher();
+  missions.delier();
+  messagerie.laissezPasser(null);
+  parties.oublier();
   sentinelle.etat.qui = quiAvant;
   game.bus.emit('messagerie:nonlus', { n: 0 });
 }
