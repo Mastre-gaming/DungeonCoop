@@ -11,6 +11,7 @@
 import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
 import { CONTACT, metres } from './geometrie.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
+import { curseurCss } from './armes.js';
 
 export const name = 'interface';
 export const always = true;
@@ -229,6 +230,14 @@ function surEvenement(e) {
 
 // --- Choisir, marcher, viser ------------------------------------------------------------------------------------
 const herosChoisi = () => (ui.sel ? combat.U(ui.sel) : null);
+// Mon curseur : l'arme du héros choisi s'il est à moi, sinon celle de mon premier héros debout (armes.js).
+function majCurseur() {
+  const h = herosChoisi(), mien = h && aMoi(h.id) ? h : combat.S.unites.find((u) => u.camp === 'h' && !u.ko && aMoi(u.id));
+  const type = mien?.type ?? null;
+  if (type === ui.curseur) return;
+  ui.curseur = type;
+  canvas.style.cursor = curseurCss(type);
+}
 const aMoi = (id) => !reseau || reseau.aMoi(id);
 function choisirHeros(id) {
   const h = combat.U(id);
@@ -297,6 +306,7 @@ function portee(h) { if (!ui.portee || ui.portee.id !== h.id || ui.portee.mv !==
 
 // --- Chaque image : les marques, l'aperçu, les fiches -------------------------------------------------------------
 export function update() {
+  majCurseur();
   const libre = !vue.occupe();
   if (libre && ui.etaitOccupe) ui.sale = true;          // la file vient de finir : on redessine (boutons, zone de marche)
   ui.etaitOccupe = !libre;
@@ -510,7 +520,7 @@ function pointeur() {
 }
 
 export const api = {
-  ui, dom, commencer, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
+  ui, dom, majCurseur, commencer, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
   get selection() { return ui.sel; },
   get reseau() { return reseau; },
   // multi.js : à plusieurs, puis de nouveau seul (l'hôte est parti : tous les héros sont à moi)

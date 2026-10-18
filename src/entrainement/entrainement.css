@@ -213,9 +213,15 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .fiche-heros.ami { cursor: default; }
 #fin-phase.pret, .coin-phase #fin-phase.pret { background: #4f7a2e; }
 .curseurs-amis { position: fixed; inset: 0; pointer-events: none; z-index: 7; overflow: hidden; }
-.curseur-ami { position: absolute; left: 0; top: 0; white-space: nowrap; font: 700 12px var(--titre); color: #fff; padding: 1px 6px 1px 12px;
-  background: color-mix(in srgb, var(--couleur, #7ce0ff) 78%, #000); border-radius: 0 4px 4px 4px; text-shadow: 0 1px 0 rgba(0,0,0,.5); }
-.curseur-ami::before { content: ''; position: absolute; left: -2px; top: -2px; border: 6px solid transparent; border-top-color: var(--couleur, #7ce0ff); border-left-color: var(--couleur, #7ce0ff); }
+.curseur-ami { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+/* l'arme de son héros, cernée de sa couleur (on sait qui c'est sans écrire son nom) */
+.curseur-ami .arme-ami { position: absolute; image-rendering: pixelated;
+  filter: drop-shadow(1px 0 0 var(--couleur, #7ce0ff)) drop-shadow(-1px 0 0 var(--couleur, #7ce0ff)) drop-shadow(0 1px 0 var(--couleur, #7ce0ff)) drop-shadow(0 -1px 0 var(--couleur, #7ce0ff)); }
+/* ce qu'il prépare, en bas à droite de l'arme */
+.curseur-ami .intention-ami { position: absolute; left: 18px; top: 22px; white-space: nowrap; font: 700 12px var(--titre); color: #fff; padding: 1px 6px;
+  background: color-mix(in srgb, var(--couleur, #7ce0ff) 78%, #000); border-radius: 4px; text-shadow: 0 1px 0 rgba(0,0,0,.5); }
+/* une classe sans arme découpée : la flèche d'avant */
+.curseur-ami.sans-arme::before { content: ''; position: absolute; left: -2px; top: -2px; border: 6px solid transparent; border-top-color: var(--couleur, #7ce0ff); border-left-color: var(--couleur, #7ce0ff); }
 /* (hidden l'emporte toujours : les boutons du jeu ont leur propre display) */
 body [hidden] { display: none !important; }
 .fiche-heros .fh-joueur.libre { background: none; color: var(--parchemin-doux); padding: 0; }
