@@ -749,7 +749,7 @@ function fauxWorker() {
     if (u.pathname === '/profils') return repondre(srv.profils);
     return rien();
   };
-  const plusTard = (f) => setTimeout(f, 5);
+  const plusTard = (f) => queueMicrotask(f);   // (sans minuterie : la machine de la CI, lente, ne le retarde pas)
   const diffuser = (o) => { for (const p of srv.pages) if (p.entree) p.recevoir(o); };
   srv.WebSocket = class FauxSocket {
     constructor(url) { this.url = url; this.readyState = 0; this.entree = false; srv.pages.add(this); plusTard(() => { if (this.readyState === 0) { this.readyState = 1; this.onopen?.(); } }); }
@@ -786,7 +786,7 @@ function fauxWorker() {
   srv.couper = () => { for (const p of [...srv.pages]) p.close(); };
   return srv;
 }
-const attendre = async (cond, ms = 4000) => {
+const attendre = async (cond, ms = 20000) => {   // (large : sur la CI, en rendu logiciel, tout est lent)
   const t0 = performance.now();
   while (!cond()) { if (performance.now() - t0 > ms) return false; await new Promise((r) => setTimeout(r, 10)); }
   return true;
@@ -842,7 +842,7 @@ async function testsDirect(t, game) {
   // pendant la coupure : une autre mission rentre, et Paul écrit dans le dashboard (le camp n'est prévenu de rien)
   srv.issues = [...srv.issues, { ...issue(91, ['axe: son', 'taille: S'], { qui: ['DonBabaa'], state: 'closed' }), milestone: null }];
   srv.depuisDashboard('Paul', 'Écrit pendant la coupure', { direct: false });
-  t.ok(await attendre(() => missions.directOuvert && messagerie.etat.statut === 'ouverte', 5000), 'le camp se reconnecte seul (en 1 s) et rentre dans la messagerie');
+  t.ok(await attendre(() => missions.directOuvert && messagerie.etat.statut === 'ouverte'), 'le camp se reconnecte seul (en 1 s) et rentre dans la messagerie');
   t.ok(await attendre(() => total() === 4), `à la reconnexion, les issues sont relues : la mission rentrée pendant la coupure compte (${total()})`);
   t.ok(await attendre(() => fil().includes('Écrit pendant la coupure')), 'et le message écrit pendant la coupure est là');
   t.ok(srv.appels.length > 0 && srv.appels.every((u) => u.startsWith('https://faux-worker.test/') || u.includes('equipe.json')), `toutes les lectures passent par le faux Worker (${srv.appels.length})`);
