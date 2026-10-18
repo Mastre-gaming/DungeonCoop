@@ -1,0 +1,94 @@
+<!doctype html><html lang="fr"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bouton du camp</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;600;700&display=swap">
+<style>
+/* Le bouton « Aller au camp » du dashboard, dans le style du jeu (bois LPC, police pixel).
+   L'icône est une petite planche de 3 images de 32 x 32 (design/camp/pieces/bouton_camp.png) :
+   le feu crépite doucement au repos, plus vite au survol, et ne bouge pas si le système demande moins d'animation.
+   Pour le brancher dans le dashboard : copier ce fichier et bouton_camp.png, puis remplacer le contenu du lien #jouer
+   par <span class="icone-feu" aria-hidden="true"></span><span>Aller au camp</span> et lui donner la classe bouton-camp. */
+
+.bouton-camp {
+  --bois: #5a3b22; --bois-fonce: #3b2716; --bois-clair: #7a5432; --creme: #ffe2a8; --braise: #f39a2c;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 14px 3px 4px;
+  font: 600 0.95rem/1 "Pixelify Sans", "Courier New", monospace;
+  letter-spacing: 0.02em;
+  color: var(--creme);
+  background: var(--bois);
+  border: 2px solid var(--bois-fonce);
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px var(--bois-clair), inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.08s;
+}
+.bouton-camp:hover { background: #6b4628; color: #fff2cf; text-decoration: none; }
+.bouton-camp:active { transform: translateY(1px); box-shadow: inset 0 0 0 1px var(--bois-clair), inset 0 -1px 0 rgba(0, 0, 0, 0.28); }
+.bouton-camp:focus-visible { outline: 3px solid var(--braise); outline-offset: 2px; }
+
+/* l'icône : 32 x 32, pixels nets, les 3 images défilent */
+.bouton-camp .icone-feu {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAAAgCAYAAADtwH1UAAACaklEQVR4nO2ZLU8DQRCG+x+Q9AiqokUREhIEDRYDwUAIGoHBAxbXpJYQFApFMASFbxMUWDz4JtgjczDH7N7M3e6ydxfYbfKm18/n2ZndXrvtdBwvg26S0ri+T+Q7Ap8eT7M8jDay1C0ULF8H0iCciy+RoPkSGKJ3vEwk8h3AHJwCV7bPlHAyF0eLWWxnQ9B8Di5BpeDzUcBGInR+YdnZgDkRXSLyG4CnszsniaD5Onx6f+TceZeZoPN9sV35TY9fEQA4dFGX8LEcz/fmKwugz6Km+Y2Pn1t6AB8MD9XAiUS/zzTdJINjqIS09NvkNzl+RUCEdJP0dXLlTUIqQIj81gVC51cLdJN09jbNBG5GB+4SrgWw4Kcv+63yrcdv2n1bAbEQmkRdfNMi1Mlna6A3AQXyDaQS+HpvLhPwMQt2V3tKAULlZw1QdvAEuC5QJTHuL4gCAKcF8M0X2Q3wS9kM37gBAMdUCTzv9L0XwJSPAQe2GDXzS8fONQDPAwUJpvu6ACcBArPLJV6Eg9fEhzTNh4aLYy/hVwpQeNUsAAE4+fgswF/lFxph0gC6NG0CrwMgwNOPSS5wfLuZx6QAvvhw3QY/a8A3H45N+IoAzoKt8VoeeDG9ref9+usau08F8HEKLytAiHx2GZrCaeDrFWw4wXvg91x8TOx+5KsCdMtUAnFSCMAfGXDMwasKECo/l9D3rYcny0ahn4X656gRPPLdJWBGSFJW8Mj/+VOa+0PZdTbQGRH5BhdOgm5ecTLSkrOGR74qgnA9FMhBrZZd5JdLQDgJPNtL4F/DI78oQoU4oHdw5JsJ1Q7s/E/+JzDvhCfk7ZU7AAAAAElFTkSuQmCC") 0 0 / 96px 32px no-repeat;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  animation: crepite 0.9s steps(3) infinite;
+}
+.bouton-camp:hover .icone-feu { animation-duration: 0.45s; }
+@keyframes crepite { to { background-position: -96px 0; } }
+
+/* version compacte : l'icône seule (le texte reste lisible par les lecteurs d'écran) */
+.bouton-camp.compact { padding: 2px; gap: 0; }
+.bouton-camp.compact .libelle {
+  position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .bouton-camp:not(.toujours-plein) { padding: 2px; gap: 0; }
+  .bouton-camp:not(.toujours-plein) .libelle { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+}
+@media (prefers-reduced-motion: reduce) { .bouton-camp .icone-feu { animation: none; } }
+
+body{margin:0;padding:20px;background:#e9e8e3;font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif;display:grid;gap:18px}
+h2{font:600 1rem system-ui;margin:0;color:#52514e}
+.entete{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px 24px;padding:16px 20px;border-radius:10px}
+.entete.clair{background:#f4f3ef;color:#0b0b0b} .entete.sombre{background:#0d0d0d;color:#f0efec}
+.marque{display:flex;align-items:center;gap:12px} .marque .de{width:40px;height:40px} .marque b{display:block;font-size:1.4rem} .marque span{font-size:.9rem;opacity:.75}
+.commandes{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+.moi{display:inline-flex;align-items:center;gap:8px;font-size:.9rem;opacity:.85} select{font:inherit;padding:5px 8px;border-radius:8px;border:1px solid rgba(127,127,127,.35);background:transparent;color:inherit}
+.etat{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;border:1px solid rgba(127,127,127,.3);font-size:.85rem;font-weight:500} .etat i{width:8px;height:8px;border-radius:50%;background:#0ca30c}
+.tailles{display:flex;flex-wrap:wrap;align-items:center;gap:20px;padding:16px 20px;background:#f4f3ef;border-radius:10px}
+.x2 .icone-feu{width:64px;height:64px;background-size:192px 64px} .x2 @keyframes x{}
+.x2{padding:4px 18px 4px 6px;font-size:1.25rem}
+@keyframes crepite2{to{background-position:-192px 0}} .x2 .icone-feu{animation-name:crepite2}
+</style>
+<h2>Dans l'en-tête du dashboard, thème clair</h2>
+<div class="entete clair">
+  <div class="marque"><svg class="de" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 29 9.5v13L16 30 3 22.5v-13Z" fill="#2a78d6"/><path d="M16 8 24 21H8Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg><div><b>DungeonCoop</b><span>Le tableau de bord de l'équipe</span></div></div>
+  <div class="commandes">
+    <a class="bouton-camp toujours-plein" href="https://dungeoncoop.0xbaba-eth.workers.dev" target="_blank" rel="noopener" title="Aller au camp (nouvel onglet)"><span class="icone-feu" aria-hidden="true"></span><span class="libelle">Aller au camp</span></a>
+    <label class="moi">Je suis <select><option>Paul</option></select></label>
+    <span class="etat"><i></i>En direct</span>
+  </div>
+</div>
+<h2>Thème sombre</h2>
+<div class="entete sombre">
+  <div class="marque"><svg class="de" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 2 29 9.5v13L16 30 3 22.5v-13Z" fill="#2a78d6"/><path d="M16 8 24 21H8Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg><div><b>DungeonCoop</b><span>Le tableau de bord de l'équipe</span></div></div>
+  <div class="commandes">
+    <a class="bouton-camp toujours-plein" href="https://dungeoncoop.0xbaba-eth.workers.dev" target="_blank" rel="noopener" title="Aller au camp (nouvel onglet)"><span class="icone-feu" aria-hidden="true"></span><span class="libelle">Aller au camp</span></a>
+    <label class="moi">Je suis <select><option>Paul</option></select></label>
+    <span class="etat"><i></i>En direct</span>
+  </div>
+</div>
+<h2>Les variantes : normal, compact (téléphone), agrandi pour regarder</h2>
+<div class="tailles">
+  <a class="bouton-camp toujours-plein" href="#"><span class="icone-feu" aria-hidden="true"></span><span class="libelle">Aller au camp</span></a>
+  <a class="bouton-camp compact" href="#" title="Aller au camp"><span class="icone-feu" aria-hidden="true"></span><span class="libelle">Aller au camp</span></a>
+  <a class="bouton-camp toujours-plein x2" href="#"><span class="icone-feu" aria-hidden="true"></span><span class="libelle">Aller au camp</span></a>
+</div>
+</html>

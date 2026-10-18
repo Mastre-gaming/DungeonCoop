@@ -8,6 +8,7 @@ Tout ce qui a servi à dessiner le camp le 18 oct. Le concept et les décisions 
 | `outils/` | les scripts qui fabriquent `pieces/` à partir des planches LPC brutes (`dl/lpc/`), en Python sans dépendance |
 | `plans/` | les trois plans du camp en blockout (A le carré, B le chemin, C les clairières, retenu), le script qui les dessine et celui qui les vérifie |
 | `demo/` | la page de démonstration (un seul fichier, `camp.html`) : la première connexion, la sentinelle, le héros, le panneau-carte avec ses étoiles, le tableau des missions, le feu |
+| `bouton/` | le bouton « Aller au camp » du dashboard : `bouton-camp.css`, l'icône `bouton_camp.png` (3 images de 32 × 32 : un médaillon de bois, une tente le soir, le feu qui crépite) et `apercu.html` (le bouton dans l'en-tête du dashboard, clair et sombre). Refaire l'icône : `cd outils && python bouton_camp.py`. Le dashboard est le repo de Paul : à lui de l'y brancher (le mode d'emploi est en tête de `bouton-camp.css`) |
 
 ## Refaire les pièces et la démo
 Il faut d'abord les planches brutes dans `dl/lpc/` (la liste et les liens sont dans `CAMP.fr.md` §9 ; `dl/` n'est jamais commité).
@@ -35,5 +36,6 @@ Les pièces LPC restent sous leur licence d'origine : toutes demandent de crédi
 | `herbe`, `touffes` (éclaircies), `tonneau`, `cailloux` | [LPC Base Assets](https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles), Lanea Zimmerman (Sharm) et al. (`CREDITS.TXT`) | CC-BY-SA 3.0 ou GPL 3.0 |
 | `heros` | [Générateur LPC](https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/) : la marche et la course de l'humain de base ; auteurs dans `dl/lpc/heros/credits.txt` | OGA-BY 3.0, CC-BY-SA 3.0 ou GPL 3.0 selon la pièce |
 | `sentinelle` | Générateur LPC : le « sort » et la marche du chevalier ; auteurs dans `dl/lpc/sentinelle/credits.txt` | OGA-BY 3.0, CC-BY-SA 3.0 ou GPL 3.0 selon la pièce |
+| `bouton_camp` (et son aperçu) | **dessiné pour le jeu** (`outils/bouton_camp.py`), couleurs du bois relevées sur les planches LPC | les nôtres |
 | `carte_fond`, `carte_debut`, `carte_milieu` | **dessinés pour le jeu** (`outils/panneau_carte.py`), dans le style LPC ; seules les couleurs du bois sont relevées sur les planches LPC | les nôtres |
 | `tab_n0` à `tab_n4` | compositions de pièces LPC ci-dessus (décorations, Base Assets) | celles de leurs pièces : CC-BY-SA |
