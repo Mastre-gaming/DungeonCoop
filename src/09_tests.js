@@ -24,13 +24,20 @@ function tenir(liste) {
 // Marche à pied (touches tenues) jusqu'à (bx, by). Renvoie { arrive, coince: [x, y] | null, temps, traverse }.
 function marcherVers(bx, by, { courir = false, limite = 40 } = {}) {
   const { heros, collision, game } = ctx, h = heros.heros, pas = 1 / 30;
-  const route = collision.chemin(h.x, h.y, bx, by);
+  let route = collision.chemin(h.x, h.y, bx, by);
   if (!route) return { arrive: false, coince: [Math.round(h.x), Math.round(h.y)], temps: 0, introuvable: true };
-  let k = 0, temps = 0, immobile = 0, traverse = null;
+  // un joueur qui bute (à huit directions, une pente douce le fait couper le coin d'un poteau) repart de là où il est :
+  // sans progrès vers le point visé pendant une seconde, on recalcule le chemin depuis sa place (quatre fois au plus)
+  let k = 0, temps = 0, immobile = 0, traverse = null, proche = Infinity, sansProgres = 0, reprises = 0;
   while (temps < limite) {
     if (k >= route.length) break;
-    const [tx, ty] = route[k], vx = tx - h.x, vy = ty - h.y;
-    if (Math.hypot(vx, vy) < 4) { k++; continue; }
+    const [tx, ty] = route[k], vx = tx - h.x, vy = ty - h.y, d = Math.hypot(vx, vy);
+    if (d < 4) { k++; proche = Infinity; sansProgres = 0; continue; }
+    if (d < proche - 1) { proche = d; sansProgres = 0; }
+    else if ((sansProgres += pas) > 1 && reprises < 4) {
+      const autre = collision.chemin(h.x, h.y, bx, by);
+      if (autre) { route = autre; k = 0; proche = Infinity; sansProgres = 0; reprises++; continue; }
+    }
     const l = [];
     if (vx < -1) l.push(touches.gauche); else if (vx > 1) l.push(touches.droite);
     if (vy < -1) l.push(touches.haut); else if (vy > 1) l.push(touches.bas);

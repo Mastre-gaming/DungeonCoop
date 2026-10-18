@@ -89,8 +89,9 @@ export function pavesDe(lieu, niveau) {
 // Ses pièces viennent de deux planches (img : deco, ou armurerie pour le mur, le toit, la gueule du foyer, l'enseigne) ;
 // ses dalles de pierre, de plus en plus nombreuses, se posent sous tout le reste. Fabriqué par armurerie_jeu.py.
 export const COMPLETS = { classes: ARMURERIE.niveaux };
-// Le niveau d'office (demande du propriétaire, 18 oct) : l'armurerie est livrée au niveau 2, la tente et son abri de forge.
-export const PLANCHERS = { classes: 2 };
+// Le niveau d'office (demandes du propriétaire, 18 et 19 oct) : l'armurerie est livrée au niveau 2, la tente et son abri
+// de forge ; le tableau d'affichage au niveau 3, ses pavés et son crieur.
+export const PLANCHERS = { classes: 2, interface: 3 };
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
