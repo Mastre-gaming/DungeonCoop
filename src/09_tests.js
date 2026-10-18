@@ -115,26 +115,49 @@ export async function selfTest(t, game) {
   const cases = [v.w / T, v.h / T];
   t.ok(cases[0] >= 14 && cases[0] <= 28 && cases[1] >= 8 && cases[1] <= 16, `zoom moyen : ${cases[0].toFixed(1)} x ${cases[1].toFixed(1)} cases à l'écran`);
 
-  t.group('le zoom à la molette');
+  t.group('le zoom à la molette (fin et animé, #122)');
   const toile = rendu.renderer.domElement, r = toile.getBoundingClientRect();
-  const molette = (deltaY) => { toile.dispatchEvent(new WheelEvent('wheel', { deltaY, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true })); game.dbg.advance(0.2); };
+  const roulette = (deltaY) => toile.dispatchEvent(new WheelEvent('wheel', { deltaY, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true }));
+  const molette = (deltaY, duree = 0.6) => { roulette(deltaY); game.dbg.advance(duree); };
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
   const base = rendu.echelle, ecranX = () => (h.x - rendu.cam.x) / rendu.vue.w;
   const avantX = ecranX();
-  molette(-100);
-  t.eq(rendu.echelle, base + 1, 'molette vers le haut : un cran plus près');
-  t.ok(Number.isInteger(rendu.echelle), 'le zoom reste à une échelle entière (pixel art net)');
+  // la réduction de l'image à part ne change pas les couleurs : à l'échelle de base, dessiné directement ou par elle, les mêmes pixels
+  const pixels = () => { rendu.dessiner(); const c = Object.assign(document.createElement('canvas'), { width: 96, height: 96 }); const g = c.getContext('2d');
+    g.drawImage(toile, Math.round(toile.width / 2) - 48, Math.round(toile.height / 2) - 48, 96, 96, 0, 0, 96, 96); return g.getImageData(0, 0, 96, 96).data; };
+  const direct = pixels();
+  rendu.ajuster({ zoom: { w: 20, h: 11 }, echelle: base, image: true }); rendu.viser(camera.cam.x, camera.cam.y);
+  const parImage = pixels(), forcee = rendu.parImage;
+  let ecartMax = 0, ou = '', nb = 0;
+  for (let k = 0; k < direct.length; k++) { const d = Math.abs(direct[k] - parImage[k]); if (d > 3) nb++; if (d > ecartMax) { ecartMax = d; ou = `${(k >> 2) % 96},${(k >> 2) / 96 | 0} : ${direct[k]} / ${parImage[k]}`; } }
+  t.ok(forcee && ecartMax <= 3, `passer par l’image à part ne change pas les couleurs (écart ${ecartMax} sur 255${nb ? `, ${nb} valeurs, la pire en ${ou}` : ''})`);
+  camera.zoomMoyen();
+  roulette(-100); game.dbg.advance(0.05);
+  const enRoute = rendu.echelle, unCran = base * 2 ** (1 / 4);
+  t.ok(enRoute > base + 0.01 && enRoute < unCran - 0.01, `le zoom glisse : ${enRoute.toFixed(2)} après 0,05 s, vers ${unCran.toFixed(2)}`);
+  game.dbg.advance(0.6);
+  t.near(rendu.echelle, unCran, 1e-6, `molette vers le haut : un cran plus près, ×1,19 (${base} → ${rendu.echelle.toFixed(2)})`);
+  t.ok(rendu.parImage && rendu.echelleRendu === Math.ceil(unCran), `entre deux échelles entières, le monde passe par l’image à part (dessiné à ${rendu.echelleRendu}, réduit) : le pixel art reste net`);
   t.near(ecranX(), avantX, 0.02, 'le héros garde sa place à l’écran');
-  molette(100); molette(100);
-  t.eq(rendu.echelle, Math.max(1, base - 1), 'molette vers le bas : plus loin');
-  for (let k = 0; k < 12; k++) molette(100);
+  molette(-100); molette(-100); molette(-100);
+  t.ok(rendu.echelle === Math.min(8, base * 2) && !rendu.parImage, `quatre crans : le zoom double (${rendu.echelle}), une échelle entière, dessinée directement`);
+  for (let k = 0; k < 30; k++) roulette(100);
+  game.dbg.advance(1.5);
   t.eq(rendu.echelle, 1, 'jamais en dessous de 1 pixel d’écran par pixel LPC');
-  for (let k = 0; k < 12; k++) molette(-100);
+  for (let k = 0; k < 30; k++) roulette(-100);
+  game.dbg.advance(1.5);
   t.eq(rendu.echelle, 8, 'jamais au-dessus de 8');
-  let garde = null; try { garde = localStorage.getItem('dungeoncoop:zoom'); } catch {}
-  t.eq(garde, String(8 - rendu.echelleBase), 'le zoom choisi est gardé dans le navigateur');
+  let garde = null; try { garde = localStorage.getItem('dungeoncoop:zoom-crans'); } catch {}
+  t.eq(garde, String(camera.ecart), `le zoom choisi est gardé dans le navigateur (${garde} crans)`);
+  for (let k = 0; k < 4; k++) roulette(-25);
+  game.dbg.advance(0.6);
+  t.eq(rendu.echelle, 8, 'un pavé tactile (de petits pas) : ils s’additionnent, et restent dans les bornes');
+  camera.zoomMoyen();
+  for (let k = 0; k < 4; k++) roulette(25);
+  game.dbg.advance(0.6);
+  t.near(rendu.echelle, base * 2 ** (-1 / 4), 1e-6, 'quatre petits pas de pavé tactile font un cran');
   t.ok(toile.dispatchEvent(new WheelEvent('wheel', { deltaY: 100, cancelable: true })) === false, 'la molette ne fait pas défiler la page');
-  game.dbg.advance(0.2);
+  game.dbg.advance(0.6);
   game.solo = 'panneau'; const e0 = rendu.echelle; molette(100); game.solo = null;
   t.eq(rendu.echelle, e0, 'panneau ouvert : la molette ne zoome pas');
   camera.zoomMoyen();
