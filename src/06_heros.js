@@ -2,6 +2,8 @@
 //   flèches ou ZQSD (touches physiques : WASD en QWERTY) pour marcher, Maj pour courir,
 //   un clic pour aller quelque part (en contournant ce qui bloque), ou un clic maintenu pour suivre le pointeur.
 // Au repos, il garde la pose debout dans la dernière direction prise.
+// Pendant le tour de la sentinelle, il la suit tout seul (une route), et court s'il est loin (presser).
+// Mordu par un rat, il rougit un instant (rougir) : la même planche, teintée de rouge.
 // Le déplacement se fait par pas fixes (step), l'animation à chaque image (update).
 import { PIED } from './05_collision.js';
 
@@ -11,9 +13,9 @@ const LIGNES = { haut: 0, gauche: 1, bas: 2, droite: 3 };   // l'ordre des direc
 const MARCHE = 8, COURSE = 38;                            // les rangées de la marche et de la course dans la planche
 const DEFAUTS = { marche: 74, course: 138, imagesMarche: 10, imagesCourse: 14 };   // px/s : ~2,3 et ~4,3 cases par seconde
 
-let game, cfg, rendu, collision, sprite, ombre, canvas;
+let game, cfg, rendu, collision, sprite, spriteRouge, ombre, canvas, rouge = 0, cache = false;
 // controle : false pendant une scène (la sentinelle) : le clavier et les clics ne le font plus bouger, une route oui.
-const heros = { x: 0, y: 0, vx: 0, vy: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0, controle: true };
+const heros = { x: 0, y: 0, vx: 0, vy: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0, controle: true, presse: false };
 const doigt = { tenu: false, x: 0, y: 0, recalcule: 0 };
 
 export function init(g, options) {
@@ -22,6 +24,8 @@ export function init(g, options) {
   heros.x = options.x; heros.y = options.y;
   ombre = rendu.ombre(18, 4);
   sprite = rendu.sprite(options.images.heros, 'heros', 64, 64);
+  spriteRouge = rendu.sprite(teinter(options.images.heros), 'heros-rouge', 64, 64);
+  spriteRouge.cacher(true);
 
   const versMonde = (e) => rendu.versMonde(e.clientX, e.clientY);
   canvas.addEventListener('pointerdown', (e) => {
@@ -35,6 +39,13 @@ export function init(g, options) {
   canvas.addEventListener('pointerup', lacher);
   canvas.addEventListener('pointercancel', lacher);
   return api;
+}
+
+// La même planche, en rouge : le héros rougit un instant quand un rat le mord.
+function teinter(im) {
+  const c = Object.assign(document.createElement('canvas'), { width: im.width, height: im.height }), g = c.getContext('2d');
+  g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(220,40,30,.3)'; g.fillRect(0, 0, c.width, c.height);
+  return c;
 }
 
 // Aller à pied jusqu'à (x, y), en contournant les obstacles. Renvoie false si l'endroit est hors d'atteinte.
@@ -78,7 +89,7 @@ export function step(h) {
   }
   const n = Math.hypot(dx, dy);
   heros.bouge = n > 0;
-  heros.court = heros.bouge && heros.controle && inp.held('courir');
+  heros.court = heros.bouge && (heros.controle ? inp.held('courir') : heros.presse);
   if (!heros.bouge) { heros.vx = heros.vy = 0; return; }
   dx /= n; dy /= n;
   heros.dir = Math.abs(dx) > Math.abs(dy) + 0.01 ? (dx < 0 ? 'gauche' : 'droite') : (dy < 0 ? 'haut' : 'bas');
@@ -97,7 +108,10 @@ export function update(dt) {
   let rang = MARCHE + ligne, col = 0;
   if (heros.bouge && heros.court) { rang = COURSE + ligne; col = Math.floor(heros.t * cfg.imagesCourse) % 8; }
   else if (heros.bouge) col = 1 + Math.floor(heros.t * cfg.imagesMarche) % 8;
+  rouge = Math.max(0, rouge - dt);
+  sprite.cacher(cache || rouge > 0); spriteRouge.cacher(cache || rouge <= 0);
   sprite.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
+  spriteRouge.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
   ombre.poser(heros.x, heros.y - 1);
 }
 
@@ -108,6 +122,9 @@ export const api = {
   allerA,
   placer(x, y, dir = heros.dir) { Object.assign(heros, { x, y, dir, route: null, bouge: false, vx: 0, vy: 0 }); update(0); },
   controle(oui) { heros.controle = !!oui; if (!oui) { heros.route = null; doigt.tenu = false; } },
-  cacher(oui = true) { sprite.cacher(oui); ombre.cacher(oui); },
+  cacher(oui = true) { cache = oui; sprite.cacher(oui); spriteRouge.cacher(true); ombre.cacher(oui); },
+  presser(oui) { heros.presse = !!oui; },
+  rougir(duree = 0.12) { rouge = duree; update(0); },
+  get rouge() { return rouge; },
   pied: PIED,
 };

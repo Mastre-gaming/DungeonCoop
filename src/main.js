@@ -1,9 +1,9 @@
 // Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7) : le camp, le héros, la caméra, le panneau des missions,
-// la sentinelle de l'entrée et le jeu à plusieurs.
+// la sentinelle de l'entrée et son tour du camp, les rats des PR à résoudre, et le jeu à plusieurs.
 //   ?code=ABCDE rejoindre ce groupe
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
-//   ?spot=feu aller à un point nommé (apparition, feu, visite, et chaque lieu : interface, histoire, level, combat…)
+//   ?spot=feu aller à un point nommé (apparition, feu, visite, sentinelle, tour, rats, et chaque lieu : interface, histoire, level, combat…)
 import { createGame } from './skills/core/module/06_game.js';
 import { T, W, H, LIEUX, APPARITION } from './01_plan.js';
 import { chargerImages } from './02_images.js';
@@ -26,6 +26,8 @@ import * as campagneSkill from './18_campagne.js';
 import * as chroniqueSkill from './19_chronique.js';
 import { creerSacoche, creerRumeurs } from './20_sacoche.js';
 import * as messagerieSkill from './21_messagerie.js';
+import * as ratsSkill from './30_rats.js';
+import * as tourSkill from './31_tour.js';
 import './jeu.css';
 
 const query = new URLSearchParams(location.search);
@@ -65,6 +67,9 @@ async function demarrer() {
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
+  // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
+  const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
+  const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
   const groupe = game.use(groupeSkill, { missions, renommee, reseau, sentinelle, images, ouvrirJournal: () => hud.activer('journal') });
   hud.brancher('groupe', groupe);
   const campagne = game.use(campagneSkill, { visite, horsLigne: query.has('test'), ouvrirCarte: () => hud.activer('campagne') });
@@ -78,7 +83,7 @@ async function demarrer() {
   const messagerie = game.use(messagerieSkill, { missions, sentinelle, ...(query.has('test') ? { jeton: null } : {}) });
   hud.brancher('lettres', messagerie);
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, rats, tour, lieux });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -86,8 +91,20 @@ async function demarrer() {
   game.dbg.spot('feu', aller(...tests.devantFeu(), 'haut'));
   for (const l of LIEUX) game.dbg.spot(l.id, aller(...tests.devant(l), 'haut'));
   game.dbg.spot('visite', () => { location.search = '?visite'; });
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, reseau, lieux, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, rats, tour, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
+  // le tour : depuis la sentinelle à son poste, le héros devant elle
+  game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
+  // les rats d'exemple, autour du héros devant le feu : le premier est à toi
+  game.dbg.spot('rats', () => {
+    aller(...tests.devantFeu(), 'haut')();
+    const moi = sentinelle.qui?.github ?? 'DonBabaa';
+    rats.accorder([
+      { cle: 'ex-12', espece: 0, pr: { numero: 12, titre: 'Ajoute l’événement de la taverne', url: 'https://github.com/Mastre-gaming/DungeonCoop/pulls', depot: 'jeu', auteur: moi }, chasse: true },
+      { cle: 'ex-14', espece: 1, pr: { numero: 14, titre: 'Sprite du chevalier : couronne et cape', url: 'https://github.com/Mastre-gaming/DungeonCoop/pulls', depot: 'jeu', auteur: 'PCrrfng-autre' } },
+      { cle: 'ex-3', espece: 2, pr: { numero: 3, titre: 'Widget des idées : trier par votes', url: 'https://github.com/Mastre-gaming/DungeonCoop-dashboard/pulls', depot: 'dashboard', auteur: 'quelqu’un' } },
+    ], { force: true });
+  });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
 
   document.documentElement.dataset.pret = '1';

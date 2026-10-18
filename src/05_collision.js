@@ -77,6 +77,13 @@ export function creerCollision({ obstacles, bloquees }) {
     return lisse;
   }
 
-  // ajouter(o) : un obstacle qui bouge (la sentinelle). Il bloque le pied, mais n'entre pas dans la grille des chemins.
-  return { bloque, chemin, droit, libre: (x, y) => !bloque(x, y), ajouter: (o) => obstacles.push(o), retirer: (o) => { const i = obstacles.indexOf(o); if (i >= 0) obstacles.splice(i, 1); }, largeur, hauteur };
+  // Un obstacle posé ou retiré après coup (les pièces d'un lieu qui monte de niveau, la sentinelle à son poste) :
+  // on recalcule les cases de la grille autour de lui, pour que les chemins le contournent.
+  function regrille(o) {
+    const i0 = Math.max(0, Math.floor((o.x - PIED.w) / CASE)), i1 = Math.min(gw - 1, Math.floor((o.x + o.w + PIED.w) / CASE));
+    const j0 = Math.max(0, Math.floor((o.y - PIED.h - CASE) / CASE)), j1 = Math.min(gh - 1, Math.floor((o.y + o.h + PIED.h + CASE) / CASE));
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) libre[j * gw + i] = bloque((i + 0.5) * CASE, (j + 0.5) * CASE + 3) ? 0 : 1;
+  }
+  // ajouter(o) / retirer(o). Un obstacle qui bouge ensuite (la sentinelle en marche) ne suit pas dans la grille.
+  return { bloque, chemin, droit, libre: (x, y) => !bloque(x, y), ajouter: (o) => { obstacles.push(o); regrille(o); }, retirer: (o) => { const i = obstacles.indexOf(o); if (i >= 0) obstacles.splice(i, 1); regrille(o); }, largeur, hauteur };
 }
