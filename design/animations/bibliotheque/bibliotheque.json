@@ -1,0 +1,825 @@
+{
+ "impact-etoile": {
+  "nom": "Impact (étoile)",
+  "famille": "Impacts",
+  "fichier": "impact-etoile.png",
+  "w": 24,
+  "h": 24,
+  "images": 4,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   12,
+   12
+  ],
+  "calque": "dessus",
+  "usage": [
+   "tous les coups",
+   "Tir rapide",
+   "Charge au bouclier"
+  ],
+  "description": "Une étoile blanche qui s'ouvre et s'efface : le coup qui porte."
+ },
+ "impact-dore": {
+  "nom": "Impact doré",
+  "famille": "Impacts",
+  "fichier": "impact-dore.png",
+  "w": 40,
+  "h": 40,
+  "images": 7,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   20,
+   20
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Étincelle"
+  ],
+  "description": "Étoile dorée et éclats qui retombent."
+ },
+ "impact-feu": {
+  "nom": "Gerbe de feu",
+  "famille": "Impacts",
+  "fichier": "impact-feu.png",
+  "w": 40,
+  "h": 40,
+  "images": 7,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   20,
+   22
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Flèche de feu",
+   "huile qui prend feu"
+  ],
+  "description": "Étoile orange, braises qui montent."
+ },
+ "impact-lourd": {
+  "nom": "Choc lourd",
+  "famille": "Impacts",
+  "fichier": "impact-lourd.png",
+  "w": 64,
+  "h": 40,
+  "images": 8,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   34
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Fracas",
+   "Tir lesté",
+   "Projection contre un obstacle"
+  ],
+  "description": "Grande étoile, anneau de poussière au sol, terre qui gicle. À poser aux pieds de la cible."
+ },
+ "couronne-eau": {
+  "nom": "Couronne d'eau",
+  "famille": "Impacts",
+  "fichier": "couronne-eau.png",
+  "w": 64,
+  "h": 40,
+  "images": 7,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   32
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Éclaboussure"
+  ],
+  "description": "La bulle s'écrase : gouttes en couronne et rond sur le sol."
+ },
+ "verre-brise": {
+  "nom": "Fiole qui se brise",
+  "famille": "Impacts",
+  "fichier": "verre-brise.png",
+  "w": 56,
+  "h": 40,
+  "images": 6,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   28,
+   32
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Fiole d'huile"
+  ],
+  "description": "Éclats de verre et giclée d'huile violet sombre."
+ },
+ "boule-etincelle": {
+  "nom": "Boule d'étincelle",
+  "famille": "Projectiles",
+  "fichier": "boule-etincelle.png",
+  "w": 16,
+  "h": 16,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   8,
+   8
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Étincelle"
+  ],
+  "description": "Boule dorée qui palpite ; une traînée de grains derrière (à poser aux positions précédentes)."
+ },
+ "bulle-eau": {
+  "nom": "Bulle d'eau",
+  "famille": "Projectiles",
+  "fichier": "bulle-eau.png",
+  "w": 14,
+  "h": 14,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   7,
+   7
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Éclaboussure"
+  ],
+  "description": "La bulle qui part en cloche ; son reflet tourne."
+ },
+ "fiole-vol": {
+  "nom": "Fiole en vol",
+  "famille": "Projectiles",
+  "fichier": "fiole-vol.png",
+  "w": 12,
+  "h": 12,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   6,
+   6
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Fiole d'huile"
+  ],
+  "description": "La fiole qui tourne d'un quart de tour par image."
+ },
+ "fleche": {
+  "nom": "Flèche",
+  "famille": "Projectiles",
+  "fichier": "fleche.png",
+  "w": 16,
+  "h": 8,
+  "images": 1,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   14,
+   4
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Tir rapide",
+   "les Archers ennemis"
+  ],
+  "description": "Pointe à droite (miroir pour la gauche). Ancre : la pointe."
+ },
+ "fleche-feu": {
+  "nom": "Flèche de feu",
+  "famille": "Projectiles",
+  "fichier": "fleche-feu.png",
+  "w": 24,
+  "h": 12,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   20,
+   6
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Flèche de feu"
+  ],
+  "description": "La flèche, sa pointe en feu et une traînée de braises."
+ },
+ "fleche-lestee": {
+  "nom": "Flèche lestée",
+  "famille": "Projectiles",
+  "fichier": "fleche-lestee.png",
+  "w": 16,
+  "h": 8,
+  "images": 1,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   14,
+   4
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Tir lesté"
+  ],
+  "description": "Tête de plomb. Elle vole plus lentement et retombe un peu."
+ },
+ "note": {
+  "nom": "Note de musique",
+  "famille": "Projectiles",
+  "fichier": "note.png",
+  "w": 10,
+  "h": 12,
+  "images": 2,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   5,
+   6
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Chant de bataille"
+  ],
+  "description": "Une croche violette, un reflet doré. Elle suit une vague jusqu'à l'allié."
+ },
+ "bulle-moquerie": {
+  "nom": "Bulle « HA HA! »",
+  "famille": "Projectiles",
+  "fichier": "bulle-moquerie.png",
+  "w": 32,
+  "h": 18,
+  "images": 2,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   8
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Moquerie"
+  ],
+  "description": "La bulle de bande dessinée, qui rebondit."
+ },
+ "croissant-taille": {
+  "nom": "Croissant de taille",
+  "famille": "Traînées",
+  "fichier": "croissant-taille.png",
+  "w": 48,
+  "h": 56,
+  "images": 3,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   10,
+   28
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Coup d'épée",
+   "Sbire",
+   "Brute ennemie",
+   "Chef"
+  ],
+  "description": "Suit la lame de haut en bas. Ancre : l'épaule du frappeur (tournée à droite)."
+ },
+ "croissant-lourd": {
+  "nom": "Croissant lourd",
+  "famille": "Traînées",
+  "fichier": "croissant-lourd.png",
+  "w": 56,
+  "h": 64,
+  "images": 3,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   12,
+   32
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Fracas",
+   "Projection"
+  ],
+  "description": "Plus large et orangé : les armes à deux mains."
+ },
+ "estoc": {
+  "nom": "Trait d'estoc",
+  "famille": "Traînées",
+  "fichier": "estoc.png",
+  "w": 36,
+  "h": 9,
+  "images": 2,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   2,
+   4
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Dague",
+   "Ouverture",
+   "Coup de bâton",
+   "Fouet de ronce"
+  ],
+  "description": "Un trait blanc qui file droit devant, un « tink » à la pointe."
+ },
+ "traits-vitesse": {
+  "nom": "Traits de vitesse",
+  "famille": "Traînées",
+  "fichier": "traits-vitesse.png",
+  "w": 24,
+  "h": 12,
+  "images": 1,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   22,
+   6
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Charge au bouclier",
+   "Projection",
+   "toute flèche"
+  ],
+  "description": "Trois traits blancs derrière ce qui file vers la droite."
+ },
+ "eclair-frappe": {
+  "nom": "Éclair qui frappe",
+  "famille": "Foudre",
+  "fichier": "eclair-frappe.png",
+  "w": 40,
+  "h": 96,
+  "images": 6,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   20,
+   90
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Foudre"
+  ],
+  "description": "Du haut de l'écran à la tête de la cible : coup, ramification, vacillement, noir, second coup fin. Ancre : la tête. À jouer avec l'assombrissement et le flash de la scène."
+ },
+ "arcs-electriques": {
+  "nom": "Arcs électriques",
+  "famille": "Foudre",
+  "fichier": "arcs-electriques.png",
+  "w": 32,
+  "h": 44,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   42
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Foudre (après le coup)",
+   "le mage qui charge"
+  ],
+  "description": "Des arcs jaunes qui courent sur une créature. Ancre : ses pieds."
+ },
+ "eau-electrisee": {
+  "nom": "Eau électrisée",
+  "famille": "Foudre",
+  "fichier": "eau-electrisee.png",
+  "w": 80,
+  "h": 28,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   40,
+   14
+  ],
+  "calque": "sol",
+  "usage": [
+   "Foudre sur l'eau (combo)"
+  ],
+  "description": "Les arcs qui courent sur toute une flaque. À poser sur la flaque, à l'échelle de son rayon."
+ },
+ "flaque-eau": {
+  "nom": "Flaque d'eau qui s'étale",
+  "famille": "Surfaces",
+  "fichier": "flaque-eau.png",
+  "w": 64,
+  "h": 24,
+  "images": 5,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   12
+  ],
+  "calque": "sol",
+  "usage": [
+   "Éclaboussure",
+   "Pluie"
+  ],
+  "description": "La tache qui s'étale avant que la surface du jeu prenne le relais."
+ },
+ "flaque-huile": {
+  "nom": "Flaque d'huile qui s'étale",
+  "famille": "Surfaces",
+  "fichier": "flaque-huile.png",
+  "w": 64,
+  "h": 24,
+  "images": 5,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   12
+  ],
+  "calque": "sol",
+  "usage": [
+   "Fiole d'huile"
+  ],
+  "description": "La tache qui s'étale avant que la surface du jeu prenne le relais."
+ },
+ "plaque-glace": {
+  "nom": "Plaque de glace qui s'étale",
+  "famille": "Surfaces",
+  "fichier": "plaque-glace.png",
+  "w": 64,
+  "h": 24,
+  "images": 5,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   12
+  ],
+  "calque": "sol",
+  "usage": [
+   "Garde de givre",
+   "Grand givre"
+  ],
+  "description": "La tache qui s'étale avant que la surface du jeu prenne le relais."
+ },
+ "pics-glace": {
+  "nom": "Pics de glace",
+  "famille": "Surfaces",
+  "fichier": "pics-glace.png",
+  "w": 64,
+  "h": 32,
+  "images": 8,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   22
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Garde de givre",
+   "Grand givre"
+  ],
+  "description": "Sept pics qui jaillissent en cercle puis éclatent en paillettes. Ancre : le centre de la zone."
+ },
+ "nuage-pluie": {
+  "nom": "Nuage de pluie",
+  "famille": "Surfaces",
+  "fichier": "nuage-pluie.png",
+  "w": 80,
+  "h": 84,
+  "images": 8,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   40,
+   80
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Pluie"
+  ],
+  "description": "Le nuage et la pluie en biais, en boucle. Ancre : le centre de la zone, au sol."
+ },
+ "etat-en-feu": {
+  "nom": "En feu",
+  "famille": "États",
+  "fichier": "etat-en-feu.png",
+  "w": 32,
+  "h": 52,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   48
+  ],
+  "calque": "dessus",
+  "usage": [
+   "En feu"
+  ],
+  "description": "Trois petites flammes qui lèchent la créature, une fumée qui monte."
+ },
+ "etat-trempe": {
+  "nom": "Trempé",
+  "famille": "États",
+  "fichier": "etat-trempe.png",
+  "w": 32,
+  "h": 52,
+  "images": 5,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   48
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Trempé"
+  ],
+  "description": "Des gouttes bleues qui tombent. Le jeu peut aussi bleuir un peu la créature."
+ },
+ "etat-huile": {
+  "nom": "Huilé",
+  "famille": "États",
+  "fichier": "etat-huile.png",
+  "w": 32,
+  "h": 52,
+  "images": 7,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   48
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Huilé"
+  ],
+  "description": "Des gouttes d'huile violet sombre qui dégoulinent."
+ },
+ "etat-gele": {
+  "nom": "Gelé",
+  "famille": "États",
+  "fichier": "etat-gele.png",
+  "w": 24,
+  "h": 12,
+  "images": 2,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   12,
+   10
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Gelé (Garde de givre, Filet)"
+  ],
+  "description": "Trois glaçons sur la tête, une paillette. Ancre : le haut de la tête. Le jeu bleuit aussi la créature."
+ },
+ "etat-expose": {
+  "nom": "Exposé",
+  "famille": "États",
+  "fichier": "etat-expose.png",
+  "w": 40,
+  "h": 64,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   20,
+   58
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Exposé (Moquerie)"
+  ],
+  "description": "Quatre coins rouges autour de la créature, qui clignotent."
+ },
+ "etat-a-terre": {
+  "nom": "À terre",
+  "famille": "États",
+  "fichier": "etat-a-terre.png",
+  "w": 32,
+  "h": 14,
+  "images": 9,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   7
+  ],
+  "calque": "dessus",
+  "usage": [
+   "À terre (Ouverture, Projection)"
+  ],
+  "description": "Trois étoiles qui tournent. Ancre : au-dessus de la créature couchée."
+ },
+ "etat-inspire": {
+  "nom": "Inspiré (avantage)",
+  "famille": "États",
+  "fichier": "etat-inspire.png",
+  "w": 40,
+  "h": 64,
+  "images": 8,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   20,
+   60
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Chant de bataille"
+  ],
+  "description": "Halo doré qui pulse, étincelles qui montent."
+ },
+ "colere": {
+  "nom": "Colère",
+  "famille": "États",
+  "fichier": "colere.png",
+  "w": 10,
+  "h": 10,
+  "images": 2,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   5,
+   9
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Moquerie"
+  ],
+  "description": "Le signe de colère des mangas, au-dessus de la tête."
+ },
+ "filet-pose": {
+  "nom": "Filet posé",
+  "famille": "États",
+  "fichier": "filet-pose.png",
+  "w": 32,
+  "h": 40,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   37
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Filet"
+  ],
+  "description": "Le filet lesté sur la créature, qui tressaute quand elle se débat."
+ },
+ "croix-soin": {
+  "nom": "Croix de soin",
+  "famille": "Soins",
+  "fichier": "croix-soin.png",
+  "w": 32,
+  "h": 48,
+  "images": 10,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   16,
+   44
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Soin",
+   "Cri de ralliement",
+   "Potion",
+   "Relever"
+  ],
+  "description": "Des croix vertes qui montent et s'effacent. Ancre : les pieds."
+ },
+ "colonne-verte": {
+  "nom": "Colonne de soin",
+  "famille": "Soins",
+  "fichier": "colonne-verte.png",
+  "w": 24,
+  "h": 72,
+  "images": 6,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   12,
+   70
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Soin"
+  ],
+  "description": "Une colonne de lumière douce qui descend, tient puis s'éteint. Ancre : les pieds."
+ },
+ "colonne-doree": {
+  "nom": "Colonne dorée",
+  "famille": "Soins",
+  "fichier": "colonne-doree.png",
+  "w": 24,
+  "h": 72,
+  "images": 6,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   12,
+   70
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Relever"
+  ],
+  "description": "Une colonne de lumière douce qui descend, tient puis s'éteint. Ancre : les pieds."
+ },
+ "onde-ralliement": {
+  "nom": "Onde de ralliement",
+  "famille": "Soins",
+  "fichier": "onde-ralliement.png",
+  "w": 192,
+  "h": 64,
+  "images": 12,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   96,
+   32
+  ],
+  "calque": "sol",
+  "usage": [
+   "Cri de ralliement"
+  ],
+  "description": "Trois anneaux dorés qui s'élargissent sur 4,5 m. Ancre : les pieds du chevalier."
+ },
+ "bulles-potion": {
+  "nom": "Bulles de potion",
+  "famille": "Soins",
+  "fichier": "bulles-potion.png",
+  "w": 40,
+  "h": 56,
+  "images": 10,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   20,
+   52
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Potion"
+  ],
+  "description": "Des bulles rouges qui montent en grossissant et éclatent."
+ },
+ "coeur": {
+  "nom": "Cœur",
+  "famille": "Soins",
+  "fichier": "coeur.png",
+  "w": 9,
+  "h": 8,
+  "images": 2,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   4,
+   7
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Potion"
+  ],
+  "description": "Un cœur qui palpite au-dessus de la tête."
+ },
+ "poussiere": {
+  "nom": "Bouffée de poussière",
+  "famille": "Divers",
+  "fichier": "poussiere.png",
+  "w": 32,
+  "h": 12,
+  "images": 5,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   16,
+   8
+  ],
+  "calque": "sol",
+  "usage": [
+   "une chute",
+   "une glissade",
+   "Liane",
+   "Charge au bouclier"
+  ],
+  "description": "Deux petits nuages qui s'écartent des pieds."
+ }
+}
