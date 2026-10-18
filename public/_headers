@@ -1,0 +1,9 @@
+/*
+  Content-Security-Policy: frame-ancestors 'self' https://dungeoncoop-dashboard.mastredev.workers.dev https://*-dungeoncoop-dashboard.mastredev.workers.dev http://localhost:8000
+  X-Content-Type-Options: nosniff
+
+/index.html
+  Cache-Control: no-cache
+
+/
+  Cache-Control: no-cache

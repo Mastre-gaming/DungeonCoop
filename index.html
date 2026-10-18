@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dungeon Co-op : le camp</title>
+<link rel="icon" href="data:,">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+  :root { --bois-fonce: #2b1c1d; --bois: #573726; --bois-clair: #85581b; --parchemin: #f4ead2; --encre: #2a2333; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #2f5a2a; }
+  body { font: 14px/1.4 system-ui, sans-serif; color: var(--encre); }
+  #jeu { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; image-rendering: pixelated; touch-action: none; cursor: pointer; }
+  .plaque { position: fixed; background: var(--parchemin); border: 3px solid var(--bois); box-shadow: 0 0 0 2px var(--bois-fonce), 0 3px 0 2px rgba(0,0,0,.25); border-radius: 3px; padding: 4px 10px; }
+  #tampon { right: 10px; bottom: 10px; font: 11px/1.3 ui-monospace, Consolas, monospace; opacity: .9; }
+  #aide { left: 10px; bottom: 10px; }
+  #aide kbd { display: inline-block; min-width: 1.4em; padding: 0 4px; border: 1px solid var(--bois); border-bottom-width: 2px; border-radius: 3px; background: #fffaf0; font: 12px ui-monospace, Consolas, monospace; text-align: center; }
+  #chargement { left: 50%; top: 50%; transform: translate(-50%, -50%); }
+  html[data-pret] #chargement { display: none; }
+  html.visite #aide { display: none; }
+  html.visite #jeu { cursor: default; }
+  @media (max-width: 640px) { #aide { display: none; } }
+</style>
+</head>
+<body>
+<canvas id="jeu" aria-label="Le camp de Dungeon Co-op, vu de dessus"></canvas>
+<p id="chargement" class="plaque">Le camp se prépare…</p>
+<p id="aide" class="plaque"><kbd data-key="KeyW"></kbd><kbd data-key="KeyA"></kbd><kbd data-key="KeyS"></kbd><kbd data-key="KeyD"></kbd> ou les flèches : marcher · <kbd>Maj</kbd> : courir · un clic : aller là · le panneau : les missions</p>
+<p id="tampon" class="plaque"></p>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

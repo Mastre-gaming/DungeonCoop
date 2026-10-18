@@ -1,0 +1,71 @@
+/* Le panneau des missions : cadre en bois, parchemins épinglés (repris de la page de design aimée, design/camp/demo). */
+:root {
+  --bois: #5a3b22; --bois-fonce: #3b2716; --bois-clair: #7a5432; --creme: #ffe2a8; --creme-doux: #e9d3ad;
+  --parchemin: #f3e7c9; --parchemin-encre: #3a2c1a; --parchemin-doux: #6f5a3e;
+  --titre: "Pixelify Sans", "Courier New", monospace; --texte: "Source Sans 3", system-ui, sans-serif;
+}
+.fond-missions { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 16px; background: rgba(20, 14, 8, .45); overflow: auto; }
+.fond-missions[hidden] { display: none; }
+.panneau-missions { width: min(1080px, 100%); max-height: calc(100vh - 32px); overflow: auto; box-sizing: border-box;
+  background: var(--bois); border: 6px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 3px var(--bois-clair), 0 10px 0 rgba(0,0,0,.25);
+  padding: 14px; display: grid; gap: 12px; color: #fff3dc; font: 16px/1.5 var(--texte); }
+.panneau-missions h3, .panneau-missions h4, .panneau-missions h5 { margin: 0; }
+.panneau-missions p { margin: 0; }
+.tete { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+.tete h3 { font: 700 1.3rem var(--titre); color: var(--creme); margin-right: auto; }
+.tete .total { font: 500 .95rem var(--titre); color: var(--creme-doux); }
+.provisoire { font: 500 .75rem var(--titre); color: #3a2c1a; background: #ffd36b; border-radius: 3px; padding: 1px 6px; cursor: help; }
+.fermer { font: 500 .9rem var(--titre); color: #fff7e6; background: var(--bois-fonce); border: 2px solid var(--bois-clair); border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+.fermer kbd { font: .75rem ui-monospace, Consolas, monospace; opacity: .8; }
+.fermer:focus-visible, .zone:focus-visible, .mission a:focus-visible, .pied a:focus-visible { outline: 3px solid #ffd35a; outline-offset: 2px; }
+.annonce { background: #2f6b2a; border: 2px solid #1d4419; color: #fff7e6; border-radius: 4px; padding: 8px 12px; font: 500 1rem var(--titre); }
+.annonce.grave { background: #8a2a1f; border-color: #5a160e; }
+.corps { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 14px; }
+@media (max-width: 860px) { .corps { grid-template-columns: 1fr; } .zones { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .zones { grid-template-columns: 1fr; } }
+.zones { display: grid; gap: 6px; align-content: start; }
+.zone { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 10px; align-items: center; text-align: left; width: 100%;
+  background: #4a311c; color: #fff3dc; border: 2px solid var(--bois-clair); border-radius: 4px; padding: 8px 10px; cursor: pointer; font: inherit; }
+.zone[aria-pressed="true"] { background: var(--parchemin); color: var(--parchemin-encre); border-color: var(--parchemin); }
+.zone .sceau { width: 14px; height: 14px; border-radius: 50%; box-shadow: inset -2px -2px 0 rgba(0,0,0,.25); grid-row: span 2; }
+.zone .nom { font: 500 1rem/1.2 var(--titre); }
+.zone .axe { font-size: .8rem; opacity: .85; }
+.zone .lvl { font: 500 .85rem var(--titre); text-align: right; }
+.barre { grid-column: 2 / 4; height: 6px; border-radius: 3px; background: rgba(0,0,0,.35); overflow: hidden; }
+.zone[aria-pressed="true"] .barre { background: #d8c9a4; }
+.barre i { display: block; height: 100%; background: #7fc06a; }
+.zone .reste { grid-column: 2 / 4; font-size: .78rem; opacity: .85; }
+.detail { display: grid; gap: 12px; align-content: start; }
+.apercu { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: center; background: #4a311c; border-radius: 4px; padding: 10px; }
+.apercu figure { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.apercu-carte { width: 100%; max-width: 288px; height: auto; image-rendering: pixelated; border-radius: 4px; background: #3e7a32; }
+.apercu figcaption { font: 500 .8rem var(--titre); color: var(--creme-doux); }
+.etatzone { display: grid; gap: 4px; color: var(--creme-doux); font-size: .92rem; }
+.etatzone b { font: 500 1.05rem var(--titre); color: var(--creme); }
+.liege { background: repeating-linear-gradient(90deg, #7a5432 0 22px, #6f4b2c 22px 44px); border-radius: 3px; padding: 14px 12px; display: grid; gap: 14px; }
+.groupe { display: grid; gap: 10px; }
+.groupe h4 { font: 500 .9rem var(--titre); color: var(--creme); }
+.parchemins { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+.mission { position: relative; background: var(--parchemin); color: var(--parchemin-encre); border-radius: 2px; padding: 16px 12px 10px; display: grid; gap: 6px; box-shadow: 0 2px 0 rgba(0,0,0,.28); min-width: 0; }
+.mission:nth-child(2n) { transform: rotate(.7deg); } .mission:nth-child(2n+1) { transform: rotate(-.8deg); }
+.mission::before { content: ""; position: absolute; top: 5px; left: 50%; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: #b8322a; box-shadow: inset -2px -2px 0 rgba(0,0,0,.3); }
+.mission h5 { font: 600 1rem/1.3 var(--texte); overflow-wrap: anywhere; }
+.mission h5 a { color: inherit; text-decoration: none; }
+.mission h5 a:hover { text-decoration: underline; }
+.mission .num { font: 500 .8rem var(--titre); color: var(--parchemin-doux); }
+.meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .82rem; color: var(--parchemin-doux); }
+.puce { border: 1px solid #cdb68c; border-radius: 3px; padding: 0 6px; font-variant-numeric: tabular-nums; }
+.qui { margin-left: auto; font-weight: 600; color: var(--parchemin-encre); }
+.comment { font-size: .82rem; color: var(--parchemin-doux); border-top: 1px dashed #cdb68c; padding-top: 6px; }
+.comment code { font: 600 .8rem ui-monospace, monospace; background: #e8d9b4; padding: 0 4px; border-radius: 2px; color: var(--parchemin-encre); }
+.mission.rentree { background: #e4dcc4; } .mission.rentree h5 { text-decoration: line-through; text-decoration-color: #9b8a6a; }
+.rien { color: var(--creme-doux); font-style: italic; font-size: .9rem; }
+.pied { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: .9rem; color: var(--creme-doux); }
+.pied a { color: var(--creme); }
+
+/* La bulle « E : consulter », au-dessus du panneau-carte */
+.bulle-panneau { position: fixed; z-index: 5; transform: translate(-50%, -100%); pointer-events: none; white-space: nowrap;
+  background: var(--parchemin); color: var(--parchemin-encre); border: 3px solid var(--bois-fonce); border-radius: 4px; padding: 2px 8px; font: 500 .9rem var(--titre); }
+.bulle-panneau[hidden] { display: none; }
+.bulle-panneau kbd { display: inline-block; min-width: 1.2em; padding: 0 3px; border: 1px solid var(--bois); border-bottom-width: 2px; border-radius: 3px; background: #fffaf0; text-align: center; font: 12px ui-monospace, Consolas, monospace; }
+@media (prefers-reduced-motion: reduce) { .mission { transform: none !important; } }

@@ -1,0 +1,22 @@
+{
+  "name": "dungeoncoop",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Dungeon Co-op : le camp (prototype v0)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && node tools/sauvegarde.mjs",
+    "preview": "vite preview --port 4173",
+    "test": "node tools/test.mjs",
+    "shots": "node tools/captures.mjs",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "vite": "8.3.4",
+    "wrangler": "4.147.0"
+  }
+}

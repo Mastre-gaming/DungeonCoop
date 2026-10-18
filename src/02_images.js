@@ -1,0 +1,36 @@
+// Les planches LPC du camp (public/assets/lpc/, sources et licences dans CREDITS.md).
+// Chargées une fois ; l'herbe est éclaircie au chargement, comme dans le design (CAMP §9 : « un camp lumineux »).
+const FICHIERS = {
+  herbe: 'grass.png', terre: 'dirt.png', cimes: 'treetop.png', troncs: 'trunk.png', roche: 'rock.png', tonneau: 'barrel.png',
+  deco: 'decorations-medieval.png', grandFeu: 'CampFireFinished.png', heros: 'heros.png', sentinelle: 'sentinelle.png',
+  panneau: 'panneau_carte.png',
+};
+
+const charger = (src) => new Promise((ok, ko) => {
+  const im = new Image();
+  im.onload = () => ok(im);
+  im.onerror = () => ko(new Error(`image introuvable : ${src}`));
+  im.src = src;
+});
+
+// La retouche de l'herbe : un peu plus claire et plus chaude (la même formule que design/camp/outils/decouper.py).
+function eclaircir(im) {
+  const c = Object.assign(document.createElement('canvas'), { width: im.width, height: im.height });
+  const g = c.getContext('2d');
+  g.drawImage(im, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let k = 0; k < p.length; k += 4) {
+    p[k] = Math.min(255, Math.floor(p[k] * 1.05 + 10));
+    p[k + 1] = Math.min(255, Math.floor(p[k + 1] * 1.07 + 10));
+    p[k + 2] = Math.floor(p[k + 2] * 0.95);
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
+export async function chargerImages(base = './assets/lpc/') {
+  const im = {};
+  await Promise.all(Object.entries(FICHIERS).map(async ([nom, f]) => { im[nom] = await charger(base + f); }));
+  im.herbe = eclaircir(im.herbe);
+  return im;
+}

@@ -1,0 +1,11 @@
+// Le lien du jeu : https://dungeoncoop.0xbaba-eth.workers.dev (Workers Builds depuis main, un aperçu par PR).
+// Build : npm run build · Deploy : npx wrangler deploy. Le site est statique : seulement les fichiers de dist/.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dungeoncoop",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}

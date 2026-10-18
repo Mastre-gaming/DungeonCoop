@@ -1,0 +1,13 @@
+{
+  "provisoire": "Les axes ne sont pas encore décidés (CAMP compte 8 lieux, le dashboard 6 labels). En attendant, chaque label du tableau de travail est rangé dans le lieu qui lui ressemble ; « axe: technique » et les tâches sans axe vont dans « Sans lieu ».",
+  "lieux": [
+    { "id": "interface", "lieu": "Tableau d'affichage", "axe": "Interface et menus", "couleur": "#2f68b8", "labels": ["axe: menus", "axe: interface"] },
+    { "id": "combat", "lieu": "Terrain d'entraînement", "axe": "Combats et combos", "couleur": "#c2412f", "labels": ["axe: combats", "axe: combat"] },
+    { "id": "classes", "lieu": "Armurerie", "axe": "Classes et personnages", "couleur": "#d9822b", "labels": ["axe: classes"] },
+    { "id": "art", "lieu": "Atelier", "axe": "Pixel art", "couleur": "#c25a8a", "labels": ["axe: pixel art", "axe: art"] },
+    { "id": "histoire", "lieu": "Coin des récits", "axe": "Chapitres et histoire", "couleur": "#8e5cc2", "labels": ["axe: histoire"] },
+    { "id": "level", "lieu": "Table des cartes", "axe": "Salles et carte", "couleur": "#2f7d6d", "labels": ["axe: salles", "axe: level design"] },
+    { "id": "runs", "lieu": "Porte du camp", "axe": "Structure des runs", "couleur": "#5b6e2f", "labels": ["axe: runs"] },
+    { "id": "son", "lieu": "Estrade", "axe": "Son et musique", "couleur": "#7a6a5a", "labels": ["axe: son"] }
+  ]
+}

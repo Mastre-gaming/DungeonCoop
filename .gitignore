@@ -27,3 +27,6 @@ Thumbs.db
 desktop.ini
 *.log
 npm-debug.log*
+
+# Caches de Python (les outils de design/)
+__pycache__/
