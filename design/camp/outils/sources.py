@@ -17,6 +17,12 @@ PLANCHES = {
     'dirt': os.path.join(TUILES, 'dirt.png'),
     'barrel': os.path.join(TUILES, 'barrel.png'),
     'rock': os.path.join(TUILES, 'rock.png'),
+    'country': os.path.join(TUILES, 'country.png'),
+    'dirt2': os.path.join(TUILES, 'dirt2.png'),
+    'house': os.path.join(TUILES, 'house.png'),          # portes en bois cloutées, briques, ardoises
+    'castlefloors_outside': os.path.join(TUILES, 'castlefloors_outside.png'),
+    'castlewalls': os.path.join(TUILES, 'castlewalls.png'),
+    'castle_outside': os.path.join(TUILES, 'castle_outside.png'),
     'humain': os.path.join(DL, 'heros', 'sheet.png'),
     'sentinelle': os.path.join(DL, 'sentinelle', 'sheet.png'),
     'rat': os.path.join(DL, 'rats', 'extrait', 'PNG', '32x32', 'rat.png'),

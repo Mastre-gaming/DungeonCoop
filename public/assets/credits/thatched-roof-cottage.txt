@@ -1,0 +1,8 @@
+[LPC] Thatched-roof Cottage
+https://opengameart.org/content/lpc-thatched-roof-cottage
+
+Auteurs : bluecarrot16, d'après Lanea Zimmerman (Sharm), Daniel Armstrong (HughSpectrum), Casper Nilsson
+Licence : CC-BY-SA 3.0 ou GPL 3.0
+
+Pris pour l'armurerie du camp (public/assets/lpc/armurerie.png) : un mur de pierre à colombages (cottage.png)
+et un toit de chaume brun (thatched-roof.png), recopiés sans retouche par design/camp/outils/armurerie_jeu.py.
