@@ -26,7 +26,17 @@ export const POINTS = { S: 1, M: 3, L: 8 };
 const norm = (t) => String(t ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
 const labels = (issue) => (issue.labels ?? []).map((l) => norm(typeof l === 'string' ? l : l.name));
 export const estIdee = (issue) => labels(issue).includes('idee');
-export const estTache = (issue) => !issue.pull_request && (!estIdee(issue) || (issue.assignees?.length ?? 0) > 0);
+// Une mission abandonnée depuis le tableau du dashboard (« Abandonner » : fermée « non prévue », label « abandonnée ») :
+// elle n'est pas rentrée. Elle sort des comptes (renommée, niveaux des lieux, feu), comme si elle n'était pas une mission.
+export const estAbandonnee = (issue) => issue.state === 'closed' && (issue.state_reason === 'not_planned' || labels(issue).includes('abandonnee'));
+export const estTache = (issue) => !issue.pull_request && (!estIdee(issue) || (issue.assignees?.length ?? 0) > 0) && !estAbandonnee(issue);
+// L'urgence d'une mission : les labels « priorité: haute / moyenne / basse », que le tableau du dashboard choisit et
+// appelle « urgence élevée / moyenne / faible ». null : pas d'urgence donnée.
+export const URGENCES = { haute: 'élevée', moyenne: 'moyenne', basse: 'faible' };
+export function urgenceDe(issue) {
+  for (const l of labels(issue)) { const m = /^priorite\s*:\s*(haute|moyenne|basse)$/.exec(l); if (m) return m[1]; }
+  return null;
+}
 export const etatDe = (issue) => (issue.state === 'closed' ? 'rentree' : issue.assignees?.length ? 'encours' : 'aprendre');
 export function lieuDe(issue) {
   const l = labels(issue);
@@ -172,7 +182,7 @@ export const api = {
   delier() { debrancher(); reseau = RESEAU; horsLigne = true; dejaOuvert = false; game.bus.emit('direct:ferme'); },
   etat,
   lire,
-  regles: { progression, etatDe, lieuDe, tailleDe, estTache },
+  regles: { progression, etatDe, lieuDe, tailleDe, estTache, estAbandonnee, urgenceDe },
   // Pour les tests et dbg : remplace les issues par celles données (rien ne part sur le réseau).
   charger(issues, equipe = etat.equipe) { etat.issues = issues; etat.equipe = equipe; etat.source = 'test'; game.bus.emit('missions:maj', api.resume()); },
   taches: () => etat.issues.filter(estTache),

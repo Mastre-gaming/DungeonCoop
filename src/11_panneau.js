@@ -4,7 +4,7 @@
 // épinglés : à prendre, en cours, rentrées. Le camp ne fait que lire : on prend une mission dans le dashboard.
 import './panneau.css';
 import { dessinerPanneau } from './03_carte.js';
-import { LIEUX_AXES, SEUILS, POINTS, DASHBOARD, etatDe, lieuDe, tailleDe } from './10_missions.js';
+import { LIEUX_AXES, SEUILS, POINTS, DASHBOARD, URGENCES, etatDe, lieuDe, tailleDe, urgenceDe } from './10_missions.js';
 
 export const name = 'panneau';
 export const always = true;
@@ -143,12 +143,13 @@ function dessiner() {
 }
 
 function carte(t) {
-  const e = etatDe(t), taille = tailleDe(t), qui = (t.assignees ?? []).map((a) => missions.nomDe(a.login));
+  const e = etatDe(t), taille = tailleDe(t), urgence = e === 'rentree' ? null : urgenceDe(t), qui = (t.assignees ?? []).map((a) => missions.nomDe(a.login));
   return el('article', { class: `mission${e === 'rentree' ? ' rentree' : ''}` },
     el('span', { class: 'num' }, `#${t.number}`),
     el('h5', {}, el('a', { href: t.html_url ?? '#', target: '_blank', rel: 'noopener' }, t.title)),
     el('div', { class: 'meta' },
       el('span', { class: 'puce' }, taille ? `${taille} · ${POINTS[taille]} pt${POINTS[taille] > 1 ? 's' : ''}` : 'sans taille · 0 pt'),
+      urgence ? el('span', { class: `puce urgence urgence-${urgence}` }, `urgence ${URGENCES[urgence]}`) : null,
       t.milestone?.title ? el('span', { class: 'puce' }, t.milestone.title) : null,
       qui.length ? el('span', { class: 'qui', title: e === 'rentree' ? 'rentrée par' : 'en cours avec' }, qui.join(', ')) : null),
     e === 'aprendre' ? el('div', { class: 'comment' }, 'Pour la rentrer : une PR qui contient ', el('code', {}, `Ferme #${t.number}`), ', fusionnée.') : null,
