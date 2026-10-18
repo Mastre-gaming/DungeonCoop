@@ -8,7 +8,7 @@ The plan and the actual state, kept in step. Claude updates it the same day anyt
 - **Current stage:** D, the design stage, and M1 "the camp" starts (KICKOFF.md signed off 18 Oct). First code: the camp prototype v0 (`CAMP.fr.md` §7).
 - **Live link:** https://dungeoncoop.0xbaba-eth.workers.dev (the owner's Cloudflare account, 18 Oct): rebuilt on every merge to `main`, a preview per PR. Empty until the camp's first code lands.
 - **Camp v0, step 1 of 5 (18 Oct, branch `donbabaa/camp-v0`, not committed):** the empty camp in LPC tiles (42 x 28, the clearings plan), the 8 places at level 0, the small fire, the map board, the starting hero walking and running, the dead-zone camera, `?visite`, named screenshots in `shots/`. Then, on the owner's note: the map board twinkles (missions to take, or a first visit in this browser) and opens the missions panel on a click or E, with the dashboard work board's tasks read live from Paul's Worker. `?test` 60/60 (visit 5/5). Waits for the owner's look and score.
-- **Current score of the focus aspect:** none yet. The paper fight gives the first one.
+- **Current score of the focus aspect:** 9/10 "fun" from the D1 fight (18 Oct, team turn only, `design/combat-d1/COMPTE_RENDU.fr.md`). Not yet a score of combos against the 9/10 bar.
 - **Waiting on the owner's check (gate F):** nothing.
 
 | Item | Fixed on | Route to check it | Owner: confirmed / reopened / waived |
@@ -57,7 +57,7 @@ Each ends in something played on the live link (or, in stage D, on paper) and sc
 
 | # | Result you play | Check, and the score that passes | Status (date) |
 |---|---|---|---|
-| **D1** | **The paper fight**, both turn modes, with the test classes (`PAPER_FIGHT_KIT.md`) | the measure sheet filled in; "fun with four" 5/10 or more; turn mode, health and fight length decided from it | not started |
+| **D1** | **The paper fight**, both turn modes, with the test classes (`PAPER_FIGHT_KIT.md`) | the measure sheet filled in; "fun with four" 5/10 or more; turn mode, health and fight length decided from it | played 18 Oct in the "Salle d'essai" (`design/combat-d1/`), team turn only: won in round 5, 8 min 53, 4 combos, fun 9/10, Voleur 68 % of damage. Initiative order not played yet; the decisions are #26 |
 | **D2** | **Each friend's class** on the template, the group picks the first four | four sheets within budget, each with a combo hook into another class | not started |
 | **D3** | **The world sheet**, written by the team (the owner scrapped the suggested hooks) | one page the group agrees on; chapter 1's place, enemies and two bosses named | not started |
 | **D4** | **One hero sprite** in Sprite Painter, scored | the owner's score of 7/10 or more (gate A brought forward) | not started |
@@ -96,8 +96,8 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 ## Open questions
 | Date | Question | Who answers | Answer (date) |
 |---|---|---|---|
-| 17 Oct | Initiative order or team turn | the paper fight (D1) | |
-| 17 Oct | Round 4.5 min and fight 7 min don't fit together (about 1.5 rounds per fight) | D1 | |
+| 17 Oct | Initiative order or team turn | the paper fight (D1) | team turn played (18 Oct); initiative order still to play before #26 decides |
+| 17 Oct | Round 4.5 min and fight 7 min don't fit together (about 1.5 rounds per fight) | D1 | with enemies and dice automatic, the heroes' phase took 39 s a round after the first (18 Oct); the fight took 5 rounds. To decide in #26 |
 | 17 Oct | Permanent levels vs "every run starts weak"; enemies must scale to level 20 | the owner, after the first runs | |
 | 17 Oct | Should a third wipe end a run? | the first runs | |
 | 17 Oct | Who owns: fight rules, classes, monsters, rooms and the map, pixel art | the group | |
@@ -137,6 +137,7 @@ Moved into scope on 17 Oct: Paolitus's training mini-game, as a **turn-based** r
 | 18 Oct | **A 9th axis, « Le camp » (`axe: camp`)**: no building of its own; its level modernises the whole camp's look and life (levels to be proposed, then chosen) | owner: « créer une nouvelle axe… modernisera le design du camp » | |
 | 18 Oct | **The camp's HUD carries the whole dashboard, RPG-style** (`CAMP.fr.md` §8 bis): an action bar at the bottom; work board → quest journal (J) and quest tracker; who does what → party frames; progress → campaign bar; pushes → camp chronicle; links → satchel; ideas → tavern rumours; messaging → a mailbox in the camp with a notification icon, the messages open in the HUD. Read-only first; one at a time, quest journal first | owner | the dashboard's team messaging moves out of the excluded « text chat » |
 | 18 Oct | The mouse wheel zooms the camp camera: one notch = one whole pixel scale (1 to 8), the hero keeps his place on screen, the choice is kept in the browser; not in `?visite` (the dashboard page must scroll) nor while the missions panel is open | owner: « make the players be able to adjust camera zoom with the molette » | |
+| 18 Oct | D1 counts as played with the digital "Salle d'essai" (the kit's rules, room and heroes; enemies, dice and measures automatic) instead of paper; #25 closed on it. Players' notes: too much movement, walking on water should not be possible, winning should not only mean beating the boss, their own dice rolls should be visible | owner (`design/combat-d1/COMPTE_RENDU.fr.md`) | the initiative-order fight is still owed to #26 |
 | 18 Oct | Camp v0, Claude's calls to check (2): until the axes are decided, `src/data/axes.json` files each dashboard label under the camp place that looks closest (menus → board, combats → training ground, pixel art → workshop, salles → map table, histoire → story corner); `axe: technique` and tasks with no axis show under « Sans lieu »; a closed task with no `taille:` label grows nothing | Claude; owner to confirm when the axes are decided | |
 | 18 Oct | Camp v0, Claude's calls to check: the four clearings stay grass (all-dirt clearings were too brown in LPC tiles), with a small dirt yard in front of each place; forest trunks start 2 rows inside each clump and the bottom tree line stands just outside the camp, so no canopy hides a hero in front of a place | Claude, from the screenshots; owner to confirm | |
 | 18 Oct | **The builder's renown** (`RENOMMEE.fr.md`): closed missions give each assignee renown (S 1, M 3, L 8, +50 % when done with others, +5 per finished phase). It grows their tent, gives a title, and a podium per plan phase (reset each phase) puts the winner's statue in the camp. Cosmetic and social only: nothing in it changes fights or runs | owner | replaces "no number per person" from `CAMP.fr.md` for people; the camp's places stay the team's |

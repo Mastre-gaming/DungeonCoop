@@ -1,0 +1,40 @@
+# Rentrer les missions : quand une PR est fusionnée, chaque « Ferme #n » de sa description ferme la mission #n.
+# C'est le rituel du camp (CAMP.fr.md §3 et §5) : « une PR qui contient Ferme #n, fusionnée ». GitHub, lui, ne
+# comprend que les mots anglais (« Closes #n ») : sans cette vérification, aucune mission ne rentrerait toute seule.
+# Elle accepte « Ferme #12 », « ferme #12 » et « Fermé #12 », et plusieurs missions dans la même PR.
+
+name: Missions rentrées
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  fermer:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fermer les missions citées par « Ferme #n »
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          CORPS: ${{ github.event.pull_request.body }}
+          TITRE: ${{ github.event.pull_request.title }}
+        run: |
+          numeros=$(printf '%s\n%s\n' "$TITRE" "$CORPS" | grep -oiE '(ferme|fermé|fermÉ)[[:space:]]*:?[[:space:]]*#[0-9]+' | grep -oE '[0-9]+' | sort -un || true)
+          if [ -z "$numeros" ]; then echo "Aucune « Ferme #n » dans la PR #$PR."; exit 0; fi
+          for n in $numeros; do
+            if [ "$n" = "$PR" ]; then continue; fi
+            etat=$(gh issue view "$n" --json state --jq .state 2>/dev/null || echo "")
+            if [ "$etat" = "OPEN" ]; then
+              gh issue close "$n" --reason completed --comment "Rentrée : la PR #$PR (« Ferme #$n ») est fusionnée."
+              echo "::notice::Mission #$n rentrée (PR #$PR)."
+            else
+              echo "#$n : pas une mission ouverte (état : ${etat:-introuvable}), rien à faire."
+            fi
+          done

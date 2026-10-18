@@ -69,6 +69,8 @@ Repo du JEU (DungeonCoop)                          Repo du DASHBOARD (DungeonCoo
   | partie (« Je prends ») | quelqu'un est assigné |
   | rentrée (« Fait ✓ ») | l'issue est fermée |
 
+  **Rentrer une mission en codant :** une PR dont la description contient « Ferme #n », fusionnée. GitHub ne comprend que l'anglais (« Closes #n ») ; c'est la vérification « Missions rentrées » du repo (`.github/workflows/ferme-missions.yml`) qui ferme les missions citées par « Ferme #n » (décision du 18 oct : on garde « Ferme »).
+
 - **Les premières missions sont les étapes de `PLAN_TRAVAIL.md`** (phases 0 à 2). Le plan garde l'ordre et les explications, et met le numéro de l'issue à côté de chaque étape. **On ne coche plus le plan :** c'est l'issue fermée qui compte.
 - **Une mission faite à plusieurs** (deux personnes ou plus assignées) compte normalement. Le bonus d'équipe viendra plus tard (§8).
 
