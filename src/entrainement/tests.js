@@ -6,6 +6,7 @@ import { resultats, resume, caracteristiques, effets, icone } from './fiches.js'
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
+import { testsHabillage } from '../34_tests_hud.js';
 
 export const name = 'terrain';
 let ctx;
@@ -24,6 +25,9 @@ export async function selfTest(t, game) {
   // un héros par sa classe (h1 à h4 : les places), ou une créature par son id
   const trouver = (C, id) => C.U(id) ?? C.S.unites.find((u) => u.camp === 'h' && u.type === id);
   const poser = (C, id, x, y) => { const u = trouver(C, id); u.x = x; u.y = y; return u; };
+
+  testsHabillage(t, { '.haut-terrain': 'le bandeau', '.fiche-heros': 'la fiche d’un héros', '.journal-terrain': 'le journal',
+    '.barre-terrain': 'la barre des capacités', '.coin-phase': 'la fin de phase', '.cadre-terrain': 'l’accueil' });
 
   // --- La géométrie sans cases ---------------------------------------------------------------------------------
   t.group('sans cases : la géométrie');

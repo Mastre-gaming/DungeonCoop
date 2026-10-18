@@ -8,9 +8,13 @@ import { createGame } from '../skills/core/module/06_game.js';
 import * as editeurSkill from './editeur.js';
 import * as tests from './tests.js';
 import CADRE from './cadre.json';
+import { habiller } from '../33_cadres.js';
 import '../panneau.css';
 import '../jeu.css';
+import '../cadres.css';
 import './classe.css';
+
+habiller();   // le bois veiné, les coins de laiton, le parchemin (DESIGN.fr.md §1)
 
 const query = new URLSearchParams(location.search);
 const game = createGame({ storage: { prefix: 'dungeoncoop:' } });

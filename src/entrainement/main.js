@@ -15,9 +15,13 @@ import * as multiSkill from './multi.js';
 import * as tests from './tests.js';
 import PERSOS from './persos.json';
 import { PLANCHES as EFFETS } from './effets.js';
+import { habiller } from '../33_cadres.js';
 import '../panneau.css';
 import '../jeu.css';
+import '../cadres.css';
 import './entrainement.css';
+
+habiller();   // le bois veiné, les coins de laiton, le parchemin (DESIGN.fr.md §1)
 
 const query = new URLSearchParams(location.search);
 const graine = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);

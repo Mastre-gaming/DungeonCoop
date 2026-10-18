@@ -91,17 +91,17 @@ Copier ces recettes ; ne pas en inventer une nouvelle sans l'ajouter ici.
 
 ```
 ┌───────────────────────────────────────────────────────┐
-│ Campagne ▓▓▓▓▓░░░                     Renommée ✦ 42   │
-│                                       Tes quêtes      │
-│                 [ annonce ]           · #88 …         │
-│                                                       │
-│                     (le monde)                        │
-│                                                       │
-│          [J][P][C][N][I][R][M]  barre d'action        │
+│ (◉) héros ✦ 42      ╔ CHAPITRE ▓▓▓░ ╗      Renommée │
+│  ⛉ Jouer à          ▼               ▼       Tes quêtes │
+│    plusieurs                                · #88 …     │
+│  [panneau P/N/M]       (le monde)          annonces    │
+│                                                         │
+│   loup [J][P][C][N][I][R][M][O] loup   barre d'action  │
 └───────────────────────────────────────────────────────┘
 ```
 
-- **Haut gauche :** la barre de campagne. **Haut droite :** la colonne renommée → suivi des quêtes → annonces. **Bas centre :** la barre d'action. **Bas, au-dessus de la barre :** le dialogue.
+- **Haut gauche :** le médaillon du héros (son bandeau, l'écu du niveau), puis « Jouer à plusieurs » dessous, puis les panneaux qui s'ouvrent à gauche (le groupe, la chronique, les messages). **Haut centre :** la bannière de campagne et ses deux flammes. **Haut droite :** la colonne renommée → suivi des quêtes (en or, sans cadre) → annonces. **Bas centre :** la barre d'action entre ses embouts et ses deux loups ; les autres panneaux (journal, carte, sacoche, rumeurs, réglages) s'ouvrent au-dessus. **Bas, au-dessus de la barre :** le dialogue.
+- **Le code :** `src/16_hud.js` (médaillon, barre, suivi), `src/18_campagne.js` (bannière), `src/33_cadres.js` (toutes les pièces dessinées en pixels : grain du bois, parchemin, cadre à neuf parts `--cadre-bois` et cadre fin `--cadre-fin`, rivets, embouts, socles, flammes, écu, médaillon), `src/cadres.css` (les jetons), `src/hud.css` (la place et l'habillage de chaque pièce). Captures : `node tools/hud.mjs`.
 - Marge de 16–20 px aux bords. Le centre de l'écran reste au monde : rien de fixe dans la zone morte de la caméra (30 % au centre).
 - **Un seul panneau ouvert à la fois** ; Échap ferme. Chaque panneau a sa case et sa touche dans la barre.
 - En mode visite (`?visite`), pas de barre ni de suivi.
@@ -137,3 +137,6 @@ Avant de dire qu'un écran est fini : une capture à l'échelle 1 et une à l'é
 | Date | Décision | Qui |
 |---|---|---|
 | 18 oct | Ce fichier devient le modèle visuel de toutes les builds | le propriétaire |
+| 18 oct | La bannière de campagne va en haut au centre (§1, direction C) ; « Jouer à plusieurs » va sous le médaillon | le propriétaire |
+| 18 oct | **(à confirmer)** Le niveau sur l'écu = le nombre de tes missions rentrées ; la jauge du bandeau = ta renommée de la phase face à la tête du podium | proposé par la build du HUD |
+| 18 oct | **(à confirmer)** Le terrain d'entraînement et l'armurerie prennent le même habillage : plaques de parchemin dans un cadre fin à coins de laiton (`--cadre-fin`), boîtes de bois dans le grand cadre (`--cadre-bois`) ; pas de loups au combat (la barre des capacités est trop large) | proposé par la build du HUD |
