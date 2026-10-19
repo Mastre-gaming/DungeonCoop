@@ -219,6 +219,26 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
 - **Les vraies animations LPC, dans les 4 directions :** marche en 8 images, à environ 2,3 cases par seconde ; course en 8 images, à environ 4,3 cases par seconde. Au repos, il garde la pose debout dans la dernière direction prise.
 - **Commandes :** flèches ou ZQSD pour marcher, Maj pour courir, ou un clic maintenu pour marcher vers le pointeur. Les poteaux du tableau et le feu bloquent le passage.
 
+### Le choix du héros, avant d'entrer au camp (demande du propriétaire, 19 oct)
+- **Un menu avant l'entrée :** à chaque arrivée, avant la scène de la sentinelle, on choisit le héros qu'on incarne. Puis la scène d'arrivée se joue avec lui (il entre par le sud et monte vers la sentinelle).
+- **Des onglets :** le **set de base** (le héros de départ et les classes d'essai : Chevalier, Barde, Druide, Éclaireuse, Voleur), puis **un onglet par joueur**, qui ne montre **que ses héros** (les classes de `content/classes/` dont l'`auteur` est son pseudo GitHub). Un joueur sans héros a son onglet vide, qui renvoie à l'armurerie.
+- **Le médaillon suit :** en haut à gauche, le médaillon montre le héros choisi. Un clic dessus rouvre le menu, pour changer de héros sur place.
+- **Un héros incarné quitte son poste :** quand on incarne Baba Brisenclume, il n'est plus à la forge.
+- **Le choix est gardé** dans ce navigateur : le menu s'ouvre sur le dernier héros pris.
+- Les héros des classes n'ont pas de course LPC : Maj les fait marcher plus vite, au rythme de la course.
+- **Validé par le propriétaire le 19 oct** (LOCKED.md).
+
+### Les héros du camp : ils se promènent et parlent (demande du propriétaire, 19 oct)
+- **Chaque héros qu'on peut incarner se balade sur toute la carte**, dans la muraille, de proche en proche (une étape fait au plus 15 cases), et s'arrête un moment entre deux. Il ne vise jamais l'endroit d'un autre : ils ne s'agglutinent pas. Ils ne bloquent pas le passage.
+- **Chacun a son foyer, là où il a du sens** : il y apparaît et y revient souvent (une fois sur trois). Le Chevalier au terrain d'entraînement, l'Éclaireuse à la table des cartes, le Druide au coin des récits, la Barde sur l'estrade, le Voleur dans la foule du tableau d'affichage, le héros de départ au feu.
+- **Il interagit avec le décor** (une fois sur trois, ailleurs que chez lui) : se chauffer les mains au feu, s'entraîner au terrain (l'épée, l'arc, la dague ou un sort selon sa classe), lire le tableau ou les récits, étudier les cartes, poster une lettre, chanter sur l'estrade. Ses animations de base, de sa planche LPC : la marche, le repos, et pour les gestes le sort, l'estoc, la taille et le tir, dans les 4 directions.
+- **Baba Brisenclume ne se promène pas :** il reste à sa forge.
+- **E devant un héros** (Baba compris, à sa forge) : il s'arrête, se tourne vers toi et dit une réplique, la suivante à chaque fois. De temps en temps, un héros qu'on voit en dit une tout seul.
+- **Ses répliques lui sont propres**, basiques et parfois drôles, d'après sa fiche de classe : `src/data/repliques.json`. **Texte provisoire** : les textes du jeu sont à l'équipe.
+- **Un héros pris par un joueur quitte le camp** pour lui laisser la place : le mien, et ceux des amis du groupe (chacun dit au groupe quel héros il incarne ; sa copie porte ce héros).
+- **Apparaître, disparaître :** quand un ami rejoint le groupe ou le quitte, quand il change de héros, et quand un héros du camp est pris (ou rendu), une colonne de lumière dorée tombe sur lui et une bouffée de poussière part de ses pieds ; il se montre (ou s'en va) quand la lumière touche le sol.
+- **E, c'est interagir** (l'aide en bas à gauche le dit) : consulter un lieu, parler à un personnage, écouter le barde, lire le courrier. Un lieu ou un personnage du camp passe avant un héros qui se promène.
+
 ### La sentinelle au spawn (validée le 18 oct)
 - **Ce qu'elle fait :** à la toute première arrivée, elle arrête le héros et lui demande son **nom de dev**. Le camp sait alors qui rentre quelle mission.
 - **Son apparence :** un chevalier du générateur LPC, en armure de plaques acier, grand heaume, gantelets et bottes d'armure, cape rouge, épée et bouclier à croix. Pas de retouche : le panache bleu proposé a été abandonné. Le lien du générateur est dans `dl/lpc/sentinelle/credits.txt`.
@@ -375,6 +395,9 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 18 oct | L'armurerie : tente, tente et abri de forge, puis un atelier de pierre (pas une petite maison), des dalles qui gagnent le sol ; livrée au niveau 2 | le propriétaire |
 | 18 oct | La place du village : le feu devient le centre du village dans la pierre de la muraille (sans flou), une fontaine dès le niveau 2, les sentiers qui se pavent, l'herbe qui se dompte, et rien qui gêne le passage ; livrée au niveau 2 | le propriétaire |
 | 18 oct | Après le nom, la sentinelle presse le joueur et lui fait faire le tour du camp : le feu, le tableau, un terrain vide, un rat | le propriétaire |
+| 19 oct | Un menu de choix du héros avant d'entrer au camp : le set de base, puis un onglet par joueur avec seulement ses héros ; le médaillon suit le héros choisi ; Baba incarné n'est plus à la forge | le propriétaire |
+| 19 oct | Les héros qu'on peut incarner se promènent dans le camp et parlent (E), chacun avec ses répliques ; un héros pris par un joueur (moi ou un ami) disparaît pour lui laisser la place | le propriétaire |
+| 19 oct | Les héros se baladent sur toute la carte, chacun depuis un foyer qui a du sens, et interagissent avec le décor ; une colonne dorée quand quelqu'un apparaît ou disparaît (un ami qui rejoint ou part, un héros pris) ; E, c'est interagir | le propriétaire |
 
 | Question | Qui répond |
 |---|---|

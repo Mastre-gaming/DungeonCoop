@@ -58,7 +58,7 @@ function icone(images, src) {
   return c;
 }
 
-let game, missions, sentinelle, panneau, images, visite, renommee, barre, socleBarre, suivi, colonneGauche, cadreHeros, panneaux = {};
+let game, missions, sentinelle, panneau, images, visite, renommee, heros, barre, socleBarre, suivi, colonneGauche, cadreHeros, panneaux = {};
 let signature = '', attente = 0;
 
 // Les panneaux qui s'ouvrent à gauche, sous « Jouer à plusieurs » (les autres s'ouvrent au milieu, au-dessus de la barre).
@@ -66,7 +66,7 @@ const A_GAUCHE = ['#groupe', '#groupe-cadres', '#chronique', '#messagerie'];
 
 export function init(g, options) {
   game = g;
-  ({ missions, sentinelle, panneau, images, visite, renommee } = options);
+  ({ missions, sentinelle, panneau, images, visite, renommee, heros } = options);
   habiller();
   for (const c of CASES) game.input.bindings[`hud-${c.id}`] = [c.touche];
   game.input.bindings['fermer-hud'] = ['Escape'];
@@ -104,6 +104,7 @@ export function init(g, options) {
   });
   game.bus.on('missions:maj', dessinerSuivi);
   game.bus.on('nom:change', dessinerSuivi);
+  game.bus.on('heros:incarne', () => { signature = ''; dessinerHeros(); });   // le médaillon suit le héros choisi
   dessinerSuivi();
   dessinerHeros();
   return api;
@@ -133,7 +134,8 @@ export function fiche(qui, r, taches = []) {
 function dessinerHeros() {
   if (!cadreHeros || visite) return;
   const f = fiche(sentinelle?.qui, renommee?.resultat, missions.taches());
-  const sig = JSON.stringify(f);
+  const inc = heros?.incarne, planche = (inc && images[inc.image]) || images.heros;   // le héros incarné (41_choix_heros.js)
+  const sig = JSON.stringify(f) + (inc?.id ?? '');
   if (sig === signature) return;
   signature = sig;
   const part = f.tete ? Math.round((f.moiPhase / f.tete) * 100) : 0;
@@ -149,7 +151,8 @@ function dessinerHeros() {
       el('p', { class: 'ligne-titre' },
         el('span', {}, f.login ? `${f.titre ?? 'Bâtisseur'}${f.rang ? ` · ${f.rang}${f.rang === 1 ? 'er' : 'e'}` : ''}` : 'Dis ton nom à la sentinelle'),
         f.login ? el('span', { class: 'quetes' }, `⚔ ${f.enCours} quête${f.enCours > 1 ? 's' : ''}`) : null)),
-    Object.assign(medaillon(images.heros), { className: 'medaillon', role: 'img', ariaLabel: `Le portrait de ${f.nom}` }),
+    Object.assign(medaillon(planche), { className: 'medaillon', role: 'button', tabIndex: 0, title: 'Changer de héros', ariaLabel: `Le portrait de ${f.nom}${inc?.nom ? `, ${inc.nom}` : ''} : changer de héros`,
+      onclick: () => game.bus.emit('choix:ouvrir'), onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); game.bus.emit('choix:ouvrir'); } } }),
     ...(f.niveau != null ? [el('p', { class: 'ecu', title: 'Ton niveau : tes missions rentrées', 'aria-label': `Niveau ${f.niveau} : ${f.niveau} mission${f.niveau > 1 ? 's' : ''} rentrée${f.niveau > 1 ? 's' : ''}` }, String(f.niveau))] : []));   // (replaceChildren écrirait « null »)
 }
 
