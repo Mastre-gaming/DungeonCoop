@@ -108,7 +108,9 @@ async function demarrer() {
   // les murs ouest, nord et est montent avec le chantier, et s'estompent comme la grande muraille quand on s'en éloigne
   const murs = game.use(mursSkill, { rendu, images, heros, chantier, collision, visite });
   // le jour et la nuit : le camp suit l'heure de Paris (?heure=22:30 pour en forcer une) ; en visite, plein jour
-  const jourNuit = game.use(jourNuitSkill, { rendu, heros, reseau, chantier, murs, muraille, visite, heure: query.get('heure') });
+  // (en ?test, midi : la nuit coûte cher en rendu logiciel, et les tests de GitHub dépassaient leur quart d'heure ; le
+  // test du jour et de la nuit passe lui-même par 23 h)
+  const jourNuit = game.use(jourNuitSkill, { rendu, heros, reseau, chantier, murs, muraille, visite, heure: query.get('heure') ?? (query.has('test') ? '12:00' : null) });
   // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
   const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
   const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
