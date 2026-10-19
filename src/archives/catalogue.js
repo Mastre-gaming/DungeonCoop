@@ -11,6 +11,7 @@ import { HEROS, ENNEMIS, CAPACITES, EQUIPE_KIT } from '../entrainement/regles.js
 import { icone, TAMPONS, caracteristiques, effets, resume } from '../entrainement/fiches.js';
 import { metres } from '../entrainement/geometrie.js';
 import { ESPECES } from '../30_rats.js';
+import FORGERON from '../data/forgeron.json';
 
 // les planches des scènes de Fraps, servies avec le build (Vite les copie et leur donne une adresse)
 const PLANCHES_ESQUISSES = import.meta.glob('../../design/animations/esquisses/*.png', { eager: true, query: '?url', import: 'default' });
@@ -36,16 +37,26 @@ const ROLE_ENNEMI = { sbire: 'Ennemi', archer: 'Ennemi à distance', 'brute-enne
 const typeEnnemi = { 'brute-ennemie': 'brt' };
 
 // --- Les personnages ----------------------------------------------------------------------------------------------
+// Baba Brisenclume à la forge du camp (src/40_forgeron.js) : ses gestes, et ce qu'en joue l'aperçu (sa planche forgeron.png)
+const GESTES_FORGE = [['forge', 'Il forge'], ['attise', 'Il attise le feu'], ['sonne', 'Il fait sonner ses marteaux'], ['marche', 'Il marche'], ['feu', 'Le feu qui s’emballe']];
+export function joueForge(planche, geste, dir = 'bas') {
+  const F = FORGERON, H = F.image.h;
+  if (geste === 'feu') return { genre: 'planche', planche, w: F.feu.w, h: F.feu.h, images: F.feu.images, fps: 1 / F.feu.pas, sy: F.feu.rang * H, durees: null, debut: 0 };
+  if (geste === 'marche') return { genre: 'planche', planche, w: F.image.w, h: H, images: F.marche.images, fps: 10, sy: (F.marche.rang + F.marche.directions.indexOf(dir)) * H, durees: null, debut: 1 };
+  const A = F.anims[geste] ?? F.anims.forge;
+  return { genre: 'planche', planche, w: F.image.w, h: H, images: A.durees.length, durees: A.durees, sy: A.rang * H, debut: 0 };
+}
 function personnages() {
   const liste = [];
   for (const [id, p] of Object.entries(PERSOS)) {
     const ennemi = ROLE_ENNEMI[id], H = HEROS[id], E = ENNEMIS[typeEnnemi[id] ?? id];
+    const fiche = H ? null : Object.values(FICHES).find((c) => c.id === id);   // une classe de l'armurerie qui a sa planche
     liste.push({
-      id, nom: p.nom, groupe: ennemi ? 'Les ennemis du terrain' : H?.essai ? 'Les classes d’essai' : 'Les héros du kit D1',
+      id, nom: p.nom, groupe: ennemi ? 'Les ennemis du terrain' : H?.essai ? 'Les classes d’essai' : H ? 'Les héros du kit D1' : 'Les classes de l’armurerie',
       planche: `${LPC}entrainement/${id}.png`, format: 'lpc', lien: p.lien, attaque: p.attaque, credits: `${LPC.replace('lpc/', '')}credits/entrainement-${id}.txt`,
-      anims: ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse', ...(p.attaque ? ['grande'] : [])],
-      texte: ennemi ? `${ennemi} · ${E ? `${E.pv} PV · ${E.habitude}` : ''}` : H ? `${H.role} · ${H.pv} PV` : '',
-      classe: H ? id : null,
+      anims: p.anims ?? ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse', ...(p.attaque ? ['grande'] : [])],
+      texte: ennemi ? `${ennemi} · ${E ? `${E.pv} PV · ${E.habitude}` : ''}` : H ? `${H.role} · ${H.pv} PV` : fiche?.phrase ?? '',
+      classe: H ? id : null, fiche: fiche ? `fiche-${fiche.id}` : null,
     });
   }
   // le camp
@@ -53,6 +64,7 @@ function personnages() {
     { id: 'heros-camp', nom: 'Le héros de départ', groupe: 'Le camp', planche: `${LPC}heros.png`, format: 'lpc', anims: ['marche', 'course', 'sort', 'estoc', 'taille', 'tir', 'blesse'], credits: './assets/credits/heros.txt', texte: 'Celui qu’on promène dans le camp, avant d’avoir son héros.' },
     { id: 'sentinelle', nom: 'La sentinelle', groupe: 'Le camp', planche: `${LPC}sentinelle.png`, format: 'lpc', anims: ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse'], credits: './assets/credits/sentinelle.txt', texte: 'Elle accueille à l’entrée et fait le tour du camp.' },
     { id: 'crieur', nom: 'Le crieur', groupe: 'Le camp', planche: `${LPC}crieur.png`, format: 'lpc', anims: ['marche', 'course', 'sort', 'estoc', 'taille', 'tir', 'blesse'], credits: './assets/credits/crieur.txt', texte: 'Sur son estrade à côté du tableau d’affichage (niveau 3), il agite sa cloche et crie les nouvelles.' },
+    { id: 'baba-forge', nom: 'Baba Brisenclume à la forge', groupe: 'Le camp', planche: `${LPC}forgeron.png`, format: 'forgeron', anims: GESTES_FORGE.map((g) => g[0]), noms: Object.fromEntries(GESTES_FORGE), credits: './assets/credits/entrainement-baba-brisenclume.txt', texte: 'Autour de l’armurerie, il forge à l’enclume, attise le feu de forge et fait sonner ses marteaux dans la cour ; il marche de l’un à l’autre.', fiche: 'fiche-baba-brisenclume' },
     { id: 'barde-camp', nom: 'Le barde de la radio', groupe: 'Le camp', planche: `${LPC}barde.png`, format: 'bande', w: 64, h: 68, images: 3, fps: 6, credits: './assets/credits/barde-camp.txt', texte: 'Assis près du feu, il joue de la lyre : la radio Deadlock.' },
     ...ESPECES.map((e, k) => ({ id: `rat-${e.nom}`, nom: `Le rat « ${e.texte} »`, groupe: 'Le camp', planche: `${LPC}rats.png`, format: 'rat', espece: k, texte: `Il sort quand une PR attend : ${e.texte}.` })),
   );

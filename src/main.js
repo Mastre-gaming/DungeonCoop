@@ -39,6 +39,7 @@ import * as armurerieSkill from './26_armurerie.js';
 import * as archivesSkill from './27_archives.js';
 import * as murailleSkill from './32_muraille.js';
 import * as crieurSkill from './38_crieur.js';
+import * as forgeronSkill from './40_forgeron.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
 import './hud.css';      // l'habillage épique du HUD (DESIGN.fr.md), après tout le reste
@@ -83,6 +84,8 @@ async function demarrer() {
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
   // le crieur, sur son estrade à côté du tableau d'affichage, à partir du niveau 3 du tableau
   const crieur = game.use(crieurSkill, { rendu, images, heros, missions, lieux });
+  // Baba Brisenclume tape sur l'enclume de l'armurerie, sous l'abri de forge
+  const forgeron = game.use(forgeronSkill, { rendu, images, lieux, collision });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
@@ -124,7 +127,7 @@ async function demarrer() {
   // l'entrée du camp (#123) : sur la route, devant le pont ; et juste après la porte, en entrant
   game.dbg.spot('porte', aller(15 * T, 36.6 * T, 'haut'));
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
