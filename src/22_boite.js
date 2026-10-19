@@ -8,7 +8,9 @@ export const name = 'boite';
 export const always = true;
 
 const T = 32;
-export const POSTE = { x: 23.5 * T, y: 14.2 * T };   // sur la place du feu, côté tableau d'affichage, hors des sentiers
+// À côté du tableau d'affichage (demande du propriétaire, 19 oct), sur l'herbe à gauche du petit panneau épinglé,
+// hors des sentiers et hors de l'emprise du tableau (qui commence à la case 25).
+export const POSTE = { x: 24.6 * T, y: 16.5 * T };
 const IMAGE = './assets/lpc/boite_lettres.png';
 
 function el(tag, attrs = {}, ...enfants) {

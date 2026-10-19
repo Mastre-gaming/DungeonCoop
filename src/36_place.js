@@ -11,6 +11,9 @@ import PLACE from './data/place.json';
 export const name = 'place';
 export const always = true;
 export const PLANCHER = 1;          // le niveau d'office (avant la pierre)
+// Le plafond (demande du propriétaire, 19 oct) : la place reste au niveau 1 pour l'instant, même quand le feu de l'équipe
+// a grandi (les missions rentrées comptent toujours ; la place monte quand on lève le plafond). place.forcer passe outre.
+export const PLAFOND = 1;
 const PIED_SOL = -9500;             // le calque du sol : au-dessus du sol du camp, sous tout ce qui se trie
 
 let game, rendu, images, collision, missions, decor;
@@ -43,7 +46,7 @@ function poser() {
   }
 }
 
-const voulu = () => (force != null ? force : Math.max(PLANCHER, missions?.resume().feu ?? 0));
+const voulu = () => (force != null ? force : Math.min(PLAFOND, Math.max(PLANCHER, missions?.resume().feu ?? 0)));
 
 export function init(g, options) {
   game = g;
@@ -66,7 +69,7 @@ export function update(dt) {
 export function dispose() { retirer(); }
 
 export const api = {
-  PLANCHER, PLACE,
+  PLANCHER, PLAFOND, PLACE,
   get niveau() { return niveau; },
   // dbg.place.forcer(4) : voir un niveau sans mission ; forcer(null) : revenir au vrai
   forcer(n) { force = n; update(0); },
