@@ -2,7 +2,7 @@
 // Ce module ne dessine pas à l'écran : il compose le sol dans un canevas et fait la liste des objets et des obstacles.
 //   objet    { img, sx, sy, sw, sh, x, y, pied }   une image découpée dans une planche, posée en (x, y) ; `pied` sert au tri
 //   obstacle { x, y, w, h }                        un rectangle où un pied ne peut pas entrer (pixels du monde)
-import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, terre } from './01_plan.js';
+import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, MURS, terre } from './01_plan.js';
 import POS from './data/carte_zones.json';
 import ENTREE from './data/muraille.json';
 
@@ -50,6 +50,15 @@ function arbre(objets, i, j, decalage = 0) {
   objets.push({ img: 'troncs', sx: tronc * 96, sy: 0, sw: 96, sh: 96, x: cx - 48, y: hautTronc, pied });
   const [sx, sy, sw, sh, bas, rec] = CIMES[k];
   objets.push({ img: 'cimes', sx, sy, sw, sh, x: cx - 48, y: hautTronc + rec - bas, pied: pied + 0.01 });
+}
+
+// Un arbre de la lisière ouest ou est, hors du camp : coupé au ras du mur (MURS), pour ne pas dépasser côté camp. Au sud de
+// la grande muraille, il reste entier.
+export function couper(o, cote) {
+  if (o.pied > MURS.sud + 40) return o;
+  if (cote === 'ouest' && o.x + o.sw > MURS.ouest) o.sw = Math.max(0, MURS.ouest - o.x);
+  if (cote === 'est' && o.x < MURS.est) { const d = Math.min(o.sw, MURS.est - o.x); o.x += d; o.sx += d; o.sw -= d; }
+  return o;
 }
 
 // Une pièce de la planche des décorations médiévales, en cases de 32 px.
@@ -121,7 +130,15 @@ export function dessinerPanneau(g, im, niveaux = {}, zone = null, temps = 0) {
 
 export function composerCamp() {
   const objets = [], obstacles = [], bloquees = new Set();
-  for (const [i, j, d] of ARBRES) arbre(objets, i, j, d);
+  for (const [i, j, d] of ARBRES) {
+    if (j === 0 && i > 0 && i < W - 1) continue;   // la lisière du nord : derrière le mur nord, on n'en verrait que les troncs
+    const n = objets.length;
+    arbre(objets, i, j, d);
+    if (i === 0 || i === W - 1) {
+      const coupes = objets.splice(n).map((o) => couper(o, i === 0 ? 'ouest' : 'est')).filter((o) => o.sw > 0);
+      objets.push(...coupes);
+    }
+  }
   for (const [i, j] of BOIS) bloquees.add(`${i},${j}`);
 
   const lieux = {};
