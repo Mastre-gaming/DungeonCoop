@@ -100,7 +100,7 @@ export async function selfTest(t, game) {
   if (visite) {
     t.group('la vue visite');
     t.ok(rendu.vue.w >= W * T - 0.5 && rendu.vue.h >= H * T - 0.5, `tout le camp tient dans le cadre (vue ${Math.round(rendu.vue.w)} x ${Math.round(rendu.vue.h)})`);
-    t.ok(ctx.muraille.fantome === 0 && ctx.muraille.opacite === 1, 'en visite, la muraille de l’entrée est pleine');
+    t.ok(ctx.muraille.estompe === 0 && ctx.muraille.opacite === 1, 'en visite, la muraille de l’entrée est pleine');
     game.dbg.freeze(false);
     return;
   }
@@ -212,17 +212,30 @@ export async function selfTest(t, game) {
   t.eq(ouvertes, [], 'la muraille et les douves bloquent partout, sauf à la porte');
   t.ok(rangees.every((j) => !collision.bloque((p0 + 1) * T, (j + 0.6) * T)), `la porte et le pont-levis sont ouverts (colonnes ${p0} et ${p1})`);
   const route = [15 * T, (H - 1.4) * T];
-  heros.placer(...route, 'haut'); camera.snap(); game.dbg.advance(0.5);
-  t.ok(muraille.fantome === 0 && muraille.opacite === 1, 'sur la route, dehors : la muraille est pleine');
+  heros.placer(...route, 'haut'); camera.snap(); game.dbg.advance(2);   // (la muraille revient en douceur)
+  const pleine = () => muraille.estompe === 0 && Math.abs(muraille.opacite - 1) < 0.01 && muraille.flou === 0;
+  t.ok(pleine(), 'sur la route, dehors : la muraille est pleine et nette');
   const parLaPorte = marcherVers(...devantFeu(), { limite: 60 });
   rapport.push({ vers: 'le feu, depuis la route, par la porte', ...parLaPorte });
   t.ok(parLaPorte.arrive && !parLaPorte.traverse, `depuis la route, par le pont et la porte, jusqu’au feu${parLaPorte.arrive ? ` (${parLaPorte.temps.toFixed(1)} s)` : ` : coincé en (${parLaPorte.coince})`}`);
-  game.dbg.advance(0.5);
-  t.ok(muraille.fantome === 1 && muraille.floue && Math.abs(muraille.opacite - 0.2) < 0.01, `dedans : la muraille est fantôme (opacité ${muraille.opacite.toFixed(2)}, floue)`);
-  heros.placer(15 * T, (MURAILLE.pied - 1.2) * T, 'bas'); camera.snap(); game.dbg.advance(0.1);
-  t.ok(muraille.fantome > 0, 'sous la voûte, déjà fantôme (le héros n’est jamais caché par la porte)');
-  heros.placer(...route, 'haut'); game.dbg.advance(0.5);
-  t.ok(muraille.fantome === 0 && muraille.opacite === 1, 'ressorti : la muraille redevient pleine');
+  game.dbg.advance(2);
+  t.ok(muraille.opacite < 0.01, `au feu, loin de la muraille : elle a disparu (opacité ${muraille.opacite.toFixed(2)})`);
+  // en reculant vers la muraille, elle revient : de plus en plus nette et visible (demande de Mope, 18 oct)
+  const vu = [];
+  for (const d of [8, 5, 2.5, 0.8]) {
+    heros.placer(15 * T, (MURAILLE.pied - d) * T, 'bas'); camera.snap(); game.dbg.advance(2);
+    vu.push({ d, o: muraille.opacite, f: muraille.flou });
+  }
+  t.ok(vu.every((v, i) => i === 0 || (v.o > vu[i - 1].o && v.f <= vu[i - 1].f)), `plus près de la muraille, plus visible et moins floue (${vu.map((v) => `${v.d} cases : ${Math.round(v.o * 100)} %, flou ${v.f}`).join(' ; ')})`);
+  t.ok(vu[3].o > 0.5 && vu[3].o < 0.9 && vu[3].f <= 0.8, 'collée à la muraille, sous la voûte : presque nette, un peu transparente (le héros reste visible)');
+  t.ok(vu[0].o < 0.15 && vu[0].f >= 2.6, 'à 8 cases : très floue, presque disparue');
+  // en ressortant, elle redevient pleine en douceur, sans à-coup à la fin
+  heros.placer(...route, 'haut');
+  const sortie = [muraille.opacite];
+  for (let n = 0; n < 60; n++) { game.dbg.advance(1 / 30); sortie.push(muraille.opacite); }
+  const saut = Math.max(...sortie.slice(1).map((o, n) => Math.abs(o - sortie[n])));
+  t.ok(saut < 0.12 && sortie.every((o, n) => n === 0 || o >= sortie[n - 1] - 1e-6), `en ressortant, la muraille revient en douceur (plus grand saut d’une image à l’autre : ${Math.round(saut * 100)} %)`);
+  t.ok(pleine(), 'ressorti : la muraille redevient pleine');
   heros.placer(15 * T, (H - 0.2) * T, 'bas'); camera.snap();
   tenir(['ArrowDown']); game.dbg.advance(1.5); tenir([]);
   t.ok(h.y <= H * T, 'au bout de la route, le bord de la carte arrête le héros');
