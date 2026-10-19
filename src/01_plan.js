@@ -69,7 +69,8 @@ function amas(x, y, w, h, saut = 0) {
 // Une cime LPC dépasse de près de 3 cases au-dessus de son tronc. Pour que le bois recouvre à l'écran l'emprise du plan
 // (et pas le devant des lieux), les troncs d'un massif commencent 2 rangées sous le haut du massif.
 // Arbre = [i, j, décalage du pied en cases].
-const MASSIFS = [[18, 1, 6, 6, 0], [1, 11, 6, 7, 1], [33, 11, 7, 6, 2], [16, 21, 6, 6, 3], [2, 1, 2, 2, 0]];
+// (Le bosquet du coin nord-ouest, [2, 1, 2, 2], a été abattu pour le chantier de la muraille : 44_chantier.js.)
+const MASSIFS = [[18, 1, 6, 6, 0], [1, 11, 6, 7, 1], [33, 11, 7, 6, 2], [16, 21, 6, 6, 3]];
 export const ARBRES = [
   ...bord().map(([i, j]) => [i, j, 0]),
   // (et pas de tronc dans les colonnes de bord : les cimes voisines débordent dessus, et un sentier peut longer le massif)

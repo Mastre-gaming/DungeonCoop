@@ -151,6 +151,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **Réalisme :** rien ne passe sur un arbre, une tour ou un toit ; là où un mur traverse un bois, le chantier s'arrête au bord, et il faudra d'abord abattre les arbres.
 - **Les ouvriers et le chef** de la maquette sont des personnages provisoires (planches déjà dans le jeu) ; les vrais viendront du générateur LPC, à travers `lpc-sprite-mods`.
 - **La maquette** (v3, validée par Mope le 19 oct) est dans `design/camp/chantier/` : le camp entier, le nord-ouest, la base ouest, l'est, le chef de chantier, et la porte secondaire à côté de la grande porte. Elle est dessinée par `design/camp/outils/chantier.py` par-dessus deux captures (`chantier_captures.mjs` : le camp, puis le même avec seulement le sol).
+- **Dans le jeu** (`src/44_chantier.js`) : les mêmes pièces, découpées une par une par `design/camp/outils/chantier_jeu.py` et triées comme le reste du décor ; les murs commencés et les tranchées bloquent le passage ; les ouvriers travaillent (ils tapent, creusent, tournent le treuil), et le chef de chantier se tourne vers le héros qui approche. **Le compte de l'avancement :** au premier jour (le 19 oct), nord 6 %, ouest 18 %, est 2 % ; chaque point d'une mission de l'axe camp rentrée depuis (S 1, M 3, L 8) ajoute 2 % à chaque mur, jusqu'à 100 %. Le panneau et le chef le disent. Les murs eux-mêmes ne montent pas encore à l'écran : ce sera une prochaine mission.
 
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
