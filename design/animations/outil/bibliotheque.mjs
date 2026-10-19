@@ -9,6 +9,7 @@ import { croix } from "./soutien.mjs";
 import { croissant } from "./melee.mjs";
 import { filet, FIOLE } from "./tireurs.mjs";
 import { NOTE } from "./nature.mjs";
+import { flaqueOmbre, fumee, entaille, ENCRE } from "../../classes/shadow/outil/attaques.mjs";
 
 // --- Les briques ------------------------------------------------------------------------------------------------
 // { id, nom, famille, w, h, n, boucle, ancre: [x, y], calque: "dessus" | "sol", usage, desc, dessin(f, L, w, h) }
@@ -117,6 +118,32 @@ brique({ id: "coeur", nom: "Cœur", famille: "Soins", w: 9, h: 8, n: 2, boucle: 
   dessin: (f, { obj }) => obj.grille(f ? ["HH.HH", "HHHHH", ".HHH.", "..H.."] : [".H.H.", "HHHHH", ".HHH.", "..H.."], 2, 2, { H: C.rouge }) });
 brique({ id: "poussiere", nom: "Bouffée de poussière", famille: "Divers", w: 32, h: 12, n: 5, calque: "sol", ancre: [16, 8], usage: ["une chute", "une glissade", "Liane", "Charge au bouclier"], desc: "Deux petits nuages qui s'écartent des pieds.",
   dessin: (f, { sol }) => { for (const dx of [-1, 1]) sol.disque(16 + dx * (5 + f * 2.5), 7 - f * 0.4, 3 - f * 0.4, C.poussiere, 0.7 - f * 0.1); } });
+
+// Shadow (#198) : les briques de ses esquisses (design/classes/shadow/outil/attaques.mjs), l'encre et le violet de ses yeux
+brique({ id: "flaque-ombre", nom: "Flaque d'ombre", famille: "Shadow", w: 48, h: 16, n: 12, calque: "sol", ancre: [24, 8], usage: ["Pas dans l'ombre"], desc: "Une flaque d'encre au bord violet s'ouvre à ses pieds, ondule, puis se referme. Ancre : les pieds.",
+  dessin: (f, { sol }) => flaqueOmbre(sol, 24, 8, f < 3 ? prog(f, 0, 3) : f < 9 ? 1 : 1 - prog(f, 9, 12), f) });
+brique({ id: "fumee-ombre", nom: "Volutes d'ombre", famille: "Shadow", w: 32, h: 48, n: 12, ancre: [16, 44], usage: ["Pas dans l'ombre"], desc: "Des volutes violettes qui montent et dérivent, en plongeant comme en remontant. Ancre : les pieds.",
+  dessin: (f, { obj }) => fumee(obj, 11, 16, 42, f, { nb: 12, larg: 9, haut: 2.2 }) });
+brique({ id: "ombre-file", nom: "Ombre qui file", famille: "Shadow", w: 56, h: 10, n: 4, boucle: true, calque: "sol", ancre: [50, 5], usage: ["Pas dans l'ombre"], desc: "Sa tache d'encre au ras du sol, et sa traînée ; à déplacer du départ à l'arrivée. Pointe à droite (miroir pour la gauche). Ancre : la tête de la tache.",
+  dessin: (f, { sol, obj }) => {
+    for (let q = 7; q >= 0; q--) sol.ellipse(50 - q * 6, 5, 9 - q, 3.2 - q * 0.3, q < 3 ? ENCRE : q < 5 ? C.nuit : C.violetS, 0.95 - q * 0.1);
+    sol.ellipse(52, 4.5, 3, 1, C.violet, 0.9); fumee(obj, 31 + f, 44, 5, 2, { nb: 5, larg: 8, haut: 1.2, vie: 5 });
+  } });
+brique({ id: "chevrons-tenaille", nom: "Chevrons de la Tenaille", famille: "Shadow", w: 48, h: 8, n: 12, ancre: [24, 4], usage: ["Pas dans l'ombre"], desc: "Deux chevrons violets clignent de part et d'autre de l'ennemi : il est pris entre deux. Ancre : au-dessus de sa tête.",
+  dessin: (f, { obj }) => {
+    if (f % 4 === 3) return;
+    const ch = [".V.", "V..", ".V."], a = f >= 8 ? 0.6 : 1;
+    obj.grille(ch, 6, 1, { V: C.violetC }, a); obj.grille(ch, 39, 1, { V: C.violetC }, a, true);
+  } });
+brique({ id: "entaille-x", nom: "X d'ombre", famille: "Shadow", w: 48, h: 48, n: 12, ancre: [24, 24], usage: ["Coup dans le dos"], desc: "Deux entailles croisées en X violet, l'impact blanc et des éclats d'ombre ; le X reste gravé puis s'éteint. Ancre : le torse de la cible.",
+  dessin: (f, { obj, lum }) => {
+    const A = [[35, 12], [15, 34]], B = [[35, 34], [15, 12]], PAL = [C.blanc, C.violetC, C.violet];
+    if (f === 0) entaille(obj, ...A, 2, PAL);
+    if (f >= 1 && f <= 2) { entaille(obj, ...A, 2, PAL); entaille(obj, ...B, 2, PAL); }
+    if (f >= 3 && f <= 10) { const a = 1 - prog(f, 3, 11); entaille(lum, ...A, 1, [C.violet], a); entaille(lum, ...B, 1, [C.violet], a); }
+    impact(obj, 24, 23, f - 1, { r: 10, c: C.violetC, cc: C.blanc });
+    eclats(obj, 41, 24, 23, f - 1, { nb: 12, v: 2.6, g: 0.18, vie: 7, angle: [Math.PI * 0.75, Math.PI * 1.25], couleurs: [C.violetC, C.violet, C.violetS, C.nuit] });
+  } });
 
 // --- La fabrication ---------------------------------------------------------------------------------------------
 function composer(w, h, L) {

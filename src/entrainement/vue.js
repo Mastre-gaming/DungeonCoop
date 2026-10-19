@@ -326,12 +326,23 @@ function scene(e) {
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
     // le Pas dans l’ombre de Shadow : il s’enfonce dans son ombre, et en ressort derrière la cible
+    // (l'esquisse : design/classes/shadow/captures/pas-ombre.gif ; les briques « flaque-ombre », « fumee-ombre », « ombre-file »,
+    // « chevrons-tenaille »). Il s'enfonce dans sa flaque, son ombre file au ras du sol jusque derrière la cible, il remonte
+    // d'une flaque qui s'ouvre là-bas, tourné vers elle ; deux chevrons clignent autour d'elle : elle est prise entre deux.
     case 'ombre': {
-      const p = { x: e.x * T, y: e.y * T }; let passe = false;
-      return { duree: 0.7, maj(t, k) {
-        if (k >= 0.5 && !passe) { passe = true; a.x = p.x; a.y = p.y; fx.jouer('poussiere', { x: p.x, y: p.y }); }
-        a.enfonce = k < 0.5 ? k * 2 : 2 - k * 2; a.cache = a.enfonce > 0.92;
-      }, fin() { a.x = p.x; a.y = p.y; a.enfonce = 0; a.cache = false; } };
+      const dep = { x: a.x, y: a.y }, p = { x: e.x * T, y: e.y * T }, c = aff.get(e.cible) ?? p;
+      const PLONGE = 0.4, vol = Math.min(0.5, 0.18 + Math.hypot(p.x - dep.x, p.y - dep.y) / (14 * T)), MONTE = 0.45, arrive = PLONGE + vol;
+      fx.jouer('ombre-file', { x: dep.x, y: dep.y, vers: p, retard: PLONGE, duree: vol, miroir: p.x < dep.x });
+      fx.jouer('flaque-ombre', { x: p.x, y: p.y, retard: arrive - 0.2 });
+      fx.jouer('fumee-ombre', { x: p.x, y: p.y, retard: arrive });
+      fx.jouer('chevrons-tenaille', { x: c.x, y: c.y - 58, retard: arrive + MONTE });
+      let passe = false;
+      return { duree: arrive + MONTE, maj(t) {
+        if (t < PLONGE) { a.plonge = t / PLONGE; a.cache = a.plonge > 0.95; return; }
+        if (t < arrive) { a.cache = true; return; }
+        if (!passe) { passe = true; a.x = p.x; a.y = p.y; tourner(a, c); }
+        a.cache = false; a.plonge = Math.max(0, 1 - (t - arrive) / MONTE);
+      }, fin() { a.x = p.x; a.y = p.y; a.plonge = 0; a.cache = false; tourner(a, c); } };
     }
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
@@ -480,8 +491,10 @@ function poserPerso(a) {
     rang = r0 + ligne; col = Math.min(n - 1, Math.floor(a.t * n / 0.45));
   }
   a.grand?.cacher(true); a.s64.cacher(false);
-  a.s64.poser(a.x - 32, a.y - 60 + a.enfonce * 26, a.y, col * 64, rang * 64);
-  a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);
+  // plonge (le Pas dans l'ombre de Shadow) : il descend sous ses pieds, coupé au ras du sol
+  const sous = Math.round((a.plonge ?? 0) * 60);
+  a.s64.poser(a.x - 32, a.y - 60 + a.enfonce * 26 + sous, a.y, col * 64, rang * 64, 64 - sous);
+  a.ombre.cacher(a.enfonce > 0.3 || (a.plonge ?? 0) > 0.2); a.ombre.poser(a.x, a.y - 1);
 }
 
 // Quand la file est vide, la vue colle à l'état du combat (au cas où une scène a été sautée).

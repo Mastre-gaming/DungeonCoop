@@ -29,7 +29,7 @@ Shadow se choisit à l'entrée du terrain, à côté des classes d'essai. Ses r�
 | Coup dans le dos critique | le même, critique assuré, pour 3 Élan |
 | Faiblesse | Brûlant, ou debout dans le feu : plus de Pas dans l'ombre |
 
-En jeu, le Pas joue une plongée dans son ombre (il s'enfonce, puis ressort derrière la cible) ; le Coup dans le dos, deux entailles croisées.
+En jeu, les animations sont celles des esquisses, en briques de la bibliothèque (`design/animations/outil/bibliotheque.mjs`, famille « Shadow ») : pour le Pas, une flaque d'encre s'ouvre à ses pieds, il s'y enfonce (coupé au ras du sol) dans des volutes violettes, son ombre file au ras du sol jusque derrière la cible, il remonte d'une flaque qui s'ouvre là-bas, et deux chevrons violets clignent autour de la cible ; pour le Coup dans le dos, un X d'ombre gravé sur son dos. Image par image : `captures/terrain-pas-et-coup-film.png`.
 
 ## Comment elle est faite
 La base vient du générateur LPC (le lien est en tête de `public/assets/credits/entrainement-shadow.txt`) : corps d'homme au teint bronze, capuche, tunique et pantalon sable, cape sable, sandales, dague. `outil/shadow.mjs` peint le reste sur chaque image, comme une couche `lpc-sprite-mods` posée sur la tête :

@@ -103,7 +103,7 @@ export const CAPACITES = {
   dague: { nom: 'Dague', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   chant: { nom: 'Chant de bataille', slot: 'bonus', type: 'inspiration', portee: 6, cout: 1, anim: 'sort', ds: '1 Énergie · un allié à 9 m a l’avantage à sa prochaine attaque' },
   // Shadow
-  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'sort', ds: 'Portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille · +Élan du trajet' },
+  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'repos', ds: 'Portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille · +Élan du trajet' },
   coupDos: { nom: 'Coup dans le dos', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, anim: 'attaque', ds: 'Au contact · 8–11 / 17–22 / 34–44 ; ×2 si Tenaille ou Exposée' },
   coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré · ×2 si Tenaille ou Exposée' },
   moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
@@ -834,7 +834,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       payer(h, cap);
       const trajet = dist(h, p);
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
-      ev({ type: 'ombre', id: h.id, x: p.x, y: p.y });
+      ev({ type: 'ombre', id: h.id, x: p.x, y: p.y, cible: u.id });
       h.x = p.x; h.y = p.y; u.st.tenaille = { par: h.id, tient: p.tient.id };
       log(`${h.nom} plonge dans son ombre et ressort derrière ${u.nom} : pris en Tenaille avec ${p.tient.nom}.`);
       elan(h, trajet);
