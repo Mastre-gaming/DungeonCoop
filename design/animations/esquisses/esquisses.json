@@ -505,19 +505,83 @@
    "nom": "Marteau",
    "classe": "Baba Brisenclume",
    "famille": "Baba Brisenclume",
-   "images": 14,
+   "images": 18,
    "cles": [
-    1,
-    2,
     3,
     4,
-    6
+    5,
+    7,
+    9
    ],
    "temps": [
-    "0–2 : Baba arme son marteau (la taille LPC), la tête rougeoie",
-    "3–4 : un croissant de métal chauffé suit la frappe",
-    "4 : l'impact : des étincelles jaillissent, la cible blanchit et recule",
-    "5–8 : les étincelles retombent et s'éteignent"
+    "1–3 : Baba lève le marteau au-dessus de sa tête et prend son élan",
+    "4 : il l'abat ; une traînée chauffée suit la tête du marteau",
+    "5 : il traverse la cible : gros éclat, la cible blanchit et recule de 5 px, l'écran tremble",
+    "6–7 : le marteau continue sa course jusqu'au sol : une onde de choc, la terre gicle, le sol se fend",
+    "8–17 : la poussière retombe, la fissure reste un moment"
+   ]
+  },
+  {
+   "id": "tenailles",
+   "nom": "Tenailles : un ennemi",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 30,
+   "cles": [
+    4,
+    7,
+    10,
+    15,
+    21
+   ],
+   "temps": [
+    "0–5 : Baba tend le bras (l'estoc LPC) et lance sa chaîne de forge",
+    "3–6 : la chaîne file, pince ouverte",
+    "7 : la pince se referme sur l'ennemi : un tintement",
+    "9–22 : il tire en trois à-coups, de tout son poids : il ramène le bras, recule d'un pas, des traits d'effort au-dessus de la tête, la terre gicle sous ses pieds",
+    "à chaque à-coup, l'ennemi est arraché de 12 px vers lui (36 px, 3 m, en tout)"
+   ]
+  },
+  {
+   "id": "tenailles-allie",
+   "nom": "Tenailles : sauver un allié",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 30,
+   "cles": [
+    4,
+    7,
+    10,
+    15,
+    24
+   ],
+   "temps": [
+    "0–5 : Baba tend le bras (l'estoc LPC) et lance sa chaîne de forge",
+    "3–6 : la chaîne file, pince ouverte",
+    "7 : la pince se referme sur la voleuse, qui brûle dans une flaque de feu : un tintement",
+    "9–22 : il tire en trois à-coups, de tout son poids : il ramène le bras, recule d'un pas, des traits d'effort au-dessus de la tête, la terre gicle sous ses pieds",
+    "elle sort du feu et finit à côté de lui, à l'abri ; le feu reste où il est"
+   ]
+  },
+  {
+   "id": "tenailles-enclume",
+   "nom": "Tenailles : rapprocher l'enclume",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 30,
+   "cles": [
+    4,
+    7,
+    10,
+    15,
+    24
+   ],
+   "temps": [
+    "0–5 : Baba tend le bras (l'estoc LPC) et lance sa chaîne de forge",
+    "3–6 : la chaîne file, pince ouverte",
+    "7 : la pince se referme sur la bigorne de son enclume : un tintement",
+    "9–22 : il tire en trois à-coups, de tout son poids : il ramène le bras, recule d'un pas, des traits d'effort au-dessus de la tête, la terre gicle sous ses pieds",
+    "l'enclume racle le sol dans une gerbe d'étincelles et laisse deux sillons ; elle finit à portée de sa Forge"
    ]
   },
   {
@@ -525,19 +589,20 @@
    "nom": "Forge : Lame Ardente",
    "classe": "Baba Brisenclume",
    "famille": "Baba Brisenclume",
-   "images": 20,
+   "images": 30,
    "cles": [
-    2,
-    4,
+    3,
     7,
-    10,
-    15
+    11,
+    15,
+    22
    ],
    "temps": [
-    "0–3 : Baba lève ses deux marteaux (le sort LPC)",
-    "4–5 : il les fait sonner : un éclair blanc, une gerbe d'étincelles",
-    "6–9 : une traînée de feu vole jusqu'à l'arme de l'allié",
-    "10–19 : l'arme s'embrase : une lueur orange et des flammèches qui montent (sa prochaine attaque est du feu)"
+    "0–4 : des étincelles tournent, son enclume apparaît et se pose devant lui dans la poussière",
+    "5–8 : il lève le marteau et l'abat sur l'enclume : un éclat, une gerbe d'étincelles",
+    "9–12 : un deuxième coup ; l'enclume rougit",
+    "13–16 : une traînée de feu jaillit de l'enclume jusqu'à l'arme de l'allié",
+    "17–29 : l'arme s'embrase : une lueur orange et des flammèches qui montent (sa prochaine attaque est du feu)"
    ]
   },
   {
@@ -545,39 +610,19 @@
    "nom": "Forge : Trempe",
    "classe": "Baba Brisenclume",
    "famille": "Baba Brisenclume",
-   "images": 20,
+   "images": 30,
    "cles": [
-    2,
-    4,
-    8,
-    11,
-    16
-   ],
-   "temps": [
-    "0–5 : le même geste que la Lame Ardente : les marteaux levés, puis qui sonnent",
-    "6–9 : des plaques de métal chauffé volent jusqu'à l'allié",
-    "10–12 : elles se referment autour de lui en un bouclier rougeoyant (10 points)",
-    "13–19 : le bouclier refroidit vers l'acier, un reflet passe dessus"
-   ]
-  },
-  {
-   "id": "tenailles",
-   "nom": "Tenailles",
-   "classe": "Baba Brisenclume",
-   "famille": "Baba Brisenclume",
-   "images": 18,
-   "cles": [
-    2,
-    5,
+    3,
     7,
-    10,
-    14
+    11,
+    15,
+    24
    ],
    "temps": [
-    "0–3 : Baba tend le bras (l'estoc LPC)",
-    "3–5 : une chaîne de forge file jusqu'à l'ennemi, la pince ouverte",
-    "6 : la pince se referme : un tintement, la cible blanchit",
-    "7–12 : la chaîne se rétracte et tire la cible de 3 m vers lui, dans un sillon de poussière"
+    "0–12 : le même début que la Lame Ardente : l'enclume apparaît, il tape deux fois dessus",
+    "13–16 : trois plaques de métal chauffé sautent de l'enclume et volent jusqu'à l'allié",
+    "17–19 : elles se referment autour de lui en un bouclier rougeoyant (10 points)",
+    "20–29 : le bouclier refroidit vers l'acier, un reflet passe dessus"
    ]
   },
   {
@@ -585,20 +630,20 @@
    "nom": "Chute d'Enclume",
    "classe": "Baba Brisenclume",
    "famille": "Baba Brisenclume",
-   "images": 22,
+   "images": 30,
    "cles": [
-    3,
-    7,
+    5,
     9,
     11,
-    17
+    14,
+    26
    ],
    "temps": [
     "0–4 : Baba lève ses marteaux vers le ciel (le sort LPC)",
-    "2–8 : une ombre grandit sous la cible",
-    "9 : l'enclume tombe et écrase : l'écran tremble fort, la terre gicle",
-    "10–15 : la cible tombe à terre (le « blessé » LPC) ; des étoiles tournent au-dessus d'elle",
-    "16–21 : l'enclume reste un instant, puis s'efface"
+    "2–10 : une ombre grandit sous la cible ; la terre se met à rougeoyer",
+    "6–10 : une enclume énorme (deux fois la taille de celle du camp) tombe en flammes, une traînée de feu derrière elle",
+    "11 : elle écrase : un éclair, l'écran tremble fort, un cercle de feu jaillit, la cible est projetée à terre",
+    "12–29 : l'enclume reste sur sa case, rouge, puis refroidit en fumant : c'est maintenant un mur, une couverture, un obstacle"
    ]
   },
   {
@@ -623,23 +668,87 @@
    ]
   },
   {
-   "id": "chef-oeuvre",
-   "nom": "Chef-d'œuvre",
+   "id": "chef-oeuvre-combattant",
+   "nom": "Chef-d'œuvre : l'Épée de l'Aube",
    "classe": "Baba Brisenclume · signature (niveau 20)",
    "famille": "Baba Brisenclume",
-   "images": 26,
+   "images": 36,
    "cles": [
-    2,
-    7,
+    3,
     12,
-    16,
-    21
+    19,
+    25,
+    31
    ],
    "temps": [
-    "0–8 : Baba frappe deux fois dans le vide devant lui : à chaque coup, une gerbe d'étincelles",
-    "8–13 : une lame dorée naît dans les étincelles et grandit, chauffée à blanc",
-    "14–18 : elle s'envole jusqu'à l'allié (le chevalier)",
-    "19–25 : elle se fond dans son arme : une aura dorée l'entoure (ses dégâts doublent 2 rounds)"
+    "0–4 : son enclume apparaît devant lui",
+    "5–16 : il tape trois fois dessus ; l'enclume rougit, puis blanchit, la lumière monte",
+    "17–23 : l'Épée de l'Aube (l'arme légendaire des Combattants) sort de l'enclume, deux fois plus grande, dans des rayons d'or",
+    "24–28 : elle s'envole jusqu'à l'allié et rapetisse à sa taille",
+    "29–35 : elle se pose près de lui ; une aura d'or l'entoure (ses dégâts doublent 2 rounds)"
+   ]
+  },
+  {
+   "id": "chef-oeuvre-soutien",
+   "nom": "Chef-d'œuvre : la Masse du Soleil",
+   "classe": "Baba Brisenclume · signature (niveau 20)",
+   "famille": "Baba Brisenclume",
+   "images": 36,
+   "cles": [
+    3,
+    12,
+    19,
+    25,
+    31
+   ],
+   "temps": [
+    "0–4 : son enclume apparaît devant lui",
+    "5–16 : il tape trois fois dessus ; l'enclume rougit, puis blanchit, la lumière monte",
+    "17–23 : la Masse du Soleil (l'arme légendaire des Soutiens) sort de l'enclume, deux fois plus grande, dans des rayons d'or",
+    "24–28 : elle s'envole jusqu'à l'allié et rapetisse à sa taille",
+    "29–35 : elle se pose près de lui ; une aura d'or l'entoure (ses dégâts doublent 2 rounds)"
+   ]
+  },
+  {
+   "id": "chef-oeuvre-distance",
+   "nom": "Chef-d'œuvre : l'Arc des Braises",
+   "classe": "Baba Brisenclume · signature (niveau 20)",
+   "famille": "Baba Brisenclume",
+   "images": 36,
+   "cles": [
+    3,
+    12,
+    19,
+    25,
+    31
+   ],
+   "temps": [
+    "0–4 : son enclume apparaît devant lui",
+    "5–16 : il tape trois fois dessus ; l'enclume rougit, puis blanchit, la lumière monte",
+    "17–23 : l'Arc des Braises (l'arme légendaire des héros à distance) sort de l'enclume, deux fois plus grande, dans des rayons d'or",
+    "24–28 : elle s'envole jusqu'à l'allié et rapetisse à sa taille",
+    "29–35 : elle se pose près de lui ; une aura d'or l'entoure (ses dégâts doublent 2 rounds)"
+   ]
+  },
+  {
+   "id": "chef-oeuvre-mage",
+   "nom": "Chef-d'œuvre : le Sceptre-Étoile",
+   "classe": "Baba Brisenclume · signature (niveau 20)",
+   "famille": "Baba Brisenclume",
+   "images": 36,
+   "cles": [
+    3,
+    12,
+    19,
+    25,
+    31
+   ],
+   "temps": [
+    "0–4 : son enclume apparaît devant lui",
+    "5–16 : il tape trois fois dessus ; l'enclume rougit, puis blanchit, la lumière monte",
+    "17–23 : le Sceptre-Étoile (l'arme légendaire des Mages) sort de l'enclume, deux fois plus grande, dans des rayons d'or",
+    "24–28 : elle s'envole jusqu'à l'allié et rapetisse à sa taille",
+    "29–35 : elle se pose près de lui ; une aura d'or l'entoure (ses dégâts doublent 2 rounds)"
    ]
   }
  ]

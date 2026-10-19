@@ -29,6 +29,15 @@ Revue faite sur la page de revue (l'artifact « Revue de Baba Brisenclume »), u
 4. Chute d'Enclume (7) : plus grosse, en flammes ; d'abord trancher l'idée de l'enclume qui reste.
 5. Les armes légendaires par archétype (Chef-d'œuvre).
 
+### Fait (version 2, le même jour, propriétaire : « oui »)
+Tout l'ordre ci-dessus, dans `design/animations/outil/forgeron.mjs` ; l'Interposition n'a pas bougé (verrouillée, refaite à l'identique).
+- **Tenailles** : la chaîne lancée, puis trois à-coups où Baba ramène le bras, recule d'un pas, racle le sol, avec des traits d'effort et de la sueur. Trois scènes : un ennemi, un allié tiré hors d'une flaque de feu, l'enclume qui racle le sol.
+- **L'enclume qui apparaît** : l'enclume du camp (LPC) se pose devant lui ; il tape dessus, le coup tombe sur son dessus (les têtes de ses marteaux, image par image : `design/classes/baba-brisenclume/marteaux.json`). Lame Ardente, Trempe et Chef-d'œuvre partent de là.
+- **Marteau** : la taille LPC jouée à l'envers ; le marteau part d'au-dessus de la tête, traverse la cible et finit au sol, avec une traînée qui suit la tête (plus de croissant), une onde de choc et l'écran qui tremble.
+- **Chute d'Enclume** : deux fois plus grosse, en flammes, un cercle de feu ; elle reste sur sa case et refroidit en fumant.
+- **Chef-d'œuvre** : une arme légendaire par archétype, qui sort de l'enclume deux fois plus grande dans des rayons d'or : l'Épée de l'Aube (Combattant), la Masse du Soleil (Soutien), l'Arc des Braises (À distance), le Sceptre-Étoile (Mage). Les noms sont provisoires : ils sont à l'équipe.
+La page de revue est à jour ; les notes de la version 2 s'y enregistrent à part, celles de la version 1 restent en rappel.
+
 ## 18 oct. 2026 · le terrain d'entraînement, sans cases (Paolitus)
 
 ### La fiche

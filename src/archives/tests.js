@@ -90,7 +90,7 @@ export async function selfTest(t, game) {
   clic(q('#voir-fiche'));
   t.ok(vue.onglet === 'classes' && vue.choix === 'fiche-baba-brisenclume', '« Voir sa fiche de classe » ouvre sa fiche de l’armurerie');
   const liens = qa('.detail-archives [data-scene]').map((b) => b.dataset.scene);
-  t.eq(liens.join(' '), 'marteau lame-ardente trempe tenailles chute-enclume interposition chef-oeuvre', 'sa fiche mène aux animations de toutes ses capacités');
+  t.eq(liens.join(' '), 'marteau tenailles tenailles-allie tenailles-enclume lame-ardente trempe chute-enclume interposition chef-oeuvre-combattant chef-oeuvre-soutien chef-oeuvre-distance chef-oeuvre-mage', 'sa fiche mène aux animations de toutes ses capacités (les Tenailles sur trois cibles, le Chef-d’œuvre par archétype)');
   clic(q('.detail-archives [data-scene="chute-enclume"]'));
   t.ok(vue.onglet === 'animations' && vue.choix === 'chute-enclume' && q('.detail-archives .scene-grande canvas'), 'la Chute d’Enclume : sa scène en grand');
   vue.changerOnglet('personnages');

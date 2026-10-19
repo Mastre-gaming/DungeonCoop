@@ -5,6 +5,7 @@
 // LPC n'a ni marteau de combat à une main ni main gauche armée : les deux marteaux sont dessinés ici, dans le
 // prolongement de chaque avant-bras, le poing devant le manche.
 //   node forge.mjs [sortie.png]
+import { writeFileSync } from 'node:fs';
 import { lire, ecrire } from '../../../animations/outil/png.mjs';
 
 const V = (n) => lire(`pieces/${n}.png`);
@@ -63,6 +64,7 @@ const TETE = [[0, [30, 24, 28]], [0.45, [58, 48, 52]], [0.75, [92, 80, 82]], [1,
 const FACE = [[0, [150, 30, 10]], [0.35, [236, 90, 20]], [0.7, [255, 176, 60]], [1, [255, 246, 200]]];
 const CONTOUR = [34, 12, 8];
 let nMarteaux = 0;
+const TETES = {};   // « rangée,image » -> les têtes de marteau : [x, y] du milieu de la tête dans la case, et devant ou non
 for (let r = 0; r < 54; r++) for (let f = 0; f < 13; f++) {
   const cx = f * 64, cy = r * 64;
   if (r >= 16 && r < 20 && f > 0) { /* copie de la pose debout : refaite plus bas */ }
@@ -86,6 +88,7 @@ for (let r = 0; r < 54; r++) for (let f = 0; f < 13; f++) {
     const vus = main.pts.filter(([x, y]) => M[y * W + x] === 5).length / main.pts.length;
     const devant = vus >= 0.35;
     const hx = main.x + dir[0] * 0.5, hy = main.y + dir[1] * 0.5;
+    (TETES[`${r},${f}`] ??= []).push({ x: Math.round((hx + dir[0] * 5.9 - cx) * 10) / 10, y: Math.round((hy + dir[1] * 5.9 - cy) * 10) / 10, devant });
     for (let y = cy; y < cy + 64; y++) for (let x = cx; x < cx + 64; x++) {
       const px = x + 0.5 - hx, py = y + 0.5 - hy, u = px * dir[0] + py * dir[1], v = px * perp[0] + py * perp[1];
       let c = null;
@@ -211,6 +214,8 @@ for (let k = 0; k < W * H; k++) {
   if (DIST[k] <= 1) { out[i] = 255; out[i + 1] = 110; out[i + 2] = 30; out[i + 3] = 70; }
 }
 
+// les têtes de marteau, image par image : les scènes des capacités (design/animations/outil/forgeron.mjs) frappent où elles sont
+writeFileSync('../marteaux.json', JSON.stringify({ _lisez_moi: 'Fabriqué par outil/forge.mjs : le milieu de chaque tête de marteau, en pixels dans sa case de 64, par « rangée,image ».', tetes: TETES }) + '\n');
 const fichier = process.argv[2] ?? 'baba-brisenclume.png';
 ecrire(fichier, { W, H, px: out });
 const n = new Array(10).fill(0); for (const m of M) n[m]++;
