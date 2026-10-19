@@ -69,7 +69,7 @@ document.querySelector('#tampon').textContent = `version du ${game.stamp}`;
 const imagesCamp = Promise.all([chargerImages(), chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS })]);
 imagesCamp.catch(() => {});   // (une erreur ici est dite par demarrer)
 
-async function demarrer(choix) {
+async function demarrer(sortieTitre) {
   const [imagesBase, imagesHeros] = await imagesCamp;
   const images = { ...imagesBase, ...imagesHeros };   // (et les planches des héros à incarner)
   const camp = composerCamp();
@@ -173,20 +173,20 @@ async function demarrer(choix) {
 
   document.documentElement.dataset.pret = '1';
   game.start();
-  if (choix?.action === 'heberger') reseau.heberger();
-  choix?.titre?.retirer();
+  if (sortieTitre?.action === 'heberger') reseau.heberger();
+  sortieTitre?.titre?.retirer();
 }
 
 // L'écran titre, puis le camp. Rejoindre passe par ?code= (le réseau rejoint le groupe de l'adresse en s'ouvrant).
 async function lancer() {
-  let choix = null;
+  let sortieTitre = null;
   if (!sauterTitre(query)) {
-    choix = await ecranTitre({ stamp: game.stamp, code: query.get('code') ?? '', dbg: game.dbg }).catch((e) => { console.error(e); return null; });
+    sortieTitre = await ecranTitre({ stamp: game.stamp, code: query.get('code') ?? '', dbg: game.dbg }).catch((e) => { console.error(e); return null; });
     const q = new URLSearchParams(location.search);
-    if (choix?.action === 'rejoindre') q.set('code', choix.code); else q.delete('code');
+    if (sortieTitre?.action === 'rejoindre') q.set('code', sortieTitre.code); else q.delete('code');
     history.replaceState(null, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`);
   }
-  await demarrer(choix);
+  await demarrer(sortieTitre);
 }
 
 lancer().catch((e) => {
