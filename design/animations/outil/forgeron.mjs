@@ -1,6 +1,6 @@
-// Baba Brisenclume (content/classes/baba-brisenclume.json) : toutes ses capacités. Ses trois de départ (Marteau, Forge
-// en Lame Ardente ou en Trempe, Tenailles), celles de ses sous-classes au niveau 3 (Chute d'Enclume pour le Maître
-// Forgeron, Interposition pour le Rempart) et sa signature au niveau 20 (Chef-d'œuvre).
+// Baba Brisenclume (content/classes/baba-brisenclume.json) : toutes ses capacités. Celles de départ (Marteau, Chute d'Enclume et Forge
+// en Lame Ardente ou en Trempe, les deux faces d'une même capacité ; Tenailles), celle du Rempart au niveau 3
+// (Interposition) et sa signature au niveau 20 (Chef-d'œuvre).
 // Ses couleurs : le métal chauffé (rouge, orange, blanc) et le fer noirci ; ses marteaux sont déjà dans sa planche.
 import { DROITE, GAUCHE, geste, cible, arc, eclats, impact, lueur, C, prog, lerp, repos, FLECHE, PAL_FLECHE } from "./commun.mjs";
 import { croissant } from "./melee.mjs";
@@ -126,7 +126,7 @@ export const tenailles = {
 };
 
 export const chuteEnclume = {
-  id: "chute-enclume", nom: "Chute d'Enclume", classe: "Baba Brisenclume · Maître Forgeron", n: 22, cles: [3, 7, 9, 11, 17],
+  id: "chute-enclume", nom: "Chute d'Enclume", classe: "Baba Brisenclume", n: 22, cles: [3, 7, 9, 11, 17],
   temps: ["0–4 : Baba lève ses marteaux vers le ciel (le sort LPC)", "2–8 : une ombre grandit sous la cible", "9 : l'enclume tombe et écrase : l'écran tremble fort, la terre gicle", "10–15 : la cible tombe à terre (le « blessé » LPC) ; des étoiles tournent au-dessus d'elle", "16–21 : l'enclume reste un instant, puis s'efface"],
   scene(f, { sol, obj, lum }) {
     const c = cible("sbire", f, 9, { recul: 0 });

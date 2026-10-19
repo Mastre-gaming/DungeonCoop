@@ -20,7 +20,7 @@ Revue faite sur la page de revue (l'artifact « Revue de Baba Brisenclume »), u
 ### Ce qu'on en tire
 1. **Le geste « sort » ne convient pas à la Forge** : la Lame Ardente et la Trempe passent à une enclume qui apparaît, sur laquelle Baba tape ; le Chef-d'œuvre aussi.
 2. **La puissance manque aux coups** (Marteau, Tenailles) : le geste doit aller au bout, et Baba doit montrer l'effort.
-3. **Idée du propriétaire, le même jour :** la Chute d'Enclume devient une capacité de départ ; l'enclume reste sur le terrain (mur, couverture, obstacle), Baba doit être près d'elle pour les capacités qui en ont besoin, et les Tenailles peuvent tirer l'enclume ou un allié. Proposition en attente de son accord (porte P : elle doit dire ce qu'elle remplace).
+3. **Idée du propriétaire, le même jour :** la Chute d'Enclume devient une capacité de départ ; l'enclume reste sur le terrain (mur, couverture, obstacle), Baba doit être près d'elle pour les capacités qui en ont besoin, et les Tenailles peuvent tirer l'enclume ou un allié. Tranché par le propriétaire le même jour : attaque de base Marteau ; capacité 1 à deux faces, (a) Chute d'Enclume une fois par combat, (b) Forge (attaque ou armure) au contact de l'enclume ; capacité 3 Tenailles ; le reste inchangé (`content/classes/baba-brisenclume.json`). La Chute d'Enclume du Maître Forgeron au niveau 3 devient Enclume Ardente (deux fois par combat, en flammes).
 
 ### Ordre conseillé
 1. Tenailles (5) : le geste de traction de Baba.
