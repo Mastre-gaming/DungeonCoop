@@ -1,4 +1,4 @@
-// Les vérifications de la place du village (src/36_place.js) : livrée au niveau 2, chaque niveau posé en entier, le
+// Les vérifications de la place du village (src/36_place.js) : livrée au niveau 1, chaque niveau posé en entier, le
 // petit feu du décor caché, et à chaque niveau : le devant de la place libre et atteignable à pied depuis l'apparition et
 // depuis les quatre sentiers, l'arrêt du tour libre, ni la boîte aux lettres ni le barde recouverts. Appelées depuis 09_tests.js.
 import { T, FEU, APPARITION } from './01_plan.js';
@@ -13,8 +13,8 @@ export function testsPlace(t, ctx) {
   const voisins = [[BOITE.x, BOITE.y, 'la boîte aux lettres'], [BARDE.x, BARDE.y, 'le barde'], [ENCEINTE.x, ENCEINTE.y, 'l’enceinte']];
   const sous = (x, y, o) => x + 10 > o.x && x - 10 < o.x + o.w && y + 2 > o.y && y - 8 < o.y + o.h;
 
-  t.group('la place du village (5 niveaux, livrée au niveau 2)');
-  t.eq(place.niveau, place.PLANCHER, 'sans mission rentrée, la place est déjà au niveau 2 : la fontaine');
+  t.group('la place du village (5 niveaux, livrée au niveau 1)');
+  t.eq(place.niveau, place.PLANCHER, 'sans mission rentrée, la place est déjà au niveau 1 : la place et son foyer');
   t.ok(decor.feuCache, 'le petit feu du décor est caché : la place dessine le feu (ses braseros)');
   const poses = [];
   for (let n = 0; n < 5; n++) {
@@ -29,5 +29,5 @@ export function testsPlace(t, ctx) {
   }
   t.eq(poses, [true, true, true, true, true], 'chaque niveau pose tous ses objets, et rien d’autre');
   place.forcer(null);
-  t.eq(place.niveau, place.PLANCHER, 'sans niveau imposé, elle revient au niveau 2');
+  t.eq(place.niveau, place.PLANCHER, 'sans niveau imposé, elle revient au niveau 1');
 }
