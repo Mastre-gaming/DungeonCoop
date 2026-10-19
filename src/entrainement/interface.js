@@ -249,7 +249,7 @@ function choisirHeros(id) {
 }
 function choisirCapacite(id) {
   const h = herosChoisi();
-  if (id && (!h || !combat.peutUtiliser(h, CAPACITES[id]))) return false;
+  if (id && (!h || !utilisable(h, CAPACITES[id]))) return false;
   ui.cap = id && ui.cap !== id ? id : null;
   // une capacité sans cible (la potion) se lance tout de suite
   if (ui.cap && CAPACITES[ui.cap].type === 'potion') { agir({}); return true; }
@@ -361,11 +361,15 @@ function joueurFiche(id) {
 // La fiche de la capacité (#85) : ce qu'elle fait, sans avoir besoin d'une cible. Celle qu'on survole dans la barre,
 // sinon celle qu'on a choisie.
 const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
+// Le Pas dans l’ombre de Shadow n’a de sens qu’avec un ennemi tenu par un allié : sans cible, on le montre indisponible.
+const sansCible = (h, cap) => cap.type === 'ombre' && !combat.cibles(h, cap).length;
+const utilisable = (h, cap) => combat.peutUtiliser(h, cap) && !sansCible(h, cap);
 function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
   if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
   if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m tenu par un allié au contact.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
   return 'Pas maintenant.';
 }
@@ -379,7 +383,8 @@ function effetsFiche(cap) {
 function dessinerFiche(h) {
   const id = ui.capSurvol ?? ui.cap, cap = id ? CAPACITES[id] : null;
   if (!cap || !h || combat.S.phase !== 'heros' || vue.occupe()) { dom.ficheCap.hidden = true; return; }
-  const r = resultats(cap), ok = combat.peutUtiliser(h, cap);
+  const r = resultats(cap), ok = utilisable(h, cap);
+  const refus = ok ? null : el('span', { class: 'effet refus' }, pourquoiPas(h, cap));
   dom.ficheCap.dataset.capacite = id;
   dom.ficheCap.replaceChildren(
     el('header', { class: 'fc-tete' },
@@ -388,10 +393,12 @@ function dessinerFiche(h) {
       el('span', { class: `tampon ${cap.slot}` }, cap.slot === 'action' ? 'ACTION' : 'BONUS'),
       el('span', { class: 'fc-carac' }, puces(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
     r ? el('div', { class: `fc-resultats n${r.length}` }, r.map((x) => el('div', { class: `fc-res ${x.g}` },
-      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : '',
+      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20))))
+      : refus ? el('div', { class: 'fc-effets' }, refus) : '',
     // pas d’aide en dessous (la touche est sur le bouton, les chances contre un coriace dans la carte de la cible) : la fiche
-    // garde la même hauteur ; quand la capacité est indisponible, la raison passe en tête des effets
-    el('div', { class: 'fc-effets' }, ok ? null : el('span', { class: 'effet refus' }, pourquoiPas(h, cap)),
+    // garde la même hauteur ; quand la capacité est indisponible, la raison passe en tête des effets (ou à la place des
+    // résultats, pour une capacité sans dégâts)
+    el('div', { class: 'fc-effets' }, r ? refus : null,
       effetsFiche(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))));
   dom.ficheCap.hidden = false;
 }
@@ -457,7 +464,7 @@ function dessinerTout() {
   // la barre des capacités : l'icône, le nom, action ou bonus, les dégâts d'un touché (ou ce qu'elle fait), la touche
   const h = herosChoisi();
   dom.capacites.replaceChildren(...(h && S.phase === 'heros' ? HEROS[h.type].capacites.map((id, k) => {
-    const c = CAPACITES[id], ok = combat.peutUtiliser(h, c);
+    const c = CAPACITES[id], ok = utilisable(h, c);
     const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
     return el('button', { type: 'button', class: `capacite ${c.slot}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
       dataset: { capacite: id }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },

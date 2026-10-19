@@ -634,5 +634,30 @@ export async function selfTest(t, game) {
   ihm.dom.finPhase.click(); jouerFile();
   t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
   multi.debrancherTest();
+
+  t.group('Shadow à l’écran (#198)');
+  {
+    // Shadow (#198) : au début, personne ne tient d'ennemi, le Pas dans l'ombre est grisé et dit pourquoi ; ensuite, on le joue au clic
+    let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
+    ihm.rejouer(); ihm.ui.choix = ['shadow', 'brute', 'mage', 'gardien'];
+    document.querySelector('#commencer').click(); jouerFile();
+    const C3 = game.dbg.combat, sh = C3.U('h1'), touche = (key) => { window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); game.dbg.advance(0.05); };
+    ihm.choisirHeros('h1'); game.dbg.advance(0.05);
+    const bouton = () => [...document.querySelectorAll('.capacite')][1];
+    t.ok(bouton().classList.contains('indispo'), 'au début, personne ne tient d’ennemi : le Pas dans l’ombre est grisé');
+    touche('2');
+    t.eq(ihm.ui.cap, null, 'et la touche 2 ne le choisit pas');
+    ihm.ui.capSurvol = 'pasOmbre'; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(ihm.dom.ficheCap.textContent.includes('Aucun ennemi à 7,5 m tenu par un allié'), 'sa fiche dit pourquoi');
+    ihm.ui.capSurvol = null;
+    const place = (id, x, y) => { const u = C3.U(id); u.x = x; u.y = y; C3.S.evenements.push({ type: 'place', id, x, y }); };
+    place('h2', 8, 12); place('br', 9, 12); place('h1', 9, 15.5); jouerFile();
+    ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(!bouton().classList.contains('indispo'), 'la Brute tient la Brute ennemie : le Pas s’allume');
+    touche('2');
+    clic(9, 12 - 0.4); jouerFile();
+    t.ok(dist(sh, C3.U('br')) <= CONTACT && enTenaille(sh, C3.U('br'), [C3.U('h2')]) && !sh.t.bonus, 'un clic sur la cible : Shadow ressort derrière elle, en Tenaille');
+    try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
   ihm.rejouer();
 }
