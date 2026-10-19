@@ -165,6 +165,14 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **La torche :** au crépuscule et la nuit, chaque héros (le sien et ceux des autres joueurs) porte une torche, allumée toute seule et éteinte à l'aube : serrée dans sa main droite (sa main passe par-dessus le manche, et la torche suit sa main quand il marche), penchée vers l'extérieur, loin du visage (validé par Mope le 19 oct : « la torche doit être mise dans la main du joueur »). Elle éclaire 3 à 4 cases autour de lui, d'une lumière chaude, et sa flamme danse.
 - **La maquette** est dans `design/camp/jour-nuit/` (dessinée par `design/camp/outils/jour_nuit.py` et `torche.py`). **Dans le jeu :** `src/46_jour_nuit.js` (deux voiles de lumière posés sur le camp : l'un multiplie, l'autre ajoute le chaud, les fenêtres et les lucioles) ; les fenêtres sont relevées dans l'image de la muraille par `design/camp/outils/jour_nuit_jeu.py` (`src/data/fenetres.json`). `?heure=22:30` force une heure.
 
+### La météo (proposée le 19 oct, design validé par Mope : « Météo validée »)
+- **Elle change toute seule toutes les trois heures (heure de Paris),** la même pour tous les joueurs, et la plupart du temps il fait beau : sur une journée, environ 7 créneaux sur 10 au beau temps, puis la pluie, plus rarement l'orage. Le brouillard ne vient que le matin (de 3 h à 9 h) et se lève dans la matinée. La pluie arrive et part en dix minutes, le brouillard en une demi-heure. Sur la carte du dashboard (la visite), beau temps. La neige viendra avec les saisons.
+- **La pluie :** le ciel se couvre, la pluie tombe en biais (de fines rayures, un pixel vers la gauche tous les trois vers le bas), la terre mouillée fonce et des flaques se forment au milieu des chemins (et sur la place du feu). Les gouttes éclaboussent la terre et l'herbe, jamais un toit, un arbre ou un personnage, qui passent devant. Les douves font des ronds, pas le pont.
+- **L'orage :** plus sombre, la pluie plus forte et plus longue ; de temps en temps (toutes les 6 à 18 secondes), un éclair blanchit tout le camp en deux éclats rapprochés.
+- **Le brouillard du matin :** plus épais vers les douves et dans la forêt du bord, plus léger au milieu du camp ; ses nappes dérivent lentement.
+- **Avec le jour et la nuit :** une nuit de pluie, le feu et les torches brillent sous la pluie ; la pluie et la brume ne brillent pas dans le noir.
+- **La maquette** est dans `design/camp/meteo/` (dessinée par `design/camp/outils/meteo.py`). **Dans le jeu :** `src/47_meteo.js` (un voile au sol, sous tout le reste, qui lit le sol du camp et celui de la place ; le ciel couvert ; la pluie et le brouillard par-dessus tout ; l'éclair). `?meteo=pluie` (ou `orage`, `brouillard`, `beau`) force un temps ; en `?test`, beau temps et midi.
+
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
 - **Les niveaux :**
