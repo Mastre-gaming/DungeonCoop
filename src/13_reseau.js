@@ -186,7 +186,7 @@ export function update(dt) {
     const rang = (bouge && course ? 38 : 8) + ligne, col = !bouge ? 0 : course ? Math.floor(c.t * 14) % 8 : 1 + (Math.floor(c.t * (court ? 14 : 10)) % 8);
     c.sprite.poser(s.x - 32, s.y - 60, s.y, col * 64, rang * 64);
     c.ombre.poser(s.x, s.y - 1);
-    c.x = s.x; c.y = s.y;
+    c.x = s.x; c.y = s.y; c.ligne = ligne;   // (sa direction : pour sa torche, 46_jour_nuit.js)
     placerEtiquette(c.etiquette, s.x, s.y, o.name);
   }
   // mon nom au-dessus de mon héros (dès que la sentinelle le connaît)
