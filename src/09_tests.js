@@ -8,6 +8,7 @@ import { testsHudEpique } from './34_tests_hud.js';
 import { testsArmurerie } from './35_tests_armurerie.js';
 import { testsPlace } from './37_tests_place.js';
 import { testsTableau } from './39_tests_tableau.js';
+import { testsPlans } from './42_tests_plans.js';
 
 export const name = 'camp';
 let ctx;
@@ -270,6 +271,7 @@ export async function selfTest(t, game) {
   testsTableau(t, ctx, game);   // le tableau d'affichage qui devient pierre, et son crieur : src/39_tests_tableau.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);
+  await testsPlans(t, ctx);   // l'onglet Plans du tableau des missions : src/42_tests_plans.js
   await testsParties(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
