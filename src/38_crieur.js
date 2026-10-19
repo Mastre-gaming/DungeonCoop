@@ -1,5 +1,5 @@
 // Le crieur du tableau d'affichage (maquette validée par le propriétaire le 18 oct) : un villageois du générateur LPC
-// (design/camp/crieur/), sa cloche de laiton peinte par tableau_jeu.py. À partir du niveau 3 du tableau, il monte sur son
+// (design/camp/crieur/), sa cloche de laiton peinte par tableau_jeu.py. À partir du niveau 2 du tableau, il monte sur son
 // estrade de bois, à droite de la potence.
 // Son rôle (demande du propriétaire, 19 oct) : il crie et recense les derniers push, ceux de la rubrique « Derniers push »
 // du dashboard, que le jeu lit déjà pour la chronique du camp (19_chronique.js, même source). D'abord les push :
@@ -17,7 +17,7 @@ import { phrase as phraseChronique } from './19_chronique.js';
 export const name = 'crieur';
 export const always = true;
 
-export const NIVEAU = 3;                           // le niveau du tableau où il arrive
+export const NIVEAU = 2;                           // le niveau du tableau où il arrive
 const CRI = 3.6, PAUSE = 12, PRES = 9 * T;         // durée d'un cri ; près de lui (à moins de 9 cases), un cri toutes les 12 s
 const RECENSES = 5, MESSAGE = 42;                  // le tour des 5 derniers push ; un message de commit coupé à 42 lettres
 const PRIORITE = { push: 0, nouvelle: 1, tour: 2 };

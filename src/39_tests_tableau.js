@@ -1,6 +1,6 @@
 // Les vérifications du tableau d'affichage qui devient pierre, et de son crieur (maquette validée le 18 oct) :
 // plus de bannières, des pavés qui grandissent en suivant la terre battue, la pierre au niveau 4 (la potence de bois s'en
-// va), le crieur sur son estrade à partir du niveau 3, sa cloche, ses cris. Appelées depuis 09_tests.js.
+// va), le crieur sur son estrade à partir du niveau 2, sa cloche, ses cris. Appelées depuis 09_tests.js.
 import { T, LIEUX, APPARITION, terre, emprise } from './01_plan.js';
 
 export function testsTableau(t, ctx, game) {
@@ -19,7 +19,7 @@ export function testsTableau(t, ctx, game) {
     t.ok(collision.libre(...devant), `niveau ${n} : le devant du tableau reste libre`);
     t.ok(!!collision.chemin(APPARITION[0] * T, APPARITION[1] * T, ...devant), `niveau ${n} : on y va à pied depuis l’apparition`);
   }
-  t.ok(nb[0] === 0 && nb[1] === 0 && nb[2] > 0 && nb[3] > nb[2] && nb[4] > nb[3], `les pavés gagnent du terrain à partir du niveau 2 (${nb.join(', ')})`);
+  t.ok(nb[0] === 0 && nb[1] === 0 && nb[2] === 0 && nb[3] > 0 && nb[4] > nb[3], `les pavés gagnent du terrain à partir du niveau 3 (${nb.join(', ')})`);
   lieux.forcer('interface', 3);
   const [, y0] = emprise(l);
   const surTerre = sprites().filter((s) => s.pied < -1000).every((s) => {
@@ -31,7 +31,9 @@ export function testsTableau(t, ctx, game) {
   lieux.forcer('interface', 1);
   t.ok(!!de('tableau', 0, 4), 'niveau 1 : des pierres de gué devant le tableau');
   lieux.forcer('interface', 2);
-  t.ok(!de('tableau', 0, 4) && !!de('deco', 11, 0) && !!de('tableau', 3, 4), 'niveau 2 : les pavés remplacent les pierres de gué ; la potence de bois, des socles de pierre');
+  t.ok(!!de('tableau', 0, 4) && !!de('deco', 11, 0) && !!de('tableau', 3, 4) && !!de('deco', 7, 30), 'niveau 2 : pas de pavés, les pierres de gué restent ; la potence de bois, des socles de pierre, l’estrade du crieur');
+  lieux.forcer('interface', 3);
+  t.ok(!de('tableau', 0, 4), 'niveau 3 : les pavés remplacent les pierres de gué');
   lieux.forcer('interface', 4);
   t.ok(!de('deco', 11, 0) && !!de('tableau', 3, 1) && !!de('tableau', 0, 1) && !!de('tableau', 4, 1), 'niveau 4 : la potence, le panneau et l’étal sont de pierre (la potence de bois est partie)');
   t.ok(sprites().filter((s) => s.p.img === 'tableau' && s.p.sx === 6 && s.p.sy === 1).length === 2, 'niveau 4 : deux réverbères');
@@ -40,10 +42,10 @@ export function testsTableau(t, ctx, game) {
   t.ok(habit && habit.pied > panneau, 'l’habit de pierre se pose devant le panneau de bois');
 
   t.group('le crieur');
+  lieux.forcer('interface', 1); game.dbg.advance(0.05);
+  t.ok(!crieur.la && !crieur.crier('Oyez !'), 'avant le niveau 2, pas de crieur');
   lieux.forcer('interface', 2); game.dbg.advance(0.05);
-  t.ok(!crieur.la && !crieur.crier('Oyez !'), 'avant le niveau 3, pas de crieur');
-  lieux.forcer('interface', 3); game.dbg.advance(0.05);
-  t.ok(crieur.la && !!de('deco', 7, 30), 'au niveau 3, il est sur son estrade de bois');
+  t.ok(crieur.la && !!de('deco', 7, 30), 'au niveau 2, il est sur son estrade de bois');
   const p = crieur.place(), estrade = de('deco', 7, 30);
   t.ok(p.x > estrade.x && p.x < estrade.x + 2 * T && p.y > estrade.y && p.y < estrade.y + 2 * T && p.devant > estrade.pied, 'il se tient sur l’estrade, trié devant elle');
   t.ok(crieur.crier('Oyez ! Une nouvelle !') && crieur.criant, 'il crie');
