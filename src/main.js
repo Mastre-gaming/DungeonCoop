@@ -1,6 +1,7 @@
 // Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7) : le camp, le héros, la caméra, le panneau des missions,
 // la sentinelle de l'entrée et son tour du camp, les rats des PR à résoudre, et le jeu à plusieurs.
-//   ?code=ABCDE rejoindre ce groupe
+// D'abord l'écran titre (src/45_titre.js) : Héberger, Rejoindre, Réglages, Retour au dashboard.
+//   ?code=ABCDE rejoindre ce groupe (l'écran titre s'ouvre sur Rejoindre, le code déjà tapé)
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
 //   ?spot=feu aller à un point nommé (apparition, feu, visite, porte, entree, chantier, sentinelle, tour, rats, et chaque lieu : interface, histoire, level, combat…)
@@ -44,9 +45,11 @@ import * as choixSkill from './41_choix_heros.js';
 import * as promeneursSkill from './42_promeneurs.js';
 import * as apparitionsSkill from './43_apparitions.js';
 import * as chantierSkill from './44_chantier.js';
+import { ecranTitre, sauterTitre, retourAuDashboard } from './45_titre.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
 import './hud.css';      // l'habillage épique du HUD (DESIGN.fr.md), après tout le reste
+import './titre.css';
 
 const query = new URLSearchParams(location.search);
 const visite = query.has('visite');
@@ -62,8 +65,13 @@ const game = createGame({
 
 document.querySelector('#tampon').textContent = `version du ${game.stamp}`;
 
-async function demarrer() {
-  const images = { ...await chargerImages(), ...await chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS }) };   // (et les planches des héros à incarner)
+// Les planches du camp (et celles des héros à incarner) se chargent pendant que l'écran titre est ouvert.
+const imagesCamp = Promise.all([chargerImages(), chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS })]);
+imagesCamp.catch(() => {});   // (une erreur ici est dite par demarrer)
+
+async function demarrer(choix) {
+  const [imagesBase, imagesHeros] = await imagesCamp;
+  const images = { ...imagesBase, ...imagesHeros };   // (et les planches des héros à incarner)
   const camp = composerCamp();
   const canvas = document.querySelector('#jeu');
   const rendu = creerRendu(canvas);
@@ -127,6 +135,11 @@ async function demarrer() {
   // les héros qu'on peut incarner se promènent dans le camp et parlent (E) ; un héros pris par un joueur s'en va.
   // (après tous les autres : E sert d'abord aux lieux et aux personnages du camp, puis aux promeneurs)
   const promeneurs = game.use(promeneursSkill, { rendu, heros, collision, images, reseau, forgeron, apparitions, visite });
+  // la case « Retour au dashboard » (B) : le chemin à l'envers, par l'écran titre et le ciel de nuit (en ?test, rien ne part)
+  const versDashboard = { ouvert: false, essais: 0, ouvrir() { this.essais++; if (!query.has('test')) retourAuDashboard({ stamp: game.stamp }); }, fermer() {} };
+  hud.brancher('dashboard', versDashboard);
+  game.dbg.versDashboard = (aller) => retourAuDashboard({ stamp: game.stamp, aller });   // (les captures : sans partir)
+  game.dbg.retour = retourAuDashboard;   // (retour.titre : l'écran titre du chemin du retour)
   game.render = () => rendu.dessiner();
   const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, crieur, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, place, terrain, muraille, parties, github });
 
@@ -160,9 +173,23 @@ async function demarrer() {
 
   document.documentElement.dataset.pret = '1';
   game.start();
+  if (choix?.action === 'heberger') reseau.heberger();
+  choix?.titre?.retirer();
 }
 
-demarrer().catch((e) => {
+// L'écran titre, puis le camp. Rejoindre passe par ?code= (le réseau rejoint le groupe de l'adresse en s'ouvrant).
+async function lancer() {
+  let choix = null;
+  if (!sauterTitre(query)) {
+    choix = await ecranTitre({ stamp: game.stamp, code: query.get('code') ?? '', dbg: game.dbg }).catch((e) => { console.error(e); return null; });
+    const q = new URLSearchParams(location.search);
+    if (choix?.action === 'rejoindre') q.set('code', choix.code); else q.delete('code');
+    history.replaceState(null, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`);
+  }
+  await demarrer(choix);
+}
+
+lancer().catch((e) => {
   console.error(e);
   document.querySelector('#chargement').textContent = `Le camp n'a pas pu se charger : ${e.message}`;
 });
