@@ -125,6 +125,7 @@ export function testsHudEpique(t, ctx, game) {
   t.group('le HUD épique : le même cadre pour chaque panneau');
   const sans = [];
   for (const c of hud.CASES) {
+    if (c.id === 'dashboard') continue;   // (elle n'ouvre pas de panneau : elle part vers le dashboard)
     if (!hud.activer(c.id)) continue;
     game.dbg.advance(0.02);
     const ouverts = [...document.querySelectorAll('.panneau-missions, .cadres-groupe, .carte-campagne, .chronique-camp, .sacoche, .rumeurs, .messagerie-jeu')].filter(visible);

@@ -1,4 +1,4 @@
-# Maquette : la météo dans le camp (v1, validée par Mope le 19 oct : « Météo validée » ; dans le jeu : src/47_meteo.js). Le même camp en vue visite, sous la pluie, sous l'orage
+# Maquette : la météo dans le camp (v1, validée par Mope le 19 oct : « Météo validée » ; dans le jeu : src/48_meteo.js). Le même camp en vue visite, sous la pluie, sous l'orage
 # (et l'éclair), et dans le brouillard du matin. La pluie tombe partout (de fines rayures en biais) ; les éclaboussures et
 # les flaques ne se font que là où il y a de la terre ou de l'herbe dégagée, jamais sur un toit, un arbre ou un perso ;
 # les douves frissonnent. Le brouillard est plus épais près des douves et hors des murs, plus clair au milieu du camp.
