@@ -52,6 +52,11 @@ export const CHEMINS = [
 // En cases : le pied de la muraille, les rangées où elle bloque (son épaisseur au sol), celles de l'eau, et la porte.
 export const MURAILLE = { pied: 33, mur: [31, 32], douves: [33, 34], porte: [14, 15] };
 
+// Les trois autres murs (design validé par Mope le 19 oct, 45_murs.js), en pixels : le bord intérieur des murs ouest et est,
+// le pied du mur nord, et jusqu'où ils descendent (le chemin de ronde de la grande muraille, derrière ses tours). Les arbres
+// de la lisière, hors du camp, sont coupés au ras de ces murs : aucun ne dépasse côté camp (03_carte.js).
+export const MURS = { ouest: 72, est: 1290, nord: 72, sud: 880 };
+
 // Les bois : la lisière en haut et sur les côtés (le sud est fermé par la muraille). Les côtés descendent jusqu'en bas
 // de la carte, et une seconde rangée d'arbres, autour de la muraille, avale les tours d'angle dans la forêt.
 function bord() {
@@ -69,12 +74,13 @@ function amas(x, y, w, h, saut = 0) {
 // Une cime LPC dépasse de près de 3 cases au-dessus de son tronc. Pour que le bois recouvre à l'écran l'emprise du plan
 // (et pas le devant des lieux), les troncs d'un massif commencent 2 rangées sous le haut du massif.
 // Arbre = [i, j, décalage du pied en cases].
-// (Le bosquet du coin nord-ouest, [2, 1, 2, 2], a été abattu pour le chantier de la muraille : 44_chantier.js.)
+// (Le bosquet du coin nord-ouest, [2, 1, 2, 2], a été abattu pour le chantier de la muraille : 44_chantier.js ; et dans le bois
+// ouest, les arbres des colonnes 2 et 3, sur la ligne du mur ouest : 45_murs.js.)
 const MASSIFS = [[18, 1, 6, 6, 0], [1, 11, 6, 7, 1], [33, 11, 7, 6, 2], [16, 21, 6, 6, 3]];
 export const ARBRES = [
   ...bord().map(([i, j]) => [i, j, 0]),
   // (et pas de tronc dans les colonnes de bord : les cimes voisines débordent dessus, et un sentier peut longer le massif)
-  ...MASSIFS.flatMap(([x, y, w, h, s]) => amas(x, y, w, h, s).filter(([i, j]) => h <= 2 || (j >= y + 2 && i > x && i < x + w - 1)).map(([i, j]) => [i, j, 0])),
+  ...MASSIFS.flatMap(([x, y, w, h, s]) => amas(x, y, w, h, s).filter(([i, j]) => h <= 2 || (j >= y + 2 && i > (x === 1 ? x + 2 : x) && i < x + w - 1)).map(([i, j]) => [i, j, 0])),
 ];
 // Ce qui bloque : tout le massif (on ne se glisse pas sous les cimes), la lisière, et la muraille et ses douves (sauf la
 // porte et le pont).

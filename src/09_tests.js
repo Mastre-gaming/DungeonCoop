@@ -8,6 +8,7 @@ import { testsHudEpique } from './34_tests_hud.js';
 import { testsArmurerie } from './35_tests_armurerie.js';
 import { testsPlace } from './37_tests_place.js';
 import { testsTableau } from './39_tests_tableau.js';
+import { testsPlans } from './46_tests_plans.js';
 import { HEROS } from './41_choix_heros.js';
 import { testsTitre } from './45_tests_titre.js';
 
@@ -256,7 +257,8 @@ export async function selfTest(t, game) {
   const caches = [...LIEUX.map((l) => [l.id, devant(l)]), ['feu', devantFeu()], ['apparition', [APPARITION[0] * T, APPARITION[1] * T]]]
     .filter(([, [x, y]]) => cache(x, y)).map(([id]) => id);
   t.eq(caches, [], 'devant chaque lieu, au feu et à l’apparition, aucune cime ne cache le héros');
-  t.ok(camp.objets.length > 300, `les bois et les emplacements sont posés (${camp.objets.length} pièces)`);
+  // (plus de 250 : la rangée d'arbres du haut, derrière le mur nord, est enlevée depuis les murs qui montent, 45_murs.js)
+  t.ok(camp.objets.length > 250, `les bois et les emplacements sont posés (${camp.objets.length} pièces)`);
   t.ok(document.querySelector('#tampon')?.textContent.includes(game.stamp), 'le tampon de version est à l’écran');
 
   testsMissions(t, game);
@@ -273,6 +275,7 @@ export async function selfTest(t, game) {
   testsTableau(t, ctx, game);   // le tableau d'affichage qui devient pierre, et son crieur : src/39_tests_tableau.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);
+  await testsPlans(t, ctx);   // l'onglet Plans du tableau des missions : src/46_tests_plans.js
   await testsParties(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();

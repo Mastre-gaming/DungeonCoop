@@ -45,6 +45,7 @@ import * as choixSkill from './41_choix_heros.js';
 import * as promeneursSkill from './42_promeneurs.js';
 import * as apparitionsSkill from './43_apparitions.js';
 import * as chantierSkill from './44_chantier.js';
+import * as mursSkill from './45_murs.js';
 import { ecranTitre, sauterTitre, retourAuDashboard } from './45_titre.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
@@ -92,7 +93,7 @@ async function demarrer(sortieTitre) {
   const place = game.use(placeSkill, { rendu, images, collision, missions, decor });   // la place du village, autour du feu
   // la connexion GitHub (la même que le tableau de travail du dashboard) : gérer les missions depuis le panneau
   const github = game.use(githubSkill, { horsLigne: query.has('test') });
-  const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite, github });
+  const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite, github, horsLigne: query.has('test') });
   // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
   // avant elle, à chaque arrivée : le choix du héros (41_choix_heros.js), qui lance sa scène une fois le héros pris
   const arrivee = !visite && !query.has('test') && !query.has('spot');
@@ -110,6 +111,8 @@ async function demarrer(sortieTitre) {
   const archives = game.use(archivesSkill, { rendu, canvas, heros, collision, images, visite });   // E devant la tente des archives : tous les assets du projet
   // le chantier des trois autres murs : ses ouvriers, et le chef de chantier (E : où en est chaque mur)
   const chantier = game.use(chantierSkill, { rendu, images, heros, missions, collision, visite });
+  // les murs ouest, nord et est montent avec le chantier, et s'estompent comme la grande muraille quand on s'en éloigne
+  const murs = game.use(mursSkill, { rendu, images, heros, chantier, collision, visite });
   // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
   const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
   const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
@@ -155,7 +158,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
@@ -170,6 +173,7 @@ async function demarrer(sortieTitre) {
     ], { force: true });
   });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
+  game.dbg.spot('plans', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface', 'plans'); });
 
   document.documentElement.dataset.pret = '1';
   game.start();

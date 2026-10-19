@@ -96,24 +96,32 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .capacite.indispo .cap-icone, .capacite.indispo .cap-texte { opacity: .4; filter: grayscale(.6); }
 
 /* la fiche de la capacité (#85) : ce qu'elle fait, sans cible */
-.fiche-capacite { width: 640px; max-width: 100%; box-sizing: border-box; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; animation: monte .12s ease-out; }
+/* toujours la même hauteur, quelle que soit la capacité : trois rangées d’une ligne (la tête, les résultats, les effets) ;
+   une capacité sans dégâts monte ses effets d’une rangée */
+.fiche-capacite { width: 480px; max-width: 100%; height: 99px; box-sizing: border-box; padding: 5px 8px 6px; display: grid; grid-template-rows: 26px 20px 18px; align-content: start; gap: 4px; animation: monte .12s ease-out;
+  border-width: 8px; border-image: var(--cadre-fin) 20 / 20px / 4px repeat; }
+.fiche-capacite .fc-tete, .fiche-capacite .fc-carac, .fiche-capacite .fc-effets { flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+.fiche-capacite .fc-tete h2 { white-space: nowrap; }
+.fiche-capacite .effet { white-space: nowrap; }
+.effet.refus { background: #3a1414; box-shadow: inset 0 0 0 1px #a8463a; color: #ff8a7a; }
+.fiche-capacite h2 { font-size: 15px; }
+.fiche-capacite .puce { font-size: 11px; padding: 1px 5px; }
+.fiche-capacite .effet { font-size: 11.5px; padding: 2px 6px; }
 @keyframes monte { from { transform: translateY(6px); } }
-.fc-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.fc-icone { width: 36px; height: 39px; image-rendering: pixelated; }
+.fc-tete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fc-icone { width: 24px; height: 26px; image-rendering: pixelated; }
 .fc-carac { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
-.fc-resultats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.fc-resultats.n1 { grid-template-columns: minmax(0, 1fr); }
-.fc-res { padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 2px; }
+/* les résultats sur une ligne (« Touché 17–22 ») ; les d20 restent dans la carte de la cible */
+.fc-resultats { display: flex; gap: 4px; }
+.fc-res { flex: 1; padding: 2px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; align-items: baseline; gap: 5px; }
 .fc-res.touche { box-shadow: inset 0 0 0 2px #85581b; }
-.fc-res strong { font: 700 20px var(--titre); color: #fff7e6; }
-.fc-res .fc-nom { font-size: 12px; }
-.fc-res .fc-d20 { font-size: 11px; color: #a8956f; }
+.fc-res strong { font: 700 13px var(--titre); color: #fff7e6; }
+.fc-res .fc-nom { font-size: 11px; }
+.fc-res .fc-d20 { display: none; }
 .fc-res.rate .fc-nom, .cc-ligne.rate .cc-nom { color: #ff8a7a; }
 .fc-res.eraflure .fc-nom, .cc-ligne.eraflure .cc-nom { color: #f3c48a; }
 .fc-res.touche .fc-nom, .cc-ligne.touche .cc-nom { color: #9fe28f; }
 .fc-res.critique .fc-nom, .cc-ligne.critique .cc-nom { color: #ffd35a; }
-.fc-aide { margin: 0; font: 400 13px var(--texte); color: #e9d3ad; }
-.fc-aide:empty { display: none; }
 
 /* la carte de la cible survolée */
 .carte-cible { position: fixed; z-index: 13; pointer-events: none; width: 248px; box-sizing: border-box; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
