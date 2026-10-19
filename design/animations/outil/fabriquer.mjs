@@ -9,7 +9,7 @@ import { fabriquer as fabriquerBibliotheque } from "./bibliotheque.mjs";
 const ici = (p) => fileURLToPath(new URL("../" + p, import.meta.url));
 const FAMILLES = [
   ["Le Mage", "mage"], ["Le Voleur et l'Éclaireuse", "tireurs"], ["Le Druide et la Barde", "nature"],
-  ["Le Gardien et le Chevalier", "soutien"], ["La mêlée et les gestes de tous", "melee"],
+  ["Le Gardien et le Chevalier", "soutien"], ["La mêlée et les gestes de tous", "melee"], ["Baba Brisenclume", "forgeron"],
 ];
 for (const d of ["esquisses", "captures", "bibliotheque"]) mkdirSync(ici(d), { recursive: true });
 

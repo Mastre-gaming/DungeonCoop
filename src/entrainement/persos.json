@@ -105,6 +105,7 @@
   "baba-brisenclume": {
     "nom": "Baba Brisenclume",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=muscular&body=Body_Color_amber&head=Human_Male_Elderly_amber&expression=Angry_amber&hair=Balding_white&beard=Winter_Beard_white&bauldron=Bauldron_leather&shoulders=Pauldrons_black&bracers=Bracers_copper&legs=Pants_charcoal&shoes=Rimmed_Boots_brown&mustache=Mustache_white",
-    "attaque": null
+    "attaque": null,
+    "anims": ["marche", "sort", "estoc", "taille", "blesse"]
   }
 }

@@ -499,6 +499,148 @@
     "10–14 : il se relève (le « blessé » LPC joué à l'envers)",
     "14–23 : debout à 25 PV : un « debout » et des croix vertes"
    ]
+  },
+  {
+   "id": "marteau",
+   "nom": "Marteau",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 14,
+   "cles": [
+    1,
+    2,
+    3,
+    4,
+    6
+   ],
+   "temps": [
+    "0–2 : Baba arme son marteau (la taille LPC), la tête rougeoie",
+    "3–4 : un croissant de métal chauffé suit la frappe",
+    "4 : l'impact : des étincelles jaillissent, la cible blanchit et recule",
+    "5–8 : les étincelles retombent et s'éteignent"
+   ]
+  },
+  {
+   "id": "lame-ardente",
+   "nom": "Forge : Lame Ardente",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 20,
+   "cles": [
+    2,
+    4,
+    7,
+    10,
+    15
+   ],
+   "temps": [
+    "0–3 : Baba lève ses deux marteaux (le sort LPC)",
+    "4–5 : il les fait sonner : un éclair blanc, une gerbe d'étincelles",
+    "6–9 : une traînée de feu vole jusqu'à l'arme de l'allié",
+    "10–19 : l'arme s'embrase : une lueur orange et des flammèches qui montent (sa prochaine attaque est du feu)"
+   ]
+  },
+  {
+   "id": "trempe",
+   "nom": "Forge : Trempe",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 20,
+   "cles": [
+    2,
+    4,
+    8,
+    11,
+    16
+   ],
+   "temps": [
+    "0–5 : le même geste que la Lame Ardente : les marteaux levés, puis qui sonnent",
+    "6–9 : des plaques de métal chauffé volent jusqu'à l'allié",
+    "10–12 : elles se referment autour de lui en un bouclier rougeoyant (10 points)",
+    "13–19 : le bouclier refroidit vers l'acier, un reflet passe dessus"
+   ]
+  },
+  {
+   "id": "tenailles",
+   "nom": "Tenailles",
+   "classe": "Baba Brisenclume",
+   "famille": "Baba Brisenclume",
+   "images": 18,
+   "cles": [
+    2,
+    5,
+    7,
+    10,
+    14
+   ],
+   "temps": [
+    "0–3 : Baba tend le bras (l'estoc LPC)",
+    "3–5 : une chaîne de forge file jusqu'à l'ennemi, la pince ouverte",
+    "6 : la pince se referme : un tintement, la cible blanchit",
+    "7–12 : la chaîne se rétracte et tire la cible de 3 m vers lui, dans un sillon de poussière"
+   ]
+  },
+  {
+   "id": "chute-enclume",
+   "nom": "Chute d'Enclume",
+   "classe": "Baba Brisenclume · Maître Forgeron",
+   "famille": "Baba Brisenclume",
+   "images": 22,
+   "cles": [
+    3,
+    7,
+    9,
+    11,
+    17
+   ],
+   "temps": [
+    "0–4 : Baba lève ses marteaux vers le ciel (le sort LPC)",
+    "2–8 : une ombre grandit sous la cible",
+    "9 : l'enclume tombe et écrase : l'écran tremble fort, la terre gicle",
+    "10–15 : la cible tombe à terre (le « blessé » LPC) ; des étoiles tournent au-dessus d'elle",
+    "16–21 : l'enclume reste un instant, puis s'efface"
+   ]
+  },
+  {
+   "id": "interposition",
+   "nom": "Interposition",
+   "classe": "Baba Brisenclume · Rempart",
+   "famille": "Baba Brisenclume",
+   "images": 20,
+   "cles": [
+    2,
+    5,
+    8,
+    9,
+    13
+   ],
+   "temps": [
+    "0–1 : une flèche part vers l'allié (le mage, au milieu)",
+    "1–5 : Baba se jette devant lui (la marche LPC, très vite)",
+    "6–8 : il croise ses marteaux ; la flèche les frappe",
+    "8 : un éclat orange, la flèche se brise en morceaux de bois ; c'est lui qui prend le coup",
+    "9–19 : il tient sa garde, des étincelles retombent"
+   ]
+  },
+  {
+   "id": "chef-oeuvre",
+   "nom": "Chef-d'œuvre",
+   "classe": "Baba Brisenclume · signature (niveau 20)",
+   "famille": "Baba Brisenclume",
+   "images": 26,
+   "cles": [
+    2,
+    7,
+    12,
+    16,
+    21
+   ],
+   "temps": [
+    "0–8 : Baba frappe deux fois dans le vide devant lui : à chaque coup, une gerbe d'étincelles",
+    "8–13 : une lame dorée naît dans les étincelles et grandit, chauffée à blanc",
+    "14–18 : elle s'envole jusqu'à l'allié (le chevalier)",
+    "19–25 : elle se fond dans son arme : une aura dorée l'entoure (ses dégâts doublent 2 rounds)"
+   ]
   }
  ]
 }
