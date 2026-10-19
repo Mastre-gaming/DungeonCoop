@@ -10,7 +10,7 @@
 import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
 import { fr } from '../13_reseau.js';
-import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI } from './regles.js';
+import { HEROS, CAPACITES, PLACES, CLASSES_JOUABLES } from './regles.js';
 import { arme } from './armes.js';
 
 export const name = 'multi';
@@ -34,7 +34,7 @@ export function regler(L, qui, m) {
   if (!(k >= 0 && k < PLACES.length)) return false;
   if (m.t === 'prendre' && L.proprio[k] === null) { L.proprio[k] = qui; return true; }
   if (m.t === 'rendre' && L.proprio[k] === qui) { L.proprio[k] = null; return true; }
-  if (m.t === 'classe' && CLASSES_ESSAI.includes(m.type) && (L.proprio[k] === qui || (qui === HOTE && L.proprio[k] === null))) { L.equipe[k] = m.type; return true; }
+  if (m.t === 'classe' && CLASSES_JOUABLES.includes(m.type) && (L.proprio[k] === qui || (qui === HOTE && L.proprio[k] === null))) { L.equipe[k] = m.type; return true; }
   return false;
 }
 // Quelqu'un arrive : la première place libre est à lui. Pendant un combat, ses héros lui reviennent s'il était parti.

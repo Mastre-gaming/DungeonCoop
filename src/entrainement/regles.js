@@ -16,11 +16,14 @@ import {
 // Les vraies classes restent celles de chacun (missions #30 à #33).
 export const EQUIPE_KIT = ['brute', 'mage', 'voleur', 'gardien'];
 export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde'];
+// Les vraies classes de chacun (content/classes/), quand leurs règles sont écrites ici : Shadow, de FrapsFTW (#198).
+export const CLASSES_JOUEURS = ['shadow'];
+export const CLASSES_JOUABLES = [...CLASSES_ESSAI, ...CLASSES_JOUEURS];
 export const PLACES = ['h1', 'h2', 'h3', 'h4'];            // les 4 héros : une place, une classe choisie à l'entrée
 // « brute,chevalier,druide,barde » (l'adresse : ?equipe=…) → une équipe valable de 4 classes, ou null.
 export function equipeDepuis(texte) {
   const ids = String(texte ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-  return ids.length === 4 && ids.every((id) => CLASSES_ESSAI.includes(id)) ? ids : null;
+  return ids.length === 4 && ids.every((id) => CLASSES_JOUABLES.includes(id)) ? ids : null;
 }
 export const ORDRE_ENNEMIS = ['s1', 's2', 's3', 'a1', 'a2', 'br', 'chef'];
 export const HEROS = {
@@ -49,6 +52,13 @@ export const HEROS = {
   barde: { nom: 'Barde', court: 'BAR', pv: 135, vitesse: 6, dex: 2, res: { type: 'Énergie', v: 3, max: 3 }, role: 'Soutien · donne l’avantage', essai: true,
     faiblesse: 'Fragile : chaque coup reçu au contact lui fait 3 dégâts de plus.', passif: 'Énergie : 3 à chaque tour, perdue si elle n’est pas dépensée.',
     capacites: ['dague', 'chant', 'moquerie', 'pousser', 'potion', 'relever'] },
+  // Shadow (content/classes/shadow.json, par FrapsFTW), au budget de CLASS_TEMPLATE.fr.md : FOR 8, DEX 15 (+2), CON 14 (+2),
+  // INT 12, SAG 13, CHA 10 · déplacement 6 cases (2) · Pas dans l'ombre, une préparation (2) · Coup dans le dos, une
+  // exploitation (3) renforcée d'un Critique pour 3 Élan (+1) · 2 points restants = +10 PV. PV : 100 + 10 (CON) + 10 = 120.
+  shadow: { nom: 'Shadow', court: 'SHA', pv: 120, vitesse: 6, dex: 2, res: { type: 'Élan', v: 0, max: 5 }, role: 'Dégâts · frappe dans le dos', auteur: 'FrapsFTW',
+    faiblesse: 'La lumière le trahit : Brûlant ou dans le feu, plus de Pas dans l’ombre.',
+    passif: 'Élan : +1 par case parcourue (1,5 m), le Pas dans l’ombre compris ; il se vide s’il finit son tour sans avoir bougé.',
+    capacites: ['dague', 'pasOmbre', 'coupDos', 'coupDos3', 'pousser', 'potion', 'relever'] },
 };
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
@@ -91,6 +101,10 @@ export const CAPACITES = {
   // la Barde
   dague: { nom: 'Dague', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   chant: { nom: 'Chant de bataille', slot: 'bonus', type: 'inspiration', portee: 6, cout: 1, anim: 'sort', ds: '1 Énergie · un allié à 9 m a l’avantage à sa prochaine attaque' },
+  // Shadow
+  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'sort', ds: 'Portée 7,5 m · derrière un ennemi tenu par un allié : Tenaille · +Élan du trajet' },
+  coupDos: { nom: 'Coup dans le dos', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, anim: 'attaque', ds: 'Au contact · 8–11 / 17–22 / 34–44 ; ×2 si Tenaille ou Exposée' },
+  coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré · ×2 si Tenaille ou Exposée' },
   moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
 };
 export const NOM_SURFACE = { eau: 'l’eau', huile: 'l’huile', feu: 'le feu', glace: 'la glace' };
@@ -296,7 +310,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     if (A.contreGele && cible.st.gele) { mult *= 2; notes.push('cible Gelée : tir lesté ×2'); aCombos.push([cible.st.gele.par, 'Gelé puis tir lesté']); }
     if (A.el === 'foudre' && cible.type === 'druide') { mult *= 2; notes.push('faiblesse du Druide : foudre ×2'); }
-    if (A.melee && enTenaille(att, cible, S.unites.filter((o) => o.camp === att.camp && !o.ko && !o.mort))) { av = true; tenaille = true; notes.push('prise en tenaille : avantage'); }
+    const allies = S.unites.filter((o) => o.camp === att.camp && !o.ko && !o.mort);
+    if (A.melee && enTenaille(att, cible, allies)) { av = true; tenaille = true; notes.push('prise en tenaille : avantage'); }
+    if (A.dansLeDos && (tenaille || cible.expose)) {             // le Coup dans le dos de Shadow
+      mult *= 2; notes.push(`${tenaille ? 'en Tenaille' : 'Exposée'} : coup dans le dos ×2`);
+      const tient = tenaille ? allies.find((o) => enTenaille(att, cible, [o])) : null;
+      if (tient) aCombos.push([tient.id, 'Tenaille puis coup dans le dos']);
+    }
     if (att.camp === 'e' && S.ennemisAvantage) { av = true; notes.push('ordres du chef : avantage'); }
     if (surfaceA(att)?.t === 'glace') { des = true; notes.push('attaque depuis la glace : désavantage'); }
     if (att.st.gele) { des = true; notes.push('attaquant Gelé : désavantage'); }
@@ -322,7 +342,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const f = (v) => (g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult;
     return g === 'rate' ? '0' : `${f(lo)}–${f(hi)}`;
   }
-  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, anim: cap.anim });
+  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, dansLeDos: !!cap.dansLeDos, anim: cap.anim });
   const attaqueEnnemi = (e) => { const a = ENNEMIS[e.type].atk; return { nom: a.nom, mod: 2, dmod: 0, base: a.base, de: a.de, melee: a.portee === CONTACT, anim: a.anim }; };
   function rate(u) {
     const r = d(6);
@@ -467,12 +487,20 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const longueur = longueurChemin(h, pts);
     return { ok: longueur <= h.t.mv + 1e-6 && finPossible(h, pts[pts.length - 1]), pts, longueur };
   }
+  // L'Élan (CLASS_TEMPLATE.fr.md §4) : +1 par case parcourue (les morceaux de case s'additionnent pendant le tour), max 5.
+  function elan(h, cases) {
+    if (h.res?.type !== 'Élan' || cases <= 0) return;
+    const avant = Math.floor((h.t.parcouru ?? 0) + 1e-6);
+    h.t.parcouru = (h.t.parcouru ?? 0) + cases;
+    const n = Math.floor(h.t.parcouru + 1e-6) - avant;
+    if (n > 0 && h.res.v < h.res.max) { h.res.v = Math.min(h.res.max, h.res.v + n); flotter(h, `+${n} Élan`, 'info'); }
+  }
   // Un héros va en (x, y) : le chemin le plus court, s'il tient dans son déplacement.
   function deplacer(h, x, y, P) {
     const a = apercuMarche(h, x, y, P);
     if (!a.ok) return false;
     combos = new Set();
-    marcher(h, a.pts);
+    elan(h, marcher(h, a.pts));
     return true;
   }
 
@@ -507,6 +535,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function finTour(u) {
     if (u.mort || u.ko) return;
+    if (u.camp === 'h' && u.res.type === 'Élan' && !(u.t.parcouru > 0) && u.res.v > 0) { u.res.v = 0; log(`${u.nom} est resté immobile : son Élan retombe à 0.`, 'muet'); }
     const s = surfaceA(u);
     if (s && s.t === 'feu') { log(`${u.nom} finit son tour dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
     if (u.st.gele && !u.mort && !u.ko) { u.st.gele.n--; if (u.st.gele.n <= 0) delete u.st.gele; }
@@ -671,8 +700,23 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
 
   // --- Ce que les héros peuvent faire ---------------------------------------------------------------------------
+  // La faiblesse de Shadow : Brûlant, ou debout dans le feu, il ne peut plus plonger dans son ombre.
+  const trahiParLaLumiere = (h) => !!h.st.brulure || surfaceA(h)?.t === 'feu';
+  // Le Pas dans l'ombre : le point où ressortir, au contact de la cible et à l'opposé d'un allié qui la tient (la Tenaille),
+  // libre et sans créature ; le plus droit derrière elle d'abord. null s'il n'y en a pas.
+  function sortieOmbre(h, cible) {
+    const tiennent = S.unites.filter((o) => o.camp === h.camp && o !== h && !o.ko && !o.mort && dist(o, cible) <= CONTACT);
+    for (const ecart of [0, 15, -15, 30, -30, 40, -40]) for (const r of [1.2, 1.35, 1.0]) for (const o of tiennent) {
+      const a = Math.atan2(cible.y - o.y, cible.x - o.x) + (ecart * Math.PI) / 180;
+      const p = { x: cible.x + Math.cos(a) * r, y: cible.y + Math.sin(a) * r };
+      if (!finPossible(h, p) || !enTenaille({ ...h, x: p.x, y: p.y }, cible, [o])) continue;
+      return { ...p, tient: o };
+    }
+    return null;
+  }
   function peutUtiliser(h, cap) {
     if (!peutAgir(h)) return false;
+    if (cap.type === 'ombre' && trahiParLaLumiere(h)) return false;
     if (cap.slot === 'action' && !h.t.action) return false;
     if (cap.slot === 'bonus' && !h.t.bonus) return false;
     if (cap.cout && h.res.v < cap.cout) return false;
@@ -693,6 +737,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     else if (cap.type === 'relever') S.unites.filter((u) => u.camp === 'h' && u.ko && dist(h, u) <= CONTACT).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'huileCible') S.unites.filter((u) => !u.mort && !u.ko && u !== h && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
     else if (['etatCible', 'attraction', 'moquerie'].includes(cap.type)) ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
+    else if (cap.type === 'ombre') ennemisVivants().filter((u) => aPortee(h, cap, u) && sortieOmbre(h, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'inspiration') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     return out;
   }
@@ -778,6 +823,18 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       attirer(h, u, cap.longueur);
       return true;
     }
+    if (cap.type === 'ombre' && ennemiVise) {             // le Pas dans l'ombre : ressortir derrière la cible
+      const p = sortieOmbre(h, u); if (!p) return false;
+      payer(h, cap);
+      const trajet = dist(h, p);
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'ombre', id: h.id, x: p.x, y: p.y });
+      h.x = p.x; h.y = p.y;
+      log(`${h.nom} plonge dans son ombre et ressort derrière ${u.nom} : pris en Tenaille avec ${p.tient.nom}.`);
+      elan(h, trajet);
+      const s = surfaceA(h); if (s) entrerSurface(h, s, false);
+      return true;
+    }
     if (cap.type === 'moquerie' && ennemiVise) {           // Exposé : la prochaine attaque contre lui a l'avantage
       payer(h, cap); u.expose = { par: h.id };
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
@@ -828,7 +885,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
 
   return {
-    S, U, herosVivants, ennemisVivants, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
+    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
     portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }),

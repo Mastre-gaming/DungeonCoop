@@ -8,7 +8,7 @@
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
-import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_JOUABLES, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
 import { CONTACT, metres } from './geometrie.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
 import { curseurCss } from './armes.js';
@@ -88,7 +88,7 @@ function construire() {
       ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
     dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
     dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
-    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, ou des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester ; les vraies classes restent celles de chacun). ◀ ▶ pour changer.'),
+    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (Shadow, de Fraps). ◀ ▶ pour changer.'),
     dom.places = el('div', { class: 'places-accueil' }),
     dom.boutonsEquipe = el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { ui.choix = EQUIPE_KIT.slice(); dessinerPlaces(); } }, 'Le kit D1'),
@@ -123,7 +123,7 @@ const CLE_CHOIX = 'dungeoncoop:equipe-entrainement';
 function lireChoix() { try { return equipeDepuis(localStorage.getItem(CLE_CHOIX)); } catch { return null; } }
 const equipeAffichee = () => (reseau ? reseau.L.equipe : ui.choix);
 function changerClasse(k, sens) {
-  const i = CLASSES_ESSAI.indexOf(equipeAffichee()[k]), type = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  const i = CLASSES_JOUABLES.indexOf(equipeAffichee()[k]), type = CLASSES_JOUABLES[(i + sens + CLASSES_JOUABLES.length) % CLASSES_JOUABLES.length];
   if (reseau) return void reseau.classe(k, type);
   ui.choix[k] = type;
   dessinerPlaces();
@@ -131,7 +131,7 @@ function changerClasse(k, sens) {
 // à plusieurs : ma place, ou une place libre pour l'hôte (celle d'un ami, non)
 const peutRegler = (k) => !reseau || reseau.L.proprio[k] === reseau.moi || (reseau.hote && reseau.L.proprio[k] === null);
 function auHasard() {
-  const melange = CLASSES_ESSAI.slice().sort(() => Math.random() - 0.5);
+  const melange = CLASSES_JOUABLES.slice().sort(() => Math.random() - 0.5);
   ui.choix = melange.slice(0, 4);
   dessinerPlaces();
 }
@@ -364,7 +364,8 @@ const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
 function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
-  if (cap.cout && h.res.v < cap.cout) return `Pas assez de ${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
+  if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
   return 'Pas maintenant.';
 }
@@ -400,7 +401,7 @@ const etatsDe = (u) => Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean)
 // les états d'une créature, dans la carte : l'icône, le nom et les tours qui restent, puis ce que l'état fait
 function listeEtats(u) {
   const liste = etatsActifs(u);
-  if (!liste.length) return null;
+  if (!liste.length) return '';          // (replaceChildren écrirait « null »)
   return el('ul', { class: 'cc-etats' }, liste.map((e) => el('li', { class: e.genre, dataset: { etat: e.id } },
     el('img', { src: e.src, alt: '' }),
     el('span', { class: 'cc-etat-nom' }, e.nom, e.n != null ? el('small', {}, ` · encore ${e.n} tour${e.n > 1 ? 's' : ''}`) : null),

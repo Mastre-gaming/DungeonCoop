@@ -13,8 +13,9 @@ const ICONES = {
   epee: 'epee', chargeBouclier: 'chargeBouclier', ralliement: 'ralliement',
   ronce: 'ronce', liane: 'liane', pluie: 'pluie',
   dague: 'dague', chant: 'chant', moquerie: 'moquerie',
+  pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos',
 };
-export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
+export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
 // une attaque contre une cible ordinaire : raté sur 1, critique sur 20, éraflure jusqu'à d20 + bonus = 9 (12 contre un coriace)
@@ -51,7 +52,7 @@ const GENRES = [[/feu|huil|enflamm|brûl/i, 'feu'], [/foudre|électri/i, 'foudre
   [/avantage|exposé|moqu/i, 'magie'], [/pv/i, 'soin']];
 export function effets(cap) {
   return cap.ds.split(/ · | ; /).map((s) => s.trim())
-    .filter((s) => s && !/^\d+–\d+ \/ /.test(s) && !/^(Portée|Au contact)/.test(s) && !/^\d+ (Mana|Rage|Énergie|Foi|Concentration)$/.test(s))
+    .filter((s) => s && !/^\d+–\d+ \/ /.test(s) && !/^(Portée|Au contact)/.test(s) && !/^\d+ (Mana|Rage|Énergie|Foi|Concentration|Élan)$/.test(s))
     .map((s) => ({ texte: s[0].toUpperCase() + s.slice(1), genre: GENRES.find(([r]) => r.test(s))?.[1] ?? '' }));
 }
 

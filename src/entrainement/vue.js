@@ -325,6 +325,14 @@ function scene(e) {
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
+    // le Pas dans l’ombre de Shadow : il s’enfonce dans son ombre, et en ressort derrière la cible
+    case 'ombre': {
+      const p = { x: e.x * T, y: e.y * T }; let passe = false;
+      return { duree: 0.7, maj(t, k) {
+        if (k >= 0.5 && !passe) { passe = true; a.x = p.x; a.y = p.y; fx.jouer('poussiere', { x: p.x, y: p.y }); }
+        a.enfonce = k < 0.5 ? k * 2 : 2 - k * 2; a.cache = a.enfonce > 0.92;
+      }, fin() { a.x = p.x; a.y = p.y; a.enfonce = 0; a.cache = false; } };
+    }
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
     case 'zone': marques.zone = { x: e.x, y: e.y, r: e.r, surf: e.surf }; dessinerMarques(); return { duree: 0.35, fin() { marques.zone = null; dessinerMarques(); } };
