@@ -66,7 +66,8 @@ export const ENNEMIS = {
   brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros qui a le moins de PV et le repousse' },
   chef: { nom: 'Chef', pv: 90, vitesse: 5, dex: 1, coriace: true, atk: { nom: 'Frappe du chef', base: 22, de: 8, anim: 'attaque' }, habitude: 'tours 1–2 : avantage aux ennemis · tour 3 : une zone de 5 m' },
 };
-const R2 = 1.7 / 1.5, R3 = 2.5 / 1.5;        // les zones 2×2 et 3×3 : des cercles de 1,7 m et 2,5 m de rayon
+const R2 = 1.7 / 1.5, R3 = 2.5 / 1.5;
+const TENU = 3;                              // le Pas dans l'ombre de Shadow : un ennemi qu'un allié serre à 4,5 m au plus        // les zones 2×2 et 3×3 : des cercles de 1,7 m et 2,5 m de rayon
 export const CAPACITES = {
   fracas: { nom: 'Fracas', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'attaque', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   projection: { nom: 'Projection', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 3, proj: true, ds: 'Pousse de 4,5 m ; s’il heurte quelque chose : +8 et À terre' },
@@ -102,7 +103,7 @@ export const CAPACITES = {
   dague: { nom: 'Dague', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   chant: { nom: 'Chant de bataille', slot: 'bonus', type: 'inspiration', portee: 6, cout: 1, anim: 'sort', ds: '1 Énergie · un allié à 9 m a l’avantage à sa prochaine attaque' },
   // Shadow
-  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'sort', ds: 'Portée 7,5 m · derrière un ennemi tenu par un allié : Tenaille · +Élan du trajet' },
+  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'sort', ds: 'Portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille · +Élan du trajet' },
   coupDos: { nom: 'Coup dans le dos', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, anim: 'attaque', ds: 'Au contact · 8–11 / 17–22 / 34–44 ; ×2 si Tenaille ou Exposée' },
   coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré · ×2 si Tenaille ou Exposée' },
   moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
@@ -312,9 +313,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (A.el === 'foudre' && cible.type === 'druide') { mult *= 2; notes.push('faiblesse du Druide : foudre ×2'); }
     const allies = S.unites.filter((o) => o.camp === att.camp && !o.ko && !o.mort);
     if (A.melee && enTenaille(att, cible, allies)) { av = true; tenaille = true; notes.push('prise en tenaille : avantage'); }
+    // la Tenaille posée par le Pas dans l'ombre : elle compte pour celui qui l'a posée, au contact, jusqu'à la fin du round
+    const ombre = A.melee && cible.st.tenaille?.par === att.id ? cible.st.tenaille : null;
+    if (ombre && !tenaille) { av = true; tenaille = true; notes.push('prise en tenaille (Pas dans l’ombre) : avantage'); }
     if (A.dansLeDos && (tenaille || cible.expose)) {             // le Coup dans le dos de Shadow
       mult *= 2; notes.push(`${tenaille ? 'en Tenaille' : 'Exposée'} : coup dans le dos ×2`);
-      const tient = tenaille ? allies.find((o) => enTenaille(att, cible, [o])) : null;
+      const tient = tenaille ? (ombre && U(ombre.tient)) || allies.find((o) => enTenaille(att, cible, [o])) : null;
       if (tient) aCombos.push([tient.id, 'Tenaille puis coup dans le dos']);
     }
     if (att.camp === 'e' && S.ennemisAvantage) { av = true; notes.push('ordres du chef : avantage'); }
@@ -543,6 +547,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   function finRound() {
     for (const k of Object.keys(S.surfaces)) { const s = S.surfaces[k]; if (s.ttl != null) { s.ttl--; if (s.ttl <= 0) delete S.surfaces[k]; } }
     for (const u of S.unites) for (const n of ['trempe', 'huile']) if (u.st[n]) { u.st[n].ttl--; if (u.st[n].ttl <= 0) delete u.st[n]; }
+    for (const u of S.unites) delete u.st.tenaille;            // la Tenaille du Pas dans l'ombre dure un round
     ev({ type: 'surfaces' });
   }
   function commencer() {
@@ -704,13 +709,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const trahiParLaLumiere = (h) => !!h.st.brulure || surfaceA(h)?.t === 'feu';
   // Le Pas dans l'ombre : le point où ressortir, au contact de la cible et à l'opposé d'un allié qui la tient (la Tenaille),
   // libre et sans créature ; le plus droit derrière elle d'abord. null s'il n'y en a pas.
+  // « Tenu » : un allié à 4,5 m au plus de la cible (la portée courte de CLASS_TEMPLATE), pas forcément collé à elle.
   function sortieOmbre(h, cible) {
-    const tiennent = S.unites.filter((o) => o.camp === h.camp && o !== h && !o.ko && !o.mort && dist(o, cible) <= CONTACT);
+    const tiennent = S.unites.filter((o) => o.camp === h.camp && o !== h && !o.ko && !o.mort && dist(o, cible) <= TENU)
+      .sort((a, b) => dist(a, cible) - dist(b, cible));
     for (const ecart of [0, 15, -15, 30, -30, 40, -40]) for (const r of [1.2, 1.35, 1.0]) for (const o of tiennent) {
       const a = Math.atan2(cible.y - o.y, cible.x - o.x) + (ecart * Math.PI) / 180;
       const p = { x: cible.x + Math.cos(a) * r, y: cible.y + Math.sin(a) * r };
-      if (!finPossible(h, p) || !enTenaille({ ...h, x: p.x, y: p.y }, cible, [o])) continue;
-      return { ...p, tient: o };
+      if (finPossible(h, p)) return { ...p, tient: o };          // à 40° au plus de l'opposé : l'angle de la Tenaille (135°)
     }
     return null;
   }
@@ -829,7 +835,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       const trajet = dist(h, p);
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'ombre', id: h.id, x: p.x, y: p.y });
-      h.x = p.x; h.y = p.y;
+      h.x = p.x; h.y = p.y; u.st.tenaille = { par: h.id, tient: p.tient.id };
       log(`${h.nom} plonge dans son ombre et ressort derrière ${u.nom} : pris en Tenaille avec ${p.tient.nom}.`);
       elan(h, trajet);
       const s = surfaceA(h); if (s) entrerSurface(h, s, false);

@@ -369,7 +369,7 @@ function pourquoiPas(h, cap) {
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
   if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
   if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
-  if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m tenu par un allié au contact.';
+  if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m qu’un allié serre à 4,5 m.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
   return 'Pas maintenant.';
 }

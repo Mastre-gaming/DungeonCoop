@@ -271,11 +271,29 @@ export async function selfTest(t, game) {
   {
     const { C, sh, s } = scene();
     poser(C, 'brute', 20, 20);
-    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'sans allié au contact de l’ennemi, pas de Pas dans l’ombre');
+    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'sans allié près de l’ennemi, pas de Pas dans l’ombre');
     poser(C, 'shadow', 10, 12); s.expose = { par: null };
     t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 2, 'une cible Exposée prend aussi ×2, sans Tenaille');
     s.expose = false;
     t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 1, 'ni Tenaille ni Exposée : les dégâts normaux');
+  }
+  {
+    // « tenu » : un allié à 4,5 m au plus, pas forcément collé ; le Pas pose alors la Tenaille lui-même, pour un round
+    const { C, sh, b, s } = scene();
+    poser(C, 'brute', 9 - 2.7, 12);                    // la Brute à 4 m de la Brute ennemie
+    t.ok(C.cibles(sh, CAPACITES.pasOmbre).some((c) => c.id === s.id), 'un allié à 4 m de l’ennemi suffit : il le serre');
+    t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }) && dist(sh, s) <= CONTACT && s.st.tenaille?.par === sh.id, 'Shadow ressort derrière, au contact, et pose la Tenaille');
+    const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
+    t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos : ×2 et l’avantage, même si la Brute n’est pas collée');
+    t.eq(C._.calculer(trouver(C, 'mage'), s, C._.attaqueHeros(CAPACITES.etincelle)).av, 0, 'cette Tenaille ne compte que pour Shadow');
+    C.utiliser(sh, 'coupDos', { id: s.id });
+    t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id) || C.S.journal.some((l) => l.t.includes('Raté')), 'et le combo revient à la Brute qui serre');
+    if (!s.mort) { C.finPhaseHeros(); t.ok(!s.st.tenaille, 'la Tenaille du Pas dure un round'); }
+  }
+  {
+    const { C, sh } = scene();
+    poser(C, 'brute', 9 - 3.4, 12);                    // à 5 m : trop loin
+    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'un allié à 5 m ne serre pas l’ennemi : pas de Pas');
   }
   {
     const { C, sh } = scene();
@@ -648,7 +666,7 @@ export async function selfTest(t, game) {
     touche('2');
     t.eq(ihm.ui.cap, null, 'et la touche 2 ne le choisit pas');
     ihm.ui.capSurvol = 'pasOmbre'; ihm.ui.sale = true; game.dbg.advance(0.05);
-    t.ok(ihm.dom.ficheCap.textContent.includes('Aucun ennemi à 7,5 m tenu par un allié'), 'sa fiche dit pourquoi');
+    t.ok(ihm.dom.ficheCap.textContent.includes('Aucun ennemi à 7,5 m qu’un allié serre'), 'sa fiche dit pourquoi');
     ihm.ui.capSurvol = null;
     const place = (id, x, y) => { const u = C3.U(id); u.x = x; u.y = y; C3.S.evenements.push({ type: 'place', id, x, y }); };
     place('h2', 8, 12); place('br', 9, 12); place('h1', 9, 15.5); jouerFile();

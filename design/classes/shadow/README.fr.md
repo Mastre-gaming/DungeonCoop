@@ -24,7 +24,7 @@ Shadow se choisit à l'entrée du terrain, à côté des classes d'essai. Ses r�
 | PV, déplacement | 120 PV (100 + 10 de CON + 10 des 2 points restants), 9 m par tour (6 cases) |
 | Élan | +1 par case parcourue (1,5 m), le Pas compris ; 5 au plus ; retombe à 0 s'il finit son tour sans bouger |
 | Dague | au contact, 8 + d4 + 2 |
-| Pas dans l'ombre (bonus) | jusqu'à 7,5 m : il ressort derrière un ennemi qu'un allié tient au contact, à l'opposé de cet allié : la cible est prise en Tenaille. Le trajet donne de l'Élan |
+| Pas dans l'ombre (bonus) | jusqu'à 7,5 m : il ressort derrière un ennemi qu'un allié serre (à 4,5 m au plus, pas forcément collé), à l'opposé de cet allié. Il pose la Tenaille sur la cible jusqu'à la fin du round : elle compte pour ses coups à lui. Grisé tant qu'aucun ennemi n'est serré. Le trajet donne de l'Élan |
 | Coup dans le dos (action) | au contact, 14 + d6 + 2, ×2 sur une cible en Tenaille ou Exposée ; l'allié qui tient la cible fait un combo avec lui |
 | Coup dans le dos critique | le même, critique assuré, pour 3 Élan |
 | Faiblesse | Brûlant, ou debout dans le feu : plus de Pas dans l'ombre |
