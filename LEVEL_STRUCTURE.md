@@ -34,6 +34,14 @@ Fight -> Fight -> [Event      ] -> Rest -> [Elite     ] -> Fight -> [Shop     ] 
 
 Each side choice trades safety for reward: the elite is harder than the treasure room and pays better.
 
+## How a run is played (owner, 19 Oct)
+- **The road comes first** (owner, 19 Oct): the adventure starts with the way from the camp to the tower, **6 rooms shaped like a floor** (proposed: the forest edge, an event or a puzzle, the ford, an elite or a treasure, the mill, the tower door with a mini-boss). **It counts in the 20 levels: +1 level after each room, except the rest room of floors 1 and 2; cap 20.** Road 1→6, floor 1 7→11, floor 2 12→16, floor 3 17→20: level 20 from floor 3's room 4, so three rooms and the Guardian are played at the cap. Once capped, a room gives a reward instead (gold, a potion, an item). An evening grows to about 3 h. Owner, 19 Oct (options A and B).
+- **From fight room to fight room**, as in Slay the Spire: no walking between rooms, no corridors. The group picks the next room on the map, and the fight starts in it.
+- **Short cutscenes** (a few seconds, skippable) link one room to the next, and one level to the next.
+- **Each room is an arena with its own design**, and each level its own identity: tiles, layout, obstacles and surfaces, enemies, light. The training ground is only the draft where the fight system is tried.
+- **The fight** is the training ground's system (without squares, `FIGHT_RULES.md` « On trial »), fed with each room's walls, obstacles and enemy group.
+- **The entrance** from the camp is a dedicated place, built later; until then the prototype opens at `donjon.html`.
+
 ## What's shuffled each run
 - which enemy group is in each fight room, from that chapter's pool;
 - which event, puzzle and mini-game appear;
