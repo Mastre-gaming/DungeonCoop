@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "baba-brisenclume",
+  "nom": "Baba Brisenclume",
+  "auteur": "DonBabaa",
+  "phrase": "Vieux forgeron de légende, il a repris le marteau pour monter affronter le Gardien du Prismastre.",
+  "role": "tank",
+  "twist": "forge l'équipement de ses alliés en plein combat",
+  "archetype": "Fighter",
+  "caracs": { "FOR": 15, "DEX": 9, "CON": 15, "INT": 10, "SAG": 10, "CHA": 12 },
+  "pv": 130,
+  "vitesse": 4,
+  "ressource": "rage",
+  "capacites": [
+    { "nom": "Marteau", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "ses poussées vont 1 case plus loin (FOR 14+)", "cree": [], "utilise": ["aterre"], "renforts": [] },
+    { "nom": "Forge", "sorte": "soutien", "slot": "bonus", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "20 Rage (sa Chaleur)", "effet": "sur lui ou un allié au contact, au choix : Lame Ardente (la prochaine attaque fait +d6 et compte comme du feu : elle enflamme l'Huile et les cibles Huilées) ou Trempe (un bouclier de 10)", "cree": ["feu"], "utilise": ["huile"], "renforts": ["effet"] },
+    { "nom": "Tenailles", "sorte": "preparation", "slot": "action", "portee": "courte", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "attrape un ennemi et le tire de 3 m vers lui : loin des alliés fragiles, dans l'Huile, le Feu ou la Glace, ou en tenaille", "cree": ["attirer"], "utilise": [], "renforts": [] }
+  ],
+  "faiblesse": "Vieux Os : se relever d'À terre lui coûte tout son déplacement, et la Glace le renverse sur 1 à 14",
+  "sousClasses": [
+    { "nom": "Maître Forgeron", "idee": "le feu et les dégâts : niv. 3 Chute d'Enclume (exploitation, ×2 sur À terre ou Gelé, met À terre) · niv. 7 Lame Ardente dure 2 attaques · niv. 11 son Marteau laisse une case de Feu · niv. 15 la Forge touche tous les alliés d'une grande zone" },
+    { "nom": "Rempart", "idee": "l'armure et la protection : niv. 3 Interposition (réaction, prend le coup à la place d'un allié au contact) · niv. 7 Trempe donne 15 · niv. 11 Interposition à 2 cases · niv. 15 Trempe donne 20, et +10 Rage par coup pris pour un allié" }
+  ],
+  "look": { "corps": "un vieil homme large mais voûté, barbe blanche", "tenue": "tablier de cuir couvert de suie, bras nus marqués de brûlures, grand marteau de forge", "touche": "des braises qui rougeoient dans sa barbe", "lien": "", "base": "" },
+  "references": "Signature niv. 20, Chef-d'œuvre : une fois par combat, il forge une arme légendaire pour un allié (dégâts doublés pendant 2 rounds)."
+}
