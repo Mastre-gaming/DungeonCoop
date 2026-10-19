@@ -380,10 +380,10 @@ function dessinerFiche(h) {
       el('span', { class: `tampon ${cap.slot}` }, cap.slot === 'action' ? 'ACTION' : 'BONUS'),
       el('span', { class: 'fc-carac' }, caracteristiques(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
     r ? el('div', { class: `fc-resultats n${r.length}` }, r.map((x) => el('div', { class: `fc-res ${x.g}` },
-      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : null,
+      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : '',
     el('div', { class: 'fc-effets' }, effets(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))),
     el('p', { class: 'fc-aide' }, !ok ? pourquoiPas(h, cap)
-      : ui.cap === id ? (cap.type === 'zone' ? 'Clique là où poser la zone.' : cap.type === 'potion' ? '' : 'Clique sur une cible entourée d’or.')
+      : ui.cap === id ? (cap.type === 'zone' ? 'Clique là où poser la zone.' : '')
         : `${k ? `Touche ${k} ou clic` : 'Clic'} pour la choisir.${r && !cap.auto ? ` Contre un coriace (Brute ennemie, Chef), l’éraflure va jusqu’à d20 ${12 - cap.mod}.` : ''}`));
   dom.ficheCap.hidden = false;
 }
