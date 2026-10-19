@@ -42,9 +42,11 @@ export function lieuDe(issue) {
   const l = labels(issue);
   return LIEUX_AXES.find((x) => x.labels.some((lab) => l.includes(norm(lab))))?.id ?? null;
 }
+// Une mission sans label « taille: … » compte comme une S (décision du propriétaire, 19 oct) : rien de rentré n'est perdu.
+export const TAILLE_PAR_DEFAUT = 'S';
 export function tailleDe(issue) {
   for (const l of labels(issue)) { const m = /^taille\s*:\s*([sml])$/.exec(l); if (m) return m[1].toUpperCase(); }
-  return null;
+  return TAILLE_PAR_DEFAUT;
 }
 const niveauDe = (p, seuils) => seuils.reduce((n, s, i) => (p >= s ? i : n), 0);
 
@@ -58,13 +60,13 @@ export function fusionner(equipe = [], profils = []) {
 }
 
 // progression(issues) → les points et le niveau de chaque lieu, le total de l'équipe et la taille du feu.
-// Seules les missions rentrées comptent, selon leur taille (S 1, M 3, L 8 ; sans taille : 0). Une rouverte ne compte plus.
+// Seules les missions rentrées comptent, selon leur taille (S 1, M 3, L 8 ; sans taille : S). Une rouverte ne compte plus.
 export function progression(issues) {
   const points = Object.fromEntries(LIEUX_AXES.map((x) => [x.id, 0]));
   for (const i of issues) {
     if (!estTache(i) || etatDe(i) !== 'rentree') continue;
-    const lieu = lieuDe(i), t = tailleDe(i);
-    if (lieu && t) points[lieu] += POINTS[t];
+    const lieu = lieuDe(i);
+    if (lieu) points[lieu] += POINTS[tailleDe(i)];
   }
   const niveaux = Object.fromEntries(Object.entries(points).map(([k, p]) => [k, niveauDe(p, SEUILS)]));
   const total = Object.values(points).reduce((a, b) => a + b, 0);

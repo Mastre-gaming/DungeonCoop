@@ -18,7 +18,7 @@ Tout vient des missions, c'est-à-dire des issues du repo du jeu (`CAMP.fr.md` �
 
 | Quand | Qui gagne | Combien |
 |---|---|---|
-| une mission est rentrée (l'issue est fermée) | chaque personne assignée à ce moment | S = 1, M = 3, L = 8 |
+| une mission est rentrée (l'issue est fermée) | chaque personne assignée à ce moment | S = 1, M = 3, L = 8 (sans taille : S) |
 | **la mission a été faite à plusieurs** (deux personnes assignées ou plus) | chacune d'elles, **en plus** | **+50 %** de la taille, arrondi au-dessus : S +1, M +2, L +4 |
 | **une phase du plan est finie** (toutes ses missions rentrées) | chaque personne qui y a rendu au moins une mission | +5 |
 

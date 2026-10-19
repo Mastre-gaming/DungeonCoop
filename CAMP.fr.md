@@ -57,7 +57,7 @@ Repo du JEU (DungeonCoop)                          Repo du DASHBOARD (DungeonCoo
 
 - **Une mission = une issue** du repo du jeu, avec :
   - un label d'axe (`axe: combat`, `axe: histoire`…), qui dit quel lieu elle fait grandir ;
-  - un label de taille : `taille: S` (une soirée), `taille: M` (quelques soirées) ou `taille: L` (un gros morceau). C'est ce qu'elle rapporte au camp ;
+  - un label de taille : `taille: S` (une soirée), `taille: M` (quelques soirées) ou `taille: L` (un gros morceau). C'est ce qu'elle rapporte au camp. **Sans label de taille, elle compte comme une S** (décision du 19 oct) ;
   - un label de façon de faire : `fait par: moi` (on la fait seul), `fait par: avec Claude` (on code, Claude aide et explique) ou `fait par: Claude` (Claude la fait, on relit). Les deux premiers font apprendre ; c'est à chacun de choisir en prenant la mission ;
   - un jalon (D1 à M4) : le chapitre du plan auquel elle appartient ;
   - « fini quand » dans la description, repris de `PLAN_TRAVAIL.md`.
@@ -137,7 +137,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **La maquette** (v4, validée par Mope le 18 oct, agrandissement compris) est dans `design/camp/entree/` : la porte, l'arrivée avec la muraille fantôme, et le camp entier ; à côté, les mêmes vues prises dans le jeu (5 à 7).
 
 ### Comment un lieu grandit
-- **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
+- **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8 (sans taille : S).
 - **Les niveaux :**
 
   | Niveau | Points | Ce qu'on voit (v0, pièces LPC existantes) |

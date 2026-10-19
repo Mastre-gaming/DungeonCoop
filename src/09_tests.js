@@ -286,7 +286,7 @@ function testsMissions(t, game) {
   p = progression([issue(6, ['axe: inconnu', 'taille: L'], { state: 'closed' }), issue(7, ['taille: M'], { state: 'closed' })]);
   t.eq(p.total, 0, 'un axe sans lieu, ou pas d’axe : aucun lieu ne grandit');
   p = progression([issue(8, ['axe: menus'], { state: 'closed' }), issue(9, ['axe: menus', 'taille: L'], { state: 'closed', pr: true })]);
-  t.eq(p.total, 0, 'sans taille : 0 point ; une PR n’est pas une mission');
+  t.eq([p.points.interface, p.total], [1, 1], 'sans taille : compte comme une S (1 point) ; une PR n’est pas une mission');
   p = progression(Array.from({ length: 5 }, (_, k) => issue(10 + k, ['axe: salles', 'taille: L'], { state: 'closed' })));
   t.eq([p.points.level, p.niveaux.level, p.feu], [40, 4, 2], '40 points : niveau 4 (seuil 35) et le feu à la taille 2 (seuil 40)');
   p = progression([issue(15, ['axe: menus', 'taille: L', 'abandonnée'], { state: 'closed', raison: 'not_planned' }), issue(16, ['axe: menus', 'taille: M'], { state: 'closed', raison: 'not_planned' })]);
@@ -639,8 +639,10 @@ function testsRenommee(t, game) {
   t.eq(r.parPersonne, { Ana: 5, Ben: 5 }, 'une M à deux : 3 + 2 = 5 chacun');
   r = calc([m(3, ['axe: salles', 'taille: L'], ['Ana', 'Ben', 'Cy'])]);
   t.eq(r.parPersonne.Cy, 12, 'une L à trois : 8 + 4 = 12 chacun');
-  r = calc([m(4, ['axe: salles', 'taille: L'], ['Ana'], { state: 'open' }), m(5, ['axe: salles'], ['Ana']), m(6, ['axe: salles', 'taille: L'], [])]);
-  t.eq(r.parPersonne, {}, 'en cours, sans taille, ou sans personne assignée : rien');
+  r = calc([m(4, ['axe: salles', 'taille: L'], ['Ana'], { state: 'open' }), m(6, ['axe: salles', 'taille: L'], [])]);
+  t.eq(r.parPersonne, {}, 'en cours, ou sans personne assignée : rien');
+  r = calc([m(5, ['axe: salles'], ['Ana'])]);
+  t.eq(r.parPersonne, { Ana: 1 }, 'sans taille : compte comme une S (1)');
   r = calc([m(7, ['axe: menus', 'taille: S'], ['Ana'], { j: 'D1' }), m(8, ['axe: menus', 'taille: S'], ['Ben'], { j: 'D3' }), m(9, ['axe: menus', 'taille: M'], ['Ana'], { j: 'D2', state: 'open' })]);
   t.ok(r.finies.includes(1) && r.parPersonne.Ana === 6 && r.parPersonne.Ben === 6, `la phase 1 finie (D1, D3 rentrés) : +5 à Ana et Ben (${r.parPersonne.Ana}, ${r.parPersonne.Ben})`);
   t.eq(r.phaseEnCours, 0, 'la phase 0 (M1) n’a pas de mission : elle reste la phase en cours');

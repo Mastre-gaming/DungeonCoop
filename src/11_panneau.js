@@ -228,7 +228,7 @@ function fiche(t) {
     [...LIEUX_AXES.map((x) => el('option', { value: x.id, selected: x.id === lieuActuel }, `${x.lieu} · ${x.axe}`)), el('option', { value: 'sans', selected: lieuActuel === 'sans' }, 'Sans lieu')]);
   const tailleActuelle = t ? tailleDe(t) : null;
   const taille = el('select', { name: 'taille', 'aria-label': 'Taille (renommée)' },
-    el('option', { value: '', selected: !tailleActuelle }, 'sans taille · 0'), TAILLES.map((x) => el('option', { value: x, selected: tailleActuelle === x }, `${x} · ${POINTS[x]} pt${POINTS[x] > 1 ? 's' : ''}`)));
+    el('option', { value: '', selected: !tailleActuelle }, 'sans taille · compte S'), TAILLES.map((x) => el('option', { value: x, selected: tailleActuelle === x }, `${x} · ${POINTS[x]} pt${POINTS[x] > 1 ? 's' : ''}`)));
   const cases = equipe.filter((m) => m.github).map((m) => el('label', { class: 'case' },
     el('input', { type: 'checkbox', name: 'qui', value: m.github, checked: qui.has(m.github.toLowerCase()) }), ` ${m.nom || m.github}`));
   const form = el('form', { class: 'mission fiche', 'data-numero': t ? String(t.number) : 'nouvelle', onsubmit: (e) => {
