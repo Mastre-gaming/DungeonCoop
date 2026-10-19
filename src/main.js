@@ -43,6 +43,7 @@ import * as crieurSkill from './38_crieur.js';
 import * as forgeronSkill from './40_forgeron.js';
 import * as choixSkill from './41_choix_heros.js';
 import * as promeneursSkill from './42_promeneurs.js';
+import * as limierSkill from './47_limier.js';
 import * as apparitionsSkill from './43_apparitions.js';
 import * as chantierSkill from './44_chantier.js';
 import * as mursSkill from './45_murs.js';
@@ -99,6 +100,7 @@ async function demarrer(sortieTitre) {
   const arrivee = !visite && !query.has('test') && !query.has('spot');
   const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: false });
   const choix = game.use(choixSkill, { heros, images, missions, sentinelle, arrivee });
+  const limier = game.use(limierSkill, { rendu, heros, visite });   // le limier (un malinois) du Traqueur au limier le suit dans le camp
   // le crieur, sur son estrade à côté du tableau d'affichage, à partir du niveau 3 du tableau
   const crieur = game.use(crieurSkill, { rendu, images, heros, missions, lieux });
   // Baba Brisenclume tape sur l'enclume de l'armurerie, sous l'abri de forge (sauf quand on l'incarne)
@@ -158,7 +160,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
