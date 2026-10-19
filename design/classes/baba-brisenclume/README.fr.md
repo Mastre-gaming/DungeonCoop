@@ -26,5 +26,12 @@ node gifs.mjs baba-brisenclume.png ../captures
 ```
 Puis recouper aux rangées 0 à 25 (jusqu'au repos), comme les autres planches du terrain d'entraînement. Les planches de `pieces/` se refont, on ne les garde pas.
 
-## Au camp : il forge à l'enclume
-Sous l'abri de forge de l'armurerie, Baba tape sur l'enclume en boucle (`src/40_forgeron.js`). `outil/forgeron.mjs` refait sa planche (`public/assets/lpc/forgeron.png`, 8 images de 96 × 64) depuis sa planche de combat : sa frappe de profil (rangée 13 : levé, il descend, il frappe), un lingot rougeoyant posé sur l'enclume, chauffé à blanc au coup, et une gerbe d'étincelles en trois temps. Il écrit aussi `src/data/forgeron.json` : le point d'impact, que le jeu pose sur le dessus de l'enclume, où qu'elle soit selon le niveau de l'armurerie. Sans enclume (niveaux 0 et 4), il n'est pas là. On ne le traverse pas.
+## Au camp : il fait le tour de sa forge
+Autour de l'armurerie, Baba passe d'un geste à l'autre en boucle (`src/40_forgeron.js`), et chaque geste a sa place :
+- **forge** (4 fois), à droite de l'enclume : il tape dessus ; un lingot rougeoie, chauffé à blanc au coup, et une gerbe d'étincelles retombe ;
+- **attise** (2 fois), à gauche du feu de forge, tourné vers lui : il fouille les braises, des braises s'envolent, et le feu s'emballe dans la gueule de l'abri ;
+- **sonne** (1 fois), dans la cour devant l'abri, face au camp : il fait sonner ses deux marteaux au-dessus de sa tête.
+
+Entre deux, il marche d'une place à l'autre en passant par la cour, jamais à travers l'enclume. Ses places se calculent depuis l'enclume et le feu : il les suit quand l'armurerie change de niveau. Sans enclume ou sans feu (niveaux 0 et 4), il n'est pas là. On ne le traverse pas.
+
+`outil/forgeron.mjs` refait sa planche (`public/assets/lpc/forgeron.png`) depuis sa planche de combat : les trois gestes (sa frappe de profil, son estoc vers la droite, son sort de face), le feu qui s'emballe (les flammes de forge des décorations, agrandies) et sa marche. Il écrit aussi `src/data/forgeron.json` : le point d'impact du marteau, le bout du marteau qui attise, les rangées et les durées. `node tools/capture-forgeron.mjs` (après `npm run build`) photographie chaque geste et une marche dans `shots/`.
