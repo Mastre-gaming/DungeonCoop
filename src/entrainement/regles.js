@@ -15,7 +15,8 @@ import {
 // CLASS_TEMPLATE.fr.md (mission #76, fiches dans design/terrain-entrainement/CLASSES_ESSAI.fr.md).
 // Les vraies classes restent celles de chacun (missions #30 à #33).
 export const EQUIPE_KIT = ['brute', 'mage', 'voleur', 'gardien'];
-export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde'];
+// La 9e : le Traqueur au limier, la classe de Paolitus (content/classes/traqueur-au-limier.json), la première vraie classe ici.
+export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'traqueur-au-limier'];
 export const PLACES = ['h1', 'h2', 'h3', 'h4'];            // les 4 héros : une place, une classe choisie à l'entrée
 // « brute,chevalier,druide,barde » (l'adresse : ?equipe=…) → une équipe valable de 4 classes, ou null.
 export function equipeDepuis(texte) {
@@ -49,6 +50,10 @@ export const HEROS = {
   barde: { nom: 'Barde', court: 'BAR', pv: 135, vitesse: 6, dex: 2, res: { type: 'Énergie', v: 3, max: 3 }, role: 'Soutien · donne l’avantage', essai: true,
     faiblesse: 'Fragile : chaque coup reçu au contact lui fait 3 dégâts de plus.', passif: 'Énergie : 3 à chaque tour, perdue si elle n’est pas dépensée.',
     capacites: ['dague', 'chant', 'moquerie', 'pousser', 'potion', 'relever'] },
+  'traqueur-au-limier': { nom: 'Traqueur', court: 'TRA', pv: 120, vitesse: 6, dex: 2, res: { type: 'Concentration', v: 0, max: 3 }, role: 'Contrôle · pièges et limier',
+    faiblesse: 'Lié à sa bête (pas encore ici : le limier n’est pas une cible sur ce terrain).',
+    passif: 'Le limier : un ordre par tour, en action bonus. Concentration : +1 quand un coéquipier exploite une de ses préparations.',
+    capacites: ['arc', 'machoires', 'glu', 'collet', 'lecher', 'mordre', 'rabattre', 'pousser', 'potion', 'relever'] },
 };
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
@@ -57,6 +62,7 @@ export const ENNEMIS = {
   chef: { nom: 'Chef', pv: 90, vitesse: 5, dex: 1, coriace: true, atk: { nom: 'Frappe du chef', base: 22, de: 8, anim: 'attaque' }, habitude: 'tours 1–2 : avantage aux ennemis · tour 3 : une zone de 5 m' },
 };
 const R2 = 1.7 / 1.5, R3 = 2.5 / 1.5;        // les zones 2×2 et 3×3 : des cercles de 1,7 m et 2,5 m de rayon
+const RP = 0.5;                              // un piège : un cercle de 0,75 m
 export const CAPACITES = {
   fracas: { nom: 'Fracas', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'attaque', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   projection: { nom: 'Projection', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 3, proj: true, ds: 'Pousse de 4,5 m ; s’il heurte quelque chose : +8 et À terre' },
@@ -92,8 +98,18 @@ export const CAPACITES = {
   dague: { nom: 'Dague', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   chant: { nom: 'Chant de bataille', slot: 'bonus', type: 'inspiration', portee: 6, cout: 1, anim: 'sort', ds: '1 Énergie · un allié à 9 m a l’avantage à sa prochaine attaque' },
   moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
+  // le Traqueur au limier : l'arc, un piège posé au sol (un seul à la fois, le premier ennemi qui y entre le déclenche),
+  // et un ordre au limier par tour (l'action bonus) : il court à la cible, agit, et revient
+  arc: { nom: 'Arc de chasse', slot: 'action', type: 'attaque', portee: 8, mod: 2, base: 8, de: 4, anim: 'tir', ds: 'Portée 12 m · 5–7 / 11–14 / 22–28' },
+  machoires: { nom: 'Piège à mâchoires', slot: 'action', type: 'zone', surf: 'piege', piege: 'machoires', rayon: RP, portee: 5, anim: 'sort', ds: 'Un piège à 7,5 m ; le premier ennemi qui y entre est À terre et s’arrête' },
+  glu: { nom: 'Piège à glu', slot: 'action', type: 'zone', surf: 'piege', piege: 'glu', rayon: RP, portee: 5, anim: 'sort', ds: 'Un piège à 7,5 m ; le premier ennemi qui y entre est Gelé et s’arrête' },
+  collet: { nom: 'Collet', slot: 'action', type: 'zone', surf: 'piege', piege: 'collet', rayon: RP, portee: 5, anim: 'sort', ds: 'Un piège à 7,5 m ; le premier ennemi qui y entre est tiré de 3 m vers le Traqueur' },
+  lecher: { nom: 'Lécher les plaies', slot: 'bonus', type: 'soin', chien: true, soin: { base: 8, de: 4, mod: 2 }, portee: 6, anim: 'repos', ds: 'Le limier · 11–14 PV à un allié à 9 m, sans jet ; retire Brûlure, Gelé ou Huilé' },
+  mordre: { nom: 'Mordre', slot: 'bonus', type: 'attaque', chien: true, expose: true, portee: 6, mod: 0, base: 5, de: 4, anim: 'repos', ds: 'Le limier · à 9 m · 3–4 / 6–9 / 12–18 ; la cible est Exposée' },
+  rabattre: { nom: 'Rabattre', slot: 'bonus', type: 'poussee', chien: true, ennemi: true, portee: 6, longueur: 2, anim: 'repos', ds: 'Le limier · un ennemi à 9 m est poussé de 3 m, à l’opposé du Traqueur (dans un piège, une surface, le fossé)' },
 };
-export const NOM_SURFACE = { eau: 'l’eau', huile: 'l’huile', feu: 'le feu', glace: 'la glace' };
+export const NOM_SURFACE = { eau: 'l’eau', huile: 'l’huile', feu: 'le feu', glace: 'la glace', piege: 'le piège' };
+export const NOM_PIEGE = { machoires: 'les mâchoires', glu: 'la glu', collet: 'le collet' };
 export const NOM_RESULTAT = { rate: 'Raté', eraflure: 'Éraflure', touche: 'Touché', critique: 'Critique' };
 export const NOM_ETAT = { trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé', inspire: 'Inspiré' };
 
@@ -181,7 +197,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     log(`Combo ! ${nomHeros(a)} prépare, ${nomHeros(b)} exploite : ${quoi}.`, 'combo');
     ev({ type: 'combo', a, b, quoi });
     const v = U(a);
-    if (v.type === 'voleur' && v.res.v < v.res.max) { v.res.v++; log(`${v.nom} gagne 1 Concentration.`, 'muet'); }
+    if (['voleur', 'traqueur-au-limier'].includes(v.type) && v.res.v < v.res.max) { v.res.v++; log(`${v.nom} gagne 1 Concentration.`, 'muet'); }
   }
   const rage = (u, n) => { if (u && u.type === 'brute' && u.camp === 'h') u.res.v = Math.min(u.res.max, u.res.v + n); };
   function blesser(u, n, par, o = {}) {
@@ -223,6 +239,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // Entrer dans une tache de surface (en marchant, ou poussé). Renvoie true si l'élan s'arrête (glissé, À terre).
   function entrerSurface(u, s, enMarchant) {
     if (!s || u.mort || u.ko) return false;
+    if (s.t === 'piege') return u.camp === 'e' ? declencher(u, s) : false;
     if (s.t === 'eau') { u.st.trempe = { ttl: 3, par: s.par }; if (u.st.brulure) { delete u.st.brulure; log(`L’eau éteint ${u.nom}.`, 'muet'); } }
     else if (s.t === 'huile') u.st.huile = { ttl: 3, par: s.par };
     else if (s.t === 'feu') { log(`${u.nom} entre dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
@@ -236,6 +253,33 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     return false;
   }
+  // --- Les pièges du Traqueur : une petite tache « piege » (v : la sorte, id : le piège, sous : la surface d'avant) -------
+  let nPieges = 0;
+  const apres = [];                                 // ce qui se joue une fois le pas fini (le collet tire)
+  function retirerPiege(id) {
+    for (const [k, s] of Object.entries(S.surfaces)) if (s.t === 'piege' && s.id === id) { if (s.sous) S.surfaces[k] = s.sous; else delete S.surfaces[k]; }
+  }
+  function poserPiege(h, cap, centre) {
+    for (const s of Object.values(S.surfaces)) if (s.t === 'piege' && s.par === h.id) { retirerPiege(s.id); break; }   // un seul à la fois
+    const id = `p${++nPieges}`;
+    peindre(centre.x, centre.y, cap.rayon, (vieux) => ({ t: 'piege', v: cap.piege, id, par: h.id, ttl: null, sous: vieux?.t === 'piege' ? null : vieux ?? null }));
+    log(`${h.nom} pose ${NOM_PIEGE[cap.piege]} à ${metres(dist(h, centre))} m.`);
+    ev({ type: 'surfaces' });
+    const pris = ennemisVivants().find((u) => surfaceA(u)?.id === id);     // posé sous un ennemi : il se referme tout de suite
+    if (pris) { declencher(pris, surfaceA(pris)); jouerApres(); }
+  }
+  function declencher(u, s) {
+    retirerPiege(s.id);
+    ev({ type: 'surfaces' });
+    ev({ type: 'piege', id: u.id, v: s.v });
+    if (s.v === 'machoires') { u.st.aTerre = { par: s.par }; log(`${u.nom} marche dans les mâchoires : À terre.`, 'bon'); return true; }
+    if (s.v === 'glu') { u.st.gele = { n: 1, par: s.par }; log(`${u.nom} est pris dans la glu : Gelé.`, 'bon'); return true; }
+    const t = U(s.par);
+    log(`${u.nom} se prend dans le collet.`, 'bon');
+    if (t && !t.ko) apres.push(() => attirer(t, u, 2));
+    return true;
+  }
+  function jouerApres() { while (apres.length) apres.shift()(); }
   function enflammer(p, par) {
     const mailles = inonder(p, 'huile'); if (!mailles.length) return false;
     new Set(mailles.map((k) => S.surfaces[k].par)).forEach((a) => combo(a, par, 'huile enflammée'));
@@ -263,6 +307,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (feu) enflammer(b, par);
   }
   function poserZone(h, cap, centre) {
+    if (cap.surf === 'piege') { poserPiege(h, cap, centre); return; }
     const par = h.id;
     peindre(centre.x, centre.y, cap.rayon, (vieux) => {
       if (cap.surf === 'eau') return { t: 'eau', ttl: 3, par };
@@ -322,7 +367,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const f = (v) => (g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult;
     return g === 'rate' ? '0' : `${f(lo)}–${f(hi)}`;
   }
-  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, anim: cap.anim });
+  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, expose: !!cap.expose, anim: cap.anim });
   const attaqueEnnemi = (e) => { const a = ENNEMIS[e.type].atk; return { nom: a.nom, mod: 2, dmod: 0, base: a.base, de: a.de, melee: a.portee === CONTACT, anim: a.anim }; };
   function rate(u) {
     const r = d(6);
@@ -361,6 +406,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     rage(att, 10); rage(cible, 10);
     if (!cible.mort && !cible.ko) {
       if (A.aTerre) cible.st.aTerre = { par: att.id };
+      if (A.expose) cible.expose = { par: att.id };
       if (c.huile) { delete cible.st.huile; if (cible.st.trempe) delete cible.st.trempe; else cible.st.brulure = { n: 2, par: att.id }; }
     }
     if (A.el === 'feu') enflammer(cible, att.id);
@@ -390,6 +436,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (cible.mort || cible.ko) break;
     }
     if (!estUnite) { eclaterTonneau(cible, parHeros, false); return; }
+    jouerApres();
     if (cible.mort || cible.ko) return;
     if (sim.arret === 'fosse') {
       if (cible.type === 'sbire') { log(`${cible.nom} tombe dans le fossé : éliminé !`, 'bon'); if (parHeros) S.stats.degats[parHeros] += cible.pv; ev({ type: 'chute', id: cible.id }); tomber(cible); }
@@ -453,6 +500,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     ev({ type: 'marche', id: u.id, chemin: parcours.slice(1) });
     u.t.mv = Math.max(0, u.t.mv - fait);
     if (u.st.aTerre) u.t.mv = 0;
+    jouerApres();
     return fait;
   }
   // Le chemin qu'un héros prendrait jusqu'en (x, y), et sa longueur ; ok : il tient dans son déplacement.
@@ -687,8 +735,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
       S.tonneaux.filter((b) => aPortee(h, cap, b)).forEach((b) => out.push({ id: b.id, tonneau: true }));
     } else if (cap.type === 'poussee') {
-      S.unites.filter((u) => !u.mort && !u.ko && u !== h && dist(h, u) <= CONTACT).forEach((u) => out.push({ id: u.id }));
-      S.tonneaux.filter((b) => dist(h, b) <= CONTACT).forEach((b) => out.push({ id: b.id, tonneau: true }));
+      S.unites.filter((u) => !u.mort && !u.ko && u !== h && (!cap.ennemi || u.camp === 'e') && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
+      if (!cap.ennemi) S.tonneaux.filter((b) => dist(h, b) <= CONTACT).forEach((b) => out.push({ id: b.id, tonneau: true }));
     } else if (cap.type === 'soin') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'relever') S.unites.filter((u) => u.camp === 'h' && u.ko && dist(h, u) <= CONTACT).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'huileCible') S.unites.filter((u) => !u.mort && !u.ko && u !== h && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
@@ -737,24 +785,34 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (!u && cible.x != null && huileVisable(h, cap, cible)) { payer(h, cap); ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: cible.x, y: cible.y }); log(`${h.nom} tire dans l’huile.`); enflammer(cible, h.id); return true; }
       if (!u || u.camp === 'h' || u.mort || !aPortee(h, cap, u)) return false;
       payer(h, cap);
+      if (cap.chien) ev({ type: 'limier', id: h.id, vers: u.id });
       attaquer(h, u, { ...attaqueHeros(cap), id: capId });
+      if (cap.chien) ev({ type: 'limier', id: h.id, retour: true });
       return true;
     }
     if (cap.type === 'poussee') {
       const t = u ?? b;
-      if (!t || dist(h, t) > CONTACT || (u && (u.ko || u.mort || u === h))) return false;
+      if (!t || !aPortee(h, cap, t) || (u && (u.ko || u.mort || u === h)) || (cap.ennemi && u?.camp !== 'e')) return false;
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, cap: capId, anim: 'attaque', x: t.x, y: t.y });
+      if (cap.chien) ev({ type: 'limier', id: h.id, vers: t.id });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.chien ? 'repos' : 'attaque', x: t.x, y: t.y });
       pousser(h, t, { longueur: cap.longueur, proj: cap.proj });
+      if (cap.chien) ev({ type: 'limier', id: h.id, retour: true });
       return true;
     }
     if (cap.type === 'soin' && u && u.camp === 'h' && !u.ko && u !== h && dist(h, u) <= cap.portee) {
       payer(h, cap);
-      const r = d(6), a = Math.min(15 + r + 2, u.pvMax - u.pv); u.pv += a;
-      ev({ type: 'lance', id: h.id, cap: capId, anim: 'sort', x: u.x, y: u.y });
+      const q = cap.soin ?? { base: 15, de: 6, mod: 2 };
+      const r = d(q.de), a = Math.min(q.base + r + q.mod, u.pvMax - u.pv); u.pv += a;
+      if (cap.chien) ev({ type: 'limier', id: h.id, vers: u.id });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.chien ? 'repos' : 'sort', x: u.x, y: u.y });
       ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
-      log(`${h.nom} soigne ${u.nom} : 15 + ${r} + 2, +${a} PV.`, 'bon');
-      h.res.v = Math.min(h.res.max, h.res.v + 1);
+      log(`${cap.chien ? 'Le limier lèche les plaies de' : `${h.nom} soigne`} ${u.nom} : ${q.base} + ${r} + ${q.mod}, +${a} PV.`, 'bon');
+      if (cap.chien) {
+        const k = ['brulure', 'gele', 'huile'].find((e) => u.st[e]);
+        if (k) { delete u.st[k]; ev({ type: 'texte', id: u.id, texte: `${NOM_ETAT[k]} : retiré` }); log(`${u.nom} n’est plus ${NOM_ETAT[k]}.`, 'muet'); }
+        ev({ type: 'limier', id: h.id, retour: true });
+      } else h.res.v = Math.min(h.res.max, h.res.v + 1);
       return true;
     }
     if (cap.type === 'relever' && u && u.camp === 'h' && u.ko && dist(h, u) <= CONTACT) {
