@@ -4,7 +4,7 @@ const FICHIERS = {
   herbe: 'grass.png', terre: 'dirt.png', cimes: 'treetop.png', troncs: 'trunk.png', roche: 'rock.png', tonneau: 'barrel.png',
   deco: 'decorations-medieval.png', grandFeu: 'CampFireFinished.png', heros: 'heros.png', sentinelle: 'sentinelle.png',
   panneau: 'panneau_carte.png', rats: 'rats.png', armurerie: 'armurerie.png', placeSols: 'place_sols.png', placeObjets: 'place_objets.png', muraille: 'muraille.png', douves: 'douves.png', brasero: 'brasero.png',
-  tableau: 'tableau.png', crieur: 'crieur.png',
+  tableau: 'tableau.png', crieur: 'crieur.png', forgeron: 'forgeron.png',
 };
 
 const charger = (src) => new Promise((ok, ko) => {

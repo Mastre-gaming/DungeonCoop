@@ -1,0 +1,22 @@
+{
+ "_lisez_moi": "Fabriqué par design/classes/baba-brisenclume/outil/forgeron.mjs : ne pas modifier à la main.",
+ "image": {
+  "w": 96,
+  "h": 64
+ },
+ "impact": {
+  "x": 41,
+  "y": 48
+ },
+ "pieds": 64,
+ "durees": [
+  0.24,
+  0.07,
+  0.08,
+  0.09,
+  0.11,
+  0.12,
+  0.14,
+  0.2
+ ]
+}

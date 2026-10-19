@@ -6,6 +6,7 @@ La fiche de la classe est `content/classes/baba-brisenclume.json`. Ce dossier fa
 | Quoi | Où |
 |---|---|
 | Chaque animation, les 4 directions côte à côte (marche, frappe, sort, estoc, repos, blessé) | `captures/baba-*.gif` |
+| Baba qui forge à l'enclume du camp, en boucle | `captures/baba-forge.gif` |
 | Le visage de près, de face et de profil | `captures/visage-face.png`, `captures/visage-profil.png` |
 
 ## Comment elle est faite
@@ -24,3 +25,6 @@ node forge.mjs baba-brisenclume.png
 node gifs.mjs baba-brisenclume.png ../captures
 ```
 Puis recouper aux rangées 0 à 25 (jusqu'au repos), comme les autres planches du terrain d'entraînement. Les planches de `pieces/` se refont, on ne les garde pas.
+
+## Au camp : il forge à l'enclume
+Sous l'abri de forge de l'armurerie, Baba tape sur l'enclume en boucle (`src/40_forgeron.js`). `outil/forgeron.mjs` refait sa planche (`public/assets/lpc/forgeron.png`, 8 images de 96 × 64) depuis sa planche de combat : sa frappe de profil (rangée 13 : levé, il descend, il frappe), un lingot rougeoyant posé sur l'enclume, chauffé à blanc au coup, et une gerbe d'étincelles en trois temps. Il écrit aussi `src/data/forgeron.json` : le point d'impact, que le jeu pose sur le dessus de l'enclume, où qu'elle soit selon le niveau de l'armurerie. Sans enclume (niveaux 0 et 4), il n'est pas là. On ne le traverse pas.
