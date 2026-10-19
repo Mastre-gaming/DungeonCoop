@@ -64,6 +64,14 @@ export function creerRendu(canvas) {
       return m;
     },
 
+    // Ce qui est à plat sur l'herbe, en transparence (des ombres, des tranchées) : sous tout le reste, juste au-dessus du sol.
+    calqueSol(source, nomTexture) {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(source.width, source.height), new THREE.MeshBasicMaterial({ map: tex(nomTexture, source), transparent: true, depthWrite: false }));
+      m.position.set(source.width / 2, -source.height / 2, -60);
+      scene.add(m);
+      return m;
+    },
+
     // Les objets qui ne bougent pas : regroupés par planche, un seul dessin par planche.
     statiques(objets, images) {
       const parPlanche = new Map();
