@@ -67,7 +67,7 @@ export function testsHudEpique(t, ctx, game) {
   hud.majHeros();
   const ch = hud.cadreHeros, med = ch.querySelector('canvas.medaillon');
   t.ok(visible(ch) && med && med.width === 120 && med.height === 120, 'le médaillon : 60 pixels de dessin à l’échelle 2');
-  t.ok(med?.getAttribute('role') === 'img' && /Paul/.test(med.getAttribute('aria-label') ?? ''), 'le portrait dit de qui il est');
+  t.ok(med?.getAttribute('role') === 'button' && /Paul/.test(med.getAttribute('aria-label') ?? '') && /changer de héros/i.test(med.title), 'le portrait dit de qui il est, et un clic change de héros');
   const centre = pixel(med, 60, 44), anneau = pixel(med, 60, 3 * P);
   t.ok(centre[3] === 255 && anneau[0] > 120 && anneau[2] < 140, 'le héros au cœur, l’anneau de laiton autour');
   t.ok(ch.querySelector('.nom')?.textContent === 'Paul' && ch.querySelector('.ecu'), 'le bandeau porte ton nom, l’écu ton niveau');

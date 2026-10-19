@@ -218,6 +218,14 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
 - **Les vraies animations LPC, dans les 4 directions :** marche en 8 images, à environ 2,3 cases par seconde ; course en 8 images, à environ 4,3 cases par seconde. Au repos, il garde la pose debout dans la dernière direction prise.
 - **Commandes :** flèches ou ZQSD pour marcher, Maj pour courir, ou un clic maintenu pour marcher vers le pointeur. Les poteaux du tableau et le feu bloquent le passage.
 
+### Le choix du héros, avant d'entrer au camp (demande du propriétaire, 19 oct)
+- **Un menu avant l'entrée :** à chaque arrivée, avant la scène de la sentinelle, on choisit le héros qu'on incarne. Puis la scène d'arrivée se joue avec lui (il entre par le sud et monte vers la sentinelle).
+- **Des onglets :** le **set de base** (le héros de départ et les classes d'essai : Chevalier, Barde, Druide, Éclaireuse, Voleur), puis **un onglet par joueur**, qui ne montre **que ses héros** (les classes de `content/classes/` dont l'`auteur` est son pseudo GitHub). Un joueur sans héros a son onglet vide, qui renvoie à l'armurerie.
+- **Le médaillon suit :** en haut à gauche, le médaillon montre le héros choisi. Un clic dessus rouvre le menu, pour changer de héros sur place.
+- **Un héros incarné quitte son poste :** quand on incarne Baba Brisenclume, il n'est plus à la forge.
+- **Le choix est gardé** dans ce navigateur : le menu s'ouvre sur le dernier héros pris.
+- Les héros des classes n'ont pas de course LPC : Maj les fait marcher plus vite, au rythme de la course.
+
 ### La sentinelle au spawn (validée le 18 oct)
 - **Ce qu'elle fait :** à la toute première arrivée, elle arrête le héros et lui demande son **nom de dev**. Le camp sait alors qui rentre quelle mission.
 - **Son apparence :** un chevalier du générateur LPC, en armure de plaques acier, grand heaume, gantelets et bottes d'armure, cape rouge, épée et bouclier à croix. Pas de retouche : le panache bleu proposé a été abandonné. Le lien du générateur est dans `dl/lpc/sentinelle/credits.txt`.
@@ -374,6 +382,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 18 oct | L'armurerie : tente, tente et abri de forge, puis un atelier de pierre (pas une petite maison), des dalles qui gagnent le sol ; livrée au niveau 2 | le propriétaire |
 | 18 oct | La place du village : le feu devient le centre du village dans la pierre de la muraille (sans flou), une fontaine dès le niveau 2, les sentiers qui se pavent, l'herbe qui se dompte, et rien qui gêne le passage ; livrée au niveau 2 | le propriétaire |
 | 18 oct | Après le nom, la sentinelle presse le joueur et lui fait faire le tour du camp : le feu, le tableau, un terrain vide, un rat | le propriétaire |
+| 19 oct | Un menu de choix du héros avant d'entrer au camp : le set de base, puis un onglet par joueur avec seulement ses héros ; le médaillon suit le héros choisi ; Baba incarné n'est plus à la forge | le propriétaire |
 
 | Question | Qui répond |
 |---|---|

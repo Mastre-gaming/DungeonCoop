@@ -40,6 +40,7 @@ import * as archivesSkill from './27_archives.js';
 import * as murailleSkill from './32_muraille.js';
 import * as crieurSkill from './38_crieur.js';
 import * as forgeronSkill from './40_forgeron.js';
+import * as choixSkill from './41_choix_heros.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
 import './hud.css';      // l'habillage épique du HUD (DESIGN.fr.md), après tout le reste
@@ -59,7 +60,7 @@ const game = createGame({
 document.querySelector('#tampon').textContent = `version du ${game.stamp}`;
 
 async function demarrer() {
-  const images = await chargerImages();
+  const images = { ...await chargerImages(), ...await chargerImages('./assets/lpc/', choixSkill.FICHIERS) };   // (et les planches des héros à incarner)
   const camp = composerCamp();
   const canvas = document.querySelector('#jeu');
   const rendu = creerRendu(canvas);
@@ -81,13 +82,16 @@ async function demarrer() {
   const github = game.use(githubSkill, { horsLigne: query.has('test') });
   const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite, github });
   // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
-  const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: !visite && !query.has('test') && !query.has('spot') });
+  // avant elle, à chaque arrivée : le choix du héros (41_choix_heros.js), qui lance sa scène une fois le héros pris
+  const arrivee = !visite && !query.has('test') && !query.has('spot');
+  const sentinelle = game.use(sentinelleSkill, { rendu, heros, images, missions, collision, camera, visite, scene: false });
+  const choix = game.use(choixSkill, { heros, images, missions, sentinelle, arrivee });
   // le crieur, sur son estrade à côté du tableau d'affichage, à partir du niveau 3 du tableau
   const crieur = game.use(crieurSkill, { rendu, images, heros, missions, lieux });
-  // Baba Brisenclume tape sur l'enclume de l'armurerie, sous l'abri de forge
-  const forgeron = game.use(forgeronSkill, { rendu, images, lieux, collision });
+  // Baba Brisenclume tape sur l'enclume de l'armurerie, sous l'abri de forge (sauf quand on l'incarne)
+  const forgeron = game.use(forgeronSkill, { rendu, images, lieux, collision, heros });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
-  const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee });
+  const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee, heros });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
   const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite, reseau });   // E devant le terrain : le combat d'entraînement (à plusieurs : tout le groupe)
   const armurerie = game.use(armurerieSkill, { rendu, canvas, heros, visite });       // E devant l'armurerie : le créateur de classe (#125)
@@ -127,7 +131,7 @@ async function demarrer() {
   // l'entrée du camp (#123) : sur la route, devant le pont ; et juste après la porte, en entrant
   game.dbg.spot('porte', aller(15 * T, 36.6 * T, 'haut'));
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

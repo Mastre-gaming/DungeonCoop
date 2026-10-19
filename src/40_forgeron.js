@@ -7,6 +7,7 @@
 // Sa planche (public/assets/lpc/forgeron.png) et ses repères (src/data/forgeron.json) sont fabriqués par
 // design/classes/baba-brisenclume/outil/forgeron.mjs. Ses places suivent l'enclume et le feu selon le niveau de
 // l'armurerie ; sans enclume ou sans feu (niveaux 0 et 4), il n'est pas là. On ne le traverse pas.
+// Quand on l'incarne (le choix du héros, 41_choix_heros.js), il n'est plus à la forge.
 import FORGERON from './data/forgeron.json';
 
 export const name = 'forgeron';
@@ -19,7 +20,8 @@ const VITESSE = 38;                   // sa marche, en pixels par seconde
 export const TOUR = [['forge', 4, 'enclume'], ['attise', 2, 'feu'], ['sonne', 1, 'cour']];
 const F = FORGERON, PW = F.image.w, PH = F.image.h;
 
-let rendu, images, lieux, collision, sprite, flammes, obstacle = null;
+export const CLASSE = 'baba-brisenclume';   // sa classe : l'incarner le fait quitter la forge
+let rendu, images, lieux, collision, heros, sprite, flammes, obstacle = null;
 const S = { la: false, t: 0, cle: '', places: null, etapes: [], duree: 1, m: null };
 const dureeGeste = (g) => F.anims[g].durees.reduce((a, b) => a + b, 0);
 
@@ -96,16 +98,20 @@ function bloquer(x, y) {
 }
 
 export function init(g, options) {
-  ({ rendu, images, lieux, collision } = options);
+  ({ rendu, images, lieux, collision, heros } = options);
   sprite = rendu.sprite(images.forgeron, 'forgeron', PW, PH);
   flammes = rendu.sprite(images.forgeron, 'forgeron', F.feu.w, F.feu.h);
   placer();
   return api;
 }
 
+const incarne = () => heros?.incarne?.id === CLASSE;
+
 export function update(dt) {
   const e = enclume(), f = feu();
   if (!!(e && f) !== S.la || (e && f && `${e.x},${e.y},${f.x},${f.y}` !== S.cle)) placer();   // l'armurerie a changé de niveau
+  // incarné par le joueur : il a quitté la forge (ni lui, ni son feu qui s'emballe, ni l'obstacle à ses pieds)
+  if (incarne()) { sprite.cacher(true); flammes.cacher(true); S.m = null; if (obstacle) { collision.retirer(obstacle); obstacle = null; } return; }
   sprite.cacher(!S.la);
   S.t += dt;
   const m = S.la ? moment(S.t) : null;
@@ -154,6 +160,14 @@ export function selfTest(t) {
   t.ok(!S.la && !sprite.mesh.visible, 'sans enclume ni feu (niveau 0), il n’est pas là');
   lieux.forcer('classes', null); update(0);
   t.ok(S.la && lieux.niveau('classes') === avant, 'la forge revient, lui aussi');
+  // incarné par le joueur (le choix du héros) : il n'est plus à la forge, et revient quand on en prend un autre
+  if (heros && images[`perso_${CLASSE}`]) {
+    const avantH = heros.incarne, planche = (h) => images[h.image] ?? images.heros;
+    heros.incarner({ id: CLASSE, nom: 'Baba Brisenclume', image: `perso_${CLASSE}`, course: false }, images[`perso_${CLASSE}`]); update(0);
+    t.ok(!sprite.mesh.visible && !flammes.mesh.visible && !obstacle && api.absent, 'incarné par le joueur : Baba n’est plus à la forge (ni son obstacle)');
+    heros.incarner(avantH, planche(avantH)); update(0);
+    t.ok(sprite.mesh.visible && !!obstacle && !api.absent, 'un autre héros pris : Baba revient à sa forge');
+  }
 }
 
 export const api = {
@@ -163,4 +177,5 @@ export const api = {
   get places() { return S.places; },
   get etapes() { return S.etapes; },
   get position() { return S.m && { ...S.m }; },
+  get absent() { return incarne(); },
 };
