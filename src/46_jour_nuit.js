@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import { T, W, H } from './01_plan.js';
 import FENETRES from './data/fenetres.json';
+import MAINS from './data/mains.json';
 
 export const name = 'jour-nuit';
 export const always = true;
@@ -62,26 +63,31 @@ export function heureParis(date = new Date()) {
 }
 const lire = (s) => { const m = /^(\d{1,2})(?:[:h](\d{2}))?$/.exec(s ?? ''); return m ? Number(m[1]) * 60 + Number(m[2] ?? 0) : null; };
 
-// La torche : un manche de bois, un lien, une flamme (3 images qui dansent). Autour de la main (1, 15) du dessin.
+// La torche : un manche de bois penché vers l'extérieur, un lien, une flamme (3 images qui dansent). Le héros la tient dans
+// sa main droite : sa main, prise dans sa propre planche, est redessinée par-dessus le manche (il la serre). La main suit
+// celle de la planche, image par image (src/data/mains.json, relevée par design/camp/outils/mains_torche.py).
 const BOIS = '#764c28', BOIS2 = '#50321a', LIEN = '#3a2822', O = '#d6541c', M = '#faa030', C = '#ffe896', J = '#ffc850';
 const FLAMMES = [
   [[-1, -9, O], [0, -9, M], [1, -9, M], [2, -9, O], [-1, -10, O], [0, -10, C], [1, -10, C], [2, -10, M], [-1, -11, M], [0, -11, C], [1, -11, J], [2, -11, O], [0, -12, M], [1, -12, J], [0, -13, O], [1, -13, M], [1, -14, O]],
   [[-1, -9, O], [0, -9, M], [1, -9, M], [2, -9, O], [-1, -10, M], [0, -10, C], [1, -10, C], [2, -10, O], [-1, -11, O], [0, -11, J], [1, -11, C], [2, -11, M], [0, -12, J], [1, -12, M], [0, -13, M], [0, -14, O]],
   [[-1, -9, O], [0, -9, M], [1, -9, M], [2, -9, O], [-1, -10, O], [0, -10, C], [1, -10, C], [2, -10, M], [0, -11, C], [1, -11, C], [2, -11, O], [0, -12, J], [1, -12, M], [1, -13, M], [1, -14, O], [2, -15, O]],
 ];
-// où est la main qui tient la torche, dans l'image 64 × 64 du héros (haut, gauche, bas, droite)
-export const MAINS = [[44, 46], [23, 47], [21, 40], [40, 47]];
 const LIGNES = { haut: 0, gauche: 1, bas: 2, droite: 3 };
-const TW = 6, TH = 20, MX = 2, MY = 15;          // la planche de la torche : 6 × 20 par image, la main en (2, 15)
+const PENCHE = [1, 1, -1, -1];                   // vers où penche la torche (haut, gauche, bas, droite) : hors du corps, loin du visage
+const TW = 12, TH = 24, MX = 5, MY = 18;         // la planche de la torche : 12 × 24 par image, la main en (5, 18)
+const FW = 6, FH = 5;                            // la main redessinée : 6 × 5 autour de la prise
+const decale = (y, p) => p * Math.floor((3 - y) / 4);   // le manche penche d'un pixel toutes les 4 rangées
+const HAUT_MANCHE = 11;                          // le manche monte de 11 pixels au-dessus de la main
 
 function planche() {
-  const c = Object.assign(document.createElement('canvas'), { width: TW * FLAMMES.length, height: TH }), g = c.getContext('2d');
-  const px = (k, dx, dy, col) => { g.fillStyle = col; g.fillRect(k * TW + MX + dx, MY + dy, 1, 1); };
-  FLAMMES.forEach((f, k) => {
-    for (let y = -7; y < 4; y++) if (y !== 0 && y !== 1) { px(k, 0, y, BOIS); px(k, 1, y, BOIS2); }
-    for (let x = -1; x < 3; x++) px(k, x, -8, LIEN);
-    for (const [dx, dy, col] of f) px(k, dx, dy, col);
-  });
+  const c = Object.assign(document.createElement('canvas'), { width: TW * FLAMMES.length, height: TH * 2 }), g = c.getContext('2d');
+  [-1, 1].forEach((p, r) => FLAMMES.forEach((f, k) => {
+    const px = (dx, dy, col) => { g.fillStyle = col; g.fillRect(k * TW + MX + dx, r * TH + MY + dy, 1, 1); };
+    for (let y = -HAUT_MANCHE + 1; y < 4; y++) { px(decale(y, p), y, p < 0 ? BOIS2 : BOIS); px(decale(y, p) + 1, y, p < 0 ? BOIS : BOIS2); }
+    const h = -HAUT_MANCHE, d = decale(h, p);
+    for (let x = -1; x < 3; x++) px(d + x, h, LIEN);
+    for (const [dx, dy, col] of f) px(dx + d, dy + h + 8, col);
+  }));
   return c;
 }
 
@@ -131,16 +137,20 @@ export function init(game, options) {
   return api;
 }
 
-// une torche par héros visible (le mien, puis ceux des autres joueurs) : son sprite, et sa lumière
-function torche(cle, x, y, ligne, visible, k) {
+// une torche par héros visible (le mien, puis ceux des autres joueurs) : la torche, la main qui la serre, et sa lumière
+// (q : le héros { x, y, ligne, rang, col, feuille })
+function torche(cle, q, visible, k) {
   let t = torches.get(cle);
-  if (!t) { t = rendu.sprite(feuille, 'torche', TW, TH); torches.set(cle, t); }
-  const vu = visible && S.torche;
-  t.cacher(!vu);
+  if (!t) { t = { torche: rendu.sprite(feuille, 'torche', TW, TH), main: null, nom: '' }; torches.set(cle, t); }
+  const vu = visible && S.torche && !!q.feuille;
+  if (vu && t.nom !== q.feuille.nom) { t.main?.retirer(); t.main = rendu.sprite(q.feuille.source, q.feuille.nom, FW, FH); t.nom = q.feuille.nom; }
+  t.torche.cacher(!vu); t.main?.cacher(!vu);
   if (!vu) return null;
-  const [mx, my] = MAINS[ligne] ?? MAINS[2], gx = x - 32 + mx, gy = y - 60 + my;
-  t.poser(gx - MX, gy - MY, y + 0.5, (Math.floor(temps / 0.12 + k) % FLAMMES.length) * TW, 0);
-  return { x: gx + 0.5, y: gy - 11, r: 115, f: 1.15 * (0.95 + 0.05 * Math.sin(temps * 13 + k)), c: TORCHE };
+  const table = q.rang >= 38 ? MAINS.course : MAINS.marche, l = table[q.ligne] ?? table[2], [mx, my] = l[Math.min(l.length - 1, q.col ?? 0)];
+  const p = PENCHE[q.ligne] ?? -1, gx = q.x - 32 + mx, gy = q.y - 60 + my;
+  t.torche.poser(gx - MX, gy - MY, q.y + 0.5, (Math.floor(temps / 0.12 + k) % FLAMMES.length) * TW, (p > 0 ? 1 : 0) * TH);
+  t.main.poser(gx - 3, gy - 2, q.y + 0.6, (q.col ?? 0) * 64 + mx - 3, q.rang * 64 + my - 2);
+  return { x: gx + decale(-HAUT_MANCHE, p) + 0.5, y: gy - HAUT_MANCHE - 3, r: 115, f: 1.15 * (0.95 + 0.05 * Math.sin(temps * 13 + k)), c: TORCHE };
 }
 
 export function update(dt) {
@@ -155,15 +165,15 @@ export function update(dt) {
   // les sources : les fixes, puis les torches
   const liste = SOURCES.filter((s) => !s.mur || (murs?.avancement?.[s.mur] ?? 0) >= 100);
   const h = heros?.heros;
-  const mienne = h && torche('moi', h.x, h.y, LIGNES[h.dir] ?? 2, !!heros.sprite?.mesh.visible, 0);
+  const mienne = h && torche('moi', { x: h.x, y: h.y, ligne: LIGNES[h.dir] ?? 2, rang: h.rang ?? 10, col: h.col ?? 0, feuille: heros.feuille }, !!heros.sprite?.mesh.visible, 0);
   if (mienne) liste.push(mienne);
   const vus = new Set(['moi']);
   for (const [id, c] of reseau?.copies ?? []) {
     vus.add(id);
-    const l = torche(id, c.x ?? 0, c.y ?? 0, c.ligne ?? 2, c.x !== undefined && !!c.sprite?.mesh.visible, 1.7 + vus.size);
+    const l = torche(id, { x: c.x ?? 0, y: c.y ?? 0, ligne: c.ligne ?? 2, rang: c.rang ?? 10, col: c.col ?? 0, feuille: c.feuille }, c.x !== undefined && !!c.sprite?.mesh.visible, 1.7 + vus.size);
     if (l) liste.push(l);
   }
-  for (const [id, t] of torches) if (!vus.has(id)) { t.retirer(); torches.delete(id); }
+  for (const [id, t] of torches) if (!vus.has(id)) { t.torche.retirer(); t.main?.retirer(); torches.delete(id); }
   const n = Math.min(MAX, liste.length);
   for (let i = 0; i < n; i++) { const s = liste[i]; sources[i].set(s.x, s.y, s.r, s.f * (s === mienne || s.c === TORCHE ? 1 : m.sources)); couleurs[i].set(...s.c); }
   const [multi, ajout] = voiles;
@@ -198,10 +208,10 @@ export function selfTest(t) {
   const avant = S.force;
   S.force = 23 * 60; update(0.1);
   t.ok(voiles[0].visible && voiles[0].material.uniforms.ciel.value.x < 0.3, 'à 23 h : le camp est dans la nuit');
-  t.ok(S.torche && torches.get('moi')?.mesh.visible === !!heros.sprite?.mesh.visible, 'le héros porte une torche, allumée toute seule');
+  t.ok(S.torche && torches.get('moi')?.torche.mesh.visible === !!heros.sprite?.mesh.visible && torches.get('moi')?.main?.mesh.visible === !!heros.sprite?.mesh.visible, 'le héros porte une torche, allumée toute seule, serrée dans sa main');
   t.ok(chantier?.dormant !== false, 'les ouvriers du chantier sont couchés');
   S.force = 12 * 60; update(0.1);
-  t.ok(!voiles[0].visible && !torches.get('moi')?.mesh.visible && !S.dort, 'à midi : plein jour, plus de torche, les ouvriers au travail');
+  t.ok(!voiles[0].visible && !torches.get('moi')?.torche.mesh.visible && !S.dort, 'à midi : plein jour, plus de torche, les ouvriers au travail');
   S.force = avant; update(0);
 }
 
