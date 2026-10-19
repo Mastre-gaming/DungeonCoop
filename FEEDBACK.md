@@ -38,6 +38,8 @@ Tout l'ordre ci-dessus, dans `design/animations/outil/forgeron.mjs` ; l'Interpos
 - **Chef-d'œuvre** : une arme légendaire par archétype, qui sort de l'enclume deux fois plus grande dans des rayons d'or : l'Épée de l'Aube (Combattant), la Masse du Soleil (Soutien), l'Arc des Braises (À distance), le Sceptre-Étoile (Mage). Les noms sont provisoires : ils sont à l'équipe.
 La page de revue est à jour ; les notes de la version 2 s'y enregistrent à part, celles de la version 1 restent en rappel.
 
+**Validé par le propriétaire le 19 oct : « je valide les animations ».** Toutes sont verrouillées (`LOCKED.md`).
+
 ## 18 oct. 2026 · le terrain d'entraînement, sans cases (Paolitus)
 
 ### La fiche

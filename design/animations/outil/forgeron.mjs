@@ -1,3 +1,4 @@
+// VERROUILLÉ (LOCKED.md, 19 oct : le propriétaire a validé toutes ces animations) : ne rien modifier sans sa demande.
 // Baba Brisenclume (content/classes/baba-brisenclume.json) : toutes ses capacités, refaites d'après la revue du
 // propriétaire (FEEDBACK.md, 19 oct). Celles de départ : le Marteau ; l'Enclume et la Forge (la Chute d'Enclume, une
 // fois par combat, et la Forge en Lame Ardente ou en Trempe, sur l'enclume) ; les Tenailles (un ennemi, un allié ou
