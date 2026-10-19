@@ -96,23 +96,26 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .capacite.indispo .cap-icone, .capacite.indispo .cap-texte { opacity: .4; filter: grayscale(.6); }
 
 /* la fiche de la capacité (#85) : ce qu'elle fait, sans cible */
-.fiche-capacite { width: 640px; max-width: 100%; box-sizing: border-box; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; animation: monte .12s ease-out; }
+.fiche-capacite { width: 500px; max-width: 100%; box-sizing: border-box; padding: 7px 10px 8px; display: flex; flex-direction: column; gap: 6px; animation: monte .12s ease-out; }
+.fiche-capacite h2 { font-size: 15px; }
+.fiche-capacite .puce { font-size: 11px; padding: 1px 5px; }
+.fiche-capacite .effet { font-size: 11.5px; padding: 2px 6px; }
 @keyframes monte { from { transform: translateY(6px); } }
-.fc-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.fc-icone { width: 36px; height: 39px; image-rendering: pixelated; }
+.fc-tete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fc-icone { width: 24px; height: 26px; image-rendering: pixelated; }
 .fc-carac { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
-.fc-resultats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.fc-resultats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
 .fc-resultats.n1 { grid-template-columns: minmax(0, 1fr); }
-.fc-res { padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 2px; }
+.fc-res { padding: 3px 6px 4px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 0; }
 .fc-res.touche { box-shadow: inset 0 0 0 2px #85581b; }
-.fc-res strong { font: 700 20px var(--titre); color: #fff7e6; }
-.fc-res .fc-nom { font-size: 12px; }
+.fc-res strong { font: 700 15px var(--titre); color: #fff7e6; }
+.fc-res .fc-nom { font-size: 11px; }
 .fc-res .fc-d20 { font-size: 11px; color: #a8956f; }
 .fc-res.rate .fc-nom, .cc-ligne.rate .cc-nom { color: #ff8a7a; }
 .fc-res.eraflure .fc-nom, .cc-ligne.eraflure .cc-nom { color: #f3c48a; }
 .fc-res.touche .fc-nom, .cc-ligne.touche .cc-nom { color: #9fe28f; }
 .fc-res.critique .fc-nom, .cc-ligne.critique .cc-nom { color: #ffd35a; }
-.fc-aide { margin: 0; font: 400 13px var(--texte); color: #e9d3ad; }
+.fc-aide { margin: 0; font: 400 12px var(--texte); color: #e9d3ad; }
 .fc-aide:empty { display: none; }
 
 /* la carte de la cible survolée */
