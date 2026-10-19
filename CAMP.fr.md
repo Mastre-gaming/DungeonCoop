@@ -332,6 +332,7 @@ Le propriétaire l'aime tel quel (`LIKED.md`). On l'ouvre en s'approchant du tab
 - **À droite, la zone choisie :** la carte du tableau, où la zone clignote ; son niveau et ce qui manque pour le suivant ; ses missions sur des parchemins épinglés, rangées en « à prendre », « en cours » et « rentrées ».
 - **Chaque parchemin :** le numéro de l'issue, le titre, la taille et ses points (« M · 3 pts »), le jalon, qui s'en occupe ou qui l'a rentrée, et **comment la rentrer : « une PR qui contient `Ferme #33`, fusionnée »**. C'est le lien entre coder et voir le monde grandir.
 - **En pied :** prendre une mission se fait dans le tableau de travail du dashboard (« Je prends »), avec un lien vers lui. En v0, le camp ne fait que lire.
+- **L'onglet « Plans » (mission #157, 19 oct.) :** à côté de l'onglet « Missions », les plans du jeu en fiches : ce qu'on construit, comment, et où on en est. Chaque chose prévue porte un sceau lu en direct dans les missions (bâti, en chantier, à prendre, pas encore de mission, à trancher). Connecté à GitHub, on modifie une fiche (le texte à gauche, l'aperçu à droite), on en crée, on en retire, on les range. Les fiches de départ sont dans `content/plans/` ; une fiche modifiée au camp devient un commentaire de l'issue #157, avec son historique (seuls comptent ceux de l'équipe). Le format est dans l'aide de l'éditeur et en tête de `src/45_plans.js`.
 
 ### La première connexion
 Il faut comprendre tout de suite que **ce monde ne grandit que si l'équipe le construit**, en codant, en dessinant, en écrivant, puis en commitant.

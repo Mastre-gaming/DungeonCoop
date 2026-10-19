@@ -5,7 +5,10 @@
 // Connecté à GitHub (27_github.js, la même connexion que le dashboard), on y gère les missions comme dans le tableau de
 // travail : créer, modifier (titre, description, lieu, taille, qui), prendre, lâcher, « Fait », rouvrir, supprimer (les
 // admins du repo ; sinon « Fermer (abandonnée) »). Tout part dans GitHub : le tableau du dashboard suit tout seul.
+// Deux onglets : « Missions » (le panneau ci-dessus) et « Plans » (45_plans.js : les plans du jeu, mission #157).
 import './panneau.css';
+import './plans.css';
+import { creerPlans, ISSUE as PLANS_ISSUE } from './45_plans.js';
 import { dessinerPanneau } from './03_carte.js';
 import { LIEUX_AXES, SEUILS, POINTS, DASHBOARD, DEPOT, URGENCES, etatDe, lieuDe, tailleDe, urgenceDe } from './10_missions.js';
 
@@ -33,6 +36,7 @@ let game, rendu, canvas, decor, missions, heros, images, visite, github;
 // mission dont GitHub a refusé la suppression (on propose alors de la fermer, abandonnée).
 let edition = null, aConfirmer = null, nouvelle = null, refusee = null, occupe = false;
 let boite, bulle, apercu, gApercu, choisie = 'interface', ouvert = false, temps = 0, survol = false;
+let plans, onglet = 'missions';   // l'onglet ouvert : 'missions' ou 'plans'
 // La première connexion (CAMP §5) : le tableau appelle tant qu'on ne l'a jamais ouvert dans ce navigateur.
 const CLE_VU = 'dungeoncoop:panneau-vu';
 let vu = (() => { try { return localStorage.getItem(CLE_VU) === '1'; } catch { return false; } })();
@@ -49,6 +53,7 @@ const pres = () => {
 export function init(g, options) {
   game = g;
   ({ rendu, canvas, decor, missions, heros, images, visite, github } = options);
+  plans = creerPlans({ missions, github, visite, horsLigne: !!options.horsLigne, redessiner: () => { if (ouvert && onglet === 'plans') dessiner(); } });
   game.input.bindings.consulter = ['KeyE'];
 
   boite = el('div', { id: 'missions', class: 'fond-missions', hidden: true, onclick: (e) => { if (e.target === boite) fermer(); } });
@@ -71,15 +76,18 @@ export function init(g, options) {
   window.addEventListener('keydown', (e) => {
     if (!ouvert || e.code !== 'Escape') return;
     e.preventDefault();
-    if (edition || aConfirmer) { edition = null; aConfirmer = null; dessiner(); } else fermer();   // Échap : d'abord la fiche
+    if (onglet === 'plans' && plans.enEdition) plans.annuler();   // Échap : d'abord la fiche en cours
+    else if (edition || aConfirmer) { edition = null; aConfirmer = null; dessiner(); } else fermer();
   });
-  game.bus.on('missions:maj', () => { if (ouvert && !edition) dessiner(); });   // (pas pendant qu'on écrit une fiche)
+  game.bus.on('missions:maj', () => { if (ouvert && !edition && !plans.enEdition) dessiner(); });   // (pas pendant qu'on écrit une fiche)
   game.bus.on('github:connexion', () => { if (ouvert) dessiner(); });
   return api;
 }
 
-function ouvrir(zone) {
+function ouvrir(zone, quelOnglet) {
   if (zone) choisie = zone;
+  if (quelOnglet) onglet = quelOnglet;
+  if (onglet === 'plans') plans.charger();
   ouvert = true; boite.hidden = false;
   marquerVu(true);
   game.solo = 'panneau';                 // le héros s'arrête pendant qu'on lit
@@ -89,6 +97,7 @@ function ouvrir(zone) {
 }
 function fermer() {
   ouvert = false; boite.hidden = true; decor.zoneVisee = null; edition = null; aConfirmer = null;
+  if (plans.enEdition) plans.annuler();
   if (game.solo === 'panneau') game.solo = null;
   canvas.focus?.();
 }
@@ -100,7 +109,21 @@ function zones() {
 }
 const tachesDe = (id) => missions.taches().filter((t) => (lieuDe(t) ?? 'sans') === id);
 
+// Les deux onglets du panneau, en tête : Missions et Plans (les flèches passent de l'un à l'autre).
+function onglets() {
+  const ONGLETS = [{ id: 'missions', nom: 'Missions' }, { id: 'plans', nom: 'Plans' }];
+  const aller = (id) => { if (id === onglet) return; if (onglet === 'plans' && plans.enEdition) plans.annuler(); onglet = id; if (id === 'plans') plans.charger(); edition = null; aConfirmer = null; dessiner(); boite.querySelector(`.onglet[data-onglet="${id}"]`)?.focus(); };
+  return el('div', { class: 'onglets', role: 'tablist', 'aria-label': 'Le tableau', onkeydown: (e) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    e.preventDefault();
+    const i = ONGLETS.findIndex((o) => o.id === onglet);
+    aller(ONGLETS[(i + (e.key === 'ArrowRight' ? 1 : ONGLETS.length - 1)) % ONGLETS.length].id);
+  } }, ONGLETS.map((o) => el('button', { class: 'onglet', type: 'button', role: 'tab', 'data-onglet': o.id, id: `onglet-${o.id}`, 'aria-selected': String(onglet === o.id),
+    'aria-controls': 'vue-tableau', tabindex: onglet === o.id ? '0' : '-1', onclick: () => aller(o.id) }, o.nom)));
+}
+
 function dessiner() {
+  if (onglet === 'plans') return dessinerPlans();
   const res = missions.resume(), etat = missions.etat;
   if (!zones().some((z) => z.id === choisie)) choisie = 'interface';
   decor.zoneVisee = choisie === 'sans' ? null : choisie;
@@ -131,6 +154,7 @@ function dessiner() {
   boite.replaceChildren(el('div', { class: 'panneau-missions', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 't-missions' },
     el('div', { class: 'tete' },
       el('h3', { id: 't-missions' }, 'Tableau des missions'),
+      onglets(),
       el('span', { class: 'total' }, `Le camp : ${res.total} point${res.total > 1 ? 's' : ''} · le feu : taille ${res.feu}`),
       el('span', { class: 'provisoire', title: 'Les noms des lieux sont provisoires : ils sont à l’axe Histoire.' }, 'noms provisoires'),
       enTeteGithub(),
@@ -138,7 +162,7 @@ function dessiner() {
     etat.erreur ? el('p', { class: 'annonce grave', role: 'alert' }, etat.erreur) : null,
     nouvelle ? el('p', { class: `annonce${nouvelle.grave ? ' grave' : ''}`, role: nouvelle.grave ? 'alert' : 'status' }, nouvelle.texte) : null,
     !etat.source && !etat.erreur ? el('p', { class: 'annonce' }, 'Les missions arrivent…') : null,
-    el('div', { class: 'corps' },
+    el('div', { class: 'corps', id: 'vue-tableau', role: 'tabpanel', 'aria-labelledby': 'onglet-missions' },
       el('div', { class: 'zones', role: 'group', 'aria-label': 'Zones à construire' }, lignes),
       el('div', { class: 'detail' },
         el('div', { class: 'apercu' },
@@ -157,6 +181,24 @@ function dessiner() {
           : 'Pour gérer les missions ici (créer, prendre, « Fait », assigner, taille…) : « Se connecter à GitHub », en haut.'),
       el('a', { href: DASHBOARD, target: '_blank', rel: 'noopener' }, 'Ouvrir le dashboard ↗'))));
   dessinerApercu();
+}
+
+// L'onglet Plans : la même tête, les plans du jeu dessous (45_plans.js).
+function dessinerPlans() {
+  const res = missions.resume();
+  decor.zoneVisee = null;
+  const garder = document.activeElement && boite.contains(document.activeElement) ? document.activeElement.closest('[data-onglet]')?.dataset.onglet : null;
+  boite.replaceChildren(el('div', { class: 'panneau-missions', role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 't-missions' },
+    el('div', { class: 'tete' },
+      el('h3', { id: 't-missions' }, 'Tableau des missions'),
+      onglets(),
+      el('span', { class: 'total' }, `Le camp : ${res.total} point${res.total > 1 ? 's' : ''} · le feu : taille ${res.feu}`),
+      enTeteGithub(),
+      el('button', { class: 'fermer', type: 'button', onclick: fermer, 'aria-label': 'Fermer le panneau' }, 'Fermer ', el('kbd', {}, 'Échap'))),
+    el('div', { id: 'vue-tableau', role: 'tabpanel', 'aria-labelledby': 'onglet-plans' }, plans.vue()),
+    el('div', { class: 'pied' }, el('span', {}, plans.pied()),
+      el('a', { href: `https://github.com/${DEPOT}/issues/${PLANS_ISSUE}`, target: '_blank', rel: 'noopener' }, `La mission #${PLANS_ISSUE} sur GitHub ↗`))));
+  if (garder) boite.querySelector(`.onglet[data-onglet="${garder}"]`)?.focus();
 }
 
 function carte(t) {
@@ -308,6 +350,8 @@ export function dispose() { boite?.remove(); bulle?.remove(); }
 
 export const api = {
   ouvrir, fermer, labelsAvec,
+  get plans() { return plans; },
+  get onglet() { return onglet; },
   get nouvelle() { return nouvelle; },
   get occupe() { return occupe; },
   get vu() { return vu; },

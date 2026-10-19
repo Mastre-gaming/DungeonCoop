@@ -84,7 +84,7 @@ async function demarrer() {
   const place = game.use(placeSkill, { rendu, images, collision, missions, decor });   // la place du village, autour du feu
   // la connexion GitHub (la même que le tableau de travail du dashboard) : gérer les missions depuis le panneau
   const github = game.use(githubSkill, { horsLigne: query.has('test') });
-  const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite, github });
+  const panneau = game.use(panneauSkill, { rendu, canvas, decor, missions, heros, images, visite, github, horsLigne: query.has('test') });
   // la sentinelle : sa scène à chaque arrivée (pas en visite, ni pendant les vérifications, ni quand on va à un point nommé)
   // avant elle, à chaque arrivée : le choix du héros (41_choix_heros.js), qui lance sa scène une fois le héros pris
   const arrivee = !visite && !query.has('test') && !query.has('spot');
@@ -157,6 +157,7 @@ async function demarrer() {
     ], { force: true });
   });
   game.dbg.spot('panneau', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface'); });
+  game.dbg.spot('plans', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface', 'plans'); });
 
   document.documentElement.dataset.pret = '1';
   game.start();
