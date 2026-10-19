@@ -4,7 +4,10 @@
 // au carrefour du sentier des archives, à côté de son panneau « Chantier » (une barre par mur) ; E devant lui : il dit où
 // en est chaque mur. L'avancement monte avec les missions rentrées de l'axe camp depuis le début du chantier.
 // Les pièces, les ouvriers et leurs places sont fabriqués par design/camp/outils/chantier_jeu.py (public/assets/lpc/
-// chantier.png, chantier_sol.png, src/data/chantier.json). Les ouvriers et le chef sont des personnages provisoires, et
+// chantier.png, chantier_sol.png, src/data/chantier.json). Les murs eux-mêmes montent avec l'avancement : 45_murs.js.
+// Quand le mur nord est fini, ses bases et son cintre s'en vont (sa porte est là) ; quand les trois sont finis, la base du
+// chantier, le matériel et les ouvriers s'en vont aussi : il ne reste que le chef, son panneau (avec des fanions) et les
+// pancartes. Les ouvriers et le chef sont des personnages provisoires, et
 // ses répliques aussi (les textes du jeu sont à l'équipe).
 import CHANTIER from './data/chantier.json';
 import { estTache, etatDe, lieuDe, tailleDe, POINTS } from './10_missions.js';
@@ -17,6 +20,7 @@ export const DEPART = { nord: 6, ouest: 18, est: 2 };  // où en est chaque mur 
 export const PAR_POINT = 2;                           // chaque point de l'axe camp (S 1, M 3, L 8) : 2 % de plus à chaque mur
 const MURS = ['nord', 'ouest', 'est'];
 const PRES = 40, VERT = '#64a054', BULLE = 7;         // E à moins de 40 px du chef ; sa réponse reste 7 s
+const FANIONS = ['#c83c32', '#e6be3c', '#3c6eb4'];
 
 // avancement(issues) → { points, nord, ouest, est } en % (0 à 100)
 export function avancement(issues) {
@@ -36,8 +40,8 @@ export const TEXTE = {
   aide: 'Chaque mission du camp rentrée fait monter les murs.',
 };
 
-let game, rendu, images, heros, missions, collision, visite, groupe, sol, panneau, gPanneau, chef, bulle, parler;
-const ouvriers = [], obstacles = [];
+let game, rendu, images, heros, missions, collision, visite, sol, panneau, gPanneau, chef, bulle, parler;
+const ouvriers = [], obstacles = [], pieces = [];
 const S = { t: 0, a: avancement([]), cache: false, parle: 0, regard: 2 };
 const P = CHANTIER.pieces.find((p) => p.nom === 'panneau');
 
@@ -55,30 +59,58 @@ function dessinerPanneau() {
     const w = Math.max(1, Math.round(b.w * S.a[b.mur] / 100));
     gPanneau.fillRect(b.x - P.x, b.y - P.y, w, b.h);
   }
+  if (fini('tout')) for (let i = 4; i < P.sw - 4; i += 6) {   // le chantier fini : une guirlande de fanions sur le haut du panneau
+    gPanneau.fillStyle = FANIONS[(i / 6) % 3]; gPanneau.fillRect(i, 2 + Math.floor(Math.abs(i - P.sw / 2) / 10), 4, 4);
+  }
   panneau.rafraichir();
+}
+
+// fin(quand) : 'nord' quand le mur nord est fini, 'tout' quand les trois le sont
+const fini = (quand) => (quand === 'nord' ? S.a.nord >= 100 : quand === 'tout' ? MURS.every((m) => S.a[m] >= 100) : false);
+
+// ce qui s'en va quand le chantier avance : la pièce, et ce qu'elle bloquait
+function ranger() {
+  for (const p of pieces) {
+    const parti = S.cache || fini(p.fin);
+    p.sprite.cacher(parti);
+    if (p.obstacle && parti !== p.parti) (parti ? collision.retirer : collision.ajouter)(p.obstacle);
+    p.parti = parti;
+  }
+  for (const o of ouvriers) {
+    if (o === chef) continue;
+    const parti = fini('tout');
+    if (o.obstacle && parti !== o.parti) (parti ? collision.retirer : collision.ajouter)(o.obstacle);
+    o.parti = parti;
+  }
 }
 
 function lire() {
   const a = avancement(missions.etat.issues);
-  if (MURS.some((m) => a[m] !== S.a[m]) || a.points !== S.a.points) { S.a = a; dessinerPanneau(); }
+  if (MURS.some((m) => a[m] !== S.a[m]) || a.points !== S.a.points) { S.a = a; dessinerPanneau(); ranger(); }
 }
 
 export function init(g, options) {
   game = g;
   ({ rendu, images, heros, missions, collision, visite } = options);
   sol = rendu.calqueSol(images.chantierSol, 'chantier-sol');
-  groupe = rendu.statiques(CHANTIER.pieces.filter((p) => p !== P).map((p) => ({ ...p, img: 'chantier' })), images);
+  for (const p of CHANTIER.pieces.filter((x) => x !== P)) {
+    const sprite = rendu.sprite(images.chantier, 'chantier', p.sw, p.sh);
+    sprite.poser(p.x, p.y, p.pied, p.sx, p.sy);
+    const [x, y, w, h] = p.bloque ?? [];
+    pieces.push({ ...p, sprite, obstacle: p.bloque ? { x, y, w, h } : null, parti: true });
+  }
   const c = Object.assign(document.createElement('canvas'), { width: P.sw, height: P.sh });
   gPanneau = c.getContext('2d'); gPanneau.imageSmoothingEnabled = false;
   panneau = rendu.sprite(c, 'chantier-panneau', P.sw, P.sh);
   panneau.poser(P.x, P.y, P.pied);
   for (const o of CHANTIER.gens) {
     const sprite = rendu.sprite(images.chantier, 'chantier', o.w, 64);
-    ouvriers.push({ ...o, sprite, decalage: ouvriers.length * 0.37 });
+    const [x, y, w, h] = o.bloque;
+    ouvriers.push({ ...o, sprite, decalage: ouvriers.length * 0.37, obstacle: { x, y, w, h }, parti: true });
   }
   chef = ouvriers.at(-1);
-  for (const o of [...CHANTIER.pieces, ...CHANTIER.gens]) if (o.bloque) { const [x, y, w, h] = o.bloque; obstacles.push({ x, y, w, h }); }
-  obstacles.forEach((o) => collision.ajouter(o));
+  { const [x, y, w, h] = P.bloque; obstacles.push({ x, y, w, h }); collision.ajouter(obstacles[0]); }   // le panneau reste toujours
+  chef.parti = false; collision.ajouter(chef.obstacle);
   bulle = document.createElement('div');
   bulle.className = 'bulle-perso bulle-chantier'; bulle.hidden = true;
   parler = document.createElement('div');
@@ -86,6 +118,7 @@ export function init(g, options) {
   parler.innerHTML = '<kbd data-key="KeyE">E</kbd> : parler au chef de chantier';
   document.body.append(bulle, parler);
   dessinerPanneau();
+  ranger();
   lire();
   game.bus.on('missions:maj', lire);
   update(0);
@@ -101,6 +134,8 @@ export function update(dt) {
   S.t += dt;
   for (const o of ouvriers) {
     if (o === chef) continue;
+    o.sprite.cacher(S.cache || o.parti);
+    if (o.parti) continue;
     const k = o.images > 1 ? Math.floor((S.t + o.decalage) / o.pas) % o.images : 0;
     o.sprite.poser(o.x, o.y, o.pied, k * o.w, o.sy);
   }
@@ -126,25 +161,28 @@ export function update(dt) {
 }
 
 export function dispose() {
-  ouvriers.forEach((o) => o.sprite.retirer()); panneau?.retirer(); bulle?.remove(); parler?.remove();
+  ouvriers.forEach((o) => { o.sprite.retirer(); if (!o.parti) collision.retirer(o.obstacle); });
+  pieces.forEach((p) => { p.sprite.retirer(); if (p.obstacle && !p.parti) collision.retirer(p.obstacle); });
+  panneau?.retirer(); bulle?.remove(); parler?.remove();
   obstacles.forEach((o) => collision.retirer(o));
 }
 
 // tout cacher (les captures de chantier_captures.mjs : le camp sans le chantier)
 export function cacher(oui = true) {
   S.cache = oui;
-  sol.visible = groupe.visible = !oui;
-  panneau.cacher(oui); ouvriers.forEach((o) => o.sprite.cacher(oui));
+  sol.visible = !oui;
+  panneau.cacher(oui); chef.sprite.cacher(oui); ranger();
   if (oui) { bulle.hidden = true; parler.hidden = true; S.parle = 0; }
 }
 
 export function selfTest(t) {
   t.group('Le chantier des trois autres murs');
-  t.ok(CHANTIER.pieces.length >= 30 && CHANTIER.gens.length === 10, `${CHANTIER.pieces.length} pièces et ${CHANTIER.gens.length} personnages en place`);
+  t.ok(CHANTIER.pieces.length >= 20 && CHANTIER.gens.length === 8, `${CHANTIER.pieces.length} pièces et ${CHANTIER.gens.length} personnages en place`);
   // rien ne bouche un sentier ni la porte d'un lieu : on peut aller du feu à chaque lieu et aux archives
-  const dehors = obstacles.every((o) => !(o.x < 15.5 * 32 && o.x + o.w > 13.5 * 32 && o.y + o.h > 19 * 32 && o.y < 32 * 32));
+  const bloquants = [...obstacles, ...pieces.filter((p) => p.obstacle && !p.parti).map((p) => p.obstacle)];
+  const dehors = bloquants.every((o) => !(o.x < 15.5 * 32 && o.x + o.w > 13.5 * 32 && o.y + o.h > 19 * 32 && o.y < 32 * 32));
   t.ok(dehors, 'le chantier ne bouche pas le grand sentier de la porte');
-  t.ok(obstacles.some((o) => collision.bloque(o.x + o.w / 2, o.y + o.h / 2)), 'on ne traverse pas les murs commencés ni le matériel');
+  t.ok(bloquants.length > 10 && bloquants.every((o) => collision.bloque(o.x + o.w / 2, o.y + o.h / 2)), 'on ne traverse pas le matériel du chantier');
   // l'avancement : seules les missions de l'axe camp rentrées depuis le début du chantier comptent
   const m = (n, axe, taille, etat, quand) => ({ number: n, state: etat, closed_at: quand, labels: [`axe: ${axe}`, `taille: ${taille}`], assignees: [{ login: 'x' }] });
   const a0 = avancement([]);
@@ -161,7 +199,14 @@ export function selfTest(t) {
   const px = gPanneau.getImageData(CHANTIER.panneau.barres[1].x - P.x + 10, CHANTIER.panneau.barres[1].y - P.y + 1, 1, 1).data;
   t.ok(px[1] > px[0] && px[1] > 140, 'la barre de l’ouest est remplie en vert sur le panneau');
   t.ok(reponse().some((l) => l.startsWith('Ouest : 34 %')), `le chef le dit : « ${reponse()[2]} »`);
-  missions.charger(avant);
+  // les trois murs finis : la base, le matériel et les ouvriers s'en vont ; le chef, son panneau et les pancartes restent
+  missions.charger(Array.from({ length: 20 }, (_, k) => m(100 + k, 'camp', 'L', 'closed', '2026-11-01')));
+  const base = pieces.find((p) => p.nom === 'cabane'), cintre = pieces.find((p) => p.nom === 'porte nord, cintre');
+  t.ok(fini('tout') && !base.sprite.mesh.visible && !cintre.sprite.mesh.visible && !collision.bloque(base.obstacle.x + 2, base.obstacle.y + 2), 'le chantier fini : la cabane et le cintre s’en vont, on passe là où ils étaient');
+  update(0);
+  t.ok(ouvriers.every((o) => o === chef || !o.sprite.mesh.visible) && chef.sprite.mesh.visible && panneau.mesh.visible, 'les ouvriers s’en vont, le chef et son panneau restent');
+  missions.charger(avant); update(0);
+  t.ok(base.sprite.mesh.visible === !fini('tout'), 'le chantier reprend : la cabane revient');
   // E devant le chef : sa réponse
   if (heros && !visite) {
     const h = heros.heros, avantH = { x: h.x, y: h.y };

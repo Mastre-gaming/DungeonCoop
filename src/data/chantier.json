@@ -2,157 +2,11 @@
  "_lisez_moi": "Fabriqué par design/camp/outils/chantier_jeu.py : ne pas modifier à la main.",
  "pieces": [
   {
-   "nom": "mur ouest",
-   "x": 61,
-   "y": 599,
-   "sx": 0,
-   "sy": 0,
-   "sw": 40,
-   "sh": 239,
-   "pied": 838,
-   "bloque": [
-    62,
-    600,
-    38,
-    230
-   ]
-  },
-  {
-   "nom": "piquets ouest",
-   "x": 81,
-   "y": 117,
-   "sx": 162,
-   "sy": 0,
-   "sw": 3,
-   "sh": 73,
-   "pied": 190,
-   "bloque": null
-  },
-  {
-   "nom": "porte ouest, base nord",
-   "x": 51,
-   "y": 191,
-   "sx": 914,
-   "sy": 0,
-   "sw": 68,
-   "sh": 42,
-   "pied": 233,
-   "bloque": [
-    48,
-    192,
-    70,
-    40
-   ]
-  },
-  {
-   "nom": "porte ouest, base sud",
-   "x": 55,
-   "y": 271,
-   "sx": 0,
-   "sy": 240,
-   "sw": 64,
-   "sh": 42,
-   "pied": 313,
-   "bloque": [
-    48,
-    272,
-    70,
-    40
-   ]
-  },
-  {
-   "nom": "piquets nord",
-   "x": 399,
-   "y": 49,
-   "sx": 653,
-   "sy": 240,
-   "sw": 107,
-   "sh": 13,
-   "pied": 62,
-   "bloque": null
-  },
-  {
-   "nom": "piquets nord-est",
-   "x": 799,
-   "y": 35,
-   "sx": 0,
-   "sy": 283,
-   "sw": 399,
-   "sh": 13,
-   "pied": 48,
-   "bloque": null
-  },
-  {
-   "nom": "piquets est",
-   "x": 1273,
-   "y": 117,
-   "sx": 41,
-   "sy": 0,
-   "sw": 3,
-   "sh": 181,
-   "pied": 298,
-   "bloque": null
-  },
-  {
-   "nom": "piquets est, sud",
-   "x": 1273,
-   "y": 517,
-   "sx": 400,
-   "sy": 283,
-   "sw": 3,
-   "sh": 13,
-   "pied": 530,
-   "bloque": null
-  },
-  {
-   "nom": "porte est, tracé",
-   "x": 1251,
-   "y": 567,
-   "sx": 336,
-   "sy": 0,
-   "sw": 3,
-   "sh": 59,
-   "pied": 626,
-   "bloque": null
-  },
-  {
-   "nom": "tour d'angle nord-ouest",
-   "x": 43,
-   "y": 37,
-   "sx": 166,
-   "sy": 0,
-   "sw": 86,
-   "sh": 62,
-   "pied": 99,
-   "bloque": [
-    44,
-    38,
-    84,
-    60
-   ]
-  },
-  {
-   "nom": "mur nord, première assise",
-   "x": 127,
-   "y": 29,
-   "sx": 739,
-   "sy": 0,
-   "sw": 174,
-   "sh": 44,
-   "pied": 73,
-   "bloque": [
-    128,
-    30,
-    172,
-    42
-   ]
-  },
-  {
    "nom": "souche",
    "x": 70,
    "y": 112,
-   "sx": 477,
-   "sy": 240,
+   "sx": 923,
+   "sy": 0,
    "sw": 25,
    "sh": 25,
    "pied": 137,
@@ -161,14 +15,15 @@
     129,
     21,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "souche et hache",
    "x": 150,
    "y": 104,
-   "sx": 144,
-   "sy": 240,
+   "sx": 590,
+   "sy": 0,
    "sw": 32,
    "sh": 31,
    "pied": 135,
@@ -177,29 +32,31 @@
     127,
     28,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "bûches",
-   "x": 30,
-   "y": 124,
-   "sx": 82,
-   "sy": 240,
+   "x": 84,
+   "y": 128,
+   "sx": 528,
+   "sy": 0,
    "sw": 30,
    "sh": 32,
-   "pied": 156,
+   "pied": 160,
    "bloque": [
-    32,
-    148,
+    86,
+    152,
     26,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "chèvre de levage",
    "x": 168,
    "y": 25,
-   "sx": 112,
+   "sx": 67,
    "sy": 0,
    "sw": 49,
    "sh": 100,
@@ -209,14 +66,15 @@
     116,
     46,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "palette nord",
    "x": 232,
    "y": 100,
-   "sx": 177,
-   "sy": 240,
+   "sx": 623,
+   "sy": 0,
    "sw": 34,
    "sh": 30,
    "pied": 130,
@@ -225,14 +83,15 @@
     122,
     30,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "palette nord 2",
    "x": 272,
    "y": 108,
-   "sx": 503,
-   "sy": 240,
+   "sx": 949,
+   "sy": 0,
    "sw": 34,
    "sh": 22,
    "pied": 130,
@@ -241,14 +100,15 @@
     122,
     30,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "bûches du bûcheron",
    "x": 588,
    "y": 134,
-   "sx": 113,
-   "sy": 240,
+   "sx": 559,
+   "sy": 0,
    "sw": 30,
    "sh": 32,
    "pied": 166,
@@ -257,24 +117,26 @@
     158,
     26,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "masse",
    "x": 524,
-   "y": 48,
-   "sx": 703,
+   "y": 86,
+   "sx": 492,
    "sy": 0,
    "sw": 17,
    "sh": 45,
-   "pied": 93,
-   "bloque": null
+   "pied": 131,
+   "bloque": null,
+   "fin": "tout"
   },
   {
    "nom": "brouette",
    "x": 440,
    "y": 78,
-   "sx": 253,
+   "sx": 117,
    "sy": 0,
    "sw": 82,
    "sh": 62,
@@ -284,13 +146,14 @@
     132,
     78,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "porte nord, base ouest",
    "x": 267,
    "y": 31,
-   "sx": 571,
+   "sx": 360,
    "sy": 0,
    "sw": 32,
    "sh": 48,
@@ -300,13 +163,14 @@
     32,
     30,
     46
-   ]
+   ],
+   "fin": "nord"
   },
   {
    "nom": "porte nord, base est",
    "x": 351,
    "y": 31,
-   "sx": 604,
+   "sx": 393,
    "sy": 0,
    "sw": 32,
    "sh": 48,
@@ -316,100 +180,74 @@
     32,
     30,
     46
-   ]
+   ],
+   "fin": "nord"
   },
   {
    "nom": "porte nord, cintre",
    "x": 298,
    "y": 22,
-   "sx": 340,
+   "sx": 200,
    "sy": 0,
    "sw": 55,
    "sh": 56,
    "pied": 78,
-   "bloque": null
+   "bloque": null,
+   "fin": "nord"
   },
   {
    "nom": "pancarte porte nord",
    "x": 312,
    "y": 86,
-   "sx": 212,
-   "sy": 240,
+   "sx": 658,
+   "sy": 0,
    "sw": 51,
    "sh": 30,
    "pied": 116,
-   "bloque": null
+   "bloque": null,
+   "fin": null
   },
   {
    "nom": "pancarte porte ouest",
    "x": 128,
    "y": 270,
-   "sx": 264,
-   "sy": 240,
+   "sx": 710,
+   "sy": 0,
    "sw": 53,
    "sh": 30,
    "pied": 300,
-   "bloque": null
+   "bloque": null,
+   "fin": null
   },
   {
    "nom": "pancarte porte est",
    "x": 1206,
    "y": 570,
-   "sx": 318,
-   "sy": 240,
+   "sx": 764,
+   "sy": 0,
    "sw": 48,
    "sh": 30,
    "pied": 600,
-   "bloque": null
-  },
-  {
-   "nom": "échafaudage",
-   "x": 101,
-   "y": 609,
-   "sx": 459,
-   "sy": 0,
-   "sw": 70,
-   "sh": 53,
-   "pied": 662,
-   "bloque": [
-    100,
-    652,
-    72,
-    10
-   ]
-  },
-  {
-   "nom": "échelle",
-   "x": 170,
-   "y": 623,
-   "sx": 65,
-   "sy": 240,
-   "sw": 16,
-   "sh": 39,
-   "pied": 662,
-   "bloque": [
-    172,
-    654,
-    12,
-    8
-   ]
+   "bloque": null,
+   "fin": null
   },
   {
    "nom": "pierre à monter",
    "x": 228,
    "y": 662,
-   "sx": 404,
-   "sy": 283,
+   "sx": 80,
+   "sy": 107,
    "sw": 16,
    "sh": 11,
    "pied": 673,
-   "bloque": null
+   "bloque": null,
+   "fin": "tout"
   },
   {
    "nom": "cabane",
    "x": 108,
    "y": 684,
-   "sx": 45,
+   "sx": 0,
    "sy": 0,
    "sw": 66,
    "sh": 106,
@@ -419,14 +257,15 @@
     782,
     62,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "palette ouest 1",
    "x": 180,
    "y": 678,
-   "sx": 367,
-   "sy": 240,
+   "sx": 813,
+   "sy": 0,
    "sw": 34,
    "sh": 30,
    "pied": 708,
@@ -435,14 +274,15 @@
     700,
     30,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "palette ouest 2",
    "x": 180,
    "y": 722,
-   "sx": 538,
-   "sy": 240,
+   "sx": 984,
+   "sy": 0,
    "sw": 34,
    "sh": 22,
    "pied": 744,
@@ -451,14 +291,15 @@
     736,
     30,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "palette ouest 3",
    "x": 180,
    "y": 768,
-   "sx": 618,
-   "sy": 240,
+   "sx": 45,
+   "sy": 107,
    "sw": 34,
    "sh": 14,
    "pied": 782,
@@ -467,13 +308,14 @@
     774,
     30,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "tas de sable",
    "x": 104,
    "y": 784,
-   "sx": 530,
+   "sx": 319,
    "sy": 0,
    "sw": 40,
    "sh": 52,
@@ -483,14 +325,15 @@
     828,
     36,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "auge à mortier",
    "x": 146,
    "y": 807,
-   "sx": 402,
-   "sy": 240,
+   "sx": 848,
+   "sy": 0,
    "sw": 74,
    "sh": 30,
    "pied": 837,
@@ -499,24 +342,26 @@
     829,
     70,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "masse est",
    "x": 1258,
    "y": 596,
-   "sx": 721,
+   "sx": 510,
    "sy": 0,
    "sw": 17,
    "sh": 45,
    "pied": 641,
-   "bloque": null
+   "bloque": null,
+   "fin": "tout"
   },
   {
    "nom": "charrette",
    "x": 1190,
    "y": 743,
-   "sx": 637,
+   "sx": 426,
    "sy": 0,
    "sw": 65,
    "sh": 47,
@@ -526,24 +371,26 @@
     782,
     61,
     8
-   ]
+   ],
+   "fin": "tout"
   },
   {
    "nom": "pierres de la charrette",
    "x": 1196,
    "y": 748,
-   "sx": 573,
-   "sy": 240,
+   "sx": 0,
+   "sy": 107,
    "sw": 44,
    "sh": 17,
    "pied": 765,
-   "bloque": null
+   "bloque": null,
+   "fin": "tout"
   },
   {
    "nom": "panneau",
    "x": 212,
    "y": 574,
-   "sx": 396,
+   "sx": 256,
    "sy": 0,
    "sw": 62,
    "sh": 54,
@@ -553,31 +400,16 @@
     620,
     62,
     8
-   ]
+   ],
+   "fin": null
   }
  ],
  "gens": [
   {
-   "nom": "maître maçon, tour nord-ouest",
-   "x": 24,
-   "y": -4,
-   "sy": 297,
-   "w": 96,
-   "images": 8,
-   "pas": 0.13,
-   "pied": 58,
-   "bloque": [
-    80,
-    52,
-    16,
-    6
-   ]
-  },
-  {
    "nom": "ouvrier au treuil",
    "x": 204,
    "y": 46,
-   "sy": 362,
+   "sy": 125,
    "w": 64,
    "images": 6,
    "pas": 0.16,
@@ -593,7 +425,7 @@
    "nom": "ouvrier à la tranchée nord",
    "x": 468,
    "y": 18,
-   "sy": 427,
+   "sy": 190,
    "w": 64,
    "images": 6,
    "pas": 0.14,
@@ -609,7 +441,7 @@
    "nom": "bûcheron",
    "x": 528,
    "y": 42,
-   "sy": 492,
+   "sy": 255,
    "w": 64,
    "images": 6,
    "pas": 0.13,
@@ -625,7 +457,7 @@
    "nom": "ouvrier à la brouette",
    "x": 498,
    "y": 78,
-   "sy": 557,
+   "sy": 320,
    "w": 64,
    "images": 1,
    "pas": 0.12,
@@ -638,26 +470,10 @@
    ]
   },
   {
-   "nom": "maçon sur l’échafaudage",
-   "x": 66,
-   "y": 562,
-   "sy": 622,
-   "w": 96,
-   "images": 8,
-   "pas": 0.13,
-   "pied": 663,
-   "bloque": [
-    122,
-    618,
-    16,
-    6
-   ]
-  },
-  {
    "nom": "porteur de pierre",
    "x": 204,
    "y": 628,
-   "sy": 687,
+   "sy": 385,
    "w": 64,
    "images": 1,
    "pas": 0.12,
@@ -673,7 +489,7 @@
    "nom": "ouvrier à la tranchée ouest",
    "x": 118,
    "y": 176,
-   "sy": 752,
+   "sy": 450,
    "w": 64,
    "images": 6,
    "pas": 0.15,
@@ -689,7 +505,7 @@
    "nom": "ouvrier aux piquets est",
    "x": 1212,
    "y": 566,
-   "sy": 817,
+   "sy": 515,
    "w": 64,
    "images": 6,
    "pas": 0.15,
@@ -705,7 +521,7 @@
    "nom": "chef de chantier",
    "x": 260,
    "y": 572,
-   "sy": 882,
+   "sy": 580,
    "w": 64,
    "images": 4,
    "pas": 0.12,
