@@ -134,7 +134,10 @@ export function composerCamp() {
     if (j === 0 && i > 0 && i < W - 1) continue;   // la lisière du nord : derrière le mur nord, on n'en verrait que les troncs
     const n = objets.length;
     arbre(objets, i, j, d);
-    if (i === 0 || i === W - 1) for (const o of objets.slice(n)) couper(o, i === 0 ? 'ouest' : 'est');
+    if (i === 0 || i === W - 1) {
+      const coupes = objets.splice(n).map((o) => couper(o, i === 0 ? 'ouest' : 'est')).filter((o) => o.sw > 0);
+      objets.push(...coupes);
+    }
   }
   for (const [i, j] of BOIS) bloquees.add(`${i},${j}`);
 

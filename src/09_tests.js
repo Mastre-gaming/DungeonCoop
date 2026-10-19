@@ -255,7 +255,8 @@ export async function selfTest(t, game) {
   const caches = [...LIEUX.map((l) => [l.id, devant(l)]), ['feu', devantFeu()], ['apparition', [APPARITION[0] * T, APPARITION[1] * T]]]
     .filter(([, [x, y]]) => cache(x, y)).map(([id]) => id);
   t.eq(caches, [], 'devant chaque lieu, au feu et à l’apparition, aucune cime ne cache le héros');
-  t.ok(camp.objets.length > 300, `les bois et les emplacements sont posés (${camp.objets.length} pièces)`);
+  // (plus de 250 : la rangée d'arbres du haut, derrière le mur nord, est enlevée depuis les murs qui montent, 45_murs.js)
+  t.ok(camp.objets.length > 250, `les bois et les emplacements sont posés (${camp.objets.length} pièces)`);
   t.ok(document.querySelector('#tampon')?.textContent.includes(game.stamp), 'le tampon de version est à l’écran');
 
   testsMissions(t, game);

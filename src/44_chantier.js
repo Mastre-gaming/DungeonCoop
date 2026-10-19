@@ -202,7 +202,7 @@ export function selfTest(t) {
   // les trois murs finis : la base, le matériel et les ouvriers s'en vont ; le chef, son panneau et les pancartes restent
   missions.charger(Array.from({ length: 20 }, (_, k) => m(100 + k, 'camp', 'L', 'closed', '2026-11-01')));
   const base = pieces.find((p) => p.nom === 'cabane'), cintre = pieces.find((p) => p.nom === 'porte nord, cintre');
-  t.ok(fini('tout') && !base.sprite.mesh.visible && !cintre.sprite.mesh.visible && !collision.bloque(base.obstacle.x + 2, base.obstacle.y + 2), 'le chantier fini : la cabane et le cintre s’en vont, on passe là où ils étaient');
+  t.ok(fini('tout') && !base.sprite.mesh.visible && !cintre.sprite.mesh.visible && !collision.bloque(base.obstacle.x + base.obstacle.w - 4, base.obstacle.y + 2), 'le chantier fini : la cabane et le cintre s’en vont, on passe là où ils étaient');
   update(0);
   t.ok(ouvriers.every((o) => o === chef || !o.sprite.mesh.visible) && chef.sprite.mesh.visible && panneau.mesh.visible, 'les ouvriers s’en vont, le chef et son panneau restent');
   missions.charger(avant); update(0);
