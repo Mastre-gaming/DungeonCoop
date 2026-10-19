@@ -148,6 +148,7 @@ export const chuteEnclume = {
   },
 };
 
+// VERROUILLÉE (LOCKED.md, 19 oct : 10/10 du propriétaire) : ne pas modifier.
 export const interposition = {
   id: "interposition", nom: "Interposition", classe: "Baba Brisenclume · Rempart", n: 20, cles: [2, 5, 8, 9, 13],
   temps: ["0–1 : une flèche part vers l'allié (le mage, au milieu)", "1–5 : Baba se jette devant lui (la marche LPC, très vite)", "6–8 : il croise ses marteaux ; la flèche les frappe", "8 : un éclat orange, la flèche se brise en morceaux de bois ; c'est lui qui prend le coup", "9–19 : il tient sa garde, des étincelles retombent"],
