@@ -297,7 +297,8 @@ export function selfTest(t) {
   const ligne0 = p.ligne;
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyE' })); update(0); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyE' }));
   const dite = p.bulle.textContent;
-  t.ok(repliques(p.h.id).includes(dite) && p.ligne === ligne0 + 1 && p.dir === 'bas' && !p.route, `E devant ${p.h.nom} : il se tourne vers toi et dit « ${dite} »`);
+  if (visite) t.ok(invite.hidden && p.ligne === ligne0, 'en visite (la carte du dashboard), on ne leur parle pas : pas de « E : parler »');
+  else t.ok(repliques(p.h.id).includes(dite) && p.ligne === ligne0 + 1 && p.dir === 'bas' && !p.route, `E devant ${p.h.nom} : il se tourne vers toi et dit « ${dite} »`);
 
   // pris par un joueur : il disparaît, et revient quand on en prend un autre
   const inc = heros.incarne, planche = (x) => images[x.image] ?? images.heros;
