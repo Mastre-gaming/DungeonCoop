@@ -176,7 +176,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 4 | l'appentis des armes s'accole à l'atelier (arcs et lames dessous), le grand tas de bois derrière lui, la grande enclume, deux torches de part et d'autre du foyer ; une cour pavée |
 
   Le design : `design/camp/outils/armurerie.json` (aperçu `pieces/arm_apercu.png`). `armurerie_jeu.py` en tire la planche du jeu (`public/assets/lpc/armurerie.png` : mur, toit, gueule du foyer, poteau retourné, dalles) et les niveaux (`src/data/armurerie.json`), que dessine `src/14_lieux.js`.
-- **Le coin des récits, la table des cartes, l'atelier et les archives (proposition du 19 oct, v3, à choisir par le propriétaire) :** sur le modèle de l'armurerie, chaque niveau est une composition entière. Les demandes du propriétaire (19 oct) : **pas de bannières** ; **chaque lieu a sa propre silhouette** ; **des derniers niveaux imposants** ; **le sol pavé déborde et s'effiloche dans l'herbe** (des pierres semées de moins en moins serrées), jamais un bord carré ; la terre battue a un bord irrégulier. **Les emprises grandissent** (le plan du camp s'agrandira pour elles, il est en cours) : 12 × 9 cases pour le coin des récits, 9 × 7 pour les trois autres. Les grands bâtiments sont dessinés pixel par pixel dans la pierre blanche, le cuivre vert et l'or de la place et de la muraille : les lieux vont avec le centre du village.
+- **Le coin des récits, la table des cartes, l'atelier et les archives (v3, validés par le propriétaire le 19 oct ; le coin des récits noté 8/10) :** sur le modèle de l'armurerie, chaque niveau est une composition entière. Les demandes du propriétaire (19 oct) : **pas de bannières** ; **chaque lieu a sa propre silhouette** ; **des derniers niveaux imposants** ; **le sol pavé déborde et s'effiloche dans l'herbe** (des pierres semées de moins en moins serrées), jamais un bord carré ; la terre battue a un bord irrégulier. **Les emprises grandissent** (le plan du camp s'agrandira pour elles, il est en cours) : 12 × 9 cases pour le coin des récits, 9 × 7 pour les trois autres. Les grands bâtiments sont dessinés pixel par pixel dans la pierre blanche, le cuivre vert et l'or de la place et de la muraille : les lieux vont avec le centre du village.
 
   **Le coin des récits** (axe Histoire) : de l'arc de souches au **théâtre gréco-romain**, où des personnages viendront raconter des histoires. **Le lutrin et son grand livre sont toujours au milieu de la scène,** face au sud, dans l'axe du sentier.
 
@@ -460,12 +460,13 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 19 oct | Les héros se baladent sur toute la carte, chacun depuis un foyer qui a du sens, et interagissent avec le décor ; une colonne dorée quand quelqu'un apparaît ou disparaît (un ami qui rejoint ou part, un héros pris) ; E, c'est interagir | le propriétaire |
 | 19 oct | Les lieux n'ont pas de bannières ; chacun a sa propre silhouette ; les archives, une simple tente aujourd'hui, deviennent une bibliothèque | le propriétaire |
 | 19 oct | Le coin des récits devient, au dernier niveau, un théâtre gréco-romain où des personnages raconteront des histoires, le livre au milieu de la scène ; les derniers niveaux sont imposants ; les pavés débordent et s'effilochent dans l'herbe ; les emprises et le plan du camp peuvent grandir | le propriétaire |
+| 19 oct | Les niveaux v3 du coin des récits, de la table des cartes, de l'atelier et des archives sont validés ; le coin des récits est noté 8/10 | le propriétaire |
 
 | Question | Qui répond |
 |---|---|
 | Valider le feu de camp et ses 5 tailles (seuils 0, 10, 40, 100, 200 points) | le propriétaire |
 | Les 5 niveaux du tableau d'affichage sur le modèle du panneau-carte | Claude propose, le propriétaire choisit |
 | Les sept autres lieux, un par un, sur le modèle validé (porte T) | Claude propose, le propriétaire choisit |
-| Les niveaux du coin des récits, de la table des cartes, de l'atelier et des archives (v3, §4) ; ce qui fait grandir les archives ; la place des quatre lieux agrandis sur le plan | le propriétaire |
+| Ce qui fait grandir les archives ; la place des quatre lieux agrandis sur le plan du camp | le propriétaire |
 | Les noms définitifs des lieux et le texte de la bulle d'arrivée | le responsable de l'axe Histoire, quand il y en aura un |
 | Les crédits : un écran de crédits dans le jeu, à partir de `CREDITS.md` et des fichiers de crédits des packs | le propriétaire |
