@@ -1,11 +1,10 @@
 # Les objets-signes du coin des récits, de la table des cartes et de l'atelier (proposition du 19 oct), dessinés
 # pixel par pixel dans le style LPC, puisqu'aucune planche LPC n'a de lutrin, de chevalet ni de carte : contour sombre,
-# lumière en haut à gauche, la rampe de bois des planches LPC (comme le panneau-carte). Les bannières sont la bannière
-# blanche de « Medieval Village Decorations », teinte à la couleur de l'axe (content/axes.json).
+# lumière en haut à gauche, la rampe de bois des planches LPC (comme le panneau-carte).
 #   python objets_lieux.py      ->  ../pieces/objets_lieux.png (8 x 4 cases de 32 px)
-# Où est chaque objet (en cases, comme les autres planches) : voir OBJETS plus bas.
+# Où est chaque objet (en cases, comme les autres planches) : le « (x, y) » en tête de son dessin.
 from png import ecrire
-from sources import planche, piece
+from sources import piece
 
 T = 32
 W, H = 8 * T, 4 * T
@@ -215,20 +214,6 @@ def palette(cx, cy):
         rect(cx + dx, cy + dy, cx + dx + 1, cy + dy + 1, c)
     ligne(cx + 2, cy + 6, cx + 8, cy - 4, BOIS[1])
 
-# --- (0..2, 2), 1 x 2 : la bannière blanche LPC, teinte à la couleur de l'axe ---
-def banniere(ox, oy, couleur):
-    _, _, src = planche('decorations-medieval')
-    r0, g0, b0, _ = hexa(couleur)
-    for y in range(2 * T):
-        for x in range(T):
-            r, g, b, a = src[38 * T + y][0 * T + x]
-            if not a: continue
-            if max(r, g, b) - min(r, g, b) < 28 and max(r, g, b) > 120:      # la toile (presque blanche) : teinte
-                l = (r + g + b) / 3 / 255
-                c = tuple(min(255, int(v * (0.35 + 0.85 * l))) for v in (r0, g0, b0)) + (a,)
-            else: c = (r, g, b, a)
-            p(ox + x, oy + y, c)
-
 lutrin(0, 0)
 chevalet(1 * T, 0, tableau)
 carte_depliee(2 * T, 0)
@@ -239,9 +224,6 @@ livres(7 * T, 0)
 enseigne(2 * T, T, plume)
 enseigne(3 * T, T, rose_vents)
 enseigne(4 * T, T, palette)
-banniere(0, 2 * T, '#8e5cc2')          # axe: histoire
-banniere(1 * T, 2 * T, '#2f7d6d')      # axe: salles
-banniere(2 * T, 2 * T, '#c25a8a')      # axe: pixel art
 chevalet(3 * T, 2 * T, carte_murale)
 ecrire(piece('objets_lieux'), W, H, img)
 print(piece('objets_lieux'), W, H)

@@ -1,6 +1,6 @@
 {
  "lieu": "atelier",
- "_lisez_moi": "Les 5 niveaux de l'atelier (axe Pixel art), proposition du 19 oct sur le modèle de l'armurerie : le chevalet en plein air, puis l'abri du peintre, puis l'atelier aux grandes fenêtres. Le signe : le chevalet et sa toile ; à côté, les étoffes teintes qui sèchent. Une pièce = [planche, sx, sy, w, h, dx, dy] en cases ; « objets » = objets_lieux.png.",
+ "_lisez_moi": "L'atelier (axe Pixel art) : la seule maison aux grandes fenêtres, pleine de couleurs : chevalets, pots, étoffes teintes qui sèchent, cuves de teinture. Le signe : le chevalet et sa toile.",
  "niveaux": [
   {
    "nom": "un emplacement",
@@ -88,15 +88,6 @@
     ]
    ],
    "pieces": [
-    [
-     "objets",
-     2,
-     2,
-     1,
-     2,
-     5.1,
-     0.6
-    ],
     [
      "decorations-medieval",
      6,
@@ -199,13 +190,22 @@
    ],
    "pieces": [
     [
-     "objets",
-     2,
+     "decorations-medieval",
+     6,
+     6,
+     3,
+     1,
+     -1.1,
+     1.0
+    ],
+    [
+     "decorations-medieval",
+     9,
+     6,
      2,
      1,
-     2,
-     0.2,
-     0.8
+     -0.6000000000000001,
+     1.0
     ],
     [
      "cottage",
@@ -292,7 +292,7 @@
    ]
   },
   {
-   "nom": "le grand atelier des peintres",
+   "nom": "le grand atelier des teinturiers",
    "dalles": [
     [
      -1,
@@ -393,13 +393,22 @@
    ],
    "pieces": [
     [
-     "objets",
-     2,
+     "decorations-medieval",
+     6,
+     6,
+     3,
+     1,
+     -1.1,
+     0.9
+    ],
+    [
+     "decorations-medieval",
+     9,
+     6,
      2,
      1,
-     2,
-     0.3,
-     0.8
+     -0.6000000000000001,
+     0.9
     ],
     [
      "cottage",
@@ -466,15 +475,6 @@
     ],
     [
      "decorations-medieval",
-     4,
-     9,
-     1,
-     2,
-     -0.8,
-     2.5
-    ],
-    [
-     "decorations-medieval",
      11,
      0,
      1,
@@ -507,8 +507,8 @@
      0,
      1,
      2,
-     0.15,
-     2.6
+     0.9,
+     3.05
     ],
     [
      "objets",
@@ -518,6 +518,15 @@
      1,
      4.3,
      3.9
+    ],
+    [
+     "decorations-medieval",
+     4,
+     9,
+     1,
+     2,
+     6.3,
+     0.5
     ]
    ]
   }
