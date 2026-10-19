@@ -96,8 +96,14 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .capacite.indispo .cap-icone, .capacite.indispo .cap-texte { opacity: .4; filter: grayscale(.6); }
 
 /* la fiche de la capacité (#85) : ce qu'elle fait, sans cible */
-.fiche-capacite { width: 460px; max-width: 100%; box-sizing: border-box; padding: 5px 8px 6px; display: flex; flex-direction: column; gap: 4px; animation: monte .12s ease-out;
+/* toujours la même hauteur, quelle que soit la capacité : trois rangées d’une ligne (la tête, les résultats, les effets) ;
+   une capacité sans dégâts monte ses effets d’une rangée */
+.fiche-capacite { width: 480px; max-width: 100%; height: 99px; box-sizing: border-box; padding: 5px 8px 6px; display: grid; grid-template-rows: 26px 20px 18px; align-content: start; gap: 4px; animation: monte .12s ease-out;
   border-width: 8px; border-image: var(--cadre-fin) 20 / 20px / 4px repeat; }
+.fiche-capacite .fc-tete, .fiche-capacite .fc-carac, .fiche-capacite .fc-effets { flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+.fiche-capacite .fc-tete h2 { white-space: nowrap; }
+.fiche-capacite .effet { white-space: nowrap; }
+.effet.refus { background: #3a1414; box-shadow: inset 0 0 0 1px #a8463a; color: #ff8a7a; }
 .fiche-capacite h2 { font-size: 15px; }
 .fiche-capacite .puce { font-size: 11px; padding: 1px 5px; }
 .fiche-capacite .effet { font-size: 11.5px; padding: 2px 6px; }
@@ -116,8 +122,6 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .fc-res.eraflure .fc-nom, .cc-ligne.eraflure .cc-nom { color: #f3c48a; }
 .fc-res.touche .fc-nom, .cc-ligne.touche .cc-nom { color: #9fe28f; }
 .fc-res.critique .fc-nom, .cc-ligne.critique .cc-nom { color: #ffd35a; }
-.fc-aide { margin: 0; font: 400 11px var(--texte); color: #e9d3ad; }
-.fc-aide:empty { display: none; }
 
 /* la carte de la cible survolée */
 .carte-cible { position: fixed; z-index: 13; pointer-events: none; width: 248px; box-sizing: border-box; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }

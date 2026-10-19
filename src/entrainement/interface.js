@@ -368,23 +368,30 @@ function pourquoiPas(h, cap) {
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
   return 'Pas maintenant.';
 }
+// la tête tient sur une ligne : sans « Sans coût », et la poussée (ou l’attraction) passe aux effets, où elle est souvent déjà
+const puces = (cap, ressource) => caracteristiques(cap, ressource).filter((t) => t !== 'Sans coût' && !/^(Pousse|Attire) de /.test(t));
+function effetsFiche(cap) {
+  const liste = effets(cap).map((e) => (/^[\d,]+ m$/.test(e.texte) ? { ...e, texte: `Pousse de ${e.texte}` } : e));
+  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${cap.type === 'attraction' ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
+  return liste;
+}
 function dessinerFiche(h) {
   const id = ui.capSurvol ?? ui.cap, cap = id ? CAPACITES[id] : null;
   if (!cap || !h || combat.S.phase !== 'heros' || vue.occupe()) { dom.ficheCap.hidden = true; return; }
-  const r = resultats(cap), ok = combat.peutUtiliser(h, cap), k = HEROS[h.type].capacites.indexOf(id) + 1;
+  const r = resultats(cap), ok = combat.peutUtiliser(h, cap);
   dom.ficheCap.dataset.capacite = id;
   dom.ficheCap.replaceChildren(
     el('header', { class: 'fc-tete' },
       el('img', { class: 'fc-icone', src: icone(id), alt: '' }),
       el('h2', {}, cap.nom),
       el('span', { class: `tampon ${cap.slot}` }, cap.slot === 'action' ? 'ACTION' : 'BONUS'),
-      el('span', { class: 'fc-carac' }, caracteristiques(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
+      el('span', { class: 'fc-carac' }, puces(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
     r ? el('div', { class: `fc-resultats n${r.length}` }, r.map((x) => el('div', { class: `fc-res ${x.g}` },
       el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : '',
-    el('div', { class: 'fc-effets' }, effets(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))),
-    el('p', { class: 'fc-aide' }, !ok ? pourquoiPas(h, cap)
-      : ui.cap === id ? (cap.type === 'zone' ? 'Clique là où poser la zone.' : '')
-        : `${k ? `Touche ${k} ou clic` : 'Clic'} pour la choisir.${r && !cap.auto ? ` Contre un coriace (Brute ennemie, Chef), l’éraflure va jusqu’à d20 ${12 - cap.mod}.` : ''}`));
+    // pas d’aide en dessous (la touche est sur le bouton, les chances contre un coriace dans la carte de la cible) : la fiche
+    // garde la même hauteur ; quand la capacité est indisponible, la raison passe en tête des effets
+    el('div', { class: 'fc-effets' }, ok ? null : el('span', { class: 'effet refus' }, pourquoiPas(h, cap)),
+      effetsFiche(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))));
   dom.ficheCap.hidden = false;
 }
 
