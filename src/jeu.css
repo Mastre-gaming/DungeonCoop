@@ -32,6 +32,9 @@
 .bulle-perso[hidden] { display: none; }
 /* Le crieur du tableau d'affichage : ses nouvelles (les derniers push) tiennent sur deux ou trois lignes */
 .bulle-crieur { white-space: normal; width: max-content; max-width: min(320px, calc(100vw - 24px)); text-align: center; line-height: 1.25; }
+/* Le chef de chantier : où en est chaque mur, une ligne par mur */
+.bulle-chantier { white-space: normal; width: max-content; max-width: min(360px, calc(100vw - 24px)); line-height: 1.3; }
+.bulle-chantier b { color: #96461e; }
 
 /* Les noms au-dessus des héros */
 #noms { position: fixed; inset: 0; pointer-events: none; z-index: 4; overflow: hidden; }

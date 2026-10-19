@@ -150,3 +150,34 @@
   .colonne-gauche { bottom: 90px; width: calc(100vw - 28px); }
 }
 @media (prefers-reduced-motion: reduce) { .banniere-campagne:hover .titre-campagne { color: var(--or); } }
+
+/* --- Le choix du héros, avant d'entrer au camp (41_choix_heros.js) ------------------------------------------------------ */
+.cadre-heros .medaillon { cursor: pointer; }
+.cadre-heros .medaillon:hover, .cadre-heros .medaillon:focus-visible { filter: drop-shadow(0 4px 0 rgba(0, 0, 0, .45)) brightness(1.12); outline: none; }
+.choix-heros { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; padding: 16px; box-sizing: border-box; background: rgba(14, 9, 6, .72); }
+.choix-heros[hidden] { display: none; }
+.choix-cadre { width: min(760px, 100%); max-height: calc(100vh - 32px); box-sizing: border-box; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; gap: 12px; padding: 8px 10px 10px; color: var(--creme); }
+.choix-cadre h1 { margin: 0; text-align: center; font: 700 24px/30px var(--titre); color: var(--or); letter-spacing: .08em; text-transform: uppercase; text-shadow: var(--contour-or); }
+.choix-onglets { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 3px solid var(--laiton-fonce); padding-bottom: 6px; }
+.choix-onglet { font: 500 15px/18px var(--titre); color: var(--laiton-clair); background: var(--bois-creux); border: 2px solid var(--bois-nuit); box-shadow: inset 0 0 0 1px var(--laiton-fonce);
+  padding: 6px 12px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.choix-onglet .compte { font-size: 12px; color: var(--creme); background: var(--bois-nuit); padding: 0 6px; border-radius: 8px; }
+.choix-onglet[aria-selected="true"] { color: var(--bois-nuit); background: var(--or-jauge); box-shadow: inset 0 2px 0 var(--or), inset 0 -3px 0 var(--laiton-fonce); }
+.choix-onglet[aria-selected="true"] .compte { color: var(--or); }
+.choix-onglet:focus-visible, .choix-carte:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+.choix-corps { overflow: auto; background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); border: 3px solid var(--bois-nuit); box-shadow: inset 0 0 0 2px var(--laiton-fonce); padding: 12px; min-height: 180px; }
+.choix-grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.choix-carte { display: grid; justify-items: center; gap: 2px; padding: 6px 4px 8px; cursor: pointer; color: var(--encre);
+  background: rgba(255, 255, 255, .35); border: 2px solid var(--bois-clair); box-shadow: 0 3px 0 rgba(0, 0, 0, .25); font-family: var(--titre); }
+.choix-carte:hover { background: rgba(255, 255, 255, .6); }
+.choix-carte[aria-selected="true"] { background: #fff7d6; border-color: var(--laiton-fonce); box-shadow: 0 0 0 3px var(--or), 0 3px 0 rgba(0, 0, 0, .25); }
+.choix-carte .apercu { width: 96px; height: 96px; image-rendering: pixelated; }
+.choix-carte .nom { font: 700 14px/16px var(--titre); text-align: center; }
+.choix-carte .role { font: 500 12px/14px var(--titre); color: var(--bois-clair); }
+.choix-vide { margin: 24px 0; text-align: center; font: 500 15px/20px var(--titre); color: var(--encre); }
+.choix-pied { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.choix-detail { margin: 0; min-width: 0; font: 500 14px/18px var(--titre); color: var(--creme); }
+.choix-detail strong { color: var(--or); }
+.choix-detail .phrase { display: block; font: 400 13px/17px var(--texte); color: var(--laiton-clair); }
+.choix-pied .bouton-jeu { flex: none; font-size: 1.1rem; padding: 8px 18px; }
+@media (max-width: 520px) { .choix-pied { flex-direction: column; align-items: stretch; } .choix-grille { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } .choix-carte .apercu { width: 72px; height: 72px; } }

@@ -5,10 +5,10 @@
 // Connecté à GitHub (27_github.js, la même connexion que le dashboard), on y gère les missions comme dans le tableau de
 // travail : créer, modifier (titre, description, lieu, taille, qui), prendre, lâcher, « Fait », rouvrir, supprimer (les
 // admins du repo ; sinon « Fermer (abandonnée) »). Tout part dans GitHub : le tableau du dashboard suit tout seul.
-// Deux onglets : « Missions » (le panneau ci-dessus) et « Plans » (41_plans.js : les plans du jeu, mission #157).
+// Deux onglets : « Missions » (le panneau ci-dessus) et « Plans » (45_plans.js : les plans du jeu, mission #157).
 import './panneau.css';
 import './plans.css';
-import { creerPlans, ISSUE as PLANS_ISSUE } from './41_plans.js';
+import { creerPlans, ISSUE as PLANS_ISSUE } from './45_plans.js';
 import { dessinerPanneau } from './03_carte.js';
 import { LIEUX_AXES, SEUILS, POINTS, DASHBOARD, DEPOT, URGENCES, etatDe, lieuDe, tailleDe, urgenceDe } from './10_missions.js';
 
@@ -183,7 +183,7 @@ function dessiner() {
   dessinerApercu();
 }
 
-// L'onglet Plans : la même tête, les plans du jeu dessous (41_plans.js).
+// L'onglet Plans : la même tête, les plans du jeu dessous (45_plans.js).
 function dessinerPlans() {
   const res = missions.resume();
   decor.zoneVisee = null;

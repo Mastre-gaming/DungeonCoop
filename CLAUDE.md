@@ -21,7 +21,7 @@ The two files imported above are the owner's standing calls and what failed befo
 - **Only what lands on `main` counts** for the builders' renown. The workflow `missions-auto.yml` runs on every push to `main`: it closes the missions the PR names, assigns them to the author and sizes them if nobody did; a PR or direct push with no mission becomes a mission, closed, sized by lines changed (S under 150, M under 600, L above).
 
 ## The plans follow the design
-The missions board has a « Plans » tab (`src/41_plans.js`, mission #157): the game's plans as sheets, for every player. **A design `.md` that changes updates its sheet in `content/plans/` in the same PR** (the format is at the top of `src/41_plans.js`). Sheets edited in the camp are comments on #157 and win over the repo's: read them there first.
+The missions board has a « Plans » tab (`src/45_plans.js`, mission #157): the game's plans as sheets, for every player. **A design `.md` that changes updates its sheet in `content/plans/` in the same PR** (the format is at the top of `src/45_plans.js`). Sheets edited in the camp are comments on #157 and win over the repo's: read them there first.
 
 ## Every new asset goes into the Archives du camp
 The camp's archives (`archives.html`, the tent west of the fire) show every asset of the project. **A new character, class, spell or animation is not done until it has its card there, in the same PR.**

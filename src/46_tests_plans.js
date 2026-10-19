@@ -1,7 +1,7 @@
-// Les vérifications de l'onglet « Plans » du tableau des missions (41_plans.js, mission #157) : le format des fiches,
+// Les vérifications de l'onglet « Plans » du tableau des missions (45_plans.js, mission #157) : le format des fiches,
 // les sceaux lus dans les missions, la fusion des fiches du dépôt et des commentaires de l'équipe, puis l'onglet lui-même
 // avec un faux GitHub (lire, modifier, créer, retirer, déplacer, un conflit). Appelées depuis 09_tests.js.
-import { lireFiche, references, etatDe, fusionner, lireEntete, ecrireEntete, chosesDe, SORTES, ISSUE } from './41_plans.js';
+import { lireFiche, references, etatDe, fusionner, lireEntete, ecrireEntete, chosesDe, SORTES, ISSUE } from './45_plans.js';
 
 const JETON = 'ghu_jeton-des-plans';
 const CHEMIN = `/repos/Mastre-gaming/DungeonCoop/issues/${ISSUE}/comments`;

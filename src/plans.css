@@ -1,4 +1,4 @@
-/* L'onglet « Plans » du tableau des missions (41_plans.js), et les onglets du panneau. Les jetons de DESIGN.fr.md. */
+/* L'onglet « Plans » du tableau des missions (45_plans.js), et les onglets du panneau. Les jetons de DESIGN.fr.md. */
 
 /* Les onglets, en tête du panneau : deux plaques de bois ; l'ouverte est en parchemin */
 .onglets { display: inline-flex; gap: 4px; margin-right: auto; }
