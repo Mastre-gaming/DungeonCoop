@@ -104,7 +104,9 @@ const centreMaille = (k) => { const [i, j] = k.split(',').map(Number); return { 
 const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
-export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now }) {
+// ennemis : le groupe d'une salle du donjon, [{ id, type, x, y }] (type : une clé d'ENNEMIS) ; sans lui, les 7 du kit D1
+// placés par departs.ennemis. Victoire : le chef vaincu s'il y en a un (les autres s'enfuient), sinon tous les ennemis.
+export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -112,7 +114,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
   const S = {
     mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
-    heros: PLACES.slice(), equipe: equipe.slice(),
+    heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
     stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [] },
   };
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
@@ -122,9 +124,11 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: h.pv, pvMax: h.pv, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: 1 }));
   });
   const TYPE = { s: 'sbire', a: 'archer', br: 'brt', chef: 'chef' };
-  for (const id of ORDRE_ENNEMIS) {
-    const type = TYPE[id] ?? TYPE[id[0]], df = ENNEMIS[type], [x, y] = departs.ennemis[id];
+  const groupe = ennemis ?? ORDRE_ENNEMIS.map((id) => ({ id, type: TYPE[id] ?? TYPE[id[0]], x: departs.ennemis[id][0], y: departs.ennemis[id][1] }));
+  for (const { id, type, x, y } of groupe) {
+    const df = ENNEMIS[type];
     const n = id.match(/\d$/)?.[0];
+    S.ennemis.push(id);
     S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: df.pv, pvMax: df.pv, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace }));
   }
   tonneaux.forEach(([x, y], k) => S.tonneaux.push({ id: `t${k}`, x, y }));
@@ -198,7 +202,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
     } else {
       u.mort = true; ev({ type: 'ko', id: u.id });
       log(u.type === 'chef' ? 'Le chef est vaincu ! Les autres s’enfuient.' : `${u.nom} est vaincu.`, 'bon');
-      if (u.type === 'chef') finir('victoire');
+      if (u.type === 'chef' || !ennemisVivants().length) finir('victoire');
     }
   }
   function finir(r) {
@@ -474,7 +478,7 @@ export function creerCombat({ trame, salle, departs, tonneaux = [], flaque = nul
 
   // --- Les tours ------------------------------------------------------------------------------------------------
   function groupes() {
-    if (S.mode === 'equipe') return [{ camp: 'h', ids: S.heros.slice() }, { camp: 'e', ids: ORDRE_ENNEMIS.slice() }];
+    if (S.mode === 'equipe') return [{ camp: 'h', ids: S.heros.slice() }, { camp: 'e', ids: S.ennemis.slice() }];
     const gs = [];
     for (const id of S.ordre) {
       const u = U(id); if (!u) continue;
