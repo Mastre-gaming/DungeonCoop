@@ -14,7 +14,7 @@ export const always = true;
 const RETOUR_CAMP = './index.html?spot=classes';
 const CLE_CLASSES = 'dungeoncoop:classes', CLE_COURANTE = 'dungeoncoop:classe-courante', CLE_CADRE = 'dungeoncoop:cadre';
 // les planches LPC déjà dans le jeu, pour un portrait d'essai (le vrai look vient du générateur LPC, lpc-sprite-mods)
-export const BASES = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde'];
+export const BASES = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'baba-brisenclume'];
 const ARCHETYPES = ['Fighter', 'Support', 'Ranged', 'Mage'];
 const ONGLETS = [
   ['identite', 'Identité'], ['caracs', 'Caractéristiques'], ['points', 'Points de classe'], ['capacites', 'Capacités'],
@@ -277,7 +277,7 @@ function look() {
       champ('La touche qui la rend unique', texte(L.touche, (v) => changer((c) => { c.look.touche = v; }), { placeholder: 'des cornes, une cicatrice, une crête, un emblème' })),
       champ('Le lien du générateur LPC', texte(L.lien, (v) => changer((c) => { c.look.lien = v; }), { placeholder: 'https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#…' }),
         el('a', { href: 'https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/', target: '_blank', rel: 'noopener' }, 'ouvrir le générateur'))),
-    champ('Planche d’essai pour l’aperçu', choix(L.base, [['', '— aucune —'], ...BASES.map((b) => [b, b])], (v) => changer((c) => { c.look.base = v; }, true), { id: 'base' }), 'une des 8 planches déjà dans le jeu, en attendant la tienne'),
+    champ('Planche d’essai pour l’aperçu', choix(L.base, [['', '— aucune —'], ...BASES.map((b) => [b, b])], (v) => changer((c) => { c.look.base = v; }, true), { id: 'base' }), 'une des planches déjà dans le jeu, en attendant la tienne'),
     L.base ? el('div', { class: 'portrait-grand' }, portrait(L.base, 128)) : null,
   ];
 }

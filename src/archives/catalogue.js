@@ -41,7 +41,7 @@ function personnages() {
   for (const [id, p] of Object.entries(PERSOS)) {
     const ennemi = ROLE_ENNEMI[id], H = HEROS[id], E = ENNEMIS[typeEnnemi[id] ?? id];
     liste.push({
-      id, nom: p.nom, groupe: ennemi ? 'Les ennemis du terrain' : H?.essai ? 'Les classes d’essai' : 'Les héros du kit D1',
+      id, nom: p.nom, groupe: ennemi ? 'Les ennemis du terrain' : H?.essai ? 'Les classes d’essai' : H ? 'Les héros du kit D1' : 'Les classes de l’armurerie',
       planche: `${LPC}entrainement/${id}.png`, format: 'lpc', lien: p.lien, attaque: p.attaque, credits: `${LPC.replace('lpc/', '')}credits/entrainement-${id}.txt`,
       anims: ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse', ...(p.attaque ? ['grande'] : [])],
       texte: ennemi ? `${ennemi} · ${E ? `${E.pv} PV · ${E.habitude}` : ''}` : H ? `${H.role} · ${H.pv} PV` : '',
