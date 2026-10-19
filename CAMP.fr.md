@@ -176,6 +176,51 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 4 | l'appentis des armes s'accole à l'atelier (arcs et lames dessous), le grand tas de bois derrière lui, la grande enclume, deux torches de part et d'autre du foyer ; une cour pavée |
 
   Le design : `design/camp/outils/armurerie.json` (aperçu `pieces/arm_apercu.png`). `armurerie_jeu.py` en tire la planche du jeu (`public/assets/lpc/armurerie.png` : mur, toit, gueule du foyer, poteau retourné, dalles) et les niveaux (`src/data/armurerie.json`), que dessine `src/14_lieux.js`.
+- **Le coin des récits, la table des cartes, l'atelier et les archives (v3, validés par le propriétaire le 19 oct ; le coin des récits noté 8/10) :** sur le modèle de l'armurerie, chaque niveau est une composition entière. Les demandes du propriétaire (19 oct) : **pas de bannières** ; **chaque lieu a sa propre silhouette** ; **des derniers niveaux imposants** ; **le sol pavé déborde et s'effiloche dans l'herbe** (des pierres semées de moins en moins serrées), jamais un bord carré ; la terre battue a un bord irrégulier. **Les emprises grandissent** (le plan du camp s'agrandira pour elles, il est en cours) : 12 × 9 cases pour le coin des récits, 9 × 7 pour les trois autres. Les grands bâtiments sont dessinés pixel par pixel dans la pierre blanche, le cuivre vert et l'or de la place et de la muraille : les lieux vont avec le centre du village.
+
+  **Le coin des récits** (axe Histoire) : de l'arc de souches au **théâtre gréco-romain**, où des personnages viendront raconter des histoires. **Le lutrin et son grand livre sont toujours au milieu de la scène,** face au sud, dans l'axe du sentier.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 · le cercle du conteur | le lutrin sur une pierre plate, au milieu ; quatre souches en arc devant lui, un petit feu, les livres ; une ronde de terre battue |
+  | 2 · l'estrade du conteur | une estrade de bois et son rideau rouge entre deux poteaux, deux lanternes, le lutrin au milieu ; deux rangs de bancs, une allée au milieu |
+  | 3 · le petit théâtre | une scène de pierre, son mur à colonnes, ses niches et ses statues, un petit fronton ; l'orchestre en demi-cercle, trois rangs de gradins et leur escalier ; deux braseros ; les pavés |
+  | 4 · le théâtre des récits | le grand mur de scène à deux étages (colonnes, niches et statues, le livre doré au milieu, le fronton) ; six rangs de gradins et trois escaliers ; le mur extérieur à arcades et sa grande arche d'entrée, au bout du sentier ; deux braseros, deux réverbères, deux buis |
+
+  **La table des cartes** (axe Salles et carte) : le camp d'une expédition, jusqu'à l'observatoire. Le signe : la table et sa carte dépliée.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 · la table de l'éclaireur | la table et sa carte, le panier de cartes roulées, un tabouret, un poteau indicateur |
+  | 2 · l'auvent du cartographe | la table sous un auvent rayé vert, un globe sur son pied, le panier, le poteau ; les premiers pavés au seuil |
+  | 3 · la roulotte des explorateurs | une roulotte de bois à roues ; la table et sa carte à côté, une carte du pays sur un chevalet, le poteau |
+  | 4 · l'observatoire des cartographes | une tour ronde de pierre blanche, son parapet crénelé, ses meurtrières éclairées, et en haut la grande lunette de laiton et une sphère armillaire ; la roulotte à son pied, la grande table et la carte du pays, le globe, deux réverbères |
+
+  **L'atelier** (axe Pixel art) : du chevalet en plein air à **la halle de verre des peintres**. Le signe : le chevalet et sa toile.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 · le chevalet en plein air | le chevalet, un tabouret, les pots de couleur, l'étendoir des étoffes teintes |
+  | 2 · l'abri du peintre | le chevalet sous un auvent rayé orange, l'étendoir, les pots ; les premiers pavés au seuil |
+  | 3 · l'atelier du peintre | une maison à colombage blanc, toit de chaume doré, deux grandes fenêtres à meneaux ; l'enseigne à la palette, l'étendoir, un chevalet dehors |
+  | 4 · la halle des peintres | une halle blanche à poteaux de bois, son grand toit de verre, deux hautes fenêtres cintrées, une porte double vitrée ; à gauche l'échafaudage, son échelle et une statue en cours de taille ; à droite le grand chevalet et sa toile (le camp au couchant) ; l'étendoir, les pots |
+
+  **Les archives** : de la simple tente d'aujourd'hui (`src/27_archives.js`) à **la grande bibliothèque** (demande du propriétaire, 19 oct). On la reconnaît à ses hautes fenêtres où l'on voit les rayonnages pleins de livres, et à sa coupole. Ce n'est pas un des 8 lieux : ce qui la fait grandir reste à choisir (proposé : le nombre de cartes des archives, puisque chaque nouvel asset y a la sienne).
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 · la petite tente (aujourd'hui) | la tente pointue à l'entrée ouverte, la potence et l'enseigne au livre |
+  | 1 · la tente et ses coffres | la tente, un coffre, le lutrin, une pile de livres ; les premiers pavés au seuil |
+  | 2 · la grande tente des archives | la grande tente (celle qu'on voit de l'intérieur), son entrée, deux lanternes, le coffre, les livres |
+  | 3 · la bibliothèque | un bâtiment de pierre blanche au toit d'ardoise, deux hautes fenêtres cintrées où l'on voit les rayonnages et leurs livres, la porte de bois sous le livre doré, trois marches ; un lutrin, deux réverbères |
+  | 4 · la grande bibliothèque | une rotonde à colonnes et sa coupole de cuivre vert, sa lanterne et son épi doré ; entre les colonnes, des fenêtres pleines de livres ; deux ailes au toit d'ardoise ; le grand escalier, deux statues, deux réverbères |
+
+  La tente d'aujourd'hui n'a pas d'emprise réservée : avant d'entrer dans le jeu, la place des archives (et celle des trois autres lieux, plus grands qu'avant) est à revoir sur le plan du camp (`src/01_plan.js`, `design/camp/plans/verifier.py`).
+
+  Le design : `design/camp/outils/lieux_niveaux.py` dessine les 20 niveaux (aperçus `pieces/recits_apercu.png`, `cartes_apercu.png`, `atelier_apercu.png`, `archives_apercu.png`). Les grands bâtiments sont dans `lieux_batiments.py`, le sol (herbe, terre battue, pavés qui s'effilochent) dans `lieux_dessin.py` ; les premiers niveaux des cartes, de l'atelier et des archives sont des pièces LPC (`lieux_specs.py`), et les objets-signes que LPC n'a pas sont dessinés par `objets_lieux.py`. Pas encore dans le jeu : une fois choisis, ils y entrent comme l'armurerie (une planche du jeu et un `src/data/<lieu>.json`).
 - **Premier lieu dessiné en pièces LPC :** le tableau d'affichage, du niveau 0 au niveau 4 (corde et pancarte, panneau de parchemins, panneaux couverts et enseigne, kiosque à auvent rayé, cabane avec lanterne et bannière). Depuis, son apparence dans le décor est devenue le panneau-carte (plus bas) ; ses niveaux sont à redessiner sur ce modèle.
 
 ### Le feu de camp
@@ -413,11 +458,15 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 19 oct | Un menu de choix du héros avant d'entrer au camp : le set de base, puis un onglet par joueur avec seulement ses héros ; le médaillon suit le héros choisi ; Baba incarné n'est plus à la forge | le propriétaire |
 | 19 oct | Les héros qu'on peut incarner se promènent dans le camp et parlent (E), chacun avec ses répliques ; un héros pris par un joueur (moi ou un ami) disparaît pour lui laisser la place | le propriétaire |
 | 19 oct | Les héros se baladent sur toute la carte, chacun depuis un foyer qui a du sens, et interagissent avec le décor ; une colonne dorée quand quelqu'un apparaît ou disparaît (un ami qui rejoint ou part, un héros pris) ; E, c'est interagir | le propriétaire |
+| 19 oct | Les lieux n'ont pas de bannières ; chacun a sa propre silhouette ; les archives, une simple tente aujourd'hui, deviennent une bibliothèque | le propriétaire |
+| 19 oct | Le coin des récits devient, au dernier niveau, un théâtre gréco-romain où des personnages raconteront des histoires, le livre au milieu de la scène ; les derniers niveaux sont imposants ; les pavés débordent et s'effilochent dans l'herbe ; les emprises et le plan du camp peuvent grandir | le propriétaire |
+| 19 oct | Les niveaux v3 du coin des récits, de la table des cartes, de l'atelier et des archives sont validés ; le coin des récits est noté 8/10 | le propriétaire |
 
 | Question | Qui répond |
 |---|---|
 | Valider le feu de camp et ses 5 tailles (seuils 0, 10, 40, 100, 200 points) | le propriétaire |
 | Les 5 niveaux du tableau d'affichage sur le modèle du panneau-carte | Claude propose, le propriétaire choisit |
 | Les sept autres lieux, un par un, sur le modèle validé (porte T) | Claude propose, le propriétaire choisit |
+| Ce qui fait grandir les archives ; la place des quatre lieux agrandis sur le plan du camp | le propriétaire |
 | Les noms définitifs des lieux et le texte de la bulle d'arrivée | le responsable de l'axe Histoire, quand il y en aura un |
 | Les crédits : un écran de crédits dans le jeu, à partir de `CREDITS.md` et des fichiers de crédits des packs | le propriétaire |
