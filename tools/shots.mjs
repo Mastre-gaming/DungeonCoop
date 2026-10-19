@@ -62,13 +62,24 @@ export async function openPage(url, { size = '1600x900', software = false, timeo
       ...(process.env.CI && process.platform === 'linux' ? ['--no-sandbox', '--disable-dev-shm-usage'] : []),
       'about:blank',
     ], { stdio: ['ignore', 'ignore', 'pipe'] });
-    // The browser says where to reach it on its error output.
+    // The browser says where to reach it on its error output, and in a DevToolsActivePort file in its profile.
+    // (Dungeon Co-op) Edge on Windows, with an update waiting for a restart, hands over to a second process and exits
+    // at once, saying nothing: the file is then the only way to find it, so an exit only fails if no file comes.
     return new Promise((resolve, reject) => {
-      let text = '';
-      const fail = (why) => { clearTimeout(timer); reject(new Error(`${why}${text.trim() ? `; it said:\n${text.trim().split('\n').slice(-15).join('\n')}` : ' (it said nothing)'}`)); };
+      let text = '', parti = 0;
+      const fin = (f) => (...a) => { clearTimeout(timer); clearInterval(sonde); f(...a); };
+      const ok = fin(resolve);
+      const fail = fin((why) => reject(new Error(`${why}${text.trim() ? `; it said:\n${text.trim().split('\n').slice(-15).join('\n')}` : ' (it said nothing)'}`)));
       const timer = setTimeout(() => fail('The browser did not start'), timeout);
-      child.stderr.on('data', (d) => { text += d; const m = /DevTools listening on (ws:\/\/\S+)/.exec(text); if (m) { clearTimeout(timer); resolve(m[1]); } });
-      child.on('exit', () => fail('The browser closed before it could be reached'));
+      const sonde = setInterval(() => {
+        try {
+          const [port, chemin] = fs.readFileSync(path.join(profile, 'DevToolsActivePort'), 'utf8').split('\n');
+          if (port && chemin) return ok(`ws://127.0.0.1:${port.trim()}${chemin.trim()}`);
+        } catch {}
+        if (parti && Date.now() - parti > 5000) fail('The browser closed before it could be reached');
+      }, 100);
+      child.stderr.on('data', (d) => { text += d; const m = /DevTools listening on (ws:\/\/\S+)/.exec(text); if (m) ok(m[1]); });
+      child.on('exit', () => { parti = Date.now(); });
     });
   };
   // (Dungeon Co-op) Sur les machines de GitHub, Chrome reste parfois figé au démarrage : on le relance, deux fois au plus.

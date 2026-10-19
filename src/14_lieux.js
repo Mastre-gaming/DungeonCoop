@@ -92,6 +92,9 @@ export const COMPLETS = { classes: ARMURERIE.niveaux };
 // Le niveau d'office (demandes du propriétaire, 18 et 19 oct, ramené avant la pierre le 19) : l'armurerie est livrée au
 // niveau 2, la tente et son abri de forge ; le tableau d'affichage au niveau 2, ses premiers pavés.
 export const PLANCHERS = { classes: 2, interface: 2 };
+// Le plafond (demande du propriétaire, 19 oct) : le tableau d'affichage ne dépasse pas le niveau 2 pour l'instant, même
+// avec des missions rentrées (elles comptent toujours ; le niveau monte quand on lève le plafond). dbg.lieux.forcer passe outre.
+export const PLAFONDS = { interface: 2 };
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
@@ -153,6 +156,7 @@ function poser(e) {
 function niveauxVoulus() {
   const n = { ...(missions?.resume().niveaux ?? {}) };
   for (const [id, v] of Object.entries(PLANCHERS)) n[id] = Math.max(v, n[id] ?? 0);
+  for (const [id, v] of Object.entries(PLAFONDS)) n[id] = Math.min(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(forces)) n[id] = v;
   return n;
 }
@@ -182,7 +186,7 @@ export function update(dt) {
 export function dispose() { for (const id of Object.keys(etat)) retirer(id); }
 
 export const api = {
-  etat, NIVEAUX, COMPLETS, PLANCHERS,
+  etat, NIVEAUX, COMPLETS, PLANCHERS, PLAFONDS,
   // dbg.lieux.forcer('interface', 3) : voir un niveau sans mission ; forcer('interface', null) : revenir aux vraies
   forcer(id, n) { if (n == null) delete forces[id]; else forces[id] = n; update(0); },
   niveau: (id) => etat[id]?.niveau ?? 0,
