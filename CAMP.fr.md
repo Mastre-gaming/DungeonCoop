@@ -287,6 +287,16 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
   - **Au terrain d'entraînement, ensemble (#80) :** en groupe, E devant le terrain emmène tout le groupe dans son lobby (n'importe qui peut le demander : l'hôte emmène tout le monde). Au retour, le groupe se refait au camp avec le même code.
 - **S'approcher d'un lieu** affiche son axe, son niveau, ses points, et les missions de cet axe (ouvertes et récentes). Un lien mène au tableau de travail pour en prendre une.
 
+### L'écran titre (demandé le 19 oct)
+- **Avant le camp,** un écran titre en pixel art rétro (`src/45_titre.js`), qui raconte la soirée : au premier plan, notre camp au crépuscule, fermé par sa palissade, avec sa porte gardée par la sentinelle (tentes, bannières, râtelier, cible, tonneaux, bois coupé, braseros, lanterne, des rats) et l'équipe autour du feu ; derrière la porte, le chemin de la montée et ses 6 salles (la lisière, le gué, le moulin… un petit feu par salle, des monstres qui patrouillent) ; au loin, la tour sur sa montagne, trois étages et la lueur du gardien au sommet, qui balaie la plaine. Le menu **Héberger, Rejoindre, Réglages, Retour au dashboard** et « Autour du feu » (les médaillons des héros) sont dans les cadres du HUD épique ; la date du build est dans un coin. Un lien `?code=ABCDE` ouvre Rejoindre, le code déjà tapé ; `?test`, `?spot`, `?visite` et `?hote` le passent.
+- **Les passages, comme une seule caméra :** en venant du dashboard, un écran noir (le fond de la page, pendant le chargement), puis le ciel de nuit, et la caméra descend sur le paysage et la tour. Au choix, la caméra **bascule** : l'écran titre se dissout dans le sol du vrai camp vu en perspective sous l'horizon (comme le « mode 7 » des consoles 16 bits), puis elle pivote jusqu'à regarder droit vers le bas, le soir se lève, et l'image tombe pile sur le camp vivant. Dans le camp, la case **« Retour au dashboard » (B)** fait le chemin à l'envers, en un peu plus d'une seconde : la caméra bascule du camp vers l'horizon de l'écran titre, remonte au ciel de nuit, le noir, puis le dashboard.
+- **La règle des sièges : les héros de l'équipe sont autour du feu.** Quatre sièges, remplis dans cet ordre :
+  1. le héros que **j'ai choisi** dans le menu du choix du héros (gardé dans ce navigateur) ;
+  2. les héros **créés par les joueurs** : chaque fiche de `content/classes/` dont l'auteur est un pseudo GitHub (Baba Brisenclume, par DonBabaa) ;
+  3. le **set de base** (Chevalier, Druide, Barde, Éclaireuse, puis le héros de départ) pour les sièges vides.
+
+  Un héros n'est jamais assis deux fois. Dès qu'un joueur crée son héros, il apparaît sur l'écran titre de tout le monde ; quand le choix de chacun sera partagé (par le Worker du camp), **le dernier héros choisi par chaque joueur** prendra sa place au rang 2, à la place de ceux qu'il a créés.
+
 ### Le héros de départ (validé le 18 oct)
 - **Un humain de base du générateur LPC :** peau claire, tête d'homme humain, expression neutre, cheveux simples châtain foncé, tee-shirt blanc, pantalon et bottes marron. Le lien du générateur est dans `dl/lpc/heros/credits.txt`.
 - **Les vraies animations LPC, dans les 4 directions :** marche en 8 images, à environ 2,3 cases par seconde ; course en 8 images, à environ 4,3 cases par seconde. Au repos, il garde la pose debout dans la dernière direction prise.

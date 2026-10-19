@@ -23,6 +23,7 @@ export const CASES = [
   { id: 'rumeurs', nom: 'Rumeurs de la taverne', touche: 'KeyR', icone: [7, 1] },
   { id: 'lettres', nom: 'Boîte aux lettres', touche: 'KeyM', icone: 'enveloppe' },
   { id: 'reglages', nom: 'Réglages', touche: 'KeyO', icone: 'engrenage' },
+  { id: 'dashboard', nom: 'Retour au dashboard', touche: 'KeyB', icone: 'arche' },   // le chemin du retour, par l'écran titre (45_titre.js)
 ];
 
 function el(tag, attrs = {}, ...enfants) {
@@ -54,6 +55,16 @@ function icone(images, src) {
       g.fillStyle = bord ? '#2b1c1d' : (dx + dy < -4 ? '#e2b848' : dx + dy < 6 ? '#b78c41' : '#85581b');
       g.fillRect(x, y, 1, 1);
     }
+  } else if (src === 'arche') {   // une arche de pierre, et le ciel de nuit au fond (le retour au dashboard)
+    for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
+      const dx = x + 0.5 - 16, haut = y < 14 ? Math.hypot(dx, (y + 0.5 - 14) * 1.15) : Math.abs(dx);
+      if (y > 28 || haut > 12) continue;
+      const pierre = haut > 8.5, bord = haut > 11 || (pierre && haut < 9.5);
+      g.fillStyle = bord ? '#2b1c1d' : pierre ? ((x + y * 3) % 7 < 2 ? '#7a6a5a' : '#a8957a') : y < 12 ? '#1c1036' : y < 20 ? '#481c56' : '#963654';
+      g.fillRect(x, y, 1, 1);
+    }
+    for (const [x, y] of [[13, 9], [18, 7], [16, 13], [11, 15]]) { g.fillStyle = '#fff3c2'; g.fillRect(x, y, 1, 1); }
+    g.fillStyle = '#2b1c1d'; g.fillRect(3, 28, 26, 2);
   } else g.drawImage(images.deco, src[0] * T, src[1] * T, T, T, 0, 0, T, T);
   return c;
 }
