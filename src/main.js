@@ -41,6 +41,8 @@ import * as murailleSkill from './32_muraille.js';
 import * as crieurSkill from './38_crieur.js';
 import * as forgeronSkill from './40_forgeron.js';
 import * as choixSkill from './41_choix_heros.js';
+import * as promeneursSkill from './42_promeneurs.js';
+import * as apparitionsSkill from './43_apparitions.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
 import './hud.css';      // l'habillage épique du HUD (DESIGN.fr.md), après tout le reste
@@ -60,7 +62,7 @@ const game = createGame({
 document.querySelector('#tampon').textContent = `version du ${game.stamp}`;
 
 async function demarrer() {
-  const images = { ...await chargerImages(), ...await chargerImages('./assets/lpc/', choixSkill.FICHIERS) };   // (et les planches des héros à incarner)
+  const images = { ...await chargerImages(), ...await chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS }) };   // (et les planches des héros à incarner)
   const camp = composerCamp();
   const canvas = document.querySelector('#jeu');
   const rendu = creerRendu(canvas);
@@ -72,6 +74,7 @@ async function demarrer() {
   const heros = game.use(herosSkill, { rendu, collision, canvas, images, ...depart });
   if (visite) heros.cacher();
   const decor = game.use(decorSkill, { rendu, camp, images });
+  const apparitions = game.use(apparitionsSkill, { rendu, images });   // la colonne dorée : qui arrive, qui s'en va
   const muraille = game.use(murailleSkill, { rendu, camp, images, heros, visite });   // l'entrée : fantôme une fois dedans (#123)
   const camera = game.use(cameraSkill, { rendu, visite, monde: { w: W * T, h: H * T }, cible: visite ? null : () => heros.heros });
   // les missions (les tâches du tableau de travail) ; en ?test, rien ne part sur le réseau
@@ -89,10 +92,10 @@ async function demarrer() {
   // le crieur, sur son estrade à côté du tableau d'affichage, à partir du niveau 3 du tableau
   const crieur = game.use(crieurSkill, { rendu, images, heros, missions, lieux });
   // Baba Brisenclume tape sur l'enclume de l'armurerie, sous l'abri de forge (sauf quand on l'incarne)
-  const forgeron = game.use(forgeronSkill, { rendu, images, lieux, collision, heros });
+  const forgeron = game.use(forgeronSkill, { rendu, images, lieux, collision, heros, pris: (id) => promeneursSkill.estPris(id) });
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee, heros });
-  const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite });
+  const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite, apparitions });
   const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite, reseau });   // E devant le terrain : le combat d'entraînement (à plusieurs : tout le groupe)
   const armurerie = game.use(armurerieSkill, { rendu, canvas, heros, visite });       // E devant l'armurerie : le créateur de classe (#125)
   const archives = game.use(archivesSkill, { rendu, canvas, heros, collision, images, visite });   // E devant la tente des archives : tous les assets du projet
@@ -118,6 +121,9 @@ async function demarrer() {
   const radio = game.use(radioSkill, { rendu, heros, collision, visite, reseau, muet: query.has('test') });   // la radio Deadlock : le barde près du feu (#94)
   const reglages = game.use(reglagesSkill, { visite });   // le menu Réglages (O) : la musique et les effets (#95)
   hud.brancher('reglages', reglages);
+  // les héros qu'on peut incarner se promènent dans le camp et parlent (E) ; un héros pris par un joueur s'en va.
+  // (après tous les autres : E sert d'abord aux lieux et aux personnages du camp, puis aux promeneurs)
+  const promeneurs = game.use(promeneursSkill, { rendu, heros, collision, images, reseau, forgeron, apparitions, visite });
   game.render = () => rendu.dessiner();
   const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, crieur, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, place, terrain, muraille, parties, github });
 
@@ -131,7 +137,7 @@ async function demarrer() {
   // l'entrée du camp (#123) : sur la route, devant le pont ; et juste après la porte, en entrant
   game.dbg.spot('porte', aller(15 * T, 36.6 * T, 'haut'));
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

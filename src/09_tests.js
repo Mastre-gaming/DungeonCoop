@@ -8,6 +8,7 @@ import { testsHudEpique } from './34_tests_hud.js';
 import { testsArmurerie } from './35_tests_armurerie.js';
 import { testsPlace } from './37_tests_place.js';
 import { testsTableau } from './39_tests_tableau.js';
+import { HEROS } from './41_choix_heros.js';
 
 export const name = 'camp';
 let ctx;
@@ -559,8 +560,8 @@ function testsReseau(t, game) {
   const hub = createLoopback({ latency: 0.03, jitter: 0.01 });
   const pas = 1 / 60;
   const ami = (nom) => {
-    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 }, recus: [] };
-    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 },
+    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0, heros: 0 }, recus: [] };
+    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge', 'heros'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 },
       on: (type, d) => { if (type === 'game') P.recus.push(d.m); } });
     return P;
   };
@@ -584,6 +585,15 @@ function testsReseau(t, game) {
   let pire = 0;
   jouer(2, (temps) => { ana.me.vx = 74; ana.me.x += 74 * pas; ana.me.bouge = 1; ana.me.dir = 3; const o = party.others.values().next().value; if (o && temps > 0.5) pire = Math.max(pire, Math.abs(o.shown.x - ana.me.x)); });
   t.ok(pire < 12, `Ana marche : sa copie la suit à ${pire.toFixed(1)} px près`);
+  // Ana incarne un héros : sa copie le porte, et ce héros quitte le camp (Baba sa forge, les autres leur promenade)
+  const { forgeron, promeneurs } = game.dbg, copieAna = () => [...reseau.copies.values()][0];
+  const prendre = (id) => { ana.me.heros = HEROS.findIndex((x) => x.id === id); jouer(0.3); };
+  prendre('baba-brisenclume');
+  t.ok(copieAna().heros.id === 'baba-brisenclume' && (!forgeron || forgeron.absent), 'Ana incarne Baba Brisenclume : sa copie le porte, et Baba quitte sa forge');
+  prendre('barde');
+  const barde = promeneurs?.promeneurs.find((p) => p.h.id === 'barde');
+  t.ok(copieAna().heros.id === 'barde' && (!barde || (barde.absent && !barde.sprite.mesh.visible)) && (!forgeron || !forgeron.absent), 'Ana prend la Barde : la Barde ne se promène plus, Baba revient à sa forge');
+  prendre('depart');
   // Paul marche : Ana le voit bouger
   const vu = () => [...ana.party.others.values()].find((o) => o.name === 'Paul')?.shown.x ?? 0;
   heros.placer(18 * T, 17 * T, 'droite'); jouer(0.5);

@@ -7,7 +7,7 @@
 // Sa planche (public/assets/lpc/forgeron.png) et ses repères (src/data/forgeron.json) sont fabriqués par
 // design/classes/baba-brisenclume/outil/forgeron.mjs. Ses places suivent l'enclume et le feu selon le niveau de
 // l'armurerie ; sans enclume ou sans feu (niveaux 0 et 4), il n'est pas là. On ne le traverse pas.
-// Quand on l'incarne (le choix du héros, 41_choix_heros.js), il n'est plus à la forge.
+// Quand on l'incarne (le choix du héros, 41_choix_heros.js), ou qu'un ami du groupe l'incarne, il n'est plus à la forge.
 import FORGERON from './data/forgeron.json';
 
 export const name = 'forgeron';
@@ -21,7 +21,7 @@ export const TOUR = [['forge', 4, 'enclume'], ['attise', 2, 'feu'], ['sonne', 1,
 const F = FORGERON, PW = F.image.w, PH = F.image.h;
 
 export const CLASSE = 'baba-brisenclume';   // sa classe : l'incarner le fait quitter la forge
-let rendu, images, lieux, collision, heros, sprite, flammes, obstacle = null;
+let rendu, images, lieux, collision, heros, pris, sprite, flammes, obstacle = null;
 const S = { la: false, t: 0, cle: '', places: null, etapes: [], duree: 1, m: null };
 const dureeGeste = (g) => F.anims[g].durees.reduce((a, b) => a + b, 0);
 
@@ -98,14 +98,15 @@ function bloquer(x, y) {
 }
 
 export function init(g, options) {
-  ({ rendu, images, lieux, collision, heros } = options);
+  ({ rendu, images, lieux, collision, heros, pris } = options);
   sprite = rendu.sprite(images.forgeron, 'forgeron', PW, PH);
   flammes = rendu.sprite(images.forgeron, 'forgeron', F.feu.w, F.feu.h);
   placer();
   return api;
 }
 
-const incarne = () => heros?.incarne?.id === CLASSE;
+// pris par moi, ou par un ami du groupe (pris : 42_promeneurs.estPris)
+const incarne = () => heros?.incarne?.id === CLASSE || !!pris?.(CLASSE);
 
 export function update(dt) {
   const e = enclume(), f = feu();
