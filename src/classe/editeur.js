@@ -14,7 +14,7 @@ export const always = true;
 const RETOUR_CAMP = './index.html?spot=classes';
 const CLE_CLASSES = 'dungeoncoop:classes', CLE_COURANTE = 'dungeoncoop:classe-courante', CLE_CADRE = 'dungeoncoop:cadre';
 // les planches LPC déjà dans le jeu, pour un portrait d'essai (le vrai look vient du générateur LPC, lpc-sprite-mods)
-export const BASES = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'baba-brisenclume'];
+export const BASES = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'baba-brisenclume', 'shadow'];
 const ARCHETYPES = ['Fighter', 'Support', 'Ranged', 'Mage'];
 const ONGLETS = [
   ['identite', 'Identité'], ['caracs', 'Caractéristiques'], ['points', 'Points de classe'], ['capacites', 'Capacités'],

@@ -24,7 +24,7 @@ const MARCHE = 8, REPOS = 22, VITESSE = 44;   // px/s : un peu plus lent que le 
 // les gestes : leur première rangée dans une planche LPC (+ la direction), leur nombre d'images, leurs images par seconde
 const GESTES = { sort: [0, 7, 5], estoc: [4, 8, 8], taille: [12, 6, 9], tir: [16, 13, 10] };
 // à l'entraînement, chacun son arme
-const ARME = { eclaireuse: 'tir', 'voleur-exemple': 'tir', druide: 'sort', barde: 'estoc' };
+const ARME = { eclaireuse: 'tir', 'voleur-exemple': 'tir', druide: 'sort', barde: 'estoc', shadow: 'estoc' };
 const lieu = (id) => LIEUX.find((l) => l.id === id).porte;
 // Les activités devant le décor : où se tenir (en cases), tourné vers quoi, quel geste (ou 'repos'), combien de temps.
 const ACTIVITES = [

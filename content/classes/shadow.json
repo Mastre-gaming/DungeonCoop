@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "shadow",
+  "nom": "Shadow",
+  "auteur": "FrapsFTW",
+  "phrase": "Personne ne le voit venir : quand l'ennemi se retourne, c'est déjà fini.",
+  "role": "degats",
+  "twist": "frappe dans le dos des ennemis que ses alliés occupent",
+  "archetype": "Fighter",
+  "caracs": { "FOR": 8, "DEX": 15, "CON": 14, "INT": 12, "SAG": 13, "CHA": 10 },
+  "pv": 100,
+  "vitesse": 6,
+  "ressource": "elan",
+  "capacites": [
+    { "nom": "Dague", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "un estoc sec au contact", "cree": [], "utilise": [], "renforts": [] },
+    { "nom": "Pas dans l'ombre", "sorte": "preparation", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "il plonge dans son ombre et ressort derrière un ennemi au contact d'un allié : la cible est prise en Tenaille ; le trajet compte pour l'Élan", "cree": ["tenaille"], "utilise": [], "renforts": [] },
+    { "nom": "Coup dans le dos", "sorte": "exploitation", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "DEX", "cout": "3 Élan pour un Critique", "effet": "deux entailles croisées ; ×2 sur une cible en Tenaille ou Exposée", "cree": [], "utilise": ["tenaille", "expose"], "renforts": ["critique"] }
+  ],
+  "faiblesse": "la lumière le trahit : Brûlant ou dans le Feu, il ne peut plus utiliser Pas dans l'ombre",
+  "sousClasses": [
+    { "nom": "Mirage", "idee": "il laisse des doubles de sable : les ennemis frappent le mauvais Shadow" },
+    { "nom": "Lame de minuit", "idee": "des coups dans le dos encore plus forts" }
+  ],
+  "look": { "corps": "un homme du désert, teint bronze (tons bédouins)", "tenue": "chèche et écharpe indigo sur le bas du visage, robe et cape sable, sandales", "touche": "yeux violets, deuxième dague courbe en travers du dos", "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hat=Hood_blue&clothes=Longsleeve_tan&legs=Pants_tan&shoes=Sandals_brown&cape=Solid_tan&weapon=Dagger_dagger", "base": "shadow" },
+  "references": "Bidos"
+}

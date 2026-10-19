@@ -107,5 +107,11 @@
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=muscular&body=Body_Color_amber&head=Human_Male_Elderly_amber&expression=Angry_amber&hair=Balding_white&beard=Winter_Beard_white&bauldron=Bauldron_leather&shoulders=Pauldrons_black&bracers=Bracers_copper&legs=Pants_charcoal&shoes=Rimmed_Boots_brown&mustache=Mustache_white",
     "attaque": null,
     "anims": ["marche", "sort", "estoc", "taille", "blesse"]
+  },
+  "shadow": {
+    "nom": "Shadow",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hat=Hood_blue&clothes=Longsleeve_tan&legs=Pants_tan&shoes=Sandals_brown&cape=Solid_tan&weapon=Dagger_dagger",
+    "attaque": null,
+    "anims": ["marche", "sort", "estoc", "taille", "tir", "blesse"]
   }
 }
