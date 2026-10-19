@@ -1,7 +1,7 @@
 // La place du village (CAMP §4, design validé par le propriétaire le 18 oct) : le feu de camp devient le centre du
 // village, dans la pierre blanche de la muraille. Cinq niveaux, qui suivent la taille du feu (le total de l'équipe) :
 //   0 le feu de bivouac · 1 la place du village (le foyer) · 2 la fontaine · 3 le cœur du village · 4 le centre du village
-// Elle est livrée au niveau 2 (demande du propriétaire). À chaque niveau, l'herbe autour se dompte et les sentiers se pavent.
+// Elle est livrée au niveau 1 (demande du propriétaire). À chaque niveau, l'herbe autour se dompte et les sentiers se pavent.
 // Tout vient de design/camp/outils/place_jeu.py : un calque de sol par niveau (place_sols.png, sous tout le reste), les
 // objets debout et leurs images d'animation (place_objets.png : l'eau de la fontaine, les braseros, les étendards, les
 // lanternes, le grand feu), et src/data/place.json (où va chaque objet, son pied, et ce qui bloque le passage).
@@ -10,7 +10,7 @@ import PLACE from './data/place.json';
 
 export const name = 'place';
 export const always = true;
-export const PLANCHER = 2;          // le niveau d'office
+export const PLANCHER = 1;          // le niveau d'office (avant la pierre)
 const PIED_SOL = -9500;             // le calque du sol : au-dessus du sol du camp, sous tout ce qui se trie
 
 let game, rendu, images, collision, missions, decor;

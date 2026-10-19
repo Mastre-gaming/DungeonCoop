@@ -19,7 +19,7 @@ const TORCHE = { anim: [13, 14, 15], pas: 0.12 };
 
 // Le tableau d'affichage apprivoise la nature autour de lui et devient pierre (maquette validée par le propriétaire le
 // 18 oct) : des pierres de gué, puis des pavés qui suivent la terre battue et les sentiers, puis le panneau, la potence et
-// l'étal en pierre blanche. Le crieur (38_crieur.js) monte sur son estrade de bois au niveau 3.
+// l'étal en pierre blanche. Le crieur (38_crieur.js) monte sur son estrade de bois au niveau 2, avant les pavés (niveau 3).
 // Le panneau-carte occupe dx 1,5 à 4,5 et dy 2,1 à 4,6 dans l'emprise. `jusqua` : la pièce s'en va au-delà de ce niveau
 // (la potence de bois, remplacée par celle de pierre). Les pièces img 'tableau' sont dessinées par tableau_jeu.py.
 const PIERRE = { img: 'tableau' };
@@ -28,14 +28,14 @@ export const NIVEAUX = {
   interface: [
     [],                                                                  // 0 : le panneau-carte seul, dans la terre
     [P(7, 5, 1, 1, 0.45, 3.55, { bloque: true }),                       // 1 : un panneau à feuilles épinglées, à côté ;
-      P(0, 4, 3, 1, 1.4, 4.7, { ...PIERRE, pied: 0, jusqua: 1 })],             //     des pierres de gué posées dans la terre
+      P(0, 4, 3, 1, 1.4, 4.7, { ...PIERRE, pied: 0, jusqua: 2 })],             //     des pierres de gué posées dans la terre
     [P(11, 0, 1, 2, 4.75, 2.55, { bloque: true, jusqua: 3 }),            // 2 : une potence, sa lanterne allumée ;
-      P(13, 0, 1, 1, 5.35, 2.95, { ...LANTERNE, pied: 4.6 }),            //     les premiers pavés, des socles de pierre
-      P(3, 4, 3, 0.5, 1.5, 4.1, { ...PIERRE, pied: 4.63 })],             //     au pied des poteaux
-    [P(6, 34, 2, 1, -0.3, 4.45, { bloque: true }),                        // 3 : un banc pour lire les missions, deux buis,
-      P(7, 1, 1, 2, 0.7, 3.0, { ...PIERRE, bloque: true }),              //     l'estrade du crieur
-      P(7, 1, 1, 2, 4.12, 3.0, { ...PIERRE, bloque: true }),
+      P(13, 0, 1, 1, 5.35, 2.95, { ...LANTERNE, pied: 4.6 }),            //     des socles de pierre au pied des poteaux ;
+      P(3, 4, 3, 0.5, 1.5, 4.1, { ...PIERRE, pied: 4.63 }),              //     l'estrade du crieur (pas encore de pavés)
       P(7, 30, 2, 2, ESTRADE.dx, ESTRADE.dy, { bloque: true })],
+    [P(6, 34, 2, 1, -0.3, 4.45, { bloque: true }),                        // 3 : un banc pour lire les missions, deux buis,
+      P(7, 1, 1, 2, 0.7, 3.0, { ...PIERRE, bloque: true }),              //     les premiers pavés
+      P(7, 1, 1, 2, 4.12, 3.0, { ...PIERRE, bloque: true })],
     [P(0, 1, 3, 2.5, 1.5, 2.1, { ...PIERRE, pied: 4.62 }),               // 4 : tout en pierre : le panneau, la potence,
       P(3, 1, 1, 2, 4.75, 2.55, { ...PIERRE, bloque: true }),            //     l'étal ; des torches sur le panneau,
       P(13, 5, 1, 1, 1.0, 2.2, { ...TORCHE, pied: 4.65 }),               //     deux réverbères
@@ -67,7 +67,7 @@ export const NIVEAUX = {
 // `portee` : jusqu'où (en cases, depuis le devant du tableau) ; `parvis` : [x0, y0, x1, y1] en cases depuis le coin de
 // l'emprise, x1 et y1 exclus. Une case est pavée si deux de ses coins au moins sont de la terre battue (le sol se
 // dessine coin par coin) : le bord des pavés suit celui du sentier.
-export const PAVES = { 2: { portee: 2.3 }, 3: { portee: 4.2 }, 4: { portee: 6.5, parvis: [-1, 2, 9, 6] } };
+export const PAVES = { 3: { portee: 4.2 }, 4: { portee: 6.5, parvis: [-1, 2, 9, 6] } };
 const DEVANT = [3, 5.5];   // le devant du tableau, en cases depuis le coin de l'emprise
 export function pavesDe(lieu, niveau) {
   const p = PAVES[Math.min(niveau, 4)];
@@ -89,9 +89,9 @@ export function pavesDe(lieu, niveau) {
 // Ses pièces viennent de deux planches (img : deco, ou armurerie pour le mur, le toit, la gueule du foyer, l'enseigne) ;
 // ses dalles de pierre, de plus en plus nombreuses, se posent sous tout le reste. Fabriqué par armurerie_jeu.py.
 export const COMPLETS = { classes: ARMURERIE.niveaux };
-// Le niveau d'office (demandes du propriétaire, 18 et 19 oct) : l'armurerie est livrée au niveau 2, la tente et son abri
-// de forge ; le tableau d'affichage au niveau 3, ses pavés et son crieur.
-export const PLANCHERS = { classes: 2, interface: 3 };
+// Le niveau d'office (demandes du propriétaire, 18 et 19 oct, ramené avant la pierre le 19) : l'armurerie est livrée au
+// niveau 2, la tente et son abri de forge ; le tableau d'affichage au niveau 2, ses premiers pavés.
+export const PLANCHERS = { classes: 2, interface: 2 };
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
