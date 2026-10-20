@@ -95,9 +95,9 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .barre-terrain { padding: 8px; max-width: 100%; box-sizing: border-box; }
 /* La barre des sorts (DESIGN §5) : la barre d'action du camp (BABA), ses cases de 52 px, ses rivets, ses embouts et ses loups ;
    les sorts rangés par sorte (le nom du groupe et une bande de sa couleur sur chaque case), le commun à part. */
-:root { --sorte-base: #ccbd7b; --sorte-preparation: #4a8fd8; --sorte-exploitation: #e0603a; --sorte-soutien: #5fb84a; --sorte-familier: #c8913a; --sorte-commun: #a8956f; }
+:root { --sorte-base: #ccbd7b; --sorte-preparation: #4a8fd8; --sorte-exploitation: #e0603a; --sorte-soutien: #5fb84a; --sorte-familier: #c8913a; --sorte-commun: #a8956f; --sorte-mouvement: #7fc8d8; }
 .s-base { --c: var(--sorte-base); } .s-preparation { --c: var(--sorte-preparation); } .s-exploitation { --c: var(--sorte-exploitation); }
-.s-soutien { --c: var(--sorte-soutien); } .s-familier { --c: var(--sorte-familier); } .s-commun { --c: var(--sorte-commun); }
+.s-soutien { --c: var(--sorte-soutien); } .s-familier { --c: var(--sorte-familier); } .s-commun { --c: var(--sorte-commun); } .s-mouvement { --c: var(--sorte-mouvement); }
 .socle-sorts { display: flex; align-items: flex-end; pointer-events: none; }
 .socle-sorts > * { pointer-events: auto; }
 .socle-sorts .embout { align-self: center; width: 16px; height: 88px; background: var(--embout) 0 0 / 16px 88px; image-rendering: pixelated; position: relative; z-index: 1; }
@@ -116,7 +116,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .capacites > .muet { color: var(--creme-doux); padding: 18px 10px; }
 .groupe-sorts { display: flex; flex-direction: column; gap: 2px; }
 .groupe-sorts .groupe-nom { font: 700 11px/12px var(--titre); letter-spacing: .06em; text-transform: uppercase; color: var(--c); text-shadow: 0 1px 0 #000; white-space: nowrap; }
-.groupe-sorts.s-commun { padding-left: 10px; border-left: 2px solid var(--bois-nuit); box-shadow: -2px 0 0 var(--bois-clair); }
+.groupe-sorts.s-commun, .groupe-sorts.s-mouvement { padding-left: 10px; border-left: 2px solid var(--bois-nuit); box-shadow: -2px 0 0 var(--bois-clair); }
 .cases-sorts { display: flex; gap: 4px; }
 /* la case (DESIGN §5) : 52 × 52, un creux de bois ; la bande de sa sorte en haut, A ou B en haut à gauche, le coût en bas à gauche,
    la touche en bas à droite */

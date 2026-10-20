@@ -72,8 +72,6 @@ function construire() {
   // en bas à droite : finir la phase (« Je suis prêt » à plusieurs), et annuler le dernier déplacement
   dom.coin = el('div', { class: 'coin-phase bois' },
     dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
-    // l'action commune de tous les héros (#231) : partir du contact sans attaque d'opportunité, pour son action bonus
-    dom.desengager = el('button', { type: 'button', class: 'bouton-jeu discret', id: 'desengager', onclick: () => desengager(), title: 'Action bonus : ce tour-ci, il s’éloigne sans attaque d’opportunité (touche D)' }, el('img', { class: 'bouton-icone', src: icone('desengager'), alt: '' }), 'Se désengager (D)'),
     dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
   // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des sorts
   const loupSculpte = (cote) => el('div', { class: `loup ${cote}`, 'aria-hidden': 'true' }, el('div', { class: 'loup-bois' }), el('div', { class: 'socle' }));
@@ -514,12 +512,21 @@ function dessinerTout() {
       touche ? el('kbd', {}, touche) : null);
     };
     const groupes = SORTES.map((s) => ({ ...s, ids: ordre.filter((id) => sorteDe(id, CAPACITES[id]) === s.id) })).filter((g) => g.ids.length);
+    // la dernière catégorie : le mouvement, l'action commune de tous les héros (#231) : se désengager (partir du contact sans
+    // attaque d'opportunité, pour son action bonus), sur la touche D
+    const dg = CAPACITES.desengager, okD = !vue.occupe() && utilisable(h, dg);
+    const survolD = (oui) => () => { if (oui ? ui.capSurvol !== 'desengager' : ui.capSurvol === 'desengager') { ui.capSurvol = oui ? 'desengager' : null; ui.sale = true; } };
+    dom.desengager = el('button', { type: 'button', id: 'desengager', class: `capacite bonus s-mouvement${okD ? '' : ' indispo'}`, 'aria-disabled': okD ? null : 'true',
+      'aria-label': `${dg.nom}, action bonus, touche D`, title: dg.nom, dataset: { capacite: 'desengager', sorte: 'mouvement' },
+      onclick: () => desengager(), onmouseenter: survolD(true), onmouseleave: survolD(false), onfocus: survolD(true), onblur: survolD(false) },
+    el('img', { class: 'cap-img', src: icone('desengager'), alt: '' }), el('span', { class: 'cap-slot bonus', 'aria-hidden': 'true' }, 'B'), el('kbd', {}, 'D'));
     dom.capacites.replaceChildren(...groupes.map((g) => el('div', { class: `groupe-sorts s-${g.id}`, role: 'group', 'aria-label': g.nom },
-      el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, g.nom), el('div', { class: 'cases-sorts' }, g.ids.map(caseSort)))));
+      el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, g.nom), el('div', { class: 'cases-sorts' }, g.ids.map(caseSort)))),
+      el('div', { class: 'groupe-sorts s-mouvement', role: 'group', 'aria-label': 'Mouvement' },
+        el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, 'Mouvement'), el('div', { class: 'cases-sorts' }, dom.desengager)));
   } else dom.capacites.replaceChildren(el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : ''));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
-  { const h = herosChoisi(); dom.desengager.disabled = !h || vue.occupe() || !utilisable(h, CAPACITES.desengager); }
   dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)
   dom.finPhase.classList.toggle('pret', !!reseau?.estPret());
   if (!reseau) dom.finPhase.textContent = 'Fin de la phase des héros';

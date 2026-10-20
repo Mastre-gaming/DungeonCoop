@@ -454,7 +454,7 @@ export async function selfTest(t, game) {
     C.deplacer(b, 9, 15.5);
     t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'désengagée, la Brute part sans prendre de coup');
     t.ok(!C.peutUtiliser(b, CAPACITES.desengager), 'une fois par tour');
-    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : une flèche qui s’éloigne de l’épée');
+    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : un héros qui se replie (Paolitus, 20 oct)');
   }
   {
     const { C, b, s } = opp();
@@ -551,13 +551,14 @@ export async function selfTest(t, game) {
   t.ok(V.marques.cibles?.includes('s1') && V.marques.cercle?.r === 6, 'la portée (9 m) et la cible à portée sont montrées');
   t.ok(!ihm.dom.ficheCap.hidden && ihm.dom.ficheCap.dataset.capacite === 'etincelle' && ihm.dom.ficheCap.textContent.includes('11–14') && ihm.dom.ficheCap.textContent.includes('d20 8–19'),
     'la fiche d’Étincelle (#85) : les dégâts d’un touché et les d20 qui y mènent, avant de viser');
-  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite')];
+  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite:not(#desengager)')];   // (les sorts de la classe ; Se désengager est à part)
   t.ok(boutons.length === HEROS.mage.capacites.length && boutons.every((b) => b.querySelector('img')?.getAttribute('src').includes('icones/enseigne-')) && boutons[0].classList.contains('choisie'),
     'la barre : chaque capacité avec son icône LPC, Étincelle choisie');
   {
     // la barre des sorts (la barre du camp) : les capacités rangées par sorte, sous le nom de leur groupe ; A ou B, le coût, la touche
     const groupes = [...ihm.dom.capacites.querySelectorAll('.groupe-sorts')].map((g) => g.querySelector('.groupe-nom').textContent);
-    t.eq(groupes, ['Attaque', 'Préparation', 'Exploitation', 'Commun'], 'la barre des sorts de la Mage : ses capacités rangées par sorte, le commun à part');
+    t.eq(groupes, ['Attaque', 'Préparation', 'Exploitation', 'Commun', 'Mouvement'], 'la barre des sorts de la Mage : ses capacités rangées par sorte, le commun à part, le mouvement en dernier');
+    t.ok(ihm.dom.desengager.closest('.s-mouvement') && ihm.dom.desengager.querySelector('kbd').textContent === 'D' && ihm.dom.desengager.querySelector('img').src.endsWith('enseigne-desengager.png'), 'Se désengager, dans la barre : sa case, son icône, la touche D');
     const foudre = ihm.dom.capacites.querySelector('[data-capacite="foudre"]');
     t.ok(foudre.dataset.sorte === 'exploitation' && foudre.querySelector('.cap-slot').textContent === 'A' && foudre.querySelector('.cap-cout').textContent === '15' && foudre.querySelector('kbd').textContent === '3',
       'Foudre : une exploitation, une action (A), 15 de Mana en coin, touche 3');
