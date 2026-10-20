@@ -17,7 +17,7 @@ Un homme du désert, venu de très loin : chèche et écharpe indigo sur le bas 
 Les animations sont des esquisses, au niveau des briques de `design/animations/` : elles disent ce qu'on doit voir.
 
 ## Au terrain d'entraînement (#198)
-Shadow se choisit à l'entrée du terrain, à côté des classes d'essai. Ses règles sont dans `src/entrainement/regles.js` (`HEROS.shadow`, et `pasOmbre`, `coupDos`, `coupDos3` dans `CAPACITES`), au budget de `CLASS_TEMPLATE.fr.md` :
+Shadow se choisit à l'entrée du terrain, à côté des classes d'essai et du Traqueur de Paolitus. Comme toute classe de joueur, il ne se joue que par son auteur : FrapsFTW, reconnu par la sentinelle du camp (`peutJouer` dans `regles.js`). Ses règles sont dans `src/entrainement/regles.js` (`HEROS.shadow`, et `pasOmbre`, `coupDos`, `coupDos3` dans `CAPACITES`), au budget de `CLASS_TEMPLATE.fr.md` :
 
 | | |
 |---|---|

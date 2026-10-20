@@ -1,6 +1,6 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
-import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, CLASSES_JOUABLES, equipeDepuis } from './regles.js';
+import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour } from './regles.js';
 import { adresseEquipe } from './interface.js';
 import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
@@ -143,12 +143,27 @@ export async function selfTest(t, game) {
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
-  t.eq(CLASSES_ESSAI.length, 8, 'huit classes à choisir : les 4 du kit et 4 d’essai');
-  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.eq(CLASSES_ESSAI.length, 10, 'dix classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier et Shadow');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
   t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
   const essai = (equipe, o = {}) => neuf({ equipe, ...o });
+  // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
+  t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
+    'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 2 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 1, 'les classes du kit et d’essai, par tout le monde');
+  t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
+  {
+    const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
+    t.ok(!regler(L, 'ana', { t: 'classe', k: 1, type: 'traqueur-au-limier', github: 'AnaGH' }) && L.equipe[1] === EQUIPE_KIT[1], 'au lobby, Ana ne peut pas prendre le Traqueur au limier');
+    t.ok(regler(L, 'paul', { t: 'classe', k: 2, type: 'traqueur-au-limier', github: 'PCrrfng' }) && L.equipe[2] === 'traqueur-au-limier', 'Paolitus, si');
+    regler(L, 'paul', { t: 'rendre', k: 2 });
+    t.ok(L.equipe[2] === EQUIPE_KIT[2], 'il rend sa place : elle redevient une classe du kit (personne d’autre ne le joue)');
+    L.equipe[3] = 'traqueur-au-limier';
+    regler(L, 'ana', { t: 'prendre', k: 3, github: 'AnaGH' });
+    t.ok(L.proprio[3] === 'ana' && L.equipe[3] === EQUIPE_KIT[3], 'une place libre qui le portait, prise par Ana : la classe du kit');
+  }
   {
     const C = essai(['brute', 'brute', 'mage', 'barde']);
     t.eq(C.S.unites.filter((u) => u.camp === 'h').map((u) => u.nom), ['Brute', 'Brute 2', 'Mage', 'Barde'], 'deux fois la même classe : « Brute » et « Brute 2 »');
@@ -206,6 +221,41 @@ export async function selfTest(t, game) {
     C._.attaquer(poser(C, 's3', ba.x + 1, ba.y), ba, { nom: 'Coup', mod: 2, dmod: 0, base: 8, de: 4, melee: true });
     t.ok(C.S.journal.some((l) => l.t.includes('fragile au contact')) || ba.pv === pv, 'la Barde est fragile au contact : +3');
   }
+  {
+    // le Traqueur au limier (la classe de Paolitus) : ses pièges, et les trois ordres au limier
+    const C = essai(['traqueur-au-limier', 'brute', 'mage', 'gardien'], { alea: des(Array(40).fill(15)) });
+    C.commencer();
+    const tr = trouver(C, 'traqueur-au-limier'), b = trouver(C, 'brute'), pieges = () => Object.values(C.mailles()).filter((m) => m.t === 'piege');
+    t.ok(tr.pv === 120 && tr.res.type === 'Concentration' && tr.t.mv === 6, 'le Traqueur : 120 PV, 9 m, Concentration');
+    const s = poser(C, 's1', tr.x + 6, tr.y), p = { x: tr.x + 3, y: tr.y };
+    t.ok(C.utiliser(tr, 'machoires', p) && pieges().length && pieges().every((m) => m.v === 'machoires'), 'Piège à mâchoires : posé à 4,5 m');
+    C._.marcher(s, [{ x: tr.x + 1.2, y: tr.y }]);
+    t.ok(s.st.aTerre && Math.abs(s.x - p.x) < 0.9 && !pieges().length, `un sbire y marche : À terre, il s’arrête dans le piège (${Math.abs(s.x - p.x).toFixed(1)} case du centre), et le piège a servi`);
+    poser(C, b.id, s.x - 1, s.y);
+    C.utiliser(b, 'fracas', { id: 's1' });
+    t.ok(C.S.stats.combos.some((k) => k.a === tr.id && k.b === b.id && k.quoi === 'cible À terre') && tr.res.v === 1, 'la Brute frappe la proie À terre : un combo, et +1 Concentration au Traqueur');
+    tr.t.action = true;
+    const s2 = poser(C, 's2', tr.x + 4, tr.y + 2);
+    t.ok(C.utiliser(tr, 'glu', { x: s2.x, y: s2.y }) && s2.st.gele && !pieges().length, 'Piège à glu posé sous un ennemi : il se referme tout de suite, Gelé');
+    tr.t.action = true;
+    C.utiliser(tr, 'collet', { x: tr.x + 4.4, y: tr.y - 2 }); tr.t.action = true;
+    t.ok(C.utiliser(tr, 'machoires', { x: tr.x + 2, y: tr.y - 2 }) && new Set(pieges().map((m) => m.id)).size === 1 && pieges()[0].v === 'machoires', 'un seul piège à la fois : le nouveau remplace l’ancien');
+    tr.t.action = true;
+    const s3 = poser(C, 's3', tr.x + 3, tr.y - 2), l3 = Math.hypot(3, 2);           // le collet, 1,8 m plus loin sur la ligne de la poussée
+    C.utiliser(tr, 'collet', { x: s3.x + (3 / l3) * 1.2, y: s3.y - (2 / l3) * 1.2 });
+    const d0 = dist(s3, tr);
+    const n0 = C.S.evenements.length;
+    t.ok(C.utiliser(tr, 'rabattre', { id: 's3' }) && C.S.journal.some((l) => l.t.includes('dans le collet')) && dist(s3, tr) < d0 + 0.5,
+      `Rabattre : le limier pousse le sbire dans le collet, qui le ramène vers le Traqueur (${(dist(s3, tr) * 1.5).toFixed(1)} m de lui)`);
+    t.ok(C.S.evenements.slice(n0).filter((e) => e.type === 'limier').length === 2, 'le limier court à la cible, puis revient (deux scènes)');
+    t.ok(!C.peutUtiliser(tr, CAPACITES.mordre), 'un seul ordre au limier par tour (l’action bonus)');
+    tr.t.bonus = true;
+    const s4 = poser(C, 'a1', tr.x - 4, tr.y);
+    t.ok(C.utiliser(tr, 'mordre', { id: 'a1' }) && s4.expose?.par === tr.id, 'Mordre : la cible est Exposée');
+    const m = trouver(C, 'mage');
+    poser(C, m.id, tr.x - 2, tr.y + 2); m.pv = 80; m.st.gele = { n: 1, par: null }; tr.t.bonus = true;
+    t.ok(C.utiliser(tr, 'lecher', { id: m.id }) && m.pv >= 91 && m.pv <= 94 && !m.st.gele, `Lécher les plaies : +${m.pv - 80} PV à la Mage (11 à 14), et elle n’est plus Gelée`);
+  }
   for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9], [['shadow', 'brute', 'mage', 'gardien'], 4]]) {
     const C = essai(equipe, { alea: graine(s) });
     C.commencer();
@@ -237,7 +287,7 @@ export async function selfTest(t, game) {
   t.group('Shadow (#198)');
   {
     const H = HEROS.shadow;
-    t.ok(CLASSES_JOUABLES.includes('shadow') && !CLASSES_ESSAI.includes('shadow'), 'Shadow se choisit à l’entrée, à côté des classes d’essai (ce n’en est pas une)');
+    t.ok(CLASSES_ESSAI.includes('shadow') && peutJouer('shadow', 'FrapsFTW') && !peutJouer('shadow', 'PCrrfng') && !peutJouer('shadow', null), 'Shadow se choisit à l’entrée, et ne se joue que par FrapsFTW, son auteur');
     t.ok(H.pv === 120 && H.vitesse * 1.5 === 9 && H.dex === 2, 'sa fiche au budget : 120 PV, 9 m par tour, DEX +2');
     t.ok(H.res.type === 'Élan' && H.res.v === 0 && H.res.max === 5, 'sa ressource : l’Élan de la liste commune (0 au départ, 5 au plus)');
     t.ok(H.capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && H.faiblesse, 'ses 3 capacités et sa faiblesse');

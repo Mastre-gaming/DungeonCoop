@@ -13,6 +13,7 @@ const ICONES = {
   epee: 'epee', chargeBouclier: 'chargeBouclier', ralliement: 'ralliement',
   ronce: 'ronce', liane: 'liane', pluie: 'pluie',
   dague: 'dague', chant: 'chant', moquerie: 'moquerie',
+  arc: 'tirRapide', machoires: 'fracas', glu: 'vase', collet: 'liane', lecher: 'soin', mordre: 'dague', rabattre: 'pousser',
   pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos',
 };
 export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
@@ -57,13 +58,13 @@ export function effets(cap) {
 }
 
 // le résumé de la barre : les dégâts d'un touché, ou ce que fait la capacité, en quelques mots
-const SURFACE = { eau: 'Eau', huile: 'Huile', glace: 'Glace' };
+const SURFACE = { eau: 'Eau', huile: 'Huile', glace: 'Glace', piege: 'piège' };
 export function resume(cap) {
   const r = resultats(cap);
   if (r) return (cap.auto ? r[0].degats : r[2].degats) + (cap.aTerre ? ' · À terre' : '');
   switch (cap.type) {
-    case 'zone': return `zone ${SURFACE[cap.surf] ?? cap.surf}`;
-    case 'soin': return '+18–23 PV';
+    case 'zone': return cap.surf === 'piege' ? { machoires: 'piège · À terre', glu: 'piège · Gelé', collet: 'piège · tire 3 m' }[cap.piege] : `zone ${SURFACE[cap.surf] ?? cap.surf}`;
+    case 'soin': return cap.soin ? `+${cap.soin.base + 1 + cap.soin.mod}–${cap.soin.base + cap.soin.de + cap.soin.mod} PV` : '+18–23 PV';
     case 'soinZone': return `+${cap.soin} PV autour`;
     case 'poussee': return `${metres(cap.longueur)} m · +8`;
     case 'potion': return '+20 PV';
