@@ -59,7 +59,7 @@ Au niveau 1, environ 12 à 15 par round, soit un cinquième des dégâts de l'é
 | Le limier au camp, les 4 directions | `captures/limier-marche.gif` |
 | Les étapes du familier : le malinois, le loup, le loup alpha | `captures/familier-etapes.gif`, `familier/*.png` |
 | Au camp : le Traqueur et son limier qui le suit ; le menu de choix (onglet Paolitus) | `captures/jeu-camp.png`, `captures/jeu-choix.png` |
-| Au terrain d'entraînement : un piège posé, le limier qui mord | `captures/terrain-piege.png`, `captures/terrain-limier-mord.png` |
+| Au terrain d'entraînement : un piège posé, le limier qui mord, le limier abattu (assombri) | `captures/terrain-piege.png`, `captures/terrain-limier-mord.png`, `captures/terrain-limier-abattu.png` |
 
 ## Comment c'est fait
 - **Le Traqueur** est le personnage du générateur LPC, tel quel : capuche brune, manteau marron fourré, mantelet et pantalon vert foncé, écharpe et bandoulière noires, bracelets de bronze, ceinture de cuir, bottes à revers noires, carquois et arc long, barbe de trois jours (le lien est en tête de `public/assets/credits/entrainement-traqueur-au-limier.txt`). Le look a été choisi par Paolitus parmi une dizaine de variantes rendues.
@@ -75,7 +75,9 @@ Le Traqueur est la 9e classe à choisir au terrain (`src/entrainement/regles.js`
 
 **Seul Paolitus le joue** : une classe faite par un joueur (son `auteur` dans la fiche) ne se choisit au terrain que par lui, reconnu par la sentinelle du camp. Pour les autres, les flèches du lobby la sautent, et un lien qui la donne la remplace par la classe du kit.
 
-Pas encore joué : le limier n'est pas une créature du combat (on ne peut pas le frapper, donc pas de faiblesse « lié à sa bête »), ni le niveau 2 (Tir sur proie entravée).
+**Lié à sa bête, joué :** le limier est une créature du combat (30 PV), à côté du Traqueur, sans tour à lui. Les ennemis peuvent le frapper. S'il tombe, les attaques du Traqueur ont le désavantage et il ne peut plus lui donner d'ordre, jusqu'à ce qu'il le relève (Relever, une action, au contact). Un limier tombé n'est ni un héros KO ni une défaite.
+
+Pas encore joué : le niveau 2 (Tir sur proie entravée).
 
 ## La refaire
 Depuis `outil/` :

@@ -8,7 +8,7 @@
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
-import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis, equipePour, classesPour } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour } from './regles.js';
 import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
@@ -449,7 +449,7 @@ function dessinerInfo(info) {
     dom.info.replaceChildren(tete,
       el('div', { class: 'cc-jauge' }, el('span', { class: u.camp === 'e' ? 'ennemi' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
       listeEtats(u),
-      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : HEROS[u.type].role));
+      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : (HEROS[u.type] ?? FAMILIERS[u.type]).role));
   }
   dom.info.hidden = false;
   // à droite du pointeur, ou à gauche s'il n'y a pas la place
