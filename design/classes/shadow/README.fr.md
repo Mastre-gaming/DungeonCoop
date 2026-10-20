@@ -14,7 +14,22 @@ Un homme du désert, venu de très loin : chèche et écharpe indigo sur le bas 
 | En montant : Mirage et Lame de minuit (niveau 3), Marteau et enclume avec le Gardien (niveau 6), Mille ombres (niveau 20) | `captures/mirage.gif`, `lame-minuit.gif`, `marteau-enclume.gif`, `mille-ombres.gif` |
 | Ses trois icônes, sur l'enseigne des capacités du combat | `icones/enseigne-*.png` |
 
-Les animations sont des esquisses, au niveau des briques de `design/animations/` : elles disent ce qu'on doit voir. Elles ne sont pas encore jouées en combat (Shadow n'a pas ses règles au terrain d'entraînement).
+Les animations sont des esquisses, au niveau des briques de `design/animations/` : elles disent ce qu'on doit voir.
+
+## Au terrain d'entraînement (#198)
+Shadow se choisit à l'entrée du terrain, à côté des classes d'essai et du Traqueur de Paolitus. Comme toute classe de joueur, il ne se joue que par son auteur : FrapsFTW, reconnu par la sentinelle du camp (`peutJouer` dans `regles.js`). Ses règles sont dans `src/entrainement/regles.js` (`HEROS.shadow`, et `pasOmbre`, `coupDos`, `coupDos3` dans `CAPACITES`), au budget de `CLASS_TEMPLATE.fr.md` :
+
+| | |
+|---|---|
+| PV, déplacement | 120 PV (100 + 10 de CON + 10 des 2 points restants), 9 m par tour (6 cases) |
+| Élan | +1 par case parcourue (1,5 m), le Pas compris ; 5 au plus ; retombe à 0 s'il finit son tour sans bouger |
+| Dague | au contact, 8 + d4 + 2 |
+| Pas dans l'ombre (bonus) | jusqu'à 7,5 m : il ressort derrière un ennemi qu'un allié serre (à 4,5 m au plus, pas forcément collé), à l'opposé de cet allié. Il pose la Tenaille sur la cible jusqu'à la fin du round : elle compte pour ses coups à lui. Grisé tant qu'aucun ennemi n'est serré. Le trajet donne de l'Élan |
+| Coup dans le dos (action) | au contact, 14 + d6 + 2, ×2 sur une cible en Tenaille ou Exposée ; l'allié qui tient la cible fait un combo avec lui |
+| Coup dans le dos critique | le même, critique assuré, pour 3 Élan |
+| Faiblesse | Brûlant, ou debout dans le feu : plus de Pas dans l'ombre |
+
+En jeu, les animations sont celles des esquisses, en briques de la bibliothèque (`design/animations/outil/bibliotheque.mjs`, famille « Shadow ») : pour le Pas, une flaque d'encre s'ouvre à ses pieds, il s'y enfonce (coupé au ras du sol) dans des volutes violettes, son ombre file au ras du sol jusque derrière la cible, il remonte d'une flaque qui s'ouvre là-bas, et deux chevrons violets clignent autour de la cible ; pour le Coup dans le dos, un X d'ombre gravé sur son dos. Image par image : `captures/terrain-pas-et-coup-film.png`.
 
 ## Comment elle est faite
 La base vient du générateur LPC (le lien est en tête de `public/assets/credits/entrainement-shadow.txt`) : corps d'homme au teint bronze, capuche, tunique et pantalon sable, cape sable, sandales, dague. `outil/shadow.mjs` peint le reste sur chaque image, comme une couche `lpc-sprite-mods` posée sur la tête :

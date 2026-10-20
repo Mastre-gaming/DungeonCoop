@@ -8,7 +8,7 @@ Aujourd'hui, une capacité ne joue que le geste LPC du lanceur (sort, estoc, tai
 | Les esquisses | `index.html` (s'ouvre par un double-clic) | 25 effets, chacun sur une vraie scène du terrain d'entraînement (les personnages LPC, l'herbe et le tonneau du jeu), en boucle, avec leur déroulé image par image |
 | Leurs planches | `esquisses/<effet>.png`, `esquisses/<effet>-cles.png` | toutes les images d'un effet côte à côte (192 × 96 px chacune), et 4 images clés |
 | Leurs GIF | `captures/<effet>.gif` | pour les montrer ailleurs (PR, Discord) |
-| La bibliothèque | `bibliotheque/index.html` | 42 briques détourées et réutilisables, rangées par famille |
+| La bibliothèque | `bibliotheque/index.html` | 47 briques détourées et réutilisables, rangées par famille (dont 5 pour Shadow) |
 | Ses planches et son index | `bibliotheque/<brique>.png`, `bibliotheque/bibliotheque.json` | ce que le jeu chargera |
 | Le lecteur | `bibliotheque/lecteur.js` | quelle image montrer à un instant, et où la poser |
 | L'outil | `outil/` | tout se refait avec `node fabriquer.mjs` depuis `outil/` (Node seul, sans rien installer) |
