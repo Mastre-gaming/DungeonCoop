@@ -59,11 +59,21 @@ Au niveau 1, environ 12 à 15 par round, soit un cinquième des dégâts de l'é
 | Le limier au camp, les 4 directions | `captures/limier-marche.gif` |
 | Les étapes du familier : le malinois, le loup, le loup alpha | `captures/familier-etapes.gif`, `familier/*.png` |
 | Au camp : le Traqueur et son limier qui le suit ; le menu de choix (onglet Paolitus) | `captures/jeu-camp.png`, `captures/jeu-choix.png` |
+| Au terrain d'entraînement : un piège posé, le limier qui mord | `captures/terrain-piege.png`, `captures/terrain-limier-mord.png` |
 
 ## Comment c'est fait
 - **Le Traqueur** est le personnage du générateur LPC, tel quel : capuche brune, manteau marron fourré, mantelet et pantalon vert foncé, écharpe et bandoulière noires, bracelets de bronze, ceinture de cuir, bottes à revers noires, carquois et arc long, barbe de trois jours (le lien est en tête de `public/assets/credits/entrainement-traqueur-au-limier.txt`). Le look a été choisi par Paolitus parmi une dizaine de variantes rendues.
 - **Le limier et ses étapes** partent du loup de « [LPC] Wolf Animation » (Redshrike, OpenGameArt), repeint selon la clarté de chaque pixel. Le malinois : robe fauve, masque noir qui fonce en dégradé du cou au museau, voile charbonné sur le dos (des poils épars, pas une selle), sans collier. Le loup : gris. Le loup alpha : sombre et bleuté. Pour l'instant, le masque et le voile ne sont peints que sur les vues de profil.
 - **Au camp** (`src/47_limier.js`) : quand le héros incarné est le Traqueur, le limier le suit sur ses traces, un peu derrière lui, et s'arrête avec lui. Il ne bloque personne. À plusieurs, chaque joueur voit le limier de tout ami qui incarne le Traqueur : rien de plus ne passe sur le réseau, chacun le fait suivre la copie de cet ami.
+
+## Au terrain d'entraînement
+Le Traqueur est la 9e classe à choisir au terrain (`src/entrainement/regles.js`), la première vraie classe de l'équipe à s'y battre. Ce qui y est joué, au niveau 1 :
+- **Arc de chasse** (action, 12 m).
+- **Trois pièges** (action, à 7,5 m, un seul posé à la fois) : Mâchoires, Glu, Collet. Une petite tache au sol, que les joueurs voient et que les ennemis ne contournent pas. Le premier ennemi qui y entre, en marchant ou poussé, le déclenche ; posé sous un ennemi, il se referme tout de suite.
+- **Trois ordres au limier** (l'action bonus, donc un seul par tour) : Lécher les plaies, Mordre, Rabattre (une poussée de 3 m à 9 m, à l'opposé du Traqueur). Le limier court à la cible, agit et revient.
+- **Concentration** : +1 quand un coéquipier exploite une de ses préparations (comme le Voleur).
+
+Pas encore joué : le limier n'est pas une créature du combat (on ne peut pas le frapper, donc pas de faiblesse « lié à sa bête »), ni le niveau 2 (Tir sur proie entravée).
 
 ## La refaire
 Depuis `outil/` :

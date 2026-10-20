@@ -25,7 +25,17 @@ const COULEURS = {
   huile: [[44, 30, 18], [62, 44, 26], [120, 96, 60], [20, 12, 6]],
   glace: [[176, 222, 240], [206, 238, 250], [255, 255, 255], [96, 150, 186]],
   feu: [[214, 80, 22], [244, 136, 30], [255, 220, 90], [130, 36, 14]],
+  // les pièges du Traqueur : le fer des mâchoires, l'ambre de la glu, la corde du collet
+  'piege-machoires': [[92, 92, 98], [120, 120, 128], [200, 200, 210], [40, 40, 46]],
+  'piege-glu': [[176, 128, 40], [200, 156, 60], [240, 210, 120], [100, 70, 20]],
+  'piege-collet': [[150, 110, 60], [176, 136, 80], [220, 190, 130], [80, 56, 26]],
 };
+// Le limier du Traqueur (public/assets/lpc/compagnons/limier.png, comme au camp) : il se tient derrière son maître,
+// court à la cible d'un ordre, et revient.
+const LIGNES_CHIEN = { haut: 0, gauche: 1, bas: 2, droite: 3 };
+const VITESSE_CHIEN = 9 * T;
+const placeChien = (a) => ({ x: a.x + (a.dir === 'gauche' ? 26 : -26), y: a.y + 6 });
+const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' };
 
 let game, rendu, images, combat, salle, canvas;
 const aff = new Map();                 // ce que la vue montre de chaque créature (ça suit la file, pas l'état final)
@@ -107,13 +117,17 @@ function peupler() {
       pv: u.pv, ko: u.ko, mort: u.mort, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20, 5),
       pvMax: u.pvMax, plaque: creerPlaque(u),
     });
+    if (u.type === 'traqueur-au-limier' && images.limier) {
+      const a = aff.get(u.id), p = placeChien(a);
+      a.chien = { s: rendu.sprite(images.limier, 'limier', 64, 64), ombre: rendu.ombre(18, 4), x: p.x, y: p.y, dir: a.dir, t: 0, bouge: false, garde: false };
+    }
   }
   for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
 }
 
 // Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
 export function remplacer(nouveau) {
-  for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
+  for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); a.chien?.s.retirer(); a.chien?.ombre.retirer(); }
   for (const b of tonneaux.values()) b.s.retirer();
   aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
@@ -173,10 +187,10 @@ export function viser(x, y) { cam.cible = { x, y }; }
 function redessinerSurfaces(flammes = 0) {
   const W = fondSurfaces.width, H = fondSurfaces.height, M = combat.MAILLE * T;
   const img = ctxSurfaces.createImageData(W, H), p = img.data;
-  const type = new Uint8Array(W * H), TYPES = ['', 'eau', 'huile', 'glace', 'feu'];
+  const type = new Uint8Array(W * H), TYPES = ['', 'eau', 'huile', 'glace', 'feu', 'piege-machoires', 'piege-glu', 'piege-collet'];
   const r = M * 0.72;
   for (const [k, s] of Object.entries(combat.mailles())) {
-    const [i, j] = k.split(',').map(Number), cx = (i + 0.5) * M, cy = (j + 0.5) * M, n = TYPES.indexOf(s.t);
+    const [i, j] = k.split(',').map(Number), cx = (i + 0.5) * M, cy = (j + 0.5) * M, n = TYPES.indexOf(s.t === 'piege' ? `piege-${s.v}` : s.t);
     for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
       // un bord un peu irrégulier, toujours pareil au même endroit
@@ -327,6 +341,19 @@ function scene(e) {
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
+    case 'piege': flottant(a, NOM_PIEGE[e.v] ?? 'Piège !', 'info'); fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-lourd', { x: a.x, y: a.y }); return { duree: 0.35 };
+    case 'limier': {
+      const c = a?.chien; if (!c) return { duree: 0 };
+      const b = e.vers ? aff.get(e.vers) : null, dep = { x: c.x, y: c.y };
+      const fin = b ? { x: b.x + (c.x < b.x ? -24 : 24), y: b.y + 4 } : placeChien(a);
+      const duree = Math.min(0.7, Math.max(0.15, Math.hypot(fin.x - dep.x, fin.y - dep.y) / VITESSE_CHIEN));
+      c.garde = true; c.t = 0;
+      if (b) viser((a.x + b.x) / 2, (a.y + b.y) / 2);
+      return { duree, maj(t, k) {
+        c.x = dep.x + (fin.x - dep.x) * k; c.y = dep.y + (fin.y - dep.y) * k; c.bouge = true;
+        if (Math.abs(fin.x - dep.x) + Math.abs(fin.y - dep.y) > 1) c.dir = versDir(fin.x - dep.x, fin.y - dep.y);
+      }, fin() { c.bouge = false; c.garde = !!b; if (b) c.dir = versDir(b.x - c.x, b.y - c.y); } };
+    }
     case 'zone': marques.zone = { x: e.x, y: e.y, r: e.r, surf: e.surf }; dessinerMarques(); return { duree: 0.35, fin() { marques.zone = null; dessinerMarques(); } };
     case 'menace': marques.menace = { x: e.x, y: e.y, r: e.r }; dessinerMarques(); viser(e.x * T, e.y * T); return { duree: 0.85, fin() { marques.menace = null; dessinerMarques(); } };
     case 'eclair': pourEcouteurs(e); return { duree: 0.35 };
@@ -434,6 +461,7 @@ export function update(dt) {
     poserPerso(a);
     poserPlaque(a);
   }
+  for (const a of aff.values()) if (a.chien) poserChien(a, dt);
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
@@ -474,6 +502,21 @@ function poserPerso(a) {
   a.grand?.cacher(true); a.s64.cacher(false);
   a.s64.poser(a.x - 32, a.y - 60 + a.enfonce * 26, a.y, col * 64, rang * 64);
   a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);
+}
+
+function poserChien(a, dt) {
+  const c = a.chien;
+  c.t += dt;
+  if (!c.garde) {                       // hors des ordres : il reste derrière son maître
+    const p = placeChien(a), dx = p.x - c.x, dy = p.y - c.y, l = Math.hypot(dx, dy), pas = Math.min(l, VITESSE_CHIEN * 0.6 * dt);
+    c.bouge = l > 2;
+    if (c.bouge) { c.x += (dx / l) * pas; c.y += (dy / l) * pas; c.dir = versDir(dx, dy); } else if (!a.ko) c.dir = a.dir;
+  }
+  c.s.cacher(a.cache); c.ombre.cacher(a.cache);
+  if (a.cache) return;
+  const col = c.bouge ? Math.floor(c.t * 10) % 5 : 5;
+  c.s.poser(c.x - 32, c.y - 62, c.y, col * 64, LIGNES_CHIEN[c.dir] * 64);
+  c.ombre.poser(c.x, c.y - 1);
 }
 
 // Quand la file est vide, la vue colle à l'état du combat (au cas où une scène a été sautée).
