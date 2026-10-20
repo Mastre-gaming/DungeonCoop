@@ -545,6 +545,8 @@ function resynchroniser() {
   }
 }
 
+// La planche LPC d'un personnage (pour le médaillon de sa fiche).
+export const planche = (type) => images[`perso_${type === 'brt' ? 'brute-ennemie' : type}`] ?? null;
 // Un portrait (la tête, de face) pris sur la planche d'un personnage, pour l'interface.
 export function portrait(type, taille = 64) {
   const nom = type === 'brt' ? 'brute-ennemie' : type, img = images[`perso_${nom}`];
@@ -558,7 +560,7 @@ export function dispose() { for (const f of flottants) f.el.remove(); calquePlaq
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces, remplacer, basculerPlaques, effets,
+  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },

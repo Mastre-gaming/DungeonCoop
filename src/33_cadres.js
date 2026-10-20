@@ -192,8 +192,9 @@ export function ecu() {
 // Le médaillon du héros (60 × 60 pixels de dessin) : une petite scène du camp de nuit, le vrai héros LPC (tête et épaules),
 // une ombre en bas, et devant lui l'anneau de laiton et ses quatre rivets.
 //   planche : la planche LPC du héros (64 × 64 par image) ; ligne, colonne : l'image à prendre (marche vers le bas, 1re image).
-export function medaillon(planche, { ligne = 10, colonne = 0 } = {}) {
-  const N = 60, cx = 29.5, cy = 29.5, R_IN = 22, R_OUT = 28, t = toile(N, N);
+//   p : la taille d'un pixel de dessin (2 au camp ; 1 pour les petits cadres du combat : 60 × 60 px d'écran).
+export function medaillon(planche, { ligne = 10, colonne = 0, p = P } = {}) {
+  const N = 60, cx = 29.5, cy = 29.5, R_IN = 22, R_OUT = 28, t = toile(N, N, p);
   // la scène, dans le disque intérieur
   const scene = (x, y) => {
     if (y < 18) return (x * 7 + y * 13) % 53 === 0 ? C.laitonClair : y < 10 ? '#1b2440' : '#24304e';   // le ciel de nuit et ses étoiles
@@ -222,7 +223,7 @@ export function medaillon(planche, { ligne = 10, colonne = 0 } = {}) {
   for (let y = 44; y < N; y++) for (let x = 0; x < N; x++) {
     if (!dans(x, y, R_IN)) continue;
     const k = y < 48 ? 0.3 : 0.55;
-    for (let py = y * P; py < (y + 1) * P; py++) for (let qx = x * P; qx < (x + 1) * P; qx++) {
+    for (let py = y * p; py < (y + 1) * p; py++) for (let qx = x * p; qx < (x + 1) * p; qx++) {
       const i = (py * t.c.width + qx) * 4;
       d[i] = d[i] * (1 - k) + 0x1e * k; d[i + 1] = d[i + 1] * (1 - k) + 0x13 * k; d[i + 2] = d[i + 2] * (1 - k) + 0x0c * k;
     }
