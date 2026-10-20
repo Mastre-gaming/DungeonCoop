@@ -158,6 +158,40 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   - **Le flou, pour tout le château :** comme la grande muraille, une fois dans le camp chaque mur s'estompe et devient flou selon la distance du héros à ce mur (presque net collé à lui, disparu à 9 cases). En visite (la carte du dashboard), ils restent pleins et nets.
   - **Dans le jeu :** `src/45_murs.js`, les pièces dessinées par `design/camp/outils/murs_jeu.py` (`public/assets/lpc/murs.png`, `src/data/murs.json`). La ligne des murs bloque toujours, finie ou pas.
 
+### Le jour et la nuit (proposé le 19 oct, design validé par Mope : « je valide tout bravo »)
+- **Le camp suit la vraie heure de Paris :** l'aube de 6 h à 8 h, le jour jusqu'à 18 h, le crépuscule jusqu'à 20 h 30, puis la nuit ; on passe de l'un à l'autre en une demi-heure. Sur la carte du dashboard (la visite), le camp reste en plein jour, pour rester lisible.
+- **La nuit, seul ce qui brûle éclaire autour de soi :** le feu de camp, le lampadaire, la forge de Baba, la lanterne de la table des cartes, les braseros du pont, une bougie dans chaque tente, et les lanternes des portes secondaires une fois leur mur fini. Les fenêtres des tours s'allument (à peine, quand la muraille n'est plus qu'un voile, dans le camp), et des lucioles volent près des bosquets. Au crépuscule, les fenêtres et les lanternes s'allument déjà.
+- **La nuit, les ouvriers et le chef de chantier vont se coucher :** il ne reste que le matériel et le panneau.
+- **La torche :** au crépuscule et la nuit, chaque héros (le sien et ceux des autres joueurs) porte une torche, allumée toute seule et éteinte à l'aube : serrée dans sa main droite (sa main passe par-dessus le manche, et la torche suit sa main quand il marche), penchée vers l'extérieur, loin du visage (validé par Mope le 19 oct : « la torche doit être mise dans la main du joueur »). Elle éclaire 3 à 4 cases autour de lui, d'une lumière chaude, et sa flamme danse.
+- **La maquette** est dans `design/camp/jour-nuit/` (dessinée par `design/camp/outils/jour_nuit.py` et `torche.py`). **Dans le jeu :** `src/46_jour_nuit.js` (deux voiles de lumière posés sur le camp : l'un multiplie, l'autre ajoute le chaud, les fenêtres et les lucioles) ; les fenêtres sont relevées dans l'image de la muraille par `design/camp/outils/jour_nuit_jeu.py` (`src/data/fenetres.json`). `?heure=22:30` force une heure.
+
+### La météo (proposée le 19 oct, design validé par Mope : « Météo validée »)
+- **Elle change toute seule toutes les trois heures (heure de Paris),** la même pour tous les joueurs, et la plupart du temps il fait beau : sur une journée, environ 7 créneaux sur 10 au beau temps, puis la pluie, plus rarement l'orage. Le brouillard ne vient que le matin (de 3 h à 9 h) et se lève dans la matinée. La pluie arrive et part en dix minutes, le brouillard en une demi-heure. Sur la carte du dashboard (la visite), beau temps. La neige viendra avec les saisons.
+- **La pluie :** le ciel se couvre, la pluie tombe en biais (de fines rayures, un pixel vers la gauche tous les trois vers le bas), la terre mouillée fonce et des flaques se forment au milieu des chemins (et sur la place du feu). Les gouttes éclaboussent la terre et l'herbe, jamais un toit, un arbre ou un personnage, qui passent devant. Les douves font des ronds, pas le pont.
+- **L'orage :** plus sombre, la pluie plus forte et plus longue ; de temps en temps (toutes les 6 à 18 secondes), un éclair blanchit tout le camp en deux éclats rapprochés.
+- **Le brouillard du matin :** plus épais vers les douves et dans la forêt du bord, plus léger au milieu du camp ; ses nappes dérivent lentement.
+- **Avec le jour et la nuit :** une nuit de pluie, le feu et les torches brillent sous la pluie ; la pluie et la brume ne brillent pas dans le noir.
+- **La maquette** est dans `design/camp/meteo/` (dessinée par `design/camp/outils/meteo.py`). **Dans le jeu :** `src/48_meteo.js` (un voile au sol, sous tout le reste, qui lit le sol du camp et celui de la place ; le ciel couvert ; la pluie et le brouillard par-dessus tout ; l'éclair). `?meteo=pluie` (ou `orage`, `brouillard`, `beau`) force un temps ; en `?test`, beau temps et midi.
+
+### Les animaux (proposés le 19 oct, design validé par Mope le 20 oct : « je valide les animaux »)
+- **Les poules :** trois blanches et deux rousses picorent autour de la cabane de l'ouest et de l'abreuvoir. Elles font quelques pas, s'écartent quand un héros passe trop près, et rentrent sous la cabane la nuit et quand il pleut.
+- **Le chat :** un chat roux dort roulé en boule sur les pavés, au chaud près du feu ; de temps en temps il s'étire, puis se rendort.
+- **Les lapins :** deux à chaque lisière de la forêt (ouest et est), dans l'herbe seulement. Ils font de petits bonds ; un héros approche : ils détalent vers les arbres et disparaissent, puis reviennent un peu plus tard. La nuit, ils dorment.
+- **Les canards :** un colvert et deux canes ensemble, et un autre colvert plus loin, nagent lentement le long des douves et font demi-tour ; la nuit, ils dorment sur l'eau.
+- **Les papillons :** quelques-uns volettent au-dessus de l'herbe, le jour et au beau temps seulement.
+- **Les règles :** une bête ne se pose que là où elle tient tout entière sur le sol dégagé (terre ou herbe), jamais devant un toit, un arbre ou un mur ; les bêtes ne bloquent personne. Elles sont dessinées au pixel dans le style LPC (contour sombre, trois teintes, lumière en haut à gauche).
+- **La maquette** est dans `design/camp/animaux/` (dessinée par `design/camp/outils/animaux.py`). **Dans le jeu :** `src/49_animaux.js` ; la planche des bêtes et leurs places sont fabriquées par `design/camp/outils/animaux_jeu.py` (`public/assets/lpc/animaux.png`, `src/data/animaux.json`).
+
+### Les scènes entre habitants (proposées le 19 oct, design validé par Mope le 20 oct : « parfait je valide »)
+- **De temps en temps** (toutes les 25 à 60 secondes), deux ou trois habitants qui se croisent font quelque chose ensemble pendant une vingtaine de secondes, puis chacun repart à ses occupations. Une scène à la fois.
+- **La veillée au feu** (plus souvent le soir et la nuit) : trois héros autour du feu, chacun parle à son tour ; le héros de départ s'assoit sur le banc et rit (seule sa planche sait s'asseoir ; sinon, un autre se tient debout).
+- **Le crieur et son public :** quand il crie une nouvelle, deux ou trois promeneurs viennent l'écouter au pied de l'estrade.
+- **Une commande à la forge** (le jour) : le chef de chantier quitte son panneau, va à pied chercher des outils devant la forge pendant que le forgeron frappe sur l'enclume, puis il rentre.
+- **Un duel à l'enclos** (pas la nuit) : deux héros s'entraînent l'un contre l'autre, un troisième les encourage, accoudé à la barrière.
+- **Quand ils se parlent, ils bougent :** celui qui parle fait des gestes des mains, ceux qui écoutent hochent la tête. Au-dessus de celui qui parle, une petite bulle à image (un point d'exclamation, un cœur, un rire, une étoile, un marteau…), sans texte : les répliques restent à l'équipe.
+- **On parle à l'un d'eux (E) :** il laisse la scène, elle s'arrête, et chacun repart.
+- **La maquette** est dans `design/camp/scenes/` (des petites animations, dessinées par `design/camp/outils/scenes.py`). **Dans le jeu :** `src/50_scenes.js` (les héros vont à leur place par les chemins, `42_promeneurs.js` les y garde ; le chef de chantier quitte son panneau grâce à `44_chantier.js`).
+
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
 - **Les niveaux :**
@@ -279,6 +313,16 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
   - **Héberger**, c'est donner un code à cinq lettres, que les amis tapent pour **rejoindre** (skill `party-net`, sans serveur à nous). Chacun voit les autres marcher.
   - **Au terrain d'entraînement, ensemble (#80) :** en groupe, E devant le terrain emmène tout le groupe dans son lobby (n'importe qui peut le demander : l'hôte emmène tout le monde). Au retour, le groupe se refait au camp avec le même code.
 - **S'approcher d'un lieu** affiche son axe, son niveau, ses points, et les missions de cet axe (ouvertes et récentes). Un lien mène au tableau de travail pour en prendre une.
+
+### L'écran titre (demandé le 19 oct)
+- **Avant le camp,** un écran titre en pixel art rétro (`src/45_titre.js`), qui raconte la soirée : au premier plan, notre camp au crépuscule, fermé par sa palissade, avec sa porte gardée par la sentinelle (tentes, bannières, râtelier, cible, tonneaux, bois coupé, braseros, lanterne, des rats) et l'équipe autour du feu ; derrière la porte, le chemin de la montée et ses 6 salles (la lisière, le gué, le moulin… un petit feu par salle, des monstres qui patrouillent) ; au loin, la tour sur sa montagne, trois étages et la lueur du gardien au sommet, qui balaie la plaine. Le menu **Jouer, Rejoindre, Réglages, Retour au dashboard** (Jouer ouvre le camp en solo ; on héberge au camp, avec « Jouer à plusieurs ») et « Autour du feu » (les médaillons des héros) sont dans les cadres du HUD épique ; la date du build est dans un coin. Un lien `?code=ABCDE` ouvre Rejoindre, le code déjà tapé ; `?test`, `?spot`, `?visite` et `?hote` le passent.
+- **Les passages, comme une seule caméra :** en venant du dashboard, un écran noir (le fond de la page, pendant le chargement), puis le ciel de nuit, et la caméra descend sur le paysage et la tour. Après Jouer ou Rejoindre, la caméra **bascule** : l'écran titre se dissout dans le sol du vrai camp vu en perspective sous l'horizon (comme le « mode 7 » des consoles 16 bits), puis elle pivote jusqu'à regarder droit vers le bas, le soir se lève, et l'image tombe pile sur le camp vivant. « Retour au dashboard », depuis le menu, fait remonter la caméra au ciel de nuit, puis le noir. Dans le camp, la case **« Retour au dashboard » (B)** fait le chemin à l'envers, en un peu plus d'une seconde : la caméra bascule du camp vers l'horizon de l'écran titre, remonte au ciel de nuit, le noir, puis le dashboard.
+- **La règle des sièges : les héros de l'équipe sont autour du feu.** Quatre sièges, remplis dans cet ordre :
+  1. le héros que **j'ai choisi** dans le menu du choix du héros (gardé dans ce navigateur) ;
+  2. les héros **créés par les joueurs** : chaque fiche de `content/classes/` dont l'auteur est un pseudo GitHub (Baba Brisenclume, par DonBabaa) ;
+  3. le **set de base** (Chevalier, Druide, Barde, Éclaireuse, puis le héros de départ) pour les sièges vides.
+
+  Un héros n'est jamais assis deux fois. Dès qu'un joueur crée son héros, il apparaît sur l'écran titre de tout le monde ; quand le choix de chacun sera partagé (par le Worker du camp), **le dernier héros choisi par chaque joueur** prendra sa place au rang 2, à la place de ceux qu'il a créés.
 
 ### Le héros de départ (validé le 18 oct)
 - **Un humain de base du générateur LPC :** peau claire, tête d'homme humain, expression neutre, cheveux simples châtain foncé, tee-shirt blanc, pantalon et bottes marron. Le lien du générateur est dans `dl/lpc/heros/credits.txt`.

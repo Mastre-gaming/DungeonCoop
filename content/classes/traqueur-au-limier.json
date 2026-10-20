@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "traqueur-au-limier",
+  "nom": "Le Traqueur au limier",
+  "auteur": "PCrrfng",
+  "phrase": "Ses pièges clouent la proie sur place, son limier la rabat dedans ou soigne un allié, et lui l'achève à l'arc.",
+  "role": "controle",
+  "twist": "un familier qui rabat la proie et soigne les alliés",
+  "archetype": "Ranged",
+  "caracs": { "FOR": 10, "DEX": 15, "CON": 14, "INT": 8, "SAG": 14, "CHA": 10 },
+  "pv": 110,
+  "vitesse": 6,
+  "ressource": "concentration",
+  "capacites": [
+    { "nom": "Arc de chasse", "sorte": "base", "slot": "action", "portee": "tres-longue", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "une flèche à 12 m", "cree": [], "utilise": ["aterre", "gele"], "renforts": [] },
+    { "nom": "Pose de piège", "sorte": "preparation", "slot": "action", "portee": "moyenne", "zone": "aucune", "carac": "SAG", "cout": "", "effet": "un piège au sol à 7,5 m ; le premier ennemi qui y entre le déclenche. Au choix en le posant (renfort) : Mâchoires (À terre, ne bouge pas à son prochain tour), Glu (Gelé), Collet (tiré de 3 m vers le Traqueur)", "cree": ["aterre", "gele", "attirer"], "utilise": [], "renforts": ["effet"] },
+    { "nom": "Le limier", "sorte": "soutien", "slot": "bonus", "portee": "longue", "zone": "aucune", "carac": "SAG", "cout": "", "effet": "le familier : un malinois de 30 PV et 9 m par tour, sans tour à lui ; un ordre par tour, en action bonus. Lécher les plaies : il court au contact d'un allié à 9 m, 8 + d4 + SAG PV et il retire un état (Brûlure, Gelé ou Huilé). Mordre : 5 + d4, la cible est Exposée. Rabattre (renfort) : il pousse un ennemi de 3 m, dans un piège, une surface ou le fossé", "cree": ["expose", "poussee"], "utilise": [], "renforts": ["effet"] }
+  ],
+  "familier": {
+    "nom": "le limier",
+    "race": "malinois",
+    "pv": 30,
+    "vitesse": 6,
+    "ordres": ["Lécher les plaies", "Mordre", "Rabattre"],
+    "regle": "pas de tour à lui : il agit sur l'action bonus du Traqueur, un ordre par tour ; s'il tombe, le Traqueur le relève avec une action",
+    "etapes": [
+      { "niveau": 1, "nom": "le malinois", "planche": "design/classes/traqueur-au-limier/familier/malinois.png" },
+      { "niveau": 7, "nom": "le loup", "planche": "design/classes/traqueur-au-limier/familier/loup.png", "gain": "45 PV ; Lécher les plaies rend 14 + d6" },
+      { "niveau": 15, "nom": "le loup alpha", "planche": "design/classes/traqueur-au-limier/familier/alpha.png", "gain": "60 PV ; deux ordres par tour ; sa morsure met À terre" },
+      { "niveau": 20, "nom": "L'hallali", "gain": "une fois par combat, trois loups surgissent et rabattent chacun un ennemi dans un piège" }
+    ]
+  },
+  "faiblesse": "lié à sa bête : si le limier tombe, le Traqueur a le désavantage jusqu'à ce qu'il le relève (une action) ; et un chien qui soigne devient une cible prioritaire",
+  "sousClasses": [
+    { "nom": "Maître-piégeur", "idee": "plus de pièges, plus forts : niv. 3 deux pièges posés à la fois · niv. 7 les mâchoires mordent (8 + d4) · niv. 11 les pièges sont invisibles aux ennemis · niv. 15 il déclenche un piège à distance, d'un tir" },
+    { "nom": "Maître-chien", "idee": "Le limier grandit, le soin aussi : niv. 3 la Curée (quand une proie piégée tombe, le limier soigne l'allié le plus blessé de 10) · niv. 7 le limier devient loup · niv. 11 Garde (en réaction, le loup intercepte un ennemi qui fonce sur un allié) · niv. 15 loup alpha, deux ordres par tour" }
+  ],
+  "look": {
+    "corps": "un homme au teint bronze, cheveux et barbe de trois jours noirs",
+    "tenue": "capuche brune, manteau marron fourré, mantelet et pantalon vert foncé, écharpe et bandoulière noires, bracelets de bronze, ceinture de cuir, bottes à revers noires, carquois et arc long",
+    "touche": "son limier, un malinois au masque noir, qui le suit partout",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hair=Plain_raven&beard=5_O'clock_Shadow_raven&hat=Hood_brown&neck=Scarf_black&quiver=Quiver_quiver&weapon=Normal_medium&shoulders=Mantal_forest&jacket=Santa_coat_brown&bauldron=Bauldron_black&belt=Leather_Belt_leather&legs=Pants_forest&shoes=Rimmed_Boots_black",
+    "base": "traqueur-au-limier"
+  },
+  "references": "Niveau 2 : Tir sur proie entravée (exploitation, 14 + d6 + DEX, ×2 sur une cible À terre ou Gelée). Niveau 6, coup d'équipe avec la Brute : la Battue (le limier rabat, la Brute projette la proie à travers deux pièges). Niveau 20, signature : L'hallali."
+}

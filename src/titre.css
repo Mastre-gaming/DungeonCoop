@@ -1,0 +1,77 @@
+/* L'écran titre (src/45_titre.js) : la scène en pixels ; le menu et « Autour du feu » dans le cadre de bois du HUD épique
+   (hud.css, .cadre-epique), des plaques de bois aux bords nets dedans.
+   --s : la taille d'un pixel du HUD, en pixels d'écran ; --px : la même chose, en longueur CSS. */
+.ecran-titre { --s: 3; --px: calc(var(--s) * 1px); position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #07040b; color: var(--creme);
+  font-family: var(--titre); }
+/* pendant les passages vers le camp et depuis le camp (45_titre.js : retirer, remonter), l'écran titre se dissout en trame
+   sur le camp : son fond devient transparent, et il ne prend plus la souris */
+.ecran-titre.transparent { background: transparent; pointer-events: none; }
+html.a-titre #aide, html.a-titre #tampon, html.a-titre #chargement { visibility: hidden; }
+.titre-scene { position: absolute; left: 0; top: 0; image-rendering: pixelated; image-rendering: crisp-edges; }
+.titre-bascule { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; pointer-events: none; image-rendering: pixelated; }
+.titre-bascule[hidden] { display: none; }
+.titre-nom { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); margin: 0; }
+
+/* pendant le portail, et dès qu'on a choisi : le HUD s'efface */
+.titre-menu, .titre-equipe, .titre-aide, .titre-tampon { transition: opacity .35s steps(4), transform .35s steps(4); }
+.ecran-titre.intro .titre-menu, .ecran-titre.intro .titre-equipe, .ecran-titre.intro .titre-aide, .ecran-titre.intro .titre-tampon { opacity: 0; transform: translateY(calc(var(--px) * 4)); }
+.ecran-titre.fini .titre-menu, .ecran-titre.fini .titre-equipe, .ecran-titre.fini .titre-aide, .ecran-titre.fini .titre-tampon { opacity: 0; }
+
+/* --- Le menu -------------------------------------------------------------------------------------------------------- */
+.titre-menu.cadre-epique { position: absolute; display: grid; gap: calc(var(--px) * 2.5); box-sizing: border-box; width: calc(var(--px) * 104);
+  max-width: calc(100vw - 32px); padding: calc(var(--px) * 2) calc(var(--px) * 1.5); }
+.titre-choix { position: relative; display: grid; gap: calc(var(--px) * 1); box-sizing: border-box; width: 100%; margin: 0;
+  padding: calc(var(--px) * 2.5) calc(var(--px) * 4) calc(var(--px) * 2.5) calc(var(--px) * 8);
+  text-align: left; text-decoration: none; cursor: pointer; color: #e9cfa4; background: #3b2716; border: var(--px) solid #1e130c; border-radius: 0;
+  box-shadow: inset 0 var(--px) 0 #573726, inset 0 calc(var(--px) * -2) 0 #2b1c1d, 0 var(--px) 0 #07040b; }
+.titre-choix-nom { font: 500 calc(var(--px) * 7) / 1 var(--titre); letter-spacing: .02em; }
+.titre-choix-note { font: 500 calc(var(--px) * 3.6) / 1.1 var(--titre); color: #c9a77a; }
+.titre-choix:focus, .titre-choix:hover { outline: none; color: #fff6d8; background: #85581b;
+  box-shadow: inset 0 var(--px) 0 #c0883a, inset 0 calc(var(--px) * -2) 0 #573726, 0 var(--px) 0 #07040b, 0 0 0 var(--px) #ffd35a; }
+.titre-choix:focus .titre-choix-note, .titre-choix:hover .titre-choix-note { color: #ffe9b8; }
+/* le rivet de laiton à gauche de chaque plaque ; la flèche qui clignote devant le choix en cours */
+.titre-choix::after { content: ''; position: absolute; left: calc(var(--px) * 2.5); top: 50%; width: calc(var(--px) * 3); height: calc(var(--px) * 3);
+  transform: translateY(-50%); background: #b78c41; box-shadow: inset var(--px) var(--px) 0 #f0dfa0, inset calc(var(--px) * -1) calc(var(--px) * -1) 0 #986a20, 0 0 0 calc(var(--px) * .5) #1e130c; }
+.titre-choix:focus::before, .titre-choix:hover::before { content: ''; position: absolute; left: calc(var(--px) * -9); top: 50%;
+  width: 0; height: 0; transform: translateY(-50%); border: calc(var(--px) * 3) solid transparent; border-left: calc(var(--px) * 4) solid #ffd35a;
+  animation: titre-clignote 1s steps(2) infinite; }
+.titre-choix[data-action="dashboard"] { background: #2b1c1d; }
+.titre-choix[data-action="dashboard"] .titre-choix-nom { font-size: calc(var(--px) * 5.5); color: #c9b08a; }
+@keyframes titre-clignote { 50% { opacity: 0; } }
+
+.titre-sous { min-width: 0; display: grid; gap: calc(var(--px) * 2); margin: calc(var(--px) * -1) 0 0; padding: calc(var(--px) * 3) calc(var(--px) * 4);
+  background: var(--tex-parchemin, none) 0 0 / 64px 64px, #f4ead2; color: #2a2333; border: var(--px) solid #1e130c; box-shadow: inset 0 0 0 var(--px) #85581b, 0 var(--px) 0 #07040b; }
+.titre-sous[hidden] { display: none; }
+.titre-note { font: 500 calc(var(--px) * 4.5) / 1.2 var(--titre); }
+.titre-ligne { display: flex; gap: calc(var(--px) * 2); }
+.titre-code { flex: 1; width: 0; min-width: 0; box-sizing: border-box; padding: var(--px) calc(var(--px) * 2); font: 700 calc(var(--px) * 7) / 1 var(--titre);
+  letter-spacing: .25em; text-transform: uppercase; color: #2a2333; background: #fffaf0; border: var(--px) solid #573726; border-radius: 0; }
+.titre-code:focus { outline: var(--px) solid #ffd35a; }
+.titre-petit { padding: var(--px) calc(var(--px) * 3); font: 500 calc(var(--px) * 5.5) / 1 var(--titre); color: #fff6d8; background: #573726;
+  border: var(--px) solid #1e130c; border-radius: 0; cursor: pointer; box-shadow: inset 0 calc(var(--px) * -1) 0 #2b1c1d; }
+.titre-petit:focus, .titre-petit:hover { outline: none; background: #85581b; }
+.titre-statut { margin: 0; min-height: 1em; font: 500 calc(var(--px) * 4.5) / 1.2 var(--titre); color: #a83224; }
+.titre-statut:empty { display: none; }
+.titre-reglage { display: grid; grid-template-columns: calc(var(--px) * 22) 1fr calc(var(--px) * 16); align-items: center; gap: calc(var(--px) * 2);
+  font: 500 calc(var(--px) * 5) / 1 var(--titre); }
+.titre-reglage input { width: 100%; accent-color: #85581b; }
+.titre-valeur { text-align: right; }
+
+/* --- Autour du feu : les héros de l'équipe (la règle des sièges), en bas au milieu ------------------------------------- */
+.titre-equipe.cadre-epique { position: absolute; left: 50%; bottom: calc(var(--px) * 5); transform: translateX(-50%); margin: 0;
+  padding: calc(var(--px) * 1) calc(var(--px) * 4) calc(var(--px) * 2); display: grid; justify-items: center; gap: calc(var(--px) * 1); }
+.ecran-titre.intro .titre-equipe.cadre-epique { transform: translate(-50%, calc(var(--px) * 4)); }
+.titre-equipe h2 { margin: 0; font: 700 calc(var(--px) * 5) / 1 var(--titre); color: var(--or); letter-spacing: .08em; text-transform: uppercase; text-shadow: var(--contour-or); }
+.titre-equipe ul { display: flex; gap: calc(var(--px) * 6); margin: 0; padding: 0; list-style: none; }
+.titre-equipe li { display: grid; justify-items: center; gap: calc(var(--px) * .5); min-width: calc(var(--px) * 26); }
+.titre-medaillon { width: calc(var(--px) * 20); height: calc(var(--px) * 20); image-rendering: pixelated; }
+.titre-heros { font: 500 calc(var(--px) * 4.2) / 1 var(--titre); color: #fff3dc; white-space: nowrap; }
+.titre-qui { font: 500 calc(var(--px) * 3.4) / 1 var(--titre); color: #c9a77a; white-space: nowrap; }
+
+.titre-aide, .titre-tampon { position: absolute; bottom: calc(var(--px) * 4); margin: 0; font: 500 calc(var(--px) * 4) / 1 var(--titre);
+  color: #fff3dc; text-shadow: 0 var(--px) 0 #07040b, var(--px) 0 0 #07040b, calc(var(--px) * -1) 0 0 #07040b; }
+.titre-aide { left: calc(var(--px) * 6); }
+.titre-tampon { right: calc(var(--px) * 6); padding: var(--px) calc(var(--px) * 2); color: #2a2333; text-shadow: none; background: #f4ead2;
+  border: var(--px) solid #573726; box-shadow: 0 0 0 var(--px) #1e130c; }
+@media (max-width: 900px) { .titre-aide { display: none; } .titre-equipe .titre-qui { display: none; } }
+@media (max-width: 640px) { .titre-equipe { display: none !important; } }

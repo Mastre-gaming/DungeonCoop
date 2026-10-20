@@ -7,7 +7,8 @@ From the owner's answers on 17 Oct 2026. The story belongs to the team. This fil
 |---|---|
 | Map shape | a line of rooms, with side choices |
 | Same map every run? | the layout is fixed; what's in each room is shuffled from a pool |
-| Room types | fight, elite fight, story event, rest, shop, treasure, turn-based training mini-game, puzzle or trap |
+| Room types | fight, elite fight, story event, rest, stall, treasure, turn-based training mini-game, puzzle or trap |
+| Rewards | **no gold and no items** (owner, 20 Oct: no currency and no item system during a run, « pas sûr qu'il y en ait besoin »): a reward is **1 ability upgrade out of 3**, free. The **stall** (it replaces the shop) offers one; the **treasure** room offers one, or refilled potions; once the heroes reach the level cap of 20, every room offers one. Potions are the only thing a hero carries |
 | Rooms per run | 9 |
 | End of a chapter | the group picks one of two bosses |
 | Getting harder | within a run: more enemies, tougher types, nastier rooms (hazards, surfaces), enemies with new tricks. Across chapters: enemies follow the heroes' level, since chapters play in any order |
@@ -45,7 +46,7 @@ Each side choice trades safety for reward: the elite is harder than the treasure
 ## What's shuffled each run
 - which enemy group is in each fight room, from that chapter's pool;
 - which event, puzzle and mini-game appear;
-- what the shop and the treasure room offer;
+- which upgrades the stall and the treasure room offer;
 - the two bosses on offer, from the chapter's pool.
 
 **Pools needed per chapter for runs to feel different:** about 8 enemy groups, 4 events, 3 puzzles, 2 mini-games and 3 bosses. Three chapters is about three times that. This is the content the builder loop fills, one owner per kind.
@@ -53,23 +54,13 @@ Each side choice trades safety for reward: the elite is harder than the treasure
 ## In scope now: the training mini-game
 Paolitus's idea comes in as a **turn-based** room: short sparring challenges on the grid (for example, "knock three dummies off the ledge in two rounds"). It stays turn-based, so "no real-time action" still holds. Paolitus owns chapters and events, so it's his room to design.
 
-## The wipe roll (owner, 17 Oct: "roll for gold, consumables, items")
-When the whole party falls, everyone wakes at the last rest room, and **each hero rolls a d20** in plain view (first-draft numbers):
+## A wipe (owner, 20 Oct; it replaces the wipe roll of 17 Oct)
+When the whole party falls, everyone wakes at the last rest room and **loses their potions**. There is no gold or gear to lose any more, so the d20 wipe roll is gone.
 
-| d20 | That hero loses |
-|---|---|
-| 1 | one piece of gear (chosen at random) **and** half their gold |
-| 2–5 | one piece of gear (chosen at random) |
-| 6–10 | all their consumables (potions, flasks) |
-| 11–15 | half their gold |
-| 16–19 | a quarter of their gold |
-| 20 | nothing; they also find a potion |
-
-- Levels and unlocks are never lost.
-- Advantage from teamwork applies here too: a hero who revived an ally during the lost fight rolls with advantage.
+- Levels, ability upgrades and unlocks are never lost.
 - The room that wiped the party keeps its enemies, so the retry is the same fight with a better plan.
 
 ## Tensions
-1. **A run still can't be lost outright.** The wipe roll makes failure hurt without ending the run. If endless retries flatten the tension, add a limit later (for example, the third wipe in a run ends it). Watch for it in the first runs.
+1. **A run still can't be lost outright.** A wipe costs the potions and the walk back, without ending the run. If endless retries flatten the tension, add a limit later (for example, the third wipe in a run ends it). Watch for it in the first runs.
 2. **The fight length decides everything.** This plan only fits 65 minutes if a fight takes about 7 minutes. FIGHT_RULES.md's first estimate is about 20 minutes. The paper fight settles it; if fights stay long, a run drops to about 6 rooms.
 3. **A fixed layout.** Replay comes only from shuffled contents and the boss choice. If three runs of the same chapter feel alike, move up to a new layout each run, built from the same hand-made rooms (round 2's other option).
