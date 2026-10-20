@@ -1,6 +1,6 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
-import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis } from './regles.js';
+import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour } from './regles.js';
 import { adresseEquipe } from './interface.js';
 import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
@@ -149,6 +149,21 @@ export async function selfTest(t, game) {
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
   const essai = (equipe, o = {}) => neuf({ equipe, ...o });
+  // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
+  t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
+    'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 1 && classesPour('PCrrfng').length === CLASSES_ESSAI.length, 'les classes du kit et d’essai, par tout le monde');
+  t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
+  {
+    const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
+    t.ok(!regler(L, 'ana', { t: 'classe', k: 1, type: 'traqueur-au-limier', github: 'AnaGH' }) && L.equipe[1] === EQUIPE_KIT[1], 'au lobby, Ana ne peut pas prendre le Traqueur au limier');
+    t.ok(regler(L, 'paul', { t: 'classe', k: 2, type: 'traqueur-au-limier', github: 'PCrrfng' }) && L.equipe[2] === 'traqueur-au-limier', 'Paolitus, si');
+    regler(L, 'paul', { t: 'rendre', k: 2 });
+    t.ok(L.equipe[2] === EQUIPE_KIT[2], 'il rend sa place : elle redevient une classe du kit (personne d’autre ne le joue)');
+    L.equipe[3] = 'traqueur-au-limier';
+    regler(L, 'ana', { t: 'prendre', k: 3, github: 'AnaGH' });
+    t.ok(L.proprio[3] === 'ana' && L.equipe[3] === EQUIPE_KIT[3], 'une place libre qui le portait, prise par Ana : la classe du kit');
+  }
   {
     const C = essai(['brute', 'brute', 'mage', 'barde']);
     t.eq(C.S.unites.filter((u) => u.camp === 'h').map((u) => u.nom), ['Brute', 'Brute 2', 'Mage', 'Barde'], 'deux fois la même classe : « Brute » et « Brute 2 »');

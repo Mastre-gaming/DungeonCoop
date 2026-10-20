@@ -50,11 +50,18 @@ export const HEROS = {
   barde: { nom: 'Barde', court: 'BAR', pv: 135, vitesse: 6, dex: 2, res: { type: 'Énergie', v: 3, max: 3 }, role: 'Soutien · donne l’avantage', essai: true,
     faiblesse: 'Fragile : chaque coup reçu au contact lui fait 3 dégâts de plus.', passif: 'Énergie : 3 à chaque tour, perdue si elle n’est pas dépensée.',
     capacites: ['dague', 'chant', 'moquerie', 'pousser', 'potion', 'relever'] },
-  'traqueur-au-limier': { nom: 'Traqueur', court: 'TRA', pv: 120, vitesse: 6, dex: 2, res: { type: 'Concentration', v: 0, max: 3 }, role: 'Contrôle · pièges et limier',
+  'traqueur-au-limier': { nom: 'Traqueur', court: 'TRA', auteur: 'PCrrfng', pv: 120, vitesse: 6, dex: 2, res: { type: 'Concentration', v: 0, max: 3 }, role: 'Contrôle · pièges et limier',
     faiblesse: 'Lié à sa bête (pas encore ici : le limier n’est pas une cible sur ce terrain).',
     passif: 'Le limier : un ordre par tour, en action bonus. Concentration : +1 quand un coéquipier exploite une de ses préparations.',
     capacites: ['arc', 'machoires', 'glu', 'collet', 'lecher', 'mordre', 'rabattre', 'pousser', 'potion', 'relever'] },
 };
+// Une classe faite par un joueur (« auteur » : son pseudo GitHub, comme dans content/classes/) ne se joue que par lui ;
+// les classes du kit et d'essai, par tout le monde (Paolitus, 20 oct).
+const pseudo = (t) => String(t ?? '').trim().toLowerCase();
+export const peutJouer = (type, github) => !!HEROS[type] && (!HEROS[type].auteur || (!!github && pseudo(HEROS[type].auteur) === pseudo(github)));
+export const classesPour = (github) => CLASSES_ESSAI.filter((c) => peutJouer(c, github));
+// une équipe pour ce joueur : une classe qu'il ne peut pas jouer redevient, à sa place, celle du kit
+export const equipePour = (equipe, github) => equipe.map((c, k) => (peutJouer(c, github) ? c : EQUIPE_KIT[k]));
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
   archer: { nom: 'Archer', pv: 25, vitesse: 5, dex: 2, atk: { nom: 'Flèche', base: 8, de: 4, portee: 8, anim: 'tir' }, habitude: 'reste à 6 m, tire sur le plus proche qu’il voit' },

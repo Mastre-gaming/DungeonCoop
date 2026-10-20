@@ -8,7 +8,8 @@
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
-import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis, equipePour, classesPour } from './regles.js';
+import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
 import { curseurCss } from './armes.js';
@@ -39,7 +40,7 @@ export function init(g, options) {
   ({ combat, vue, canvas, nouveauCombat } = options);
   if (options.horloge) ui.horloge = options.horloge;
   // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
-  ui.choix = (new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe).slice();
+  ui.choix = equipePour(new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe, monGithub());
   construire();
   if (options.mode === 'initiative') dom.accueil.querySelector('input[value=initiative]').checked = true;
   if (options.demarrer) commencer();
@@ -123,7 +124,9 @@ const CLE_CHOIX = 'dungeoncoop:equipe-entrainement';
 function lireChoix() { try { return equipeDepuis(localStorage.getItem(CLE_CHOIX)); } catch { return null; } }
 const equipeAffichee = () => (reseau ? reseau.L.equipe : ui.choix);
 function changerClasse(k, sens) {
-  const i = CLASSES_ESSAI.indexOf(equipeAffichee()[k]), type = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  // (seulement les classes que je peux jouer : celle d'un autre joueur n'est qu'à lui)
+  const liste = classesPour(monGithub()), i = liste.indexOf(equipeAffichee()[k]);
+  const type = liste[i < 0 ? (sens > 0 ? 0 : liste.length - 1) : (i + sens + liste.length) % liste.length];
   if (reseau) return void reseau.classe(k, type);
   ui.choix[k] = type;
   dessinerPlaces();
@@ -131,7 +134,7 @@ function changerClasse(k, sens) {
 // à plusieurs : ma place, ou une place libre pour l'hôte (celle d'un ami, non)
 const peutRegler = (k) => !reseau || reseau.L.proprio[k] === reseau.moi || (reseau.hote && reseau.L.proprio[k] === null);
 function auHasard() {
-  const melange = CLASSES_ESSAI.slice().sort(() => Math.random() - 0.5);
+  const melange = classesPour(monGithub()).sort(() => Math.random() - 0.5);
   ui.choix = melange.slice(0, 4);
   dessinerPlaces();
 }

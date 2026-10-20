@@ -73,6 +73,8 @@ Le Traqueur est la 9e classe à choisir au terrain (`src/entrainement/regles.js`
 - **Trois ordres au limier** (l'action bonus, donc un seul par tour) : Lécher les plaies, Mordre, Rabattre (une poussée de 3 m à 9 m, à l'opposé du Traqueur). Le limier court à la cible, agit et revient.
 - **Concentration** : +1 quand un coéquipier exploite une de ses préparations (comme le Voleur).
 
+**Seul Paolitus le joue** : une classe faite par un joueur (son `auteur` dans la fiche) ne se choisit au terrain que par lui, reconnu par la sentinelle du camp. Pour les autres, les flèches du lobby la sautent, et un lien qui la donne la remplace par la classe du kit.
+
 Pas encore joué : le limier n'est pas une créature du combat (on ne peut pas le frapper, donc pas de faiblesse « lié à sa bête »), ni le niveau 2 (Tir sur proie entravée).
 
 ## La refaire
