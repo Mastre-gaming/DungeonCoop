@@ -65,6 +65,19 @@ jobs:
             echo "La copie du dashboard ne se lit pas, vérification sautée."
           fi
 
+      # Le crieur du camp lit la section « ## Patch note » de chaque PR fusionnée (src/48_patch_notes.js) : un rappel, pas un refus.
+      - name: La PR a son petit mot pour le crieur (« ## Patch note »)
+        if: github.event_name == 'pull_request'
+        env:
+          CORPS: ${{ github.event.pull_request.body }}
+        run: |
+          section=$(printf '%s\n' "$CORPS" | sed 's/\r$//' | awk '/^##*[ \t]+[Pp]atch[ -]?[Nn]otes?/{f=1;next} f&&/^##*[ \t]/{exit} f' | sed '/<!--/,/-->/d' | grep -v '^[[:space:]]*$' || true)
+          if [ -z "$section" ]; then
+            echo "::warning::Pas de section « ## Patch note » remplie : le crieur du camp n'aura que le titre de cette PR. Ajoute 2 à 5 phrases drôles pour les joueurs, sans rien de technique, avec une photo si possible (modèle de PR, skill mission-camp)."
+          elif printf '%s\n' "$section" | grep -q '`'; then
+            echo "::warning::La « Patch note » contient du code (des \`…\`) : c'est un texte pour les joueurs, rien de technique."
+          fi
+
       - name: Y a-t-il déjà du code ?
         id: code
         run: |

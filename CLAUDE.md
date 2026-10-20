@@ -20,6 +20,14 @@ The two files imported above are the owner's standing calls and what failed befo
 - **Use the `mission-camp` skill** (`.claude/skills/mission-camp/SKILL.md`, loaded automatically in this repo) for anything built, drawn or written for DungeonCoop: find or create the mission (an issue with an `axe` and a `taille`), take it (`--add-assignee @me`), then a PR with « Ferme #n ». The reference copy is in the dashboard repo (`skills/mission-camp/`); the checks warn when the two differ.
 - **Only what lands on `main` counts** for the builders' renown. The workflow `missions-auto.yml` runs on every push to `main`: it closes the missions the PR names, assigns them to the author and sizes them if nobody did; a PR or direct push with no mission becomes a mission, closed, sized by lines changed (S under 150, M under 600, L above).
 
+## Every PR has a patch note
+The camp's crier (`src/38_crieur.js`) opens the « Patch notes » when clicked (`src/48_patch_notes.js`): it shows, for each PR merged into `main`, only its **`## Patch note`** section. Every PR body has one (the PR template and the `mission-camp` skill ask for it):
+- **2 to 5 sentences in French** on what a player will see or feel, for someone who never opened the code.
+- **Funny**, in the voice of a village crier (« Oyez ! … »), with a small joke; but true, never invented.
+- **No code and nothing technical:** no file, function, branch or tool name, no « module », « test », « CSS », « PR ». A purely technical PR says what the player gains, or laughs about it.
+- **One or two photos of the game when possible:** commit the capture to `docs/patch-notes/<n>-<subject>.png` (under 300 KB) and link it as `https://raw.githubusercontent.com/Mastre-gaming/DungeonCoop/main/docs/patch-notes/<n>-<subject>.png`, or the person drags it into the PR on GitHub.
+- Write it with the person and let them reread it: the game's texts belong to the team.
+
 ## The plans follow the design
 The missions board has a « Plans » tab (`src/45_plans.js`, mission #157): the game's plans as sheets, for every player. **A design `.md` that changes updates its sheet in `content/plans/` in the same PR** (the format is at the top of `src/45_plans.js`). Sheets edited in the camp are comments on #157 and win over the repo's: read them there first.
 
