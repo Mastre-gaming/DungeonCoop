@@ -59,7 +59,7 @@ let calquePlaques = null;
 // de la cible, et son chiffre ; dosés sur le résultat du d20 et sur les dégâts. Quatre styles, à essayer avec
 // ?ressenti=sobre|percutant|manga|cinema ; en plus, selon le style : des étincelles, un éclair de tout l'écran,
 // des traits de vitesse autour de la cible, un coup de zoom, un ralenti, un voile sombre qui isole la cible.
-//   gel : l'arrêt (s) · secousse, recul : en px du monde · flash, traits, voile : leur force (0 à 1) · zoom : +x % ·
+//   gel : l'arrêt (s) · secousse, recul : en px d'écran, à tous les zooms (mesurés à l'échelle des maquettes, ×1,8) · flash, traits, voile : leur force (0 à 1) · zoom : +x % ·
 //   ralenti : { k : la vitesse, d : sa durée réelle (s) } · etincelles : des briques en plus sur la cible
 const STYLES = {
   sobre: {
@@ -82,7 +82,8 @@ const STYLES = {
   },
 };
 const STYLE_DEFAUT = 'percutant';
-const SECOUSSE_MAX = 8, SECOUSSE_DUREE = 0.32;
+// (en px d'écran : sans ça, au zoom normal, 1 px du monde ≈ 1 px d'écran, et la secousse du style Sobre ne se voyait pas)
+const ECRAN = 1.8, SECOUSSE_MAX = 14, RECUL_MAX = 12, SECOUSSE_DUREE = 0.32;
 const calme = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 let style = STYLE_DEFAUT;
 let gel = 0, coup = null;                              // l'arrêt sur image restant (s) ; le dernier jet (attaque)
@@ -463,10 +464,11 @@ function impact(a, att, n, resultat, tombe) {
   a.eclair = 1;
   for (const id of r.etincelles ?? []) fx.jouer(id, { x: a.x, y: a.y - 26 });
   if (calme) return;
-  secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids)); secousse.t = 0;
+  const ech = Math.max(0.5, canvas.clientWidth / rendu.vue.w);             // px d'écran par px du monde
+  secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids * ECRAN) / ech); secousse.t = 0;
   if (att) {
     const dx = a.x - att.x, dy = a.y - att.y, l = Math.hypot(dx, dy) || 1;
-    a.recul = { x: dx / l, y: dy / l, n: r.recul * poids, t: 0 };
+    a.recul = { x: dx / l, y: dy / l, n: Math.min(RECUL_MAX, r.recul * poids * ECRAN / ech), t: 0 };
   }
   if (r.ralenti) { ralenti.k = r.ralenti.k; ralenti.reste = r.ralenti.d; }
   if (r.flash || r.traits || r.voile || r.zoom) {
@@ -722,5 +724,5 @@ export const api = {
     return null;
   },
   zoomer, ajusterCamera, contact: CONTACT,
-  get ressenti() { return { style, styles: Object.keys(STYLES), gel, secousse: secousse.a, ralenti: ralenti.reste, ecran: { ...ecran, cible: ecran.cible?.id ?? null }, calme }; },
+  get ressenti() { return { style, styles: Object.keys(STYLES), gel, secousse: secousse.a, secousseEcran: secousse.a * (canvas.clientWidth / rendu.vue.w), ralenti: ralenti.reste, ecran: { ...ecran, cible: ecran.cible?.id ?? null }, calme }; },
 };

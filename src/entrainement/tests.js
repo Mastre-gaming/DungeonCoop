@@ -699,6 +699,12 @@ export async function selfTest(t, game) {
     t.ok(a1.t === fx0 && V.ressenti.gel < gelCrit, 'pendant l’arrêt, les animations attendent');
     jouerFile(); game.dbg.advance(0.3);
     t.ok(V.ressenti.gel === 0 && V.ressenti.secousse === 0 && !(a1.eclair > 0) && !a1.recul, 'puis tout revient : plus d’arrêt, plus de secousse, ni éclair, ni recul');
+    // la même secousse à l'écran, que la vue soit loin ou zoomée (elle est comptée en px d'écran)
+    const ecranA = (() => { coup('touche', 12); jusquA(() => V.ressenti.secousse > 0); const v = V.ressenti.secousseEcran; jouerFile(); game.dbg.advance(0.4); return v; })();
+    V.zoomer(1); V.zoomer(1); V.zoomer(1); game.dbg.advance(1.5);
+    const ecranB = (() => { coup('touche', 12); jusquA(() => V.ressenti.secousse > 0); const v = V.ressenti.secousseEcran; jouerFile(); game.dbg.advance(0.4); return v; })();
+    V.zoomer(-1); V.zoomer(-1); V.zoomer(-1); game.dbg.advance(1.5);
+    t.ok(R.calme || (ecranA > 2 && Math.abs(ecranA - ecranB) < 0.5), `un touché secoue l’écran de ${ecranA.toFixed(1)} px de loin, ${ecranB.toFixed(1)} px zoomé : pareil`);
     coup('eraflure', 5);
     t.ok(jusquA(() => chiffre('eraflure')) && V.ressenti.gel > 0 && V.ressenti.gel < gelCrit / 3, 'une éraflure : un arrêt bien plus court, un chiffre plus petit');
     jouerFile();
