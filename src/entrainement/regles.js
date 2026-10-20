@@ -77,7 +77,7 @@ export const FAMILIERS = {
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
   archer: { nom: 'Archer', pv: 25, vitesse: 5, dex: 2, atk: { nom: 'Flèche', base: 8, de: 4, portee: 8, anim: 'tir' }, habitude: 'reste à 6 m, tire sur le plus proche qu’il voit' },
-  brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros qui a le moins de PV et le repousse' },
+  brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros le plus blessé (en part de ses PV) et le repousse' },
   chef: { nom: 'Chef', pv: 90, vitesse: 5, dex: 1, coriace: true, atk: { nom: 'Frappe du chef', base: 22, de: 8, anim: 'attaque' }, habitude: 'tours 1–2 : avantage aux ennemis · tour 3 : une zone de 5 m' },
 };
 const R2 = 1.7 / 1.5, R3 = 2.5 / 1.5;        // les zones 2×2 et 3×3 : des cercles de 1,7 m et 2,5 m de rayon
@@ -186,13 +186,23 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const ennemisVivants = () => S.unites.filter((u) => u.camp === 'e' && !u.mort);
   const estHeros = (id) => !!id && U(id)?.camp === 'h' && !U(id).familier;
   const familierDe = (h) => S.unites.find((u) => u.familier && u.maitre === h?.id) ?? null;
-  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient à côté de lui s'il s'en est éloigné.
-  function suivreFamiliers() {
+  // Sa place : derrière son maître, à l'opposé de l'ennemi le plus proche (Paolitus : devant, il se faisait viser dès le tour 1).
+  const ennemiProche = (m) => S.unites.filter((u) => u.camp === 'e' && !u.mort).sort((a, b) => dist(a, m) - dist(b, m))[0] ?? null;
+  function placeFamilier(f, m) {
+    const e = ennemiProche(m), l = e ? dist(e, m) : 0;
+    const dx = e && l > 0.01 ? (m.x - e.x) / l : -1, dy = e && l > 0.01 ? (m.y - e.y) / l : 0;
+    return pointLibreProche(trame, { x: m.x + dx * 0.95, y: m.y + dy * 0.95 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+  }
+  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient derrière lui s'il s'en est éloigné,
+  // ou s'il se retrouve devant lui (plus près de l'ennemi que lui). sansScene : au début du combat, sans le montrer marcher.
+  function suivreFamiliers(sansScene = false) {
     for (const f of S.unites.filter((u) => u.familier && !u.ko)) {
-      const m = U(f.maitre); if (!m || m.ko || dist(f, m) <= 1.6) continue;
-      const p = pointLibreProche(trame, { x: m.x + 0.9, y: m.y + 0.5 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+      const m = U(f.maitre); if (!m || m.ko) continue;
+      const e = ennemiProche(m), devant = !!e && dist(f, e) < dist(m, e) - 0.3;
+      if (dist(f, m) <= 1.6 && !devant) continue;
+      const p = placeFamilier(f, m);
       f.x = p.x; f.y = p.y;
-      ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
+      if (!sansScene) ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
     }
   }
   const nomHeros = (id) => U(id)?.nom ?? '';
@@ -634,6 +644,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function commencer() {
     S.debut = horloge(); S.round = 1; S.gi = 0; S.stats.rounds = [];
+    suivreFamiliers(true);                          // (les ennemis sont là : le limier se met derrière son maître)
     log(`Début du combat · ${S.mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} · sans cases.`, 'round');
     if (S.mode === 'initiative') {
       const jets = S.unites.filter((u) => !u.familier).map((u) => ({ id: u.id, v: d(20) + u.dex, dex: u.dex, r: alea() }));
@@ -731,12 +742,15 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const g = attaquer(e, t, attaqueEnnemi(e));
     if (e.type === 'brt' && g !== 'rate' && !t.ko && !t.mort) pousser(e, t, { longueur: 2 });
   }
+  const entame = (h) => h.pv / h.pvMax;            // la part de PV qui reste : plus elle est basse, plus il est blessé
+  const cibleBrute = (e, heros = herosVivants()) => heros.slice().sort((a, b) => entame(a) - entame(b) || dist(a, e) - dist(b, e))[0];
   function agirMelee(e) {
     const heros = herosVivants(); if (!heros.length) return;
-    let t = e.type === 'brt' ? heros.slice().sort((a, b) => a.pv - b.pv || dist(a, e) - dist(b, e))[0] : plusProcheParChemin(e, heros);
+    // la Brute : le plus blessé en part de ses PV (pas en PV bruts : sinon le limier, 30 PV, était toujours sa cible)
+    let t = e.type === 'brt' ? cibleBrute(e, heros) : plusProcheParChemin(e, heros);
     approcher(e, t);
     if (e.mort || S.resultat) return;
-    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => a.pv - b.pv)[0];
+    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => entame(a) - entame(b))[0];
     if (t) attaqueEnnemie(e, t); else log(`${e.nom} avance.`, 'muet');
   }
   function agirArcher(e) {
@@ -992,6 +1006,6 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros },
+    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute },
   };
 }
