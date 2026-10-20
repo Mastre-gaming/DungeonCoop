@@ -1,6 +1,6 @@
 // Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7) : le camp, le héros, la caméra, le panneau des missions,
 // la sentinelle de l'entrée et son tour du camp, les rats des PR à résoudre, et le jeu à plusieurs.
-// D'abord l'écran titre (src/45_titre.js) : Héberger, Rejoindre, Réglages, Retour au dashboard.
+// D'abord l'écran titre (src/45_titre.js) : Jouer, Rejoindre, Réglages, Retour au dashboard. (Héberger se fait au camp.)
 //   ?code=ABCDE rejoindre ce groupe (l'écran titre s'ouvre sur Rejoindre, le code déjà tapé)
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
@@ -191,7 +191,6 @@ async function demarrer(sortieTitre) {
 
   document.documentElement.dataset.pret = '1';
   game.start();
-  if (sortieTitre?.action === 'heberger') reseau.heberger();
   sortieTitre?.titre?.retirer();
 }
 

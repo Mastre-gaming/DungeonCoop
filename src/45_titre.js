@@ -7,7 +7,7 @@
 // les héros de l'équipe (la règle des sièges, plus bas), qui bougent. Derrière la porte, le chemin de la montée (les 6
 // salles de LEVEL_STRUCTURE : la lisière, le gué, le moulin… un petit feu par salle, des monstres qui patrouillent),
 // puis, au loin sur sa montagne, la tour : trois étages et, tout en haut, la lueur du gardien, qui balaie la plaine.
-// Le titre en lettres de pixels, le menu dans un cadre du HUD épique (Héberger, Rejoindre, Réglages, Retour au
+// Le titre en lettres de pixels, le menu dans un cadre du HUD épique (Jouer, Rejoindre, Réglages, Retour au
 // dashboard), « Autour du feu » avec les médaillons des héros, et la date du build.
 // Il s'ouvre avant le camp ; ?test, ?spot, ?visite et ?hote (le retour du terrain d'entraînement) le passent. Un lien
 // ?code=ABCDE ouvre Rejoindre, le code déjà tapé.
@@ -447,7 +447,7 @@ export function geste(i, dir, t) {
 // figer : pas de boucle d'animation ni de descente (les vérifications et les captures dessinent avec dessinerA).
 // mode : 'arrivee' (en venant du dashboard : la descente depuis le ciel), 'retour' (le chemin vers le dashboard : pas de
 // menu, la caméra remonte au ciel avec versLeCiel()).
-export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {}, figer = false, choisi = heroChoisi(), mode = 'arrivee' }) {
+export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {}, figer = false, choisi = heroChoisi(), mode = 'arrivee', aller = allerVers }) {
   if (figer) mode = 'fige';
   habiller();   // les textures du HUD épique (33_cadres.js) : les cadres en bois du menu et d'« Autour du feu »
   const scene = el('canvas', { class: 'titre-scene', 'aria-hidden': 'true' });
@@ -471,10 +471,10 @@ export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {
   const bouton = (action, texte, note, extra = {}) => el(extra.href ? 'a' : 'button', { class: 'titre-choix', 'data-action': action, ...(extra.href ? {} : { type: 'button' }), ...extra },
     el('span', { class: 'titre-choix-nom' }, texte), note && el('span', { class: 'titre-choix-note' }, note));
   const items = [
-    bouton('heberger', 'Héberger', 'ouvrir le camp, seul ou avec tes amis', { onclick: () => choisir('heberger') }),
+    bouton('jouer', 'Jouer', 'entrer au camp (pour inviter tes amis : « Jouer à plusieurs », au camp)', { onclick: () => choisir('jouer') }),
     bouton('rejoindre', 'Rejoindre', 'le camp d’un ami, avec son code', { onclick: () => basculer(panRejoindre, champ) }),
     bouton('reglages', 'Réglages', 'la musique et les effets', { onclick: () => basculer(panReglages, curseurs.musique.curseur) }),
-    bouton('dashboard', 'Retour au dashboard', null, { href: DASHBOARD, target: '_top' }),
+    bouton('dashboard', 'Retour au dashboard', null, { href: DASHBOARD, target: '_top', onclick: (e) => { e.preventDefault(); versDashboard(); } }),
   ];
   const menu = el('nav', { class: 'titre-menu cadre-epique', 'aria-label': 'Menu principal' }, items[0], items[1], panRejoindre, items[2], panReglages, items[3]);
 
@@ -871,7 +871,7 @@ export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {
       const u = borne((t - DUREE.noir) / DUREE.descente);
       return { cam: -H * (1 - lisse(u)), noir: t < DUREE.noir ? 1 : borne(1 - (t - DUREE.noir) / 0.5) };
     }
-    if (mode === 'retour' && tCiel != null) {
+    if (tCiel != null) {   // (le chemin du retour, ou « Retour au dashboard » depuis le menu)
       const u = borne((t - tCiel) / DUREE.ciel);
       return { cam: -H * lisse(u), noir: borne((t - tCiel - DUREE.ciel + 0.05) / DUREE.fondu) };
     }
@@ -927,6 +927,16 @@ export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {
     if (c.length !== 5) { statut.textContent = 'Le code a cinq lettres'; champ.focus(); return false; }
     return choisir('rejoindre', c);
   }
+  // « Retour au dashboard », depuis le menu : le menu s'efface, la caméra remonte au ciel de nuit, le noir, puis le dashboard.
+  function versDashboard() {
+    if (choix) return false;
+    choix = { action: 'dashboard', code: '' };
+    racine.classList.remove('intro'); racine.classList.add('fini');
+    for (const n of racine.querySelectorAll('button, input, a')) n.tabIndex = -1;
+    tCiel = tCourant;
+    attendre(DUREE.ciel + DUREE.fondu).then(() => aller(DASHBOARD));
+    return true;
+  }
   // Un choix : le menu s'efface, onChoix (le camp se charge derrière l'écran titre), puis retirer() descend sur le camp.
   function choisir(action, c = '') {
     if (choix) return false;
@@ -952,7 +962,7 @@ export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {
     get choix() { return choix && { ...choix }; },
     get plan() { return p; },
     get echelle() { return s; },
-    choisir, valider, dessinerA, mesurer, regler,
+    choisir, valider, dessinerA, mesurer, regler, versDashboard,
     // Pour les captures : arrêter l'animation, puis dessiner soi-même un instant donné.
     arreter() { cancelAnimationFrame(raf); raf = 0; racine.classList.remove('intro'); },
     // Le chemin du retour : l'écran titre redescend sur le camp qui s'assombrit (remonter), puis la caméra remonte au ciel
@@ -984,6 +994,7 @@ export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {
 }
 
 const attendre = (s) => new Promise((ok) => setTimeout(ok, s * 1000));
+const allerVers = (url) => { try { window.top.location.href = url; } catch { location.href = url; } };
 
 // Le ciel de nuit, juste au-dessus de la scène : du noir tout en haut au ciel du haut de la scène, tramé, et ses étoiles.
 function peindreCielHaut(p) {
@@ -1000,7 +1011,7 @@ function peindreCielHaut(p) {
 
 // Le bouton « Retour au dashboard » du camp : le camp descend et l'écran titre revient d'en haut, la caméra remonte
 // au ciel de nuit, le noir, puis le dashboard. Très vite (un peu plus d'une seconde).
-export async function retourAuDashboard({ stamp = 'dev', aller = (url) => { try { window.top.location.href = url; } catch { location.href = url; } } } = {}) {
+export async function retourAuDashboard({ stamp = 'dev', aller = allerVers } = {}) {
   if (retourAuDashboard.enCours) return false;
   retourAuDashboard.enCours = true;
   const images = await chargerImagesTitre().catch(() => ({}));
@@ -1014,7 +1025,7 @@ export async function retourAuDashboard({ stamp = 'dev', aller = (url) => { try 
 
 function nettoyer(code) { return String(code ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5); }
 
-// L'écran titre, jusqu'au choix : { action: 'heberger' | 'rejoindre', code, titre } (titre.retirer() quand le camp est prêt).
+// L'écran titre, jusqu'au choix : { action: 'jouer' | 'rejoindre', code, titre } (titre.retirer() quand le camp est prêt).
 // dbg : la poignée de débogage, qui reçoit dbg.titre (les captures s'en servent).
 export async function ecranTitre({ stamp, code, dbg = null }) {
   const images = await chargerImagesTitre();
