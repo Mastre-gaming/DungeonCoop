@@ -1,9 +1,12 @@
 // Le camp de Dungeon Co-op, prototype v0 (CAMP.fr.md §7) : le camp, le héros, la caméra, le panneau des missions,
 // la sentinelle de l'entrée et son tour du camp, les rats des PR à résoudre, et le jeu à plusieurs.
-//   ?code=ABCDE rejoindre ce groupe
+// D'abord l'écran titre (src/45_titre.js) : Jouer, Rejoindre, Réglages, Retour au dashboard. (Héberger se fait au camp.)
+//   ?code=ABCDE rejoindre ce groupe (l'écran titre s'ouvre sur Rejoindre, le code déjà tapé)
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
 //   ?spot=feu aller à un point nommé (apparition, feu, visite, porte, entree, chantier, sentinelle, tour, rats, et chaque lieu : interface, histoire, level, combat…)
+//   ?heure=22:30 forcer l'heure du camp (le jour et la nuit suivent sinon l'heure de Paris)
+//   ?meteo=pluie forcer la météo du camp (beau, pluie, orage, brouillard)
 import { createGame } from './skills/core/module/06_game.js';
 import { T, W, H, LIEUX, APPARITION } from './01_plan.js';
 import { chargerImages } from './02_images.js';
@@ -39,6 +42,7 @@ import * as armurerieSkill from './26_armurerie.js';
 import * as archivesSkill from './27_archives.js';
 import * as murailleSkill from './32_muraille.js';
 import * as crieurSkill from './38_crieur.js';
+import * as patchNotesSkill from './48_patch_notes.js';
 import * as forgeronSkill from './40_forgeron.js';
 import * as choixSkill from './41_choix_heros.js';
 import * as promeneursSkill from './42_promeneurs.js';
@@ -46,9 +50,15 @@ import * as limierSkill from './47_limier.js';
 import * as apparitionsSkill from './43_apparitions.js';
 import * as chantierSkill from './44_chantier.js';
 import * as mursSkill from './45_murs.js';
+import * as jourNuitSkill from './46_jour_nuit.js';
+import * as meteoSkill from './48_meteo.js';
+import * as animauxSkill from './49_animaux.js';
+import * as scenesSkill from './50_scenes.js';
+import { ecranTitre, sauterTitre, retourAuDashboard } from './45_titre.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
 import './hud.css';      // l'habillage épique du HUD (DESIGN.fr.md), après tout le reste
+import './titre.css';
 
 const query = new URLSearchParams(location.search);
 const visite = query.has('visite');
@@ -64,12 +74,18 @@ const game = createGame({
 
 document.querySelector('#tampon').textContent = `version du ${game.stamp}`;
 
-async function demarrer() {
-  const images = { ...await chargerImages(), ...await chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS }) };   // (et les planches des héros à incarner)
+// Les planches du camp (et celles des héros à incarner) se chargent pendant que l'écran titre est ouvert.
+const imagesCamp = Promise.all([chargerImages(), chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS })]);
+imagesCamp.catch(() => {});   // (une erreur ici est dite par demarrer)
+
+async function demarrer(sortieTitre) {
+  const [imagesBase, imagesHeros] = await imagesCamp;
+  const images = { ...imagesBase, ...imagesHeros };   // (et les planches des héros à incarner)
   const camp = composerCamp();
   const canvas = document.querySelector('#jeu');
   const rendu = creerRendu(canvas);
-  rendu.sol(composerSol(images));
+  const sol = composerSol(images);
+  rendu.sol(sol);
   rendu.statiques(camp.objets, images);
   const collision = creerCollision(camp);
 
@@ -108,6 +124,13 @@ async function demarrer() {
   const chantier = game.use(chantierSkill, { rendu, images, heros, missions, collision, visite });
   // les murs ouest, nord et est montent avec le chantier, et s'estompent comme la grande muraille quand on s'en éloigne
   const murs = game.use(mursSkill, { rendu, images, heros, chantier, collision, visite });
+  // le jour et la nuit : le camp suit l'heure de Paris (?heure=22:30 pour en forcer une) ; en visite, plein jour
+  // (en ?test, midi : la nuit coûte cher en rendu logiciel, et les tests de GitHub dépassaient leur quart d'heure ; le
+  // test du jour et de la nuit passe lui-même par 23 h)
+  const jourNuit = game.use(jourNuitSkill, { rendu, heros, reseau, chantier, murs, muraille, visite, heure: query.get('heure') ?? (query.has('test') ? '12:00' : null) });
+  // la météo : la pluie, l'orage, le brouillard du matin, toutes les trois heures (?meteo=pluie pour en forcer un) ;
+  // en visite, beau temps (en ?test aussi, comme midi pour le jour et la nuit)
+  const meteo = game.use(meteoSkill, { rendu, sol, images, place, jourNuit, visite, meteo: query.get('meteo') ?? (query.has('test') ? 'beau' : null) });
   // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
   const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
   const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
@@ -117,7 +140,8 @@ async function demarrer() {
   hud.brancher('campagne', campagne);
   const chronique = game.use(chroniqueSkill, { missions, visite, horsLigne: query.has('test') });
   hud.brancher('chronique', chronique);
-  crieur.brancher(chronique, () => hud.activer('chronique'));   // le crieur crie et recense les derniers push
+  const patchNotes = game.use(patchNotesSkill, { missions, horsLigne: query.has('test') });
+  crieur.brancher(chronique, () => patchNotes.ouvrir());   // le crieur crie les derniers push ; un clic sur lui : les patch notes
   const sacoche = creerSacoche({ horsLigne: query.has('test') });
   hud.brancher('sacoche', sacoche);
   const rumeurs = creerRumeurs({ missions, bus: game.bus });
@@ -133,8 +157,17 @@ async function demarrer() {
   // les héros qu'on peut incarner se promènent dans le camp et parlent (E) ; un héros pris par un joueur s'en va.
   // (après tous les autres : E sert d'abord aux lieux et aux personnages du camp, puis aux promeneurs)
   const promeneurs = game.use(promeneursSkill, { rendu, heros, collision, images, reseau, forgeron, apparitions, visite });
+  // les animaux du camp : les poules, le chat, les lapins, les canards, les papillons (ils suivent la nuit et la météo)
+  const animaux = game.use(animauxSkill, { rendu, images, heros, collision, reseau, promeneurs, jourNuit, meteo, visite });
+  // les scènes entre habitants : la veillée au feu, le crieur et son public, le chef à la forge, un duel à l'enclos
+  const scenes = game.use(scenesSkill, { rendu, images, heros, collision, promeneurs, chantier, crieur, forgeron, jourNuit, visite, auto: !visite && !query.has('test') });
+  // la case « Retour au dashboard » (B) : le chemin à l'envers, par l'écran titre et le ciel de nuit (en ?test, rien ne part)
+  const versDashboard = { ouvert: false, essais: 0, ouvrir() { this.essais++; if (!query.has('test')) retourAuDashboard({ stamp: game.stamp }); }, fermer() {} };
+  hud.brancher('dashboard', versDashboard);
+  game.dbg.versDashboard = (aller) => retourAuDashboard({ stamp: game.stamp, aller });   // (les captures : sans partir)
+  game.dbg.retour = retourAuDashboard;   // (retour.titre : l'écran titre du chemin du retour)
   game.render = () => rendu.dessiner();
-  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, crieur, reseau, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, place, terrain, muraille, parties, github });
+  const camptests = game.use(tests, { heros, collision, camera, rendu, visite, camp, game, missions, panneau, decor, sentinelle, crieur, reseau, renommee, hud, groupe, campagne, chronique, patchNotes, sacoche, rumeurs, messagerie, boite, rats, tour, lieux, place, terrain, muraille, parties, github });
 
   // Les points nommés (dbg.go, ?spot=, les captures).
   const aller = (x, y, dir = 'bas') => () => { heros.placer(x, y, dir); camera.snap(); };
@@ -148,7 +181,7 @@ async function demarrer() {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, scenes, patchNotes, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
@@ -167,9 +200,22 @@ async function demarrer() {
 
   document.documentElement.dataset.pret = '1';
   game.start();
+  sortieTitre?.titre?.retirer();
 }
 
-demarrer().catch((e) => {
+// L'écran titre, puis le camp. Rejoindre passe par ?code= (le réseau rejoint le groupe de l'adresse en s'ouvrant).
+async function lancer() {
+  let sortieTitre = null;
+  if (!sauterTitre(query)) {
+    sortieTitre = await ecranTitre({ stamp: game.stamp, code: query.get('code') ?? '', dbg: game.dbg }).catch((e) => { console.error(e); return null; });
+    const q = new URLSearchParams(location.search);
+    if (sortieTitre?.action === 'rejoindre') q.set('code', sortieTitre.code); else q.delete('code');
+    history.replaceState(null, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`);
+  }
+  await demarrer(sortieTitre);
+}
+
+lancer().catch((e) => {
   console.error(e);
   document.querySelector('#chargement').textContent = `Le camp n'a pas pu se charger : ${e.message}`;
 });

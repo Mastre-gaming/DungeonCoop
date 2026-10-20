@@ -165,14 +165,14 @@ export function update(dt) {
   for (const o of party.others.values()) {
     let c = copies.get(o.id);
     if (!c) {
-      c = { sprite: rendu.sprite(images.heros, 'heros', 64, 64), ombre: rendu.ombre(18, 4), etiquette: el('div', { class: 'etiquette' }), t: 0, heros: DEPART, montre: 0, nouveau: true };
+      c = { sprite: rendu.sprite(images.heros, 'heros', 64, 64), feuille: { source: images.heros, nom: 'heros' }, ombre: rendu.ombre(18, 4), etiquette: el('div', { class: 'etiquette' }), t: 0, heros: DEPART, montre: 0, nouveau: true };
       noms.append(c.etiquette);
       copies.set(o.id, c);
     }
     // le héros qu'il incarne : sa copie change de planche
     const h = HEROS[Math.round(o.state.heros)] ?? DEPART;
     if (h !== c.heros && images[h.image]) {
-      c.sprite.retirer(); c.sprite = rendu.sprite(images[h.image], `heros-${h.id}`, 64, 64); c.heros = h;
+      c.sprite.retirer(); c.sprite = rendu.sprite(images[h.image], `heros-${h.id}`, 64, 64); c.heros = h; c.feuille = { source: images[h.image], nom: `heros-${h.id}` };
       if (!c.nouveau) c.montre = apparitions?.jouer('apparait', o.shown.x, o.shown.y) ?? 0;   // il change de héros : la lumière aussi
     }
     // il arrive : la colonne dorée, puis lui
@@ -186,7 +186,7 @@ export function update(dt) {
     const rang = (bouge && course ? 38 : 8) + ligne, col = !bouge ? 0 : course ? Math.floor(c.t * 14) % 8 : 1 + (Math.floor(c.t * (court ? 14 : 10)) % 8);
     c.sprite.poser(s.x - 32, s.y - 60, s.y, col * 64, rang * 64);
     c.ombre.poser(s.x, s.y - 1);
-    c.x = s.x; c.y = s.y;
+    c.x = s.x; c.y = s.y; c.ligne = ligne; c.rang = rang; c.col = col;   // (pour sa torche et la main qui la tient, 46_jour_nuit.js)
     placerEtiquette(c.etiquette, s.x, s.y, o.name);
   }
   // mon nom au-dessus de mon héros (dès que la sentinelle le connaît)

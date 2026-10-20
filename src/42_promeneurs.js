@@ -160,17 +160,17 @@ function dire(p, auHasard = false) {
 
 function tourner(p, x, y) { const dx = x - p.x, dy = y - p.y; p.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'gauche' : 'droite') : (dy < 0 ? 'haut' : 'bas'); }
 
+// Une scène entre habitants (50_scenes.js) le mène à sa place (p.scene.route) et l'y garde, tourné vers les autres.
 function avancer(p, dt) {
+  if (p.scene) {
+    if (!p.route?.length) { p.route = null; p.dir = p.scene.dir ?? p.dir; return false; }
+    marcher(p, dt);
+    if (!p.route?.length) { p.route = null; p.dir = p.scene.dir ?? p.dir; }
+    return true;
+  }
   if (p.pause > 0) { p.pause -= dt; if (p.pause <= 0) nouveauBut(p); return false; }
   if (!p.route) { nouveauBut(p); return false; }
-  let reste = VITESSE * dt;
-  while (reste > 0 && p.route?.length) {
-    const [tx, ty] = p.route[0], dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
-    if (d < 0.5) { p.route.shift(); continue; }
-    tourner(p, tx, ty);
-    if (reste < d) { p.x += (dx * reste) / d; p.y += (dy * reste) / d; break; }   // (pas de reste qui s'arrondit à l'infini)
-    p.x = tx; p.y = ty; reste -= d; p.route.shift();
-  }
+  marcher(p, dt);
   if (!p.route?.length) {   // arrivé : il reste un moment ; devant le décor, il fait son geste
     p.route = null; p.pause = 2 + S.aleat() * 5;
     const a = p.activite;
@@ -179,13 +179,40 @@ function avancer(p, dt) {
   return true;
 }
 
+function marcher(p, dt) {
+  let reste = VITESSE * dt;
+  while (reste > 0 && p.route?.length) {
+    const [tx, ty] = p.route[0], dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+    if (d < 0.5) { p.route.shift(); continue; }
+    tourner(p, tx, ty);
+    if (reste < d) { p.x += (dx * reste) / d; p.y += (dy * reste) / d; break; }   // (pas de reste qui s'arrondit à l'infini)
+    p.x = tx; p.y = ty; reste -= d; p.route.shift();
+  }
+}
+
 function poser(p, marche) {
   let rang = (marche ? MARCHE : REPOS) + DIRS[p.dir];
   let col = marche ? 1 + (Math.floor(p.t * 9) % 8) : Math.floor(p.t * 1.6) % 2;
   const g = !marche && p.pause > 0 && GESTES[p.geste];
   if (g) { rang = g[0] + DIRS[p.dir]; col = Math.floor(p.tg * g[2]) % g[1]; }   // le geste, en boucle
-  p.sprite.poser(p.x - 32, p.y - 60, p.y, col * 64, rang * 64);
+  // dans une scène, arrivé à sa place : la scène dit quelle image (parler avec les mains, hocher la tête, s'asseoir…)
+  const j = !marche && p.scene?.pose?.(p);
+  if (j) { rang = j.rang; col = j.col; }
+  const y = p.y + (j?.dy ?? 0);
+  p.sprite.poser(p.x - 32, y - 60, p.y, col * 64, rang * 64);
+  hocher(p, !!j?.hoche, col, rang, y);
   p.ombre.poser(p.x, p.y - 1);
+}
+
+// Hocher la tête : l'image coupée en deux au cou, la tête un pixel plus bas que d'habitude, le corps ne bouge pas.
+const COU = 30;
+function hocher(p, oui, col, rang, y) {
+  if (!oui || !p.sprite.mesh.visible) { p.tete?.cacher(true); p.corps?.cacher(true); return false; }
+  if (!p.tete) { p.tete = rendu.sprite(images[p.h.image], `heros-${p.h.id}`, 64, COU); p.corps = rendu.sprite(images[p.h.image], `heros-${p.h.id}`, 64, 64 - COU); }
+  p.sprite.cacher(true); p.tete.cacher(false); p.corps.cacher(false);
+  p.corps.poser(p.x - 32, y - 60 + COU, p.y, col * 64, rang * 64 + COU);
+  p.tete.poser(p.x - 32, y - 60 + 1, p.y + 0.05, col * 64, rang * 64);
+  return true;
 }
 
 export function update(dt) {
@@ -200,10 +227,10 @@ export function update(dt) {
       if (absent) p.va = d; else p.montre = d;
     }
     if (p.va > 0) p.va -= dt;
-    if (p.va > 0) { p.sprite.cacher(false); p.ombre.cacher(false); p.bulle.hidden = true; continue; }   // encore là, sous la lumière
+    if (p.va > 0) { p.sprite.cacher(false); p.ombre.cacher(false); p.tete?.cacher(true); p.corps?.cacher(true); p.bulle.hidden = true; continue; }   // encore là, sous la lumière
     if (p.montre > 0) p.montre -= dt;
     const cache = p.absent || p.montre > 0;
-    p.sprite.cacher(cache); p.ombre.cacher(cache);
+    p.sprite.cacher(cache); p.ombre.cacher(cache); p.tete?.cacher(true); p.corps?.cacher(true);
     if (p.absent) { p.bulle.hidden = true; p.bulleT = 0; continue; }
     p.t += dt; p.tg += dt;
     poser(p, avancer(p, dt));
@@ -234,6 +261,7 @@ export function update(dt) {
   if (peut) {
     const e = ecran(proche.x, proche.y - 66); invite.style.left = `${e.x}px`; invite.style.top = `${e.y}px`;
     if (game.input.take('consulter')) {
+      proche.scene?.quitter?.();   // on lui parle : il laisse la scène
       if (!proche.forge) { proche.route = null; proche.pause = DUREE_BULLE + 1; tourner(proche, moi.x, moi.y); }
       dire(proche);
     }
@@ -247,7 +275,7 @@ export function update(dt) {
 }
 
 export function dispose() {
-  for (const p of promeneurs) { p.sprite.retirer(); p.ombre.retirer(); p.bulle.remove(); }
+  for (const p of promeneurs) { p.sprite.retirer(); p.ombre.retirer(); p.bulle.remove(); p.tete?.retirer(); p.corps?.retirer(); }
   invite?.remove(); forgeron?.babillard?.bulle.remove();
 }
 
@@ -322,7 +350,11 @@ export function selfTest(t) {
 }
 
 export const api = {
-  promeneurs, repliques, dire, estPris, FOYERS, foyer,
+  promeneurs, repliques, dire, estPris, FOYERS, foyer, GESTES, DIRS, REPOS, PORTEE,
+  // l'envoyer quelque part (une scène) : vrai si on trouve un chemin
+  envoyer(p, x, y) { const r = collision.chemin(p.x, p.y, x, y); if (!r) return false; p.route = r.length ? r : null; p.activite = null; p.geste = null; return true; },
+  // le rendre à sa promenade (la fin d'une scène)
+  liberer(p) { p.scene = null; p.route = null; p.pause = 0.5 + S.aleat(); p.activite = null; p.geste = null; },
   get activites() { return activites; },
   get buts() { return buts; },
   get invite() { return invite; },

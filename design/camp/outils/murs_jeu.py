@@ -106,7 +106,7 @@ def bande(feuille, rang, cols, w, teinte=None):
     return imgs
 GENS = {'ouvrier ouest': bande('heros.png', 13, range(6), 64, (150, 120, 90)),
         'ouvrier est': bande('heros.png', 13, range(6), 64, (180, 160, 120)),
-        'macon nord': bande('forgeron.png', 0, range(8), 96)}
+        'macon nord': bande('heros.png', 15, range(6), 64, (160, 130, 100))}   # (pas Baba : c'est un héros qu'on incarne, il est à sa forge)
 
 # ---------- la planche
 L = 1400

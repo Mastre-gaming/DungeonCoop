@@ -10,6 +10,7 @@ import { testsPlace } from './37_tests_place.js';
 import { testsTableau } from './39_tests_tableau.js';
 import { testsPlans } from './46_tests_plans.js';
 import { HEROS } from './41_choix_heros.js';
+import { testsTitre } from './45_tests_titre.js';
 
 export const name = 'camp';
 let ctx;
@@ -270,6 +271,7 @@ export async function selfTest(t, game) {
   testsBoite(t, game);
   testsArmurerie(t, ctx);   // l'armurerie et ses 5 niveaux : src/35_tests_armurerie.js
   testsPlace(t, ctx);       // la place du village et ses 5 niveaux : src/37_tests_place.js
+  await testsTitre(t);      // l'écran titre : src/45_tests_titre.js
   testsTableau(t, ctx, game);   // le tableau d'affichage qui devient pierre, et son crieur : src/39_tests_tableau.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);
@@ -744,7 +746,9 @@ function testsHud(t, game) {
   const touche = (code) => { window.dispatchEvent(new KeyboardEvent('keydown', { code })); game.dbg.advance(0.05); window.dispatchEvent(new KeyboardEvent('keyup', { code })); game.dbg.advance(0.02); };
   t.group('le HUD : la barre d’action');
   const cases = [...hud.barre.querySelectorAll('.case')];
-  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres', 'reglages'], 'sept cases, une par partie du dashboard, puis les réglages (#95)');
+  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres', 'reglages', 'dashboard'], 'sept cases, une par partie du dashboard, puis les réglages (#95) et le retour au dashboard');
+  const versDash = cases.at(-1);
+  t.ok(!versDash.classList.contains('bientot') && versDash.textContent.includes('B') && versDash.querySelector('canvas'), 'la case « Retour au dashboard » (B) est prête, avec son arche');
   t.ok(cases.every((c) => c.querySelector('canvas.icone') && c.querySelector('kbd')), 'chacune avec son icône en pixels et sa touche');
   t.ok(cases.every((c) => !c.classList.contains('bientot')), 'toutes les cases sont prêtes');
   panneau.fermer();
