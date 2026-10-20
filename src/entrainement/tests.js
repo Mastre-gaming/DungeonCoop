@@ -259,6 +259,22 @@ export async function selfTest(t, game) {
     const chien = C.S.unites.find((u) => u.familier && u.maitre === tr.id), ko0 = C.S.stats.ko;
     t.ok(chien && chien.camp === 'h' && chien.pv === 30 && dist(chien, tr) < 2, `le limier est sur le terrain, à côté du Traqueur (${dist(chien, tr).toFixed(1)} case) : 30 PV`);
     t.ok(!C.groupeCourant().ids.includes(chien.id) && C.cibles(tr, CAPACITES.lecher).every((c) => c.id !== chien.id), 'il n’a pas de tour à lui, et ne se lèche pas lui-même');
+    {
+      // sa place : derrière son maître, à l'opposé de l'ennemi le plus proche (devant, il se faisait viser dès le tour 1)
+      const C2 = essai(['traqueur-au-limier', 'brute', 'mage', 'gardien']); C2.commencer();
+      const t2 = trouver(C2, 'traqueur-au-limier'), c2 = C2.S.unites.find((u) => u.familier);
+      const proche = () => C2.ennemisVivants().sort((a, b) => dist(a, t2) - dist(b, t2))[0];
+      t.ok(dist(c2, proche()) > dist(t2, proche()) && dist(c2, t2) < 1.6, 'au début du combat, le limier est derrière le Traqueur (à l’opposé de l’ennemi le plus proche)');
+      C2.deplacer(t2, t2.x + 3, t2.y);
+      t.ok(dist(c2, proche()) > dist(t2, proche()) - 0.3 && dist(c2, t2) < 1.7, 'le Traqueur avance de 4,5 m : le limier reste derrière lui');
+      // la Brute ennemie vise le plus blessé en part de ses PV, pas en PV bruts (sinon le limier, 30 PV, était toujours sa cible)
+      const br = C2.U('br'), m2 = trouver(C2, 'mage');
+      t.ok(C2._.cibleBrute(br).id !== c2.id, `tout le monde en pleine forme : la Brute ennemie ne vise pas le limier (elle vise ${C2._.cibleBrute(br).nom})`);
+      m2.pv = 60;
+      t.eq(C2._.cibleBrute(br).id, m2.id, 'la Mage à 60/125 PV (48 %) : c’est elle, et pas le limier à 30/30');
+      c2.pv = 10;
+      t.eq(C2._.cibleBrute(br).id, c2.id, 'le limier à 10/30 (33 %) : c’est lui, le plus blessé');
+    }
     const a2 = C.U('a2'); a2.x = chien.x + 1; a2.y = chien.y;
     C._.attaquer(a2, chien, { nom: 'Coup', mod: 30, dmod: 0, base: 40, de: 4, melee: true });
     t.ok(chien.ko && !C.S.resultat && C.S.stats.ko === ko0, 'un ennemi l’abat : il tombe (ni défaite, ni héros KO de plus)');
