@@ -14,7 +14,7 @@ From the owner's answers on 17 Oct 2026. Targets are checked in the paper fight 
 |---|---|---|
 | Length of a normal fight | about 7 minutes | target, see tension 1 |
 | A hero at 0 | a teammate can revive them during the fight, using their turn | decided |
-| What a fight gives | a new ability, an ability upgrade, gear looted from enemies, gold for the shop | decided |
+| What a fight gives | levels (a new ability or an upgrade at the class's levels), and ability upgrades to pick, 1 out of 3, at the stall, the treasure room and every room once at level 20. No gear, no gold (owner, 20 Oct) | decided |
 
 ## 3. The run
 | Question | Answer | Status |

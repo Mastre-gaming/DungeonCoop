@@ -59,7 +59,7 @@ Each class picks one resource from the shared list in `CLASS_TEMPLATE.md` (Rage,
 ## Downed and healing
 - At 0 health a hero is **downed**: no turns, and enemies ignore them unless a rule says otherwise.
 - **Revive:** an adjacent teammate spends their action; the hero comes back at 25 health.
-- **Healing comes from:** healer abilities, potions (bonus action; bought in the shop or looted), and rest rooms on the map. Nothing heals automatically after a fight.
+- **Healing comes from:** healer abilities, potions (bonus action; refilled in rest and treasure rooms: there is no shop and no gold, owner, 20 Oct), and rest rooms on the map. Nothing heals automatically after a fight.
 - **The fight is lost** when all four heroes are down at once.
 
 ## Enemies
