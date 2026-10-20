@@ -116,6 +116,7 @@ async function demarrer(sortieTitre) {
   const renommee = game.use(renommeeSkill, { missions, sentinelle, visite });
   const hud = game.use(hudSkill, { missions, sentinelle, panneau, images, visite, renommee, heros });
   const reseau = game.use(reseauSkill, { rendu, heros, images, sentinelle, visite, apparitions });
+  limier.brancherReseau(reseau);   // le limier d'un ami qui incarne le Traqueur : chacun le voit
   const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite, reseau });   // E devant le terrain : le combat d'entraînement (à plusieurs : tout le groupe)
   const armurerie = game.use(armurerieSkill, { rendu, canvas, heros, visite });       // E devant l'armurerie : le créateur de classe (#125)
   const archives = game.use(archivesSkill, { rendu, canvas, heros, collision, images, visite });   // E devant la tente des archives : tous les assets du projet

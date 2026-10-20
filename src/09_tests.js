@@ -611,6 +611,20 @@ function testsReseau(t, game) {
   prendre('barde');
   const barde = promeneurs?.promeneurs.find((p) => p.h.id === 'barde');
   t.ok(copieAna().heros.id === 'barde' && (!barde || (barde.absent && !barde.sprite.mesh.visible)) && (!forgeron || !forgeron.absent), 'Ana prend la Barde : la Barde ne se promène plus, Baba revient à sa forge');
+  // Ana incarne le Traqueur au limier : Paul voit son limier la suivre (rien de plus ne passe sur le réseau)
+  const { limier } = game.dbg;
+  if (limier) {
+    prendre('traqueur-au-limier');
+    const lAna = () => [...limier.amis.values()][0];
+    t.ok(limier.amis.size === 1 && lAna()?.actif, 'Ana incarne le Traqueur au limier : son limier apparaît chez Paul');
+    const x0 = ana.me.x;
+    jouer(1.5, () => { ana.me.vx = -60; ana.me.x -= 60 * pas; ana.me.bouge = 1; ana.me.dir = 1; });
+    const c = copieAna(), l = lAna();
+    t.ok(l.dir === 'gauche' && l.x - c.x > 10 && l.x - c.x < 60 && (!l.sprite || l.sprite.mesh.visible), `Ana marche vers la gauche : son limier la suit, ${Math.round(l.x - c.x)} px derrière elle`);
+    ana.me.x = x0; ana.me.vx = 0; ana.me.bouge = 0;
+    prendre('depart');
+    t.ok(limier.amis.size === 0, 'Ana change de héros : son limier s’en va');
+  }
   prendre('depart');
   // Paul marche : Ana le voit bouger
   const vu = () => [...ana.party.others.values()].find((o) => o.name === 'Paul')?.shown.x ?? 0;
