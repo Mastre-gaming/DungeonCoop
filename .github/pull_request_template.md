@@ -1,5 +1,14 @@
 <!-- Remplis ce qui te concerne, efface le reste. Une PR = une seule chose. -->
 
+## Patch note
+<!-- Le petit mot que le crieur du camp lira aux joueurs (clic sur le crieur → « Patch notes »). Seule cette section y apparaît.
+     - 2 à 5 phrases, pour un joueur qui n'a jamais ouvert le code : ce qu'il verra ou ressentira en jouant.
+     - Drôle, à la façon d'un crieur de village (« Oyez ! … »), une petite blague bienvenue. Mais vrai : rien d'inventé.
+     - Aucun code, aucun nom de fichier, de fonction, de branche ou d'outil, aucun mot technique (module, test, CSS, PR…).
+     - Une ou deux photos du jeu si possible : glisse-les ici, ou ![ce qu'on voit](lien de l'image).
+     Exemple : « Oyez ! La nuit tombe enfin sur le camp. Les héros ont reçu une torche, et jurent qu'ils n'ont pas peur du
+     noir. Les ouvriers, eux, vont se coucher : on ne leur en voudra pas. » -->
+
 ## Ce que ça change
 <!-- En une ou deux phrases, ce qu'on verra dans le jeu. -->
 

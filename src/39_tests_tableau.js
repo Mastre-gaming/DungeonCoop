@@ -72,7 +72,18 @@ export function testsTableau(t, ctx, game) {
     for (let k = 0; k < 14 * 10 && !crieur.criant; k++) game.dbg.advance(0.1);
   }
   t.ok(crieur.criant && crieur.sorte === 'tour' && crieur.phrase.includes('a forgé sur'), `près de lui, il refait le tour des derniers push (« ${crieur.phrase} »)`);
-  t.ok(!crieur.ecouter.hidden, 'devant son estrade : « E : les derniers push »');
+  t.ok(!crieur.ecouter.hidden && crieur.ecouter.textContent.includes('patch notes'), 'devant son estrade : « E : les patch notes »');
+  // un clic sur lui ouvre les patch notes (et le héros ne part pas marcher vers le clic)
+  const { patchNotes, rendu } = ctx;
+  if (patchNotes && rendu) {
+    const cv = rendu.renderer.domElement, cr = cv.getBoundingClientRect(), pl = crieur.place();
+    const vx = cr.left + ((pl.x - rendu.cam.x) / rendu.vue.w) * cr.width, vy = cr.top + ((pl.y - 30 - rendu.cam.y) / rendu.vue.h) * cr.height;
+    const route = heros.heros.route;
+    cv.dispatchEvent(new PointerEvent('pointerdown', { clientX: vx, clientY: vy, button: 0, bubbles: true, pointerId: 1 }));
+    cv.dispatchEvent(new PointerEvent('pointerup', { clientX: vx, clientY: vy, button: 0, bubbles: true, pointerId: 1 }));
+    t.ok(patchNotes.ouvert && heros.heros.route === route, 'un clic sur le crieur ouvre les patch notes, sans faire marcher le héros');
+    patchNotes.fermer();
+  }
   game.dbg.advance(4);
   // une mission rentrée et un push en même temps : le push passe d'abord
   const issues = missions.etat.issues;

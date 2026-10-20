@@ -322,3 +322,33 @@
 .suivi-quetes .urgence-haute { color: #ff8a6a; font-weight: 700; }
 .suivi-quetes .urgence-moyenne { color: #ffd35a; }
 .suivi-quetes .urgence-basse { color: var(--creme-doux); }
+
+/* Les patch notes (un clic sur le crieur) : les mises à jour poussées sur GitHub, groupées par jour, la dernière dépliée */
+.fond-patch-notes { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(20, 12, 6, .45); }
+.fond-patch-notes[hidden] { display: none; }
+.patch-notes { box-sizing: border-box; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 64px); display: flex; flex-direction: column; gap: 6px; padding: 6px 12px 8px; color: var(--parchemin-encre); }
+.patch-notes header { display: flex; align-items: center; gap: 8px; }
+.patch-notes h2 { margin: 0; font: 700 1.35rem var(--titre); color: #7a3b10; letter-spacing: .04em; }
+.patch-notes .cloche { font-size: 1.2rem; filter: sepia(.6); }
+.patch-notes .compte { margin-right: auto; white-space: nowrap; font: 500 .85rem var(--titre); color: var(--parchemin-doux); }
+.patch-notes .fermer { background: none; border: 0; font: 700 1.1rem var(--titre); color: var(--parchemin-encre); cursor: pointer; }
+.patch-notes .sous-titre { margin: 0; font: italic 500 .9rem var(--titre); color: var(--parchemin-doux); }
+.patch-notes .jours { overflow: auto; min-height: 0; display: grid; gap: 10px; padding-right: 4px; }
+.patch-notes .jour h3 { margin: 0 0 4px; font: 700 .95rem var(--titre); color: #7a3b10; border-bottom: 2px solid rgba(122, 59, 16, .35); padding-bottom: 2px; }
+.patch-notes .note { border-left: 3px solid #b8892a; margin: 0 0 4px; background: rgba(255, 248, 225, .35); }
+.patch-notes .note.ouverte { border-left-color: #2f6b2a; background: rgba(255, 248, 225, .7); }
+.patch-notes .entete { display: grid; grid-template-columns: 14px 1fr auto; align-items: baseline; gap: 6px; width: 100%; padding: 5px 8px; background: none; border: 0; text-align: left; cursor: pointer; color: inherit; }
+.patch-notes .entete:hover { background: rgba(255, 255, 255, .35); }
+.patch-notes .entete:focus-visible { outline: 2px solid var(--or, #d9a62a); outline-offset: -2px; }
+.patch-notes .titre-note { font: 700 .95rem/1.25 var(--titre); }
+.patch-notes .meta { font: 500 .78rem var(--titre); color: var(--parchemin-doux); white-space: nowrap; }
+.patch-notes .detail { padding: 0 10px 8px 28px; font-size: .88rem; line-height: 1.4; }
+.patch-notes .detail h4 { margin: 8px 0 2px; font: 700 .85rem var(--titre); color: #7a3b10; }
+.patch-notes .detail p { margin: 3px 0; }
+.patch-notes .detail ul { margin: 2px 0; padding-left: 18px; }
+.patch-notes .detail li { margin: 2px 0; }
+.patch-notes .detail .photo { display: block; max-width: 100%; max-height: 340px; margin: 6px 0; border: 3px solid var(--bois-fonce, #5a3a1e); box-shadow: 0 3px 0 rgba(0, 0, 0, .25); image-rendering: auto; }
+.patch-notes .note.sans-mot .titre-note { font-weight: 500; }
+.patch-notes .lien, .patch-notes .pied, .patch-notes .vide { font-size: .8rem; color: var(--parchemin-doux); margin: 4px 0 0; }
+.patch-notes a { color: #7a3b10; }
+@media (max-width: 520px) { .patch-notes .entete { grid-template-columns: 14px 1fr; } .patch-notes .meta { grid-column: 2; } .patch-notes .detail { padding-left: 12px; } }
