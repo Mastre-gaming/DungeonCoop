@@ -322,11 +322,11 @@ export async function selfTest(t, game) {
     const avant = { x: sh.x, y: sh.y };
     t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }), 'il plonge dans son ombre');
     t.ok(dist(sh, s) <= CONTACT && enTenaille(sh, s, [b]), `il ressort au contact, de l’autre côté de la Brute : Tenaille (${(dist(sh, s) * 1.5).toFixed(1)} m de la cible)`);
-    t.eq(sh.res.v, Math.floor(dist(avant, sh) + 1e-6), `le trajet compte pour l’Élan : ${sh.res.v} (${(dist(avant, sh) * 1.5).toFixed(1)} m)`);
+    t.eq(sh.res.v, 0, `le Pas ne donne pas d’Élan : ${(dist(avant, sh) * 1.5).toFixed(1)} m sous terre, 0 Élan (l’Élan vient de la course)`);
     t.ok(!sh.t.bonus && sh.t.action, 'c’est son action bonus ; il garde son action');
     const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
     t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos sur la cible en Tenaille : ×2, et l’avantage de la Tenaille');
-    t.eq(C.apercu(sh, 'coupDos', s.id).degats.touche, '34–44', 'l’aperçu le montre : 34–44 sur un touché');
+    t.eq(C.apercu(sh, 'coupDos', s.id).degats.touche, '22–28', 'l’aperçu le montre : 22–28 sur un touché');
     const pv = s.pv;
     t.ok(C.utiliser(sh, 'coupDos', { id: s.id }) && (s.mort || s.pv < pv), 'le coup part');
     t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id && k.quoi === 'Tenaille puis coup dans le dos') || C.S.journal.some((l) => l.t.includes('Raté')),
@@ -360,12 +360,14 @@ export async function selfTest(t, game) {
     t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'un allié à 5 m ne serre pas l’ennemi : pas de Pas');
   }
   {
-    const { C, sh } = scene();
+    const { C, sh, s } = scene();
     sh.res.v = 2;
     t.ok(!C.peutUtiliser(sh, CAPACITES.coupDos3), 'le Coup dans le dos critique coûte 3 Élan : pas avec 2');
     sh.res.v = 3;
     t.ok(C.peutUtiliser(sh, CAPACITES.coupDos3), 'avec 3, oui');
-    t.eq(resultats(CAPACITES.coupDos3).map((r) => r.degats), ['34–44'], 'un critique assuré, sans jet');
+    C.utiliser(sh, 'pasOmbre', { id: s.id }); C.finPhaseHeros();
+    t.eq(sh.res.v, 3, 'un tour avec seulement le Pas : il a bougé, son Élan ne retombe pas (et le Pas n’en donne pas)');
+    t.eq(resultats(CAPACITES.coupDos3).map((r) => r.degats), ['22–28'], 'un critique assuré, sans jet');
   }
   {
     const { C, sh } = scene();
@@ -393,7 +395,7 @@ export async function selfTest(t, game) {
     C._.enflammer({ x: sh.x, y: sh.y }, null);
     t.ok(C.surfaceA(sh)?.t === 'feu' && !C.peutUtiliser(sh, CAPACITES.pasOmbre) && !C.utiliser(sh, 'pasOmbre', { id: s.id }), 'debout dans le feu non plus');
   }
-  t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'Coup dans le dos : 14 + d6 + 2, comme sa description');
+  t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '5–7', '11–14', '22–28'], 'Coup dans le dos : 8 + d4 + 2, comme sa description');
   t.ok(icone('pasOmbre').endsWith('enseigne-pasOmbre.png') && icone('coupDos3').endsWith('enseigne-coupDos.png'), 'ses icônes : celles de sa fiche (design/classes/shadow/icones/)');
 
   // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------

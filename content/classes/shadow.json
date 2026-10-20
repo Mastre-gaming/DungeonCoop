@@ -13,7 +13,7 @@
   "ressource": "elan",
   "capacites": [
     { "nom": "Dague", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "un estoc sec au contact", "cree": [], "utilise": [], "renforts": [] },
-    { "nom": "Pas dans l'ombre", "sorte": "preparation", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "il plonge dans son ombre et ressort derrière un ennemi au contact d'un allié : la cible est prise en Tenaille ; le trajet compte pour l'Élan", "cree": ["tenaille"], "utilise": [], "renforts": [] },
+    { "nom": "Pas dans l'ombre", "sorte": "preparation", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "il plonge dans son ombre et ressort derrière un ennemi au contact d'un allié : la cible est prise en Tenaille ; le trajet ne donne pas d'Élan", "cree": ["tenaille"], "utilise": [], "renforts": [] },
     { "nom": "Coup dans le dos", "sorte": "exploitation", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "DEX", "cout": "3 Élan pour un Critique", "effet": "deux entailles croisées ; ×2 sur une cible en Tenaille ou Exposée", "cree": [], "utilise": ["tenaille", "expose"], "renforts": ["critique"] }
   ],
   "faiblesse": "la lumière le trahit : Brûlant ou dans le Feu, il ne peut plus utiliser Pas dans l'ombre",
