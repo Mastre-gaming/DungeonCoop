@@ -16,6 +16,7 @@ const MARCHE = 8, COURSE = 38;                            // les rangées de la 
 const DEFAUTS = { marche: 74, course: 138, imagesMarche: 10, imagesCourse: 14 };   // px/s : ~2,3 et ~4,3 cases par seconde
 
 let game, cfg, rendu, collision, sprite, spriteRouge, ombre, canvas, rouge = 0, cache = false;
+let feuille = null;   // la planche montrée et le nom de sa texture (la main qui tient la torche la reprend : 46_jour_nuit.js)
 let incarne = { id: 'depart', course: true };   // le héros incarné : son id, et s'il a une rangée de course
 // controle : false pendant une scène (la sentinelle) : le clavier et les clics ne le font plus bouger, une route oui.
 const heros = { x: 0, y: 0, vx: 0, vy: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0, controle: true, presse: false };
@@ -27,6 +28,7 @@ export function init(g, options) {
   heros.x = options.x; heros.y = options.y;
   ombre = rendu.ombre(18, 4);
   sprite = rendu.sprite(options.images.heros, 'heros', 64, 64);
+  feuille = { source: options.images.heros, nom: 'heros' };
   spriteRouge = rendu.sprite(teinter(options.images.heros), 'heros-rouge', 64, 64);
   spriteRouge.cacher(true);
 
@@ -115,6 +117,7 @@ export function update(dt) {
   rouge = Math.max(0, rouge - dt);
   sprite.cacher(cache || rouge > 0); spriteRouge.cacher(cache || rouge <= 0);
   sprite.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
+  heros.rang = rang; heros.col = col;
   spriteRouge.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
   ombre.poser(heros.x, heros.y - 1);
 }
@@ -136,6 +139,7 @@ export const api = {
     if (!def || !planche) return;
     sprite.retirer(); spriteRouge.retirer();
     sprite = rendu.sprite(planche, `heros-${def.id}`, 64, 64);
+    feuille = { source: planche, nom: `heros-${def.id}` };
     spriteRouge = rendu.sprite(teinter(planche), `heros-${def.id}-rouge`, 64, 64);
     incarne = { ...def, course: !!def.course };
     sprite.cacher(cache); spriteRouge.cacher(true);
@@ -144,4 +148,5 @@ export const api = {
   },
   get incarne() { return incarne; },
   get sprite() { return sprite; },
+  get feuille() { return feuille; },
 };

@@ -29,7 +29,7 @@ export const MURS = {
 export const LIGNES = [{ x: 32, y: 0, w: O.x + O.w - 32, h: O.sud }, { x: 32, y: 32, w: N.est - 32, h: N.pied - 32 }, { x: E.x, y: 0, w: 1312 - E.x, h: E.sud }];
 
 let rendu, images, heros, chantier, collision, visite, atlas;
-const S = { cache: false, avant: '' };
+const S = { cache: false, avant: '', dort: false };   // dort : la nuit, les maçons sont couchés (46_jour_nuit.js)
 
 // une pièce de la planche, ou la partie (wx, wy, w, h, en pixels du monde) qui en tombe dans le rectangle donné
 function poser(g, nom, zone, wx = P[nom].x, wy = P[nom].y, w = P[nom].w, h = P[nom].h) {
@@ -155,6 +155,7 @@ export function update(dt) {
     appliquer(mur);
     const gars = mur.front[1];
     if (gars.x !== undefined && !S.cache && mur.p < 100) {
+      gars.sprite.cacher(S.dort);
       const k = Math.floor((performance.now() / 1000 + (gars.g.w === 96 ? 0 : 0.4)) / 0.14) % gars.g.images;
       gars.sprite.poser(gars.x, gars.y, gars.pied, k * gars.g.w, gars.g.sy);
     }
@@ -199,6 +200,7 @@ export function selfTest(t) {
 
 export const api = {
   etat, cacher, MURS, LIGNES,
+  dormir(oui = true) { S.dort = !!oui; update(0); },
   get avancement() { return avancement(); },
   opacite(cle) { return MURS[cle].couches.reduce((s, c) => s + (c.sprite.mesh.visible ? c.sprite.mesh.material.opacity : 0), 0); },
 };

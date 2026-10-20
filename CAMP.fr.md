@@ -158,6 +158,13 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   - **Le flou, pour tout le château :** comme la grande muraille, une fois dans le camp chaque mur s'estompe et devient flou selon la distance du héros à ce mur (presque net collé à lui, disparu à 9 cases). En visite (la carte du dashboard), ils restent pleins et nets.
   - **Dans le jeu :** `src/45_murs.js`, les pièces dessinées par `design/camp/outils/murs_jeu.py` (`public/assets/lpc/murs.png`, `src/data/murs.json`). La ligne des murs bloque toujours, finie ou pas.
 
+### Le jour et la nuit (proposé le 19 oct, design validé par Mope : « je valide tout bravo »)
+- **Le camp suit la vraie heure de Paris :** l'aube de 6 h à 8 h, le jour jusqu'à 18 h, le crépuscule jusqu'à 20 h 30, puis la nuit ; on passe de l'un à l'autre en une demi-heure. Sur la carte du dashboard (la visite), le camp reste en plein jour, pour rester lisible.
+- **La nuit, seul ce qui brûle éclaire autour de soi :** le feu de camp, le lampadaire, la forge de Baba, la lanterne de la table des cartes, les braseros du pont, une bougie dans chaque tente, et les lanternes des portes secondaires une fois leur mur fini. Les fenêtres des tours s'allument (à peine, quand la muraille n'est plus qu'un voile, dans le camp), et des lucioles volent près des bosquets. Au crépuscule, les fenêtres et les lanternes s'allument déjà.
+- **La nuit, les ouvriers et le chef de chantier vont se coucher :** il ne reste que le matériel et le panneau.
+- **La torche :** au crépuscule et la nuit, chaque héros (le sien et ceux des autres joueurs) porte une torche, allumée toute seule et éteinte à l'aube : serrée dans sa main droite (sa main passe par-dessus le manche, et la torche suit sa main quand il marche), penchée vers l'extérieur, loin du visage (validé par Mope le 19 oct : « la torche doit être mise dans la main du joueur »). Elle éclaire 3 à 4 cases autour de lui, d'une lumière chaude, et sa flamme danse.
+- **La maquette** est dans `design/camp/jour-nuit/` (dessinée par `design/camp/outils/jour_nuit.py` et `torche.py`). **Dans le jeu :** `src/46_jour_nuit.js` (deux voiles de lumière posés sur le camp : l'un multiplie, l'autre ajoute le chaud, les fenêtres et les lucioles) ; les fenêtres sont relevées dans l'image de la muraille par `design/camp/outils/jour_nuit_jeu.py` (`src/data/fenetres.json`). `?heure=22:30` force une heure.
+
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
 - **Les niveaux :**
