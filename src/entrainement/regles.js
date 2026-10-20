@@ -186,13 +186,23 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const ennemisVivants = () => S.unites.filter((u) => u.camp === 'e' && !u.mort);
   const estHeros = (id) => !!id && U(id)?.camp === 'h' && !U(id).familier;
   const familierDe = (h) => S.unites.find((u) => u.familier && u.maitre === h?.id) ?? null;
-  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient à côté de lui s'il s'en est éloigné.
-  function suivreFamiliers() {
+  // Sa place : derrière son maître, à l'opposé de l'ennemi le plus proche (Paolitus : devant, il se faisait viser dès le tour 1).
+  const ennemiProche = (m) => S.unites.filter((u) => u.camp === 'e' && !u.mort).sort((a, b) => dist(a, m) - dist(b, m))[0] ?? null;
+  function placeFamilier(f, m) {
+    const e = ennemiProche(m), l = e ? dist(e, m) : 0;
+    const dx = e && l > 0.01 ? (m.x - e.x) / l : -1, dy = e && l > 0.01 ? (m.y - e.y) / l : 0;
+    return pointLibreProche(trame, { x: m.x + dx * 0.95, y: m.y + dy * 0.95 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+  }
+  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient derrière lui s'il s'en est éloigné,
+  // ou s'il se retrouve devant lui (plus près de l'ennemi que lui). sansScene : au début du combat, sans le montrer marcher.
+  function suivreFamiliers(sansScene = false) {
     for (const f of S.unites.filter((u) => u.familier && !u.ko)) {
-      const m = U(f.maitre); if (!m || m.ko || dist(f, m) <= 1.6) continue;
-      const p = pointLibreProche(trame, { x: m.x + 0.9, y: m.y + 0.5 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+      const m = U(f.maitre); if (!m || m.ko) continue;
+      const e = ennemiProche(m), devant = !!e && dist(f, e) < dist(m, e) - 0.3;
+      if (dist(f, m) <= 1.6 && !devant) continue;
+      const p = placeFamilier(f, m);
       f.x = p.x; f.y = p.y;
-      ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
+      if (!sansScene) ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
     }
   }
   const nomHeros = (id) => U(id)?.nom ?? '';
@@ -634,6 +644,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function commencer() {
     S.debut = horloge(); S.round = 1; S.gi = 0; S.stats.rounds = [];
+    suivreFamiliers(true);                          // (les ennemis sont là : le limier se met derrière son maître)
     log(`Début du combat · ${S.mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} · sans cases.`, 'round');
     if (S.mode === 'initiative') {
       const jets = S.unites.filter((u) => !u.familier).map((u) => ({ id: u.id, v: d(20) + u.dex, dex: u.dex, r: alea() }));
