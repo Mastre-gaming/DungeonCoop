@@ -173,6 +173,15 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **Avec le jour et la nuit :** une nuit de pluie, le feu et les torches brillent sous la pluie ; la pluie et la brume ne brillent pas dans le noir.
 - **La maquette** est dans `design/camp/meteo/` (dessinée par `design/camp/outils/meteo.py`). **Dans le jeu :** `src/48_meteo.js` (un voile au sol, sous tout le reste, qui lit le sol du camp et celui de la place ; le ciel couvert ; la pluie et le brouillard par-dessus tout ; l'éclair). `?meteo=pluie` (ou `orage`, `brouillard`, `beau`) force un temps ; en `?test`, beau temps et midi.
 
+### Les animaux (proposés le 19 oct, design validé par Mope le 20 oct : « je valide les animaux »)
+- **Les poules :** trois blanches et deux rousses picorent autour de la cabane de l'ouest et de l'abreuvoir. Elles font quelques pas, s'écartent quand un héros passe trop près, et rentrent sous la cabane la nuit et quand il pleut.
+- **Le chat :** un chat roux dort roulé en boule sur les pavés, au chaud près du feu ; de temps en temps il s'étire, puis se rendort.
+- **Les lapins :** deux à chaque lisière de la forêt (ouest et est), dans l'herbe seulement. Ils font de petits bonds ; un héros approche : ils détalent vers les arbres et disparaissent, puis reviennent un peu plus tard. La nuit, ils dorment.
+- **Les canards :** un colvert et deux canes ensemble, et un autre colvert plus loin, nagent lentement le long des douves et font demi-tour ; la nuit, ils dorment sur l'eau.
+- **Les papillons :** quelques-uns volettent au-dessus de l'herbe, le jour et au beau temps seulement.
+- **Les règles :** une bête ne se pose que là où elle tient tout entière sur le sol dégagé (terre ou herbe), jamais devant un toit, un arbre ou un mur ; les bêtes ne bloquent personne. Elles sont dessinées au pixel dans le style LPC (contour sombre, trois teintes, lumière en haut à gauche).
+- **La maquette** est dans `design/camp/animaux/` (dessinée par `design/camp/outils/animaux.py`). **Dans le jeu :** `src/49_animaux.js` ; la planche des bêtes et leurs places sont fabriquées par `design/camp/outils/animaux_jeu.py` (`public/assets/lpc/animaux.png`, `src/data/animaux.json`).
+
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
 - **Les niveaux :**
