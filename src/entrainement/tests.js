@@ -414,6 +414,7 @@ export async function selfTest(t, game) {
     C.deplacer(b, 9, 15.5);
     t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'désengagée, la Brute part sans prendre de coup');
     t.ok(!C.peutUtiliser(b, CAPACITES.desengager), 'une fois par tour');
+    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : une flèche qui s’éloigne de l’épée');
   }
   {
     const { C, b, s } = opp();

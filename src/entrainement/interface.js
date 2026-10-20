@@ -72,7 +72,7 @@ function construire() {
   dom.coin = el('div', { class: 'coin-phase bois' },
     dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
     // l'action commune de tous les héros (#231) : partir du contact sans attaque d'opportunité, pour son action bonus
-    dom.desengager = el('button', { type: 'button', class: 'bouton-jeu discret', id: 'desengager', onclick: () => desengager(), title: 'Action bonus : ce tour-ci, il s’éloigne sans attaque d’opportunité (touche D)' }, 'Se désengager (D)'),
+    dom.desengager = el('button', { type: 'button', class: 'bouton-jeu discret', id: 'desengager', onclick: () => desengager(), title: 'Action bonus : ce tour-ci, il s’éloigne sans attaque d’opportunité (touche D)' }, el('img', { class: 'bouton-icone', src: icone('desengager'), alt: '' }), 'Se désengager (D)'),
     dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
   // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
   dom.bas = el('div', { class: 'bas-terrain' },

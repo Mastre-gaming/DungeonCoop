@@ -145,6 +145,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .coin-phase #fin-phase { font: 700 1.05rem var(--titre); padding: 12px 10px; background: #85581b; border-color: #ffd35a; box-shadow: inset 0 -3px 0 rgba(0,0,0,.3), 0 0 12px rgba(255, 211, 90, .25); }
 .coin-phase #fin-phase:disabled { box-shadow: none; border-color: var(--bois-fonce); }
 .bouton-jeu:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+.bouton-jeu .bouton-icone { width: 24px; height: 26px; image-rendering: pixelated; vertical-align: middle; margin: -6px 6px -6px -4px; }
 
 /* le d20 en grand, les bannières, le survol */
 .de-grand { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 12; pointer-events: none; display: grid; justify-items: center; gap: 2px;
