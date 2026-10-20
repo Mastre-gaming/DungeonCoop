@@ -33,6 +33,7 @@ Les coups d'équipe | deux classes côte à côte dépensent leur action ensembl
 - À plusieurs : le groupe entre ensemble, chacun choisit sa classe #80
 - Les classes d'essai à l'entrée #76
 - La première vraie classe jouable au terrain : Shadow, de Fraps #198
+- Les attaques d'opportunité, et Se désengager (à l'essai) #231
 - L'UI de combat des maquettes : la barre des capacités, leur fiche, la carte de la cible #126 #129 #139
 - Voir ce que fait chaque attaque : dégâts et effets #85
 - Les animations des capacités, en combat #134

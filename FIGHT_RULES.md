@@ -5,7 +5,7 @@ From the owner's answers on 17 Oct 2026, plus CORE_LOOP.md. Every number is a st
 ## A turn
 - **Move** up to 5 squares (1 square = 1.5 m), then an **action** and a **bonus action**, in any order.
 - **Who acts when:** initiative order, or the team turn. Both are tested on paper (CORE_LOOP.md).
-- **Reactions:** only abilities that say "Reaction" can be used outside your turn, at most one per round.
+- **Reactions:** only abilities that say "Reaction" can be used outside your turn, at most one per round. One reaction belongs to everyone: the opportunity attack (below, on trial).
 - **Playing together** (the training ground, #80): each player plays only their own heroes, in any order with the others. The heroes' phase ends when everyone who has a hero standing in it has said "ready" (playing again takes the "ready" back). A move can't be undone then: the others may already have played after it.
 
 ## Attacks always hit; the d20 decides how well
@@ -88,6 +88,7 @@ The team asked on 18 Oct to try a mode **without squares**, where each class has
 - **Surfaces** are patches on the ground, drawn without squares. A creature is in a surface when its centre is.
 - **Shoves** go straight away from the shover: 2 squares become 3 m (Hurl: 4.5 m, 7.5 m with 20 Rage). Hitting a wall, rock, barrel or creature: +8 damage. Into the pit: as off the ledge (a grunt is out, anything bigger takes 20 and climbs back out). On ice, the target slides on until it hits something.
 - **Flank:** an ally in contact with the target, on its far side: the angle attacker, target, ally is 135° or more.
+- **Opportunity attacks (on trial, #231, as in Baldur's Gate 3):** walking out of contact with a standing enemy gives that enemy a free hit with its melee attack: it spends its reaction (one per round, shared with Taunt), and the walk goes on unless the walker drops. It works both ways: an enemy walking away from a hero takes the hero's melee attack, played on its own. Only walking provokes it: a shove, a pull, a slide on ice or a teleport (Shadow's Shadow Step) does not. Who has no melee attack (Archers; the Mage, the Scout, the Druid, the Tracker) makes none. **Disengage** (bonus action, every hero): walk away freely for the rest of the turn. Before you click, the path turns red and names who will hit you, with the odds and the damage.
 - **Deep water is scenery:** nobody walks in it (players' note after D1). A puddle made by a spell is a surface you walk through.
 - **The training room:** 24 × 16 squares (36 × 24 m), with the D1 fight's heroes, enemies and objective (defeat the leader). Each hero's d20 shows big on the board (players' note after D1).
 

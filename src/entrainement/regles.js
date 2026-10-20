@@ -85,6 +85,8 @@ export const CAPACITES = {
   projection20: { nom: 'Projection furieuse', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 5, proj: true, cout: 20, ds: '20 Rage · pousse de 7,5 m' },
   pousser: { nom: 'Pousser', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 2, ds: '3 m ; +8 contre un obstacle ; fossé : sbire éliminé, sinon 20' },
   potion: { nom: 'Potion', slot: 'bonus', type: 'potion', ds: '+20 PV · une seule par héros' },
+  // l'action commune de tous les héros (#231), hors de la barre : un bouton et la touche D
+  desengager: { nom: 'Se désengager', slot: 'bonus', type: 'desengager', ds: 'Ce tour-ci, il s’éloigne sans attaque d’opportunité' },
   relever: { nom: 'Relever', slot: 'action', type: 'relever', portee: CONTACT, ds: 'Un allié KO au contact revient à 25 PV' },
   etincelle: { nom: 'Étincelle', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 8, de: 4, anim: 'sort', ds: 'Portée 9 m · 5–7 / 11–14 / 22–28' },
   eclaboussure: { nom: 'Éclaboussure', slot: 'action', type: 'zone', surf: 'eau', rayon: R2, portee: 5, cout: 10, anim: 'sort', ds: '10 Mana · une flaque de 1,7 m à 7,5 m ; ceux dedans sont Trempés' },
@@ -508,9 +510,53 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const carte = carteDe(u);
     return { carte, atteint: (p) => { const k = indiceDe(trame, p.x, p.y); return carte.longueur[k] <= u.t.mv + 1e-6 && finPossible(u, p); } };
   }
+  // --- Les attaques d'opportunité (FIGHT_RULES, à l'essai, #231 : comme dans Baldur's Gate 3) --------------------------
+  // Le coup au contact qu'une créature donne en réaction : l'attaque de base au contact d'un héros (sans coût), celle d'un
+  // ennemi qui frappe au contact (le chef aussi) ; null sans attaque au contact (les archers, la Mage, l'Éclaireuse…).
+  function attaqueReflexe(o) {
+    if (o.camp === 'h') {
+      const id = HEROS[o.type].capacites.find((k) => { const c = CAPACITES[k]; return c.type === 'attaque' && c.portee === CONTACT && !c.cout && !c.auto; });
+      return id ? { ...attaqueHeros(CAPACITES[id]), id } : null;
+    }
+    const a = ENNEMIS[o.type].atk;
+    return a.portee == null || a.portee === CONTACT ? { ...attaqueEnnemi(o), melee: true } : null;
+  }
+  const peutReagir = (o, u) => o.camp !== u.camp && !o.mort && !o.ko && o.t.reaction && !!attaqueReflexe(o);
+  // Le long d'un chemin, chaque point où le marcheur sort du contact d'une créature d'en face : appelle quitte(o, q, i)
+  // (i : l'indice du point du chemin d'où part ce bout ; il rend true pour s'arrêter). Seulement si elle peut réagir.
+  function sortiesDeContact(u, pts, quitte) {
+    if (u.t.desengage) return;
+    const proches = new Set(S.unites.filter((o) => peutReagir(o, u) && dist(o, u) <= CONTACT));
+    let a = { x: u.x, y: u.y };
+    for (const [i, p] of pts.entries()) {
+      const l = dist(a, p), n = Math.max(1, Math.ceil(l / 0.1));
+      for (let k = 1; k <= n; k++) {
+        const q = { x: a.x + (p.x - a.x) * (k / n), y: a.y + (p.y - a.y) * (k / n) };
+        for (const o of S.unites) {
+          if (!peutReagir(o, u)) { proches.delete(o); continue; }
+          const pres = dist(o, q) <= CONTACT;
+          if (pres) proches.add(o);
+          else if (proches.has(o)) { proches.delete(o); if (quitte(o, q, i)) return; }
+        }
+      }
+      a = p;
+    }
+  }
+  // L'aperçu : qui frappera ce héros s'il prend ce chemin, avec ses chances de toucher et les dégâts d'un touché.
+  function menacesDuChemin(h, pts) {
+    const out = [];
+    sortiesDeContact(h, pts, (o) => {
+      const A = attaqueReflexe(o), c = calculer(o, h, A), ch = chances(A, c);
+      out.push({ id: o.id, nom: o.nom, touche: 1 - ch.rate, degats: fourchette(A, c, 'touche') });
+    });
+    return out;
+  }
   function marcher(u, pts) {
     const parcours = [{ x: u.x, y: u.y }];
-    let fait = 0, vu = surfaceA(u), stop = false;
+    let fait = 0, vu = surfaceA(u), stop = false, montre = 0;
+    // les attaques d'opportunité : où elles tombent sur le chemin (le point, puis l'attaquant)
+    const coups = [];
+    sortiesDeContact(u, pts, (o, q) => { coups.push({ o, q }); });
     for (const p of pts) {
       const a = parcours[parcours.length - 1], l = dist(a, p), n = Math.max(1, Math.ceil(l / 0.1));
       for (let k = 1; k <= n; k++) {
@@ -519,6 +565,18 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         const s = surfaceA(q);
         if (s && s !== vu && s.t !== (vu?.t)) { u.x = q.x; u.y = q.y; stop = entrerSurface(u, s, true); }
         vu = s;
+        // il sort du contact d'une créature d'en face qui a sa réaction : elle frappe, et la marche reprend
+        const ici = coups.filter((c) => Math.abs(c.q.x - q.x) < 1e-9 && Math.abs(c.q.y - q.y) < 1e-9);
+        for (const { o } of ici) {
+          if (stop || u.mort || u.ko || !peutReagir(o, u)) continue;
+          parcours.push(q); u.x = q.x; u.y = q.y;
+          ev({ type: 'marche', id: u.id, chemin: parcours.slice(montre + 1) }); montre = parcours.length - 1;
+          o.t.reaction = false;
+          log(`Attaque d’opportunité : ${o.nom} frappe ${u.nom}, qui s’éloigne.`, o.camp === 'e' ? 'ennemi' : 'combo');
+          flotter(o, 'Opportunité !', 'info');
+          const A = attaqueReflexe(o);
+          attaquer(o, u, { ...A, nom: `${A.nom} (opportunité)` });
+        }
         if (stop || u.mort || u.ko) { parcours.push(q); break; }
       }
       if (stop || u.mort || u.ko) break;
@@ -526,7 +584,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     const fin = parcours[parcours.length - 1];
     u.x = fin.x; u.y = fin.y;
-    ev({ type: 'marche', id: u.id, chemin: parcours.slice(1) });
+    if (parcours.length - 1 > montre) ev({ type: 'marche', id: u.id, chemin: parcours.slice(montre + 1) });
     u.t.mv = Math.max(0, u.t.mv - fait);
     if (u.st.aTerre) u.t.mv = 0;
     jouerApres();
@@ -535,14 +593,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // Le chemin qu'un héros prendrait jusqu'en (x, y), et sa longueur ; ok : il tient dans son déplacement.
   // `P` : sa portée déjà calculée (l'interface la garde tant qu'il ne bouge pas).
   function apercuMarche(h, x, y, P = portee(h)) {
-    if (!peutAgir(h) || !P.atteint({ x, y })) return { ok: false, pts: [], longueur: 0 };
+    if (!peutAgir(h) || !P.atteint({ x, y })) return { ok: false, pts: [], longueur: 0, menaces: [] };
     const pts = chemin(P.carte, h, indiceDe(trame, x, y), genantsDe(h));
-    if (!pts.length) return { ok: false, pts: [], longueur: 0 };
+    if (!pts.length) return { ok: false, pts: [], longueur: 0, menaces: [] };
     // on finit sur le point visé s'il est en ligne droite du point d'avant, sinon au centre de sa maille
     const exact = [...pts.slice(0, -1), { x, y }];
     if (trajetLibre(trame, exact.length > 1 ? exact[exact.length - 2] : h, { x, y }, genantsDe(h)) && longueurChemin(h, exact) <= h.t.mv + 1e-6) pts.splice(0, pts.length, ...exact);
     const longueur = longueurChemin(h, pts);
-    return { ok: longueur <= h.t.mv + 1e-6 && finPossible(h, pts[pts.length - 1]), pts, longueur };
+    return { ok: longueur <= h.t.mv + 1e-6 && finPossible(h, pts[pts.length - 1]), pts, longueur, menaces: menacesDuChemin(h, pts) };
   }
   // L'Élan (CLASS_TEMPLATE.fr.md §4) : +1 par case parcourue (les morceaux de case s'additionnent pendant le tour), max 5.
   function elan(h, cases) {
@@ -780,6 +838,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.slot === 'bonus' && !h.t.bonus) return false;
     if (cap.cout && h.res.v < cap.cout) return false;
     if (cap.type === 'potion' && (h.potion < 1 || h.pv >= h.pvMax)) return false;
+    if (cap.type === 'desengager' && h.t.desengage) return false;
     return true;
   }
   const aPortee = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && (cap.portee <= CONTACT || vue(trame.salle, h, p));
@@ -826,6 +885,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         u.pv += a; ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
       }
       h.res.v = Math.min(h.res.max, h.res.v + 1);
+      return true;
+    }
+    if (cap.type === 'desengager') {          // Se désengager : plus d'attaque d'opportunité pour ce tour
+      payer(h, cap); h.t.desengage = true;
+      flotter(h, 'Désengagé', 'info');
+      log(`${h.nom} se désengage : il peut s’éloigner sans attaque d’opportunité.`);
       return true;
     }
     if (cap.type === 'potion') {
@@ -954,12 +1019,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
 
   return {
-    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
+    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
     portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros },
+    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, attaqueReflexe },
   };
 }

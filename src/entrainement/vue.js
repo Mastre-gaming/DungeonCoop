@@ -267,7 +267,7 @@ export function dessinerMarques(m = marques) {
   }
   if (m.chemin?.length) {
     const h = aff.get(m.selection);
-    g.strokeStyle = m.cheminOk === false ? 'rgba(255, 90, 74, 0.9)' : 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 2; g.setLineDash([4, 4]);
+    g.strokeStyle = m.cheminOk === false ? 'rgba(255, 90, 74, 0.9)' : m.cheminDanger ? 'rgba(255, 110, 60, 1)' : 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 2; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(h.x, h.y);
     for (const p of m.chemin) g.lineTo(p.x * T, p.y * T);
     g.stroke(); g.setLineDash([]);
