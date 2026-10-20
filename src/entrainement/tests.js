@@ -2,7 +2,7 @@
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour } from './regles.js';
 import { adresseEquipe } from './interface.js';
-import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
+import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
@@ -554,6 +554,18 @@ export async function selfTest(t, game) {
   const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite')];
   t.ok(boutons.length === HEROS.mage.capacites.length && boutons.every((b) => b.querySelector('img')?.getAttribute('src').includes('icones/enseigne-')) && boutons[0].classList.contains('choisie'),
     'la barre : chaque capacité avec son icône LPC, Étincelle choisie');
+  {
+    // la barre des sorts (la barre du camp) : les capacités rangées par sorte, sous le nom de leur groupe ; A ou B, le coût, la touche
+    const groupes = [...ihm.dom.capacites.querySelectorAll('.groupe-sorts')].map((g) => g.querySelector('.groupe-nom').textContent);
+    t.eq(groupes, ['Attaque', 'Préparation', 'Exploitation', 'Commun'], 'la barre des sorts de la Mage : ses capacités rangées par sorte, le commun à part');
+    const foudre = ihm.dom.capacites.querySelector('[data-capacite="foudre"]');
+    t.ok(foudre.dataset.sorte === 'exploitation' && foudre.querySelector('.cap-slot').textContent === 'A' && foudre.querySelector('.cap-cout').textContent === '15' && foudre.querySelector('kbd').textContent === '3',
+      'Foudre : une exploitation, une action (A), 15 de Mana en coin, touche 3');
+    t.ok(document.querySelector('.socle-sorts .embout.gauche') && document.querySelector('.socle-sorts .loup.droite'), 'la barre entre ses embouts de laiton et ses loups, comme au camp');
+    const tr = ordreBarre(HEROS['traqueur-au-limier'].capacites, CAPACITES);
+    t.ok(tr.length === 10 && TOUCHES[tr.indexOf('relever')] === '0' && ['lecher', 'mordre', 'rabattre'].every((id) => sorteDe(id, CAPACITES[id]) === 'familier'),
+      'le Traqueur et ses 10 sorts : les ordres au limier en groupe à part, Relever sur la touche 0');
+  }
   boutons[2].dispatchEvent(new MouseEvent('mouseenter')); game.dbg.advance(0.05);
   t.ok(ihm.dom.ficheCap.dataset.capacite === 'foudre' && ihm.dom.ficheCap.textContent.includes('15 Mana') && ihm.dom.ficheCap.textContent.includes('Trempé'), 'survoler Foudre dans la barre montre sa fiche : son coût, ses effets');
   ihm.dom.capacites.querySelectorAll('.capacite')[2].dispatchEvent(new MouseEvent('mouseleave')); game.dbg.advance(0.05);
