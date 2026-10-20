@@ -6,11 +6,12 @@
 // sont là dès le début ; les murs ouest et est viennent s'appuyer contre leur face, et au sud ils passent derrière les
 // tours de la grande muraille.
 // Comme la grande muraille (32_muraille.js), une fois dans le camp, chaque mur s'estompe et devient flou selon la distance
-// du héros à ce mur : collé à lui, presque net ; à 9 cases, il a disparu. En visite, ils restent pleins.
+// du héros à ce mur : collé à lui, presque net ; à 9 cases, il a disparu. Dehors (sorti par la grande porte), ils
+// redeviennent pleins et nets en douceur, comme la façade sud. En visite, ils restent pleins.
 // Les pièces sont dessinées par design/camp/outils/murs_jeu.py (public/assets/lpc/murs.png, src/data/murs.json).
 import M from './data/murs.json';
 import { T } from './01_plan.js';
-import { PRES, LOIN } from './32_muraille.js';
+import { PRES, LOIN, dedans } from './32_muraille.js';
 
 export const name = 'murs';
 export const always = true;
@@ -121,7 +122,7 @@ export function init(game, options) {
     mur.front = [{ sprite: rendu.sprite(atlas, 'murs', P[nomEch].w, P[nomEch].h) }, { sprite: rendu.sprite(atlas, 'murs', gens.w, 64), g: gens }];
     const sentier = P[`${cle} sentier`];
     if (sentier) mur.sentier = [rendu.calqueSol(atlas, 'murs', sentier.x, sentier.y, sentier.sx, sentier.sy, sentier.w, sentier.h)];
-    mur.k = 0; mur.p = -1;
+    mur.k = 0; mur.voile = 0; mur.p = -1;
   }
   LIGNES.forEach((o) => collision.ajouter(o));
   update(0);
@@ -130,15 +131,15 @@ export function init(game, options) {
 
 const avancement = () => chantier?.etat ?? { nord: 0, ouest: 0, est: 0 };
 
-// Comme la grande muraille : dedans (toujours, pour ces murs), l'opacité baisse de PRES à 0 avec la distance, et le flou
-// monte d'une couche à l'autre. En visite : pleins et nets.
+// Comme la grande muraille : dedans, l'opacité baisse de PRES à 0 avec la distance, et le flou monte d'une couche à
+// l'autre ; dehors (voile 0), pleins et nets ; en ressortant, le voile s'en va en douceur. En visite : pleins et nets.
 function appliquer(mur) {
-  const opacite = visite ? 1 : PRES * (1 - mur.k), pos = mur.k * (FLOUS.length - 1);
+  const opacite = visite ? 1 : 1 - mur.voile + mur.voile * PRES * (1 - mur.k), pos = mur.k * (FLOUS.length - 1);
   const i = Math.min(FLOUS.length - 2, Math.floor(pos)), f = pos - i;
   const groupes = [mur.couches.map((c) => c.sprite), ...mur.tours];
   for (const liste of groupes) liste.forEach((s, n) => {
     const m = s.mesh.material, a = visite ? (n === 0 ? 1 : 0) : n === i ? opacite * (1 - f) : n === i + 1 ? opacite * f : 0;
-    const transparente = !visite;
+    const transparente = !visite && (mur.voile > 0 || mur.k > 0);
     if (m.transparent !== transparente) { Object.assign(m, { transparent: transparente, alphaTest: transparente ? 0.01 : 0.5, depthWrite: !transparente }); m.needsUpdate = true; }
     m.opacity = a;
     s.cacher(S.cache || a <= 0.003);
@@ -150,8 +151,11 @@ export function update(dt) {
   if (cle !== S.avant) { S.avant = cle; for (const m of Object.keys(MURS)) dessiner(m, a[m]); }
   const h = heros?.heros, suivre = dt > 0 ? 1 - Math.exp(-DOUCEUR * dt) : 1;
   for (const mur of Object.values(MURS)) {
-    const cible = visite || !h ? 0 : Math.max(0.02, Math.min(1, mur.distance(h) / T / LOIN));
+    const loge = !visite && !!h && dedans(h.y);
+    const cible = loge ? Math.max(0.02, Math.min(1, mur.distance(h) / T / LOIN)) : 0;
     mur.k += (cible - mur.k) * suivre; if (Math.abs(cible - mur.k) < 0.002) mur.k = cible;
+    // en entrant, d'un coup ; en sortant, en douceur (comme la grande muraille)
+    mur.voile = loge ? 1 : mur.voile * (1 - suivre); if (mur.voile < 0.002) mur.voile = 0;
     appliquer(mur);
     const gars = mur.front[1];
     if (gars.x !== undefined && !S.cache && mur.p < 100) {
@@ -193,6 +197,10 @@ export function selfTest(t) {
     heros.placer(4 * T, 20 * T, 'gauche'); for (let k = 0; k < 40; k++) update(0.1);
     const vis = (cle) => MURS[cle].couches.reduce((s, c) => s + (c.sprite.mesh.visible ? c.sprite.mesh.material.opacity : 0), 0);
     t.ok(vis('ouest') > 0.4 && vis('est') < 0.01, `près du mur ouest : il est là (${vis('ouest').toFixed(2)}), le mur est a disparu (${vis('est').toFixed(2)})`);
+    // sorti du camp par la grande porte : les trois murs redeviennent pleins et nets, comme la façade sud
+    heros.placer(15 * T, 37 * T, 'bas'); for (let k = 0; k < 40; k++) update(0.1);
+    const net = (cle) => MURS[cle].couches[0].sprite.mesh.visible && MURS[cle].couches[0].sprite.mesh.material.opacity > 0.99 && MURS[cle].couches.slice(1).every((c) => !c.sprite.mesh.visible);
+    t.ok(['ouest', 'nord', 'est'].every(net), `dehors : les trois murs sont pleins et nets (${['ouest', 'nord', 'est'].map((c) => vis(c).toFixed(2)).join(' ')})`);
     heros.placer(avantH.x, avantH.y, 'bas'); for (let k = 0; k < 40; k++) update(0.1);
   }
   t.ok(avant.ouest === avancement().ouest, 'l’avancement n’a pas bougé');
