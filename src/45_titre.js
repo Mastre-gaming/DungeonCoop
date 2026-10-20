@@ -484,7 +484,7 @@ export function creerTitre({ images, stamp = 'dev', code = '', onChoix = () => {
     el('ul', {}, autour.map((h) => el('li', {},
       images[h.image] ? Object.assign(medaillon(images[h.image]), { className: 'titre-medaillon', role: 'img', ariaLabel: `Le portrait de ${h.nom}` }) : null,
       el('span', { class: 'titre-heros' }, h.nom), el('span', { class: 'titre-qui' }, h.qui)))));
-  const racine = el('div', { id: 'titre', class: `titre${mode === 'arrivee' ? ' intro' : mode === 'retour' ? ' fini retour' : ''}`, role: 'dialog', 'aria-label': TITRE.join(' ') },
+  const racine = el('div', { id: 'titre', class: `ecran-titre${mode === 'arrivee' ? ' intro' : mode === 'retour' ? ' fini retour' : ''}`, role: 'dialog', 'aria-label': TITRE.join(' ') },
     scene, hd, el('h1', { class: 'titre-nom' }, TITRE.join(' ')), menu, equipe,
     el('p', { class: 'titre-aide' }, '↑ ↓ choisir · Entrée valider'),
     el('p', { class: 'titre-tampon' }, `version du ${stamp}`));
