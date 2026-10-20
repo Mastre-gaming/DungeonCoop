@@ -7,7 +7,8 @@
 //   2. une mission rentrée, un lieu qui monte de niveau ;
 //   3. quand on passe près de lui, il fait le tour des derniers push (les 5 plus récents), et de temps en temps ce qui
 //      reste à prendre au tableau.
-// Devant lui, E ouvre la chronique : la liste des derniers push.
+// Un clic sur lui, ou E devant son estrade, ouvre les patch notes (48_patch_notes.js) : le détail des mises à jour poussées
+// sur GitHub (demande du propriétaire, 20 oct). La chronique (la liste brute des push) reste sur N.
 // Ses répliques sont provisoires (les textes du jeu sont à l'équipe).
 import { T, LIEUX, emprise } from './01_plan.js';
 import { ESTRADE } from './14_lieux.js';
@@ -30,7 +31,7 @@ export const TEXTE = {
   aPrendre: (n) => (n ? `Oyez ! ${n} mission${n > 1 ? 's' : ''} à prendre au tableau !` : 'Oyez ! Tout est pris, bravo !'),
 };
 
-let game, rendu, images, heros, missions, lieux, chronique, ouvrirChronique, sprite, bulle, ecouter;
+let game, rendu, images, heros, missions, lieux, chronique, ouvrirNotes, sprite, bulle, ecouter, survole = false;
 const S = { la: false, x: 0, y: 0, t: 0, cri: 0, phrase: '', sorte: null, attente: 3, connues: null, tour: 0, recense: 0, file: [] };
 
 // où il se tient : au milieu de l'estrade, les pieds sur son plancher
@@ -44,6 +45,9 @@ const ecran = (x, y) => {
   return { x: cr.left + ((x - rendu.cam.x) / rendu.vue.w) * cr.width, y: cr.top + ((y - rendu.cam.y) / rendu.vue.h) * cr.height };
 };
 const nomDe = (login) => missions?.nomDe?.(login) ?? login;
+
+// sous le pointeur ? (sa silhouette sur l'estrade : 32 px de large, de la cloche aux pieds)
+export function sous(x, y) { return S.la && Math.abs(x - S.x) < 18 && y > S.y - 58 && y < S.y + 4; }
 
 // Crier tout de suite (sans attendre la file).
 export function crier(texte, sorte = 'nouvelle') {
@@ -89,8 +93,21 @@ export function init(g, options) {
   bulle.className = 'bulle-perso bulle-crieur'; bulle.hidden = true;
   ecouter = document.createElement('div');
   ecouter.className = 'bulle-panneau'; ecouter.hidden = true;
-  ecouter.innerHTML = '<kbd data-key="KeyE">E</kbd> : les derniers push';
+  ecouter.innerHTML = '<kbd data-key="KeyE">E</kbd> : les patch notes';
   document.body.append(bulle, ecouter);
+  // un clic sur lui ouvre les patch notes (avant que le héros ne parte marcher vers le clic)
+  const canvas = rendu.renderer.domElement;
+  canvas.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 || !ouvrirNotes) return;
+    const p = rendu.versMonde(e.clientX, e.clientY);
+    if (!sous(p.x, p.y)) return;
+    e.stopImmediatePropagation(); e.preventDefault();
+    ouvrirNotes();
+  }, { capture: true });
+  canvas.addEventListener('pointermove', (e) => {
+    const p = rendu.versMonde(e.clientX, e.clientY), s = !!ouvrirNotes && sous(p.x, p.y);
+    if (s !== survole) { survole = s; canvas.style.cursor = s ? 'pointer' : ''; }
+  });
   Object.assign(S, place());
   game.bus.on('chronique:nouveau', (e) => annoncer(TEXTE.push(phraseChronique(e, nomDe)), 'push'));
   game.bus.on('missions:maj', () => { if (missions.etat.source) nouvelles(); });
@@ -98,8 +115,8 @@ export function init(g, options) {
   return api;
 }
 
-// la chronique (créée après lui dans main.js) : ses derniers push, et de quoi l'ouvrir
-export function brancher(c, ouvrir) { chronique = c; ouvrirChronique = ouvrir; }
+// la chronique (créée après lui dans main.js) : ses derniers push ; et de quoi ouvrir les patch notes
+export function brancher(c, ouvrir) { chronique = c; ouvrirNotes = ouvrir; }
 
 export function update(dt) {
   S.la = lieux.niveau('interface') >= NIVEAU;
@@ -119,19 +136,19 @@ export function update(dt) {
     const p = ecran(S.x, S.y - 62), m = bulle.offsetWidth / 2 + 12;   // centrée sur lui, sans sortir de l'écran
     bulle.style.left = `${Math.max(m, Math.min(innerWidth - m, p.x))}px`; bulle.style.top = `${p.y}px`;
   }
-  // devant son estrade : E ouvre la chronique (la liste des derniers push)
+  // devant son estrade : E ouvre les patch notes
   const devant = h.controle && Math.abs(h.x - S.x) < 40 && h.y > S.devant - 4 && h.y - S.devant < 40;
   ecouter.hidden = !devant;
   if (devant) {
     const p = ecran(S.x, S.devant - 4); ecouter.style.left = `${p.x}px`; ecouter.style.top = `${p.y}px`;
-    if (game.input.take('consulter')) ouvrirChronique?.();
+    if (game.input.take('consulter')) ouvrirNotes?.();
   }
 }
 
 export function dispose() { sprite?.retirer(); bulle?.remove(); ecouter?.remove(); }
 
 export const api = {
-  crier, brancher, derniersPush, NIVEAU, TEXTE,
+  crier, brancher, derniersPush, sous, NIVEAU, TEXTE,
   get la() { return S.la; },
   get criant() { return S.cri > 0; },
   get phrase() { return S.phrase; },
