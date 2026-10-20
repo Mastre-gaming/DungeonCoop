@@ -40,6 +40,7 @@ Les coups d'équipe | deux classes côte à côte dépensent leur action ensembl
 - Les barres de vie sous les pieds, avec les icônes des états #146
 - Le curseur, c'est l'arme du héros #140
 - Les fiches des héros : le médaillon et le bandeau du héros du camp, la vie et la ressource à sa couleur #235
+- La barre des sorts, comme la barre d'action du camp : les sorts par catégorie, à leur couleur #239
 
 ## À trancher et à faire
 - ? Le mode de tour, les PV et la durée d'un combat #26 @équipe

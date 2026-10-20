@@ -16,6 +16,35 @@ const ICONES = {
   arc: 'tirRapide', machoires: 'fracas', glu: 'vase', collet: 'liane', lecher: 'soin', mordre: 'dague', rabattre: 'pousser',
   pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos', desengager: 'desengager',
 };
+// La sorte de chaque capacité, pour la barre des sorts (les sortes de CLASS_TEMPLATE.fr.md, plus le familier et le commun).
+// Une capacité absente d'ici prend sa sorte d'après ce qu'elle fait (sorteDe).
+export const SORTES = [
+  { id: 'base', nom: 'Attaque' },
+  { id: 'preparation', nom: 'Préparation' },
+  { id: 'exploitation', nom: 'Exploitation' },
+  { id: 'soutien', nom: 'Soutien' },
+  { id: 'familier', nom: 'Le limier' },
+  { id: 'commun', nom: 'Commun' },
+];
+const SORTE = {
+  ouverture: 'preparation', ouverture2: 'preparation',            // (des attaques qui mettent À terre : elles préparent)
+  foudre: 'exploitation', tirLeste: 'exploitation', coupDos: 'exploitation', coupDos3: 'exploitation',
+  pousser: 'commun', potion: 'commun', relever: 'commun',
+};
+export function sorteDe(id, cap) {
+  if (SORTE[id]) return SORTE[id];
+  if (cap.chien) return 'familier';
+  if (['soin', 'soinZone', 'inspiration'].includes(cap.type)) return 'soutien';
+  if (cap.type === 'attaque') return cap.cout || cap.contreGele ? 'exploitation' : 'base';
+  return 'preparation';
+}
+// Les capacités d'un héros dans l'ordre de la barre : par sorte, puis dans l'ordre de sa fiche.
+export function ordreBarre(ids, CAPACITES) {
+  const rang = (id) => SORTES.findIndex((s) => s.id === sorteDe(id, CAPACITES[id]));
+  return ids.map((id, k) => ({ id, k, r: rang(id) })).sort((a, b) => a.r - b.r || a.k - b.k).map((x) => x.id);
+}
+// Les touches de la barre, dans l'ordre : 1 à 9, puis 0, - et = (une classe qui a plus de sorts, comme le Traqueur)
+export const TOUCHES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
 export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
