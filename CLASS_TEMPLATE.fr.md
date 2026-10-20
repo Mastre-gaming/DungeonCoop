@@ -11,7 +11,7 @@ Refaite à partir des réponses du 17 oct. 2026. Chacun peut créer **autant de 
 | Capacités de départ | **3**, dont obligatoirement une **attaque de base** |
 | Ressource | **choisie dans la liste commune** ci-dessous |
 | Faiblesse | **un vrai défaut**, écrit sur la fiche |
-| Équipement | **aucun au départ** : tout objet est looté |
+| Équipement | **aucun** : pas de système d'objets pour l'instant (propriétaire, 20 oct.) ; un héros grandit par ses niveaux et ses améliorations de capacités |
 | Progression | niveaux 1 à 20, avec une **sous-classe au niveau 3** (comme dans D&D) |
 
 ## 1. Identité
@@ -93,7 +93,7 @@ Un vrai défaut que les ennemis ou la salle peuvent exploiter, par ex. « ne tie
 
 ## 8. Le look (pour le sprite LPC dans Sprite Painter)
 - **Corps et carrure :**
-- **Tenue et couleurs :** (pas encore d'équipement ; c'est son allure avant tout loot)
+- **Tenue et couleurs :** (pas d'équipement : c'est son allure)
 - **Une touche qui le rend unique** (cornes, cicatrice, blason, plumet, emblème) :
 
 ## 9. Références et blagues entre nous
