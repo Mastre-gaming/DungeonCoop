@@ -30,11 +30,11 @@ const COULEURS = {
   'piege-glu': [[176, 128, 40], [200, 156, 60], [240, 210, 120], [100, 70, 20]],
   'piege-collet': [[150, 110, 60], [176, 136, 80], [220, 190, 130], [80, 56, 26]],
 };
-// Le limier du Traqueur (public/assets/lpc/compagnons/limier.png, comme au camp) : il se tient derrière son maître,
-// court à la cible d'un ordre, et revient.
+// Le limier du Traqueur (public/assets/lpc/compagnons/limier.png, comme au camp) : il se tient à côté de son maître, du côté
+// où il regarde et un peu devant (derrière lui, il disparaissait contre la barrière au départ), court à la cible d'un ordre, et revient.
 const LIGNES_CHIEN = { haut: 0, gauche: 1, bas: 2, droite: 3 };
 const VITESSE_CHIEN = 9 * T;
-const placeChien = (a) => ({ x: a.x + (a.dir === 'gauche' ? 26 : -26), y: a.y + 6 });
+const placeChien = (a) => ({ x: a.x + (a.dir === 'gauche' ? -30 : 30), y: a.y + 14 });
 const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' };
 
 let game, rendu, images, combat, salle, canvas;
@@ -507,7 +507,7 @@ function poserPerso(a) {
 function poserChien(a, dt) {
   const c = a.chien;
   c.t += dt;
-  if (!c.garde) {                       // hors des ordres : il reste derrière son maître
+  if (!c.garde) {                       // hors des ordres : il reste à côté de son maître
     const p = placeChien(a), dx = p.x - c.x, dy = p.y - c.y, l = Math.hypot(dx, dy), pas = Math.min(l, VITESSE_CHIEN * 0.6 * dt);
     c.bouge = l > 2;
     if (c.bouge) { c.x += (dx / l) * pas; c.y += (dy / l) * pas; c.dir = versDir(dx, dy); } else if (!a.ko) c.dir = a.dir;
