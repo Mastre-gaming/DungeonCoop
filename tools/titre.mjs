@@ -1,7 +1,7 @@
 // Les captures de l'écran titre : à 1600 × 900, à 1280 × 720 et sur téléphone, puis Rejoindre et Réglages ouverts ; et
 // les trois passages image par image (shots/passages/<passage>_NN.png, à assembler en GIF) : l'arrivée depuis le
-// dashboard (le noir, le ciel de nuit, la descente sur le paysage), la descente sur le camp après Héberger, et le retour
-// au dashboard depuis le camp (la case B). Le parcours Héberger va jusqu'au camp pour de vrai ; le retour ne part pas.
+// dashboard (le noir, le ciel de nuit, la descente sur le paysage), la descente sur le camp après Jouer, et le retour
+// au dashboard depuis le camp (la case B). Le parcours Jouer va jusqu'au camp pour de vrai ; le retour ne part pas.
 //   npm run build && node tools/titre.mjs          → shots/titre_*.png, shots/passages/*.png
 import fs from 'node:fs';
 import path from 'node:path';
@@ -48,7 +48,7 @@ try {
     if (page.errors.length) console.log('  erreurs :', page.errors.join(' | '));
     await page.close();
   }
-  // le parcours : Héberger → la caméra descend de l'écran titre sur le camp → le camp, en hôte, avec un code de cinq lettres
+  // le parcours : Jouer → la caméra bascule de l'écran titre sur le camp → le camp, sans groupe ouvert
   const page = await openPage(srv.url, { size: '1600x900', software: !!process.env.CI });
   await page.waitFor('window.dbg?.titre?.racine?.dataset.pret === "1"', 20000);
   await attendre(page, 2400);
@@ -58,9 +58,9 @@ try {
   await passage(page, 'descente', 14, (u) => `(dbg.titre.essai('descente', ${u}), 1)`);
   await page.eval('(dbg.titre.finir(), 1)');
   await page.waitFor('document.documentElement.dataset.pret === "1" && !document.querySelector("#titre")', 30000);
-  await page.waitFor('dbg.reseau.party.hosting', 15000).catch(() => {});
+  await page.eval('new Promise((r) => setTimeout(r, 800))');
   const r = await page.eval('({ hote: dbg.reseau.party.hosting, code: dbg.reseau.party.code, statut: dbg.reseau.statut, adresse: location.search })');
-  console.log('Héberger :', JSON.stringify(r));
+  console.log('Jouer :', JSON.stringify(r));
   await attendre(page, 1500);
   await page.shot(path.join(SHOTS, 'titre_puis_camp.png'));
   console.log('shots/titre_puis_camp.png');
