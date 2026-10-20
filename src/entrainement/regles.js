@@ -77,7 +77,7 @@ export const FAMILIERS = {
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
   archer: { nom: 'Archer', pv: 25, vitesse: 5, dex: 2, atk: { nom: 'Flèche', base: 8, de: 4, portee: 8, anim: 'tir' }, habitude: 'reste à 6 m, tire sur le plus proche qu’il voit' },
-  brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros qui a le moins de PV et le repousse' },
+  brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros le plus blessé (en part de ses PV) et le repousse' },
   chef: { nom: 'Chef', pv: 90, vitesse: 5, dex: 1, coriace: true, atk: { nom: 'Frappe du chef', base: 22, de: 8, anim: 'attaque' }, habitude: 'tours 1–2 : avantage aux ennemis · tour 3 : une zone de 5 m' },
 };
 const R2 = 1.7 / 1.5, R3 = 2.5 / 1.5;        // les zones 2×2 et 3×3 : des cercles de 1,7 m et 2,5 m de rayon
@@ -742,12 +742,15 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const g = attaquer(e, t, attaqueEnnemi(e));
     if (e.type === 'brt' && g !== 'rate' && !t.ko && !t.mort) pousser(e, t, { longueur: 2 });
   }
+  const entame = (h) => h.pv / h.pvMax;            // la part de PV qui reste : plus elle est basse, plus il est blessé
+  const cibleBrute = (e, heros = herosVivants()) => heros.slice().sort((a, b) => entame(a) - entame(b) || dist(a, e) - dist(b, e))[0];
   function agirMelee(e) {
     const heros = herosVivants(); if (!heros.length) return;
-    let t = e.type === 'brt' ? heros.slice().sort((a, b) => a.pv - b.pv || dist(a, e) - dist(b, e))[0] : plusProcheParChemin(e, heros);
+    // la Brute : le plus blessé en part de ses PV (pas en PV bruts : sinon le limier, 30 PV, était toujours sa cible)
+    let t = e.type === 'brt' ? cibleBrute(e, heros) : plusProcheParChemin(e, heros);
     approcher(e, t);
     if (e.mort || S.resultat) return;
-    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => a.pv - b.pv)[0];
+    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => entame(a) - entame(b))[0];
     if (t) attaqueEnnemie(e, t); else log(`${e.nom} avance.`, 'muet');
   }
   function agirArcher(e) {
@@ -1003,6 +1006,6 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros },
+    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute },
   };
 }

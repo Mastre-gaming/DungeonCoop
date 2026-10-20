@@ -267,6 +267,13 @@ export async function selfTest(t, game) {
       t.ok(dist(c2, proche()) > dist(t2, proche()) && dist(c2, t2) < 1.6, 'au début du combat, le limier est derrière le Traqueur (à l’opposé de l’ennemi le plus proche)');
       C2.deplacer(t2, t2.x + 3, t2.y);
       t.ok(dist(c2, proche()) > dist(t2, proche()) - 0.3 && dist(c2, t2) < 1.7, 'le Traqueur avance de 4,5 m : le limier reste derrière lui');
+      // la Brute ennemie vise le plus blessé en part de ses PV, pas en PV bruts (sinon le limier, 30 PV, était toujours sa cible)
+      const br = C2.U('br'), m2 = trouver(C2, 'mage');
+      t.ok(C2._.cibleBrute(br).id !== c2.id, `tout le monde en pleine forme : la Brute ennemie ne vise pas le limier (elle vise ${C2._.cibleBrute(br).nom})`);
+      m2.pv = 60;
+      t.eq(C2._.cibleBrute(br).id, m2.id, 'la Mage à 60/125 PV (48 %) : c’est elle, et pas le limier à 30/30');
+      c2.pv = 10;
+      t.eq(C2._.cibleBrute(br).id, c2.id, 'le limier à 10/30 (33 %) : c’est lui, le plus blessé');
     }
     const a2 = C.U('a2'); a2.x = chien.x + 1; a2.y = chien.y;
     C._.attaquer(a2, chien, { nom: 'Coup', mod: 30, dmod: 0, base: 40, de: 4, melee: true });
