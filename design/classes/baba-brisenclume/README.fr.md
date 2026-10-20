@@ -35,3 +35,23 @@ Autour de l'armurerie, Baba passe d'un geste à l'autre en boucle (`src/40_forge
 Entre deux, il marche d'une place à l'autre en passant par la cour, jamais à travers l'enclume. Ses places se calculent depuis l'enclume et le feu : il les suit quand l'armurerie change de niveau. Sans enclume ou sans feu (niveaux 0 et 4), il n'est pas là. On ne le traverse pas.
 
 `outil/forgeron.mjs` refait sa planche (`public/assets/lpc/forgeron.png`) depuis sa planche de combat : les trois gestes (sa frappe de profil, son estoc vers la droite, son sort de face), le feu qui s'emballe (les flammes de forge des décorations, agrandies) et sa marche. Il écrit aussi `src/data/forgeron.json` : le point d'impact du marteau, le bout du marteau qui attise, les rangées et les durées. `node tools/capture-forgeron.mjs` (après `npm run build`) photographie chaque geste et une marche dans `shots/`.
+
+## Au terrain d'entraînement : sa fiche de combat
+Baba se choisit à l'entrée du terrain (`entrainement.html`), seulement par DonBabaa, son auteur, comme Shadow et le Traqueur. Ses règles sont dans `src/entrainement/regles.js` (`HEROS['baba-brisenclume']` et ses capacités), lues depuis `content/classes/baba-brisenclume.json` :
+
+| | Au terrain |
+|---|---|
+| **Fiche** | 130 PV, 6 m par tour, DEX −1, la Rage de la Brute (+10 par coup donné ou reçu, 50 au plus) |
+| **Marteau** (action) | au contact, 8 + d4 + 2. Passif *Marteau lourd* : ses poussées vont 1,5 m plus loin |
+| **Chute d'Enclume** (action, une fois par combat) | à 7,5 m, 14 + d6 + 2, la cible est À terre. L'enclume roule à ses pieds, du côté de Baba (ou tombe sur le sol visé) et **reste** : elle bloque le passage, couvre (un tir qui passe derrière elle a le désavantage), et une poussée contre elle fait +8, un combo pour Baba quand c'est un allié qui pousse |
+| **Lame Ardente** (bonus, 20 Rage) | Baba au contact de l'enclume, sur lui ou un allié à son contact : la prochaine attaque fait +d6 et compte comme du feu (Huilé ×2, enflamme l'huile et les tonneaux) ; un combo quand c'est un allié qui frappe |
+| **Trempe** (bonus, 20 Rage) | même condition : un bouclier de 10, qui prend les coups d'abord |
+| **Tenailles** (action) | à 4,5 m, tire de 3 m vers lui un ennemi, un allié (pour le sauver, sans attaque d'opportunité) ou son enclume |
+| **Vieux Os** (faiblesse) | se relever d'À terre lui prend tout son déplacement ; la glace le renverse sur 1 à 14 ; loin de son enclume, pas de Forge |
+
+Les icônes (`marteau`, `enclume`, `lameArdente`, `trempe`, `tenailles`) sont peintes par `design/ui-combat/icones/outil/icones.mjs`, et les états *Lame ardente* et *Trempe* par `design/terrain-entrainement/etats/outil/etats.mjs`. L'enclume du terrain est celle du camp (la planche des décorations), qui tombe avec son ombre au sol.
+
+En combat, il joue pour l'instant ses rangées LPC (taille, sort, estoc) et les effets communs du terrain ; ses animations validées (`design/animations/esquisses/`, verrouillées dans `LOCKED.md`) ne sont pas encore branchées au combat.
+
+`node tools/capture-baba-terrain.mjs` (après `npm run build`) photographie la Chute d'Enclume visée, en l'air, posée, puis la Forge, dans `captures/terrain-*.png`.
+

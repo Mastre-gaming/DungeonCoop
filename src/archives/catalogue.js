@@ -50,9 +50,10 @@ function personnages() {
   const liste = [];
   for (const [id, p] of Object.entries(PERSOS)) {
     const ennemi = ROLE_ENNEMI[id], H = HEROS[id], E = ENNEMIS[typeEnnemi[id] ?? id];
-    const fiche = H ? null : Object.values(FICHES).find((c) => c.id === id);   // une classe de l'armurerie qui a sa planche
+    // une classe de l'armurerie qui a sa planche (aussi quand ses règles sont au terrain : la classe d'un joueur, comme Baba)
+    const fiche = H && !H.auteur ? null : Object.values(FICHES).find((c) => c.id === id);
     liste.push({
-      id, nom: p.nom, groupe: ennemi ? 'Les ennemis du terrain' : H?.essai ? 'Les classes d’essai' : H ? 'Les héros du kit D1' : 'Les classes de l’armurerie',
+      id, nom: p.nom, groupe: ennemi ? 'Les ennemis du terrain' : H?.essai ? 'Les classes d’essai' : H && !fiche ? 'Les héros du kit D1' : 'Les classes de l’armurerie',
       planche: `${LPC}entrainement/${id}.png`, format: 'lpc', lien: p.lien, attaque: p.attaque, credits: `${LPC.replace('lpc/', '')}credits/entrainement-${id}.txt`,
       anims: p.anims ?? ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse', ...(p.attaque ? ['grande'] : [])],
       texte: ennemi ? `${ennemi} · ${E ? `${E.pv} PV · ${E.habitude}` : ''}` : H ? `${H.role} · ${H.pv} PV` : fiche?.phrase ?? '',

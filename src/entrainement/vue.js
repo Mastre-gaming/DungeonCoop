@@ -39,6 +39,8 @@ const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' 
 let game, rendu, images, combat, salle, canvas;
 const aff = new Map();                 // ce que la vue montre de chaque créature (ça suit la file, pas l'état final)
 const tonneaux = new Map();
+let enclume = null;                    // l'enclume de Baba Brisenclume : { x, y, s, cache, haut }, posée par l'événement « enclume »
+const ENCLUME = { sx: 13 * 32, sy: 23 * 32 };   // l'enclume sur sa souche, dans la planche des décorations (comme au camp, 40_forgeron.js)
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
@@ -119,12 +121,15 @@ function peupler() {
     });
   }
   for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
+  const e = combat.S.enclume;
+  enclume = { x: (e?.x ?? 0) * T, y: (e?.y ?? 0) * T, s: rendu.sprite(images.deco, 'deco', 32, 32), ombre: rendu.ombre(26, 7), cache: !e, haut: 0 };
 }
 
 // Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
 export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
+  enclume?.s.retirer(); enclume?.ombre.retirer();
   aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
   peupler();
@@ -241,7 +246,7 @@ export function dessinerMarques(m = marques) {
     g.putImageData(img, 0, 0);
   }
   const anneau = (id, couleur, epais = 2) => {
-    const a = aff.get(id) ?? tonneaux.get(id); if (!a) return;
+    const a = aff.get(id) ?? tonneaux.get(id) ?? (id === 'enclume' && !enclume?.cache ? enclume : null); if (!a) return;
     g.strokeStyle = couleur; g.lineWidth = epais; g.beginPath(); g.ellipse(a.x, a.y - 1, 15, 7, 0, 0, Math.PI * 2); g.stroke();
   };
   for (const id of m.cibles ?? []) anneau(id, 'rgba(255, 214, 90, 0.9)');
@@ -354,6 +359,21 @@ function scene(e) {
         a.cache = false; a.plonge = Math.max(0, 1 - (t - arrive) / MONTE);
       }, fin() { a.x = p.x; a.y = p.y; a.plonge = 0; a.cache = false; tourner(a, c); } };
     }
+    // l'enclume de Baba : elle tombe du ciel (la Chute d'Enclume), ou glisse vers lui (les Tenailles)
+    case 'enclume': {
+      const p = { x: e.x * T, y: e.y * T };
+      if (e.chute) {
+        Object.assign(enclume, { x: p.x, y: p.y, cache: false, haut: 170 });
+        viser(p.x, p.y);
+        return { duree: 0.42, maj(t, k) { enclume.haut = 170 * (1 - k * k); }, fin() {
+          enclume.haut = 0; fx.jouer('impact-lourd', { x: p.x, y: p.y }); fx.jouer('poussiere', { x: p.x, y: p.y }); fx.jouer('poussiere', { x: p.x + 10, y: p.y + 2, retard: 0.08 });
+        } };
+      }
+      const dep = { x: enclume.x, y: enclume.y };
+      fx.jouer('poussiere', { x: dep.x, y: dep.y });
+      return { duree: 0.35, maj(t, k) { enclume.x = dep.x + (p.x - dep.x) * k; enclume.y = dep.y + (p.y - dep.y) * k; }, fin() { enclume.x = p.x; enclume.y = p.y; } };
+    }
+    case 'forge': { const c = aff.get(e.vers); if (c) fx.jouer(e.forge === 'lame' ? 'impact-feu' : 'impact-dore', { x: c.x, y: c.y - 24, retard: 0.05 }); return { duree: 0.25 }; }
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
     case 'piege': flottant(a, NOM_PIEGE[e.v] ?? 'Piège !', 'info'); fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-lourd', { x: a.x, y: a.y }); return { duree: 0.35 };
@@ -373,7 +393,7 @@ function scene(e) {
     case 'menace': marques.menace = { x: e.x, y: e.y, r: e.r }; dessinerMarques(); viser(e.x * T, e.y * T); return { duree: 0.85, fin() { marques.menace = null; dessinerMarques(); } };
     case 'eclair': pourEcouteurs(e); return { duree: 0.35 };
     case 'flottant': case 'texte': flottant(a, e.texte, e.genre ?? 'info'); return { duree: 0.2 };
-    case 'de': pourEcouteurs({ type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= 9 ? 'glisse' : 'tient', de: e.id, glace: true }); return { duree: 0.5 };
+    case 'de': pourEcouteurs({ type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= (e.seuil ?? 9) ? 'glisse' : 'tient', de: e.id, glace: true }); return { duree: 0.5 };
     case 'agit': marques.actif = e.id; dessinerMarques(); viser(a.x, a.y); return { duree: 0.25 };
     default: pourEcouteurs(e); return { duree: e.type === 'combo' ? 0.7 : 0 };
   }
@@ -477,6 +497,10 @@ export function update(dt) {
     poserPlaque(a);
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
+  if (enclume) {               // (son ombre au sol, pendant la chute : on voit où elle va tomber)
+    enclume.s.cacher(enclume.cache); enclume.ombre.cacher(enclume.cache || enclume.haut <= 0);
+    if (!enclume.cache) { enclume.s.poser(enclume.x - 16, enclume.y - 26 - enclume.haut, enclume.y, ENCLUME.sx, ENCLUME.sy); enclume.ombre.poser(enclume.x, enclume.y - 1); }
+  }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
   for (const [id, liste] of etatsVus) {
@@ -543,6 +567,8 @@ function resynchroniser() {
     const t = combat.S.tonneaux.find((o) => o.id === id);
     if (!t) b.cache = true; else { b.x = t.x * T; b.y = t.y * T; b.cache = false; }
   }
+  const e = combat.S.enclume;
+  if (enclume) { if (!e) enclume.cache = true; else Object.assign(enclume, { x: e.x * T, y: e.y * T, cache: false, haut: 0 }); }
 }
 
 // La planche LPC d'un personnage (pour le médaillon de sa fiche).
@@ -560,7 +586,7 @@ export function dispose() { for (const f of flottants) f.el.remove(); calquePlaq
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
+  aff, tonneaux, get enclume() { return enclume; }, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },
@@ -576,6 +602,7 @@ export const api = {
     }
     if (best) return best;
     for (const [id, b] of tonneaux) { if (!b.cache && Math.abs(b.x / T - x) < 0.5 && y > b.y / T - 1.2 && y < b.y / T + 0.2) return id; }
+    if (enclume && !enclume.cache && Math.abs(enclume.x / T - x) < 0.5 && y > enclume.y / T - 0.9 && y < enclume.y / T + 0.25) return 'enclume';
     return null;
   },
   zoomer, ajusterCamera, contact: CONTACT,

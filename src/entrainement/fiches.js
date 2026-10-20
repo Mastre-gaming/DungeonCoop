@@ -15,6 +15,7 @@ const ICONES = {
   dague: 'dague', chant: 'chant', moquerie: 'moquerie',
   arc: 'tirRapide', machoires: 'fracas', glu: 'vase', collet: 'liane', lecher: 'soin', mordre: 'dague', rabattre: 'pousser',
   pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos', desengager: 'desengager',
+  marteau: 'marteau', chuteEnclume: 'enclume', lameArdente: 'lameArdente', trempe: 'trempe', tenailles: 'tenailles',
 };
 // La sorte de chaque capacité, pour la barre des sorts (les sortes de CLASS_TEMPLATE.fr.md, plus le familier et le commun).
 // Une capacité absente d'ici prend sa sorte d'après ce qu'elle fait (sorteDe).
@@ -29,6 +30,7 @@ export const SORTES = [
 const SORTE = {
   ouverture: 'preparation', ouverture2: 'preparation',            // (des attaques qui mettent À terre : elles préparent)
   foudre: 'exploitation', tirLeste: 'exploitation', coupDos: 'exploitation', coupDos3: 'exploitation',
+  chuteEnclume: 'exploitation', lameArdente: 'exploitation', trempe: 'exploitation', tenailles: 'preparation',   // (la fiche de Baba : Enclume et Forge, une exploitation)
   pousser: 'commun', potion: 'commun', relever: 'commun',
 };
 export function sorteDe(id, cap) {
@@ -45,12 +47,12 @@ export function ordreBarre(ids, CAPACITES) {
 }
 // Les touches de la barre, dans l'ordre : 1 à 9, puis 0, - et = (une classe qui a plus de sorts, comme le Traqueur)
 export const TOUCHES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
-export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
+export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
 // une attaque contre une cible ordinaire : raté sur 1, critique sur 20, éraflure jusqu'à d20 + bonus = 9 (12 contre un coriace)
 export function resultats(cap) {
-  if (cap.type !== 'attaque') return null;
+  if (cap.base == null) return null;          // (une attaque, ou la Chute d'Enclume de Baba)
   const lo = cap.base + 1 + cap.mod, hi = cap.base + cap.de + cap.mod;
   const f = (g, v) => (g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v);
   const deg = (g) => (g === 'rate' ? '0' : `${f(g, lo)}–${f(g, hi)}`);
@@ -71,9 +73,9 @@ export function caracteristiques(cap, ressource) {
   else if (cap.type === 'soinZone') c.push(`Autour de toi : ${metres(cap.rayon)} m`);
   else if (cap.portee != null) c.push(cap.portee === CONTACT ? 'Au contact' : `Portée ${metres(cap.portee)} m`);
   if (cap.type === 'zone') c.push(`Zone de ${metres(cap.rayon)} m`);
-  if (cap.longueur) c.push(`${cap.type === 'attraction' ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`);
+  if (cap.longueur) c.push(`${['attraction', 'tenailles'].includes(cap.type) ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`);
   c.push(cap.cout ? `${cap.cout} ${ressource}` : 'Sans coût');
-  if (cap.type === 'attaque' && !cap.auto) c.push(`d20 +${cap.mod}`);
+  if (cap.base != null && !cap.auto) c.push(`d20 +${cap.mod}`);
   return c;
 }
 
@@ -102,6 +104,8 @@ export function resume(cap) {
     case 'huileCible': return 'Huilé';
     case 'attraction': return `attire ${metres(cap.longueur)} m`;
     case 'inspiration': return 'avantage';
+    case 'forge': return cap.forge === 'lame' ? '+d6 · feu' : 'bouclier 10';
+    case 'tenailles': return `attire ${metres(cap.longueur)} m`;
     case 'moquerie': return 'Exposé';
     default: return '';
   }
