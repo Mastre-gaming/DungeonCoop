@@ -51,7 +51,7 @@ export const HEROS = {
     faiblesse: 'Fragile : chaque coup reçu au contact lui fait 3 dégâts de plus.', passif: 'Énergie : 3 à chaque tour, perdue si elle n’est pas dépensée.',
     capacites: ['dague', 'chant', 'moquerie', 'pousser', 'potion', 'relever'] },
   'traqueur-au-limier': { nom: 'Traqueur', court: 'TRA', auteur: 'PCrrfng', pv: 120, vitesse: 6, dex: 2, res: { type: 'Concentration', v: 0, max: 3 }, role: 'Contrôle · pièges et limier',
-    faiblesse: 'Lié à sa bête (pas encore ici : le limier n’est pas une cible sur ce terrain).',
+    faiblesse: 'Lié à sa bête : si le limier tombe, ses attaques ont le désavantage et il ne lui donne plus d’ordre, jusqu’à ce qu’il le relève (Relever, au contact).',
     passif: 'Le limier : un ordre par tour, en action bonus. Concentration : +1 quand un coéquipier exploite une de ses préparations.',
     capacites: ['arc', 'machoires', 'glu', 'collet', 'lecher', 'mordre', 'rabattre', 'pousser', 'potion', 'relever'] },
 };
@@ -62,6 +62,10 @@ export const peutJouer = (type, github) => !!HEROS[type] && (!HEROS[type].auteur
 export const classesPour = (github) => CLASSES_ESSAI.filter((c) => peutJouer(c, github));
 // une équipe pour ce joueur : une classe qu'il ne peut pas jouer redevient, à sa place, celle du kit
 export const equipePour = (equipe, github) => equipe.map((c, k) => (peutJouer(c, github) ? c : EQUIPE_KIT[k]));
+// Les familiers : une créature du camp des héros, sans tour à elle (elle obéit à son maître), qu'on peut frapper.
+export const FAMILIERS = {
+  limier: { nom: 'Limier', court: 'LIM', pv: 30, vitesse: 6, dex: 2, maitre: 'traqueur-au-limier', role: 'Le limier du Traqueur · pas de tour à lui : il obéit à ses ordres' },
+};
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
   archer: { nom: 'Archer', pv: 25, vitesse: 5, dex: 2, atk: { nom: 'Flèche', base: 8, de: 4, portee: 8, anim: 'tir' }, habitude: 'reste à 6 m, tire sur le plus proche qu’il voit' },
@@ -146,6 +150,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
     S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: h.pv, pvMax: h.pv, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: 1 }));
   });
+  for (const [type, f] of Object.entries(FAMILIERS)) {
+    for (const m of S.unites.filter((u) => u.camp === 'h' && u.type === f.maitre)) {
+      const p = pointLibreProche(trame, { x: m.x + 0.9, y: m.y + 0.5 }, S.unites);
+      S.unites.push(unite({ id: `${m.id}-${type}`, camp: 'h', type, familier: true, maitre: m.id, nom: m.nom.replace(HEROS[m.type].nom, f.nom), court: f.court,
+        x: p.x, y: p.y, pv: f.pv, pvMax: f.pv, vitesse: f.vitesse, dex: f.dex, res: { type: '', v: 0, max: 0 }, potion: 0 }));
+    }
+  }
   const TYPE = { s: 'sbire', a: 'archer', br: 'brt', chef: 'chef' };
   const groupe = ennemis ?? ORDRE_ENNEMIS.map((id) => ({ id, type: TYPE[id] ?? TYPE[id[0]], x: departs.ennemis[id][0], y: departs.ennemis[id][1] }));
   for (const { id, type, x, y } of groupe) {
@@ -160,7 +171,17 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const U = (id) => S.unites.find((u) => u.id === id);
   const herosVivants = () => S.unites.filter((u) => u.camp === 'h' && !u.ko);
   const ennemisVivants = () => S.unites.filter((u) => u.camp === 'e' && !u.mort);
-  const estHeros = (id) => !!id && U(id)?.camp === 'h';
+  const estHeros = (id) => !!id && U(id)?.camp === 'h' && !U(id).familier;
+  const familierDe = (h) => S.unites.find((u) => u.familier && u.maitre === h?.id) ?? null;
+  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient à côté de lui s'il s'en est éloigné.
+  function suivreFamiliers() {
+    for (const f of S.unites.filter((u) => u.familier && !u.ko)) {
+      const m = U(f.maitre); if (!m || m.ko || dist(f, m) <= 1.6) continue;
+      const p = pointLibreProche(trame, { x: m.x + 0.9, y: m.y + 0.5 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+      f.x = p.x; f.y = p.y;
+      ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
+    }
+  }
   const nomHeros = (id) => U(id)?.nom ?? '';
   const ev = (o) => S.evenements.push(o);
   const log = (t, c = '') => { S.journal.unshift({ r: S.round, t, c }); if (S.journal.length > 250) S.journal.length = 250; };
@@ -219,9 +240,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function tomber(u) {
     u.pv = 0; u.st = {}; u.expose = false;
-    if (u.camp === 'h') {
+    if (u.familier) {
+      u.ko = true; ev({ type: 'ko', id: u.id });
+      log(`Le ${u.nom.toLowerCase()} tombe : le ${U(u.maitre)?.nom ?? 'maître'} a le désavantage tant qu’il ne l’a pas relevé.`, 'mauvais');
+    } else if (u.camp === 'h') {
       u.ko = true; S.stats.ko++; log(`${u.nom} est KO.`, 'mauvais'); ev({ type: 'ko', id: u.id });
-      if (!herosVivants().length) finir('defaite');
+      if (!herosVivants().some((x) => !x.familier)) finir('defaite');
     } else {
       u.mort = true; ev({ type: 'ko', id: u.id });
       log(u.type === 'chef' ? 'Le chef est vaincu ! Les autres s’enfuient.' : `${u.nom} est vaincu.`, 'bon');
@@ -339,8 +363,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const notes = [], aCombos = [];
     if (cible.st.aTerre) { av = true; notes.push('cible À terre : avantage'); if (cible.st.aTerre.par) aCombos.push([cible.st.aTerre.par, 'cible À terre']); }
     if (cible.expose) {
-      av = true; notes.push(cible.expose.par ? 'la cible est moquée (Exposé) : avantage' : 'la cible a pris la pose : avantage');
-      if (cible.expose.par) aCombos.push([cible.expose.par, 'cible moquée']);
+      const mordue = U(cible.expose.par)?.type === 'traqueur-au-limier';          // (Mordre : le limier l'a exposée)
+      av = true; notes.push(cible.expose.par ? `la cible est ${mordue ? 'mordue' : 'moquée'} (Exposé) : avantage` : 'la cible a pris la pose : avantage');
+      if (cible.expose.par) aCombos.push([cible.expose.par, mordue ? 'cible mordue' : 'cible moquée']);
     }
     if (att.st.inspire) { av = true; notes.push('Inspiré par un chant : avantage'); aCombos.push([att.st.inspire.par, 'chant de bataille']); }
     if (att.type === 'eclaireuse' && !A.melee && S.unites.some((o) => o.camp !== att.camp && !o.mort && !o.ko && dist(o, att) <= CONTACT)) {
@@ -352,6 +377,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (att.camp === 'e' && S.ennemisAvantage) { av = true; notes.push('ordres du chef : avantage'); }
     if (surfaceA(att)?.t === 'glace') { des = true; notes.push('attaque depuis la glace : désavantage'); }
     if (att.st.gele) { des = true; notes.push('attaquant Gelé : désavantage'); }
+    if (familierDe(att)?.ko) { des = true; notes.push('son limier est à terre : désavantage'); }
     if (A.el === 'foudre' && cible.st.trempe) { mult *= 2; notes.push('Trempé : foudre ×2'); aCombos.push([cible.st.trempe.par, 'Trempé puis foudre']); }
     const huile = A.el === 'feu' && !!cible.st.huile;
     if (huile) { mult *= 2; notes.push('Huilé : feu ×2, et Brûlure'); aCombos.push([cible.st.huile.par, 'Huilé puis feu']); }
@@ -528,6 +554,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (!a.ok) return false;
     combos = new Set();
     marcher(h, a.pts);
+    suivreFamiliers();
     return true;
   }
 
@@ -545,6 +572,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const groupeCourant = () => groupes()[S.gi];
   function peutAgir(h) { return !!h && h.camp === 'h' && !h.ko && S.phase === 'heros' && !S.resultat && (groupeCourant()?.ids || []).includes(h.id); }
   function debutTour(u) {
+    const f = familierDe(u); if (f) debutTour(f);
     if (u.mort || u.ko) return;
     if (u.st.brulure) {
       const par = u.st.brulure.par, n = u.type === 'voleur' ? 10 : 5;
@@ -561,6 +589,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (u.camp === 'h' && u.res.type === 'Énergie') u.res.v = u.res.max;          // 3 à chaque tour, le reste est perdu
   }
   function finTour(u) {
+    const f = familierDe(u); if (f) finTour(f);
     if (u.mort || u.ko) return;
     const s = surfaceA(u);
     if (s && s.t === 'feu') { log(`${u.nom} finit son tour dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
@@ -575,7 +604,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     S.debut = horloge(); S.round = 1; S.gi = 0; S.stats.rounds = [];
     log(`Début du combat · ${S.mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} · sans cases.`, 'round');
     if (S.mode === 'initiative') {
-      const jets = S.unites.map((u) => ({ id: u.id, v: d(20) + u.dex, dex: u.dex, r: alea() }));
+      const jets = S.unites.filter((u) => !u.familier).map((u) => ({ id: u.id, v: d(20) + u.dex, dex: u.dex, r: alea() }));
       jets.sort((a, b) => b.v - a.v || b.dex - a.dex || a.r - b.r);
       S.ordre = jets.map((j) => j.id);
       log(`Initiative : ${jets.map((j) => `${U(j.id).court} ${j.v}`).join(' · ')}`, 'muet');
@@ -717,7 +746,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     log(`Le chef frappe une zone de ${metres(R3 * 2)} m de large !`, 'ennemi');
     for (const h of herosVivants().filter((h) => dist(h, c) <= R3)) attaquer(e, h, attaqueEnnemi(e));
   }
-  function agirEnnemi(e) {
+  function agirEnnemi(e) { agirEnnemiSeul(e); suivreFamiliers(); }
+  function agirEnnemiSeul(e) {
     ev({ type: 'agit', id: e.id });
     if (!herosVivants().length) return;
     if (e.type === 'chef') agirChef(e);
@@ -732,6 +762,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.slot === 'bonus' && !h.t.bonus) return false;
     if (cap.cout && h.res.v < cap.cout) return false;
     if (cap.type === 'potion' && (h.potion < 1 || h.pv >= h.pvMax)) return false;
+    if (cap.chien && (!familierDe(h) || familierDe(h).ko)) return false;
     return true;
   }
   const aPortee = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && (cap.portee <= CONTACT || vue(trame.salle, h, p));
@@ -744,7 +775,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     } else if (cap.type === 'poussee') {
       S.unites.filter((u) => !u.mort && !u.ko && u !== h && (!cap.ennemi || u.camp === 'e') && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
       if (!cap.ennemi) S.tonneaux.filter((b) => dist(h, b) <= CONTACT).forEach((b) => out.push({ id: b.id, tonneau: true }));
-    } else if (cap.type === 'soin') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+    } else if (cap.type === 'soin') herosVivants().filter((u) => u !== h && !(cap.chien && u.familier) && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'relever') S.unites.filter((u) => u.camp === 'h' && u.ko && dist(h, u) <= CONTACT).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'huileCible') S.unites.filter((u) => !u.mort && !u.ko && u !== h && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
     else if (['etatCible', 'attraction', 'moquerie'].includes(cap.type)) ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
@@ -755,7 +786,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const huileVisable = (h, cap, p) => cap.el === 'feu' && surfaceA(p)?.t === 'huile' && aPortee(h, cap, p);
   function payer(h, cap) { if (cap.slot === 'action') h.t.action = false; else h.t.bonus = false; if (cap.cout) h.res.v -= cap.cout; }
   // Utiliser une capacité : cible = { id } (créature ou tonneau), ou { x, y } (une zone, une tache d'huile).
-  function utiliser(h, capId, cible = {}) {
+  function utiliser(h, capId, cible = {}) { const ok = utiliserSeul(h, capId, cible); if (ok) suivreFamiliers(); return ok; }
+  function utiliserSeul(h, capId, cible = {}) {
     const cap = CAPACITES[capId];
     if (!cap || !peutUtiliser(h, cap)) return false;
     combos = new Set();
@@ -792,33 +824,33 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (!u && cible.x != null && huileVisable(h, cap, cible)) { payer(h, cap); ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: cible.x, y: cible.y }); log(`${h.nom} tire dans l’huile.`); enflammer(cible, h.id); return true; }
       if (!u || u.camp === 'h' || u.mort || !aPortee(h, cap, u)) return false;
       payer(h, cap);
-      if (cap.chien) ev({ type: 'limier', id: h.id, vers: u.id });
+      if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, vers: u.id });
       attaquer(h, u, { ...attaqueHeros(cap), id: capId });
-      if (cap.chien) ev({ type: 'limier', id: h.id, retour: true });
+      if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, retour: true });
       return true;
     }
     if (cap.type === 'poussee') {
       const t = u ?? b;
       if (!t || !aPortee(h, cap, t) || (u && (u.ko || u.mort || u === h)) || (cap.ennemi && u?.camp !== 'e')) return false;
       payer(h, cap);
-      if (cap.chien) ev({ type: 'limier', id: h.id, vers: t.id });
+      if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, vers: t.id });
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.chien ? 'repos' : 'attaque', x: t.x, y: t.y });
       pousser(h, t, { longueur: cap.longueur, proj: cap.proj });
-      if (cap.chien) ev({ type: 'limier', id: h.id, retour: true });
+      if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, retour: true });
       return true;
     }
-    if (cap.type === 'soin' && u && u.camp === 'h' && !u.ko && u !== h && dist(h, u) <= cap.portee) {
+    if (cap.type === 'soin' && u && u.camp === 'h' && !u.ko && u !== h && !(cap.chien && u.familier) && dist(h, u) <= cap.portee) {
       payer(h, cap);
       const q = cap.soin ?? { base: 15, de: 6, mod: 2 };
       const r = d(q.de), a = Math.min(q.base + r + q.mod, u.pvMax - u.pv); u.pv += a;
-      if (cap.chien) ev({ type: 'limier', id: h.id, vers: u.id });
+      if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, vers: u.id });
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.chien ? 'repos' : 'sort', x: u.x, y: u.y });
       ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
       log(`${cap.chien ? 'Le limier lèche les plaies de' : `${h.nom} soigne`} ${u.nom} : ${q.base} + ${r} + ${q.mod}, +${a} PV.`, 'bon');
       if (cap.chien) {
         const k = ['brulure', 'gele', 'huile'].find((e) => u.st[e]);
         if (k) { delete u.st[k]; ev({ type: 'texte', id: u.id, texte: `${NOM_ETAT[k]} : retiré` }); log(`${u.nom} n’est plus ${NOM_ETAT[k]}.`, 'muet'); }
-        ev({ type: 'limier', id: h.id, retour: true });
+        ev({ type: 'limier', id: familierDe(h).id, retour: true });
       } else h.res.v = Math.min(h.res.max, h.res.v + 1);
       return true;
     }
