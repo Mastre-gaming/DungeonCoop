@@ -12,6 +12,7 @@ import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
+import * as son from './son.js';
 
 export const name = 'vue';
 export const always = true;
@@ -54,6 +55,19 @@ let marques = {};                      // ce que l'interface demande de montrer 
 const CLE_PLAQUES = 'dungeoncoop:barres-terrain';
 const plaques = { e: true, h: true }; // les barres de vie montrées : des ennemis (e), des alliés (h)
 let calquePlaques = null;
+// Le ressenti des coups : quand un coup porte, un arrêt sur image (la file et les animations attendent), une secousse
+// de la caméra, un éclair blanc et un recul de la cible, un chiffre qui éclate sur un critique, et un son (son.js).
+// Tout se dose sur le résultat du d20 (lu sur l'attaque, gardé pour les dégâts qui suivent) et sur les dégâts.
+const RESSENTI = {
+  eraflure: { gel: 0.035, secousse: 1.2, recul: 2 },
+  touche: { gel: 0.075, secousse: 2.6, recul: 4 },
+  critique: { gel: 0.2, secousse: 6, recul: 7 },
+  autre: { gel: 0.03, secousse: 1.4, recul: 2 },     // le feu, une poussée contre un mur, une zone : sans jet à soi
+};
+const SECOUSSE_MAX = 8, SECOUSSE_DUREE = 0.32;
+const calme = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let gel = 0, coup = null;                              // l'arrêt sur image restant (s) ; le dernier jet (attaque)
+const secousse = { a: 0, t: 0 };
 
 export function init(g, options) {
   game = g;
@@ -310,16 +324,22 @@ function scene(e) {
       const att = aff.get(e.type === 'attaque' ? e.de : e.id), cible = e.type === 'attaque' ? aff.get(e.vers) : { x: e.x * T, y: e.y * T };
       tourner(att, cible);
       att.anim = e.anim ?? 'attaque'; att.t = 0;
+      coup = e.type === 'attaque' ? { de: e.de, vers: e.vers, resultat: e.resultat } : null;
+      son.elan(e.anim);
       viser((att.x + cible.x) / 2, (att.y + cible.y) / 2);
       if (e.type === 'attaque') pourEcouteurs({ ...e, type: 'de' });
       // l'effet de la capacité : la scène dure jusqu'à ce que le coup arrive (les dégâts s'affichent après)
       const genre = att.camp === 'e' ? (e.anim === 'tir' ? 'tir' : ['brt', 'chef'].includes(att.type) ? 'lourd' : 'taille') : null;
       const d = e.type === 'attaque' ? effetsAttaque(fx, e.cap, att, cible, genre) : effetsLance(fx, e.cap, att, cible, e.cap === 'fioleCible' ? cible : null);
-      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj() {}, fin() { att.anim = 'repos'; } };
+      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj() {}, fin() { att.anim = 'repos'; if (e.resultat === 'rate') son.rate(); } };
     }
     case 'degats': {
       a.pv = e.pv; a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
-      flottant(a, `−${e.n}`, 'degats');
+      const jet = coup?.vers === e.id ? coup : null; coup = null;
+      const resultat = jet?.resultat ?? 'autre';
+      impact(a, jet ? aff.get(jet.de) : null, e.n, resultat, e.pv <= 0);
+      flottant(a, `−${e.n}`, `degats ${resultat}`);
+      if (resultat === 'critique') flottant(a, 'Critique !', 'critique-titre');
       return { duree: 0.32, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };
     }
     case 'soin':
@@ -382,11 +402,42 @@ function pourEcouteurs(e) { for (const f of ecouteurs) f(e); }
 
 // --- Les textes qui montent (dégâts, soins, « Raté ! ») ----------------------------------------------------------
 const flottants = [];
-function flottant(a, texte, genre) {
+function flottant(a, texte, genre, haut = 0) {
   if (!a) return;
   const el = Object.assign(document.createElement('div'), { className: `flottant ${genre}`, textContent: texte });
   document.body.append(el);
-  flottants.push({ el, x: a.x, y: a.y - 58, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
+  flottants.push({ el, x: a.x, y: a.y - 58 - haut, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
+}
+
+// Un coup porte sur `a` (venu de `att`, s'il y en a un) : l'arrêt sur image, la secousse, l'éclair, le recul, le son.
+function impact(a, att, n, resultat, tombe) {
+  const r = RESSENTI[resultat] ?? RESSENTI.autre, poids = Math.min(1.5, 0.6 + n / 25);   // 10 dégâts ≈ 1, 22 ≈ 1,5
+  gel = Math.max(gel, r.gel * (tombe ? 1.6 : 1));
+  if (!calme) { secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids)); secousse.t = 0; }
+  a.eclair = 1;
+  if (att && !calme) {
+    const dx = a.x - att.x, dy = a.y - att.y, l = Math.hypot(dx, dy) || 1;
+    a.recul = { x: dx / l, y: dy / l, n: r.recul * poids, t: 0 };
+  }
+  son.impact(resultat, Math.min(1, n / 30), tombe);
+}
+// le décalage du recul (px) : la cible part en arrière et revient, en 0,22 s
+function decalageRecul(a, dt) {
+  const r = a.recul; if (!r) return null;
+  r.t += dt;
+  const k = r.t / 0.22;
+  if (k >= 1) { a.recul = null; return null; }
+  const d = r.n * Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k * 0.3);
+  return { x: r.x * d, y: r.y * d * 0.5 };
+}
+// l'éclair blanc : le matériau du personnage éclairci (la couleur multiplie l'image), puis il revient en 0,12 s
+function teinter(a, base = 1) {
+  const e = Math.max(0, a.eclair ?? 0), v = base * (1 + e * 3.5);
+  for (const sp of [a.s64, a.grand]) {
+    if (!sp) continue;
+    const m = sp.mesh.material;
+    if (m.userData.teinte !== v) { m.color.setScalar(v); m.userData.teinte = v; }
+  }
 }
 export function versEcran(x, y) {
   const r = canvas.getBoundingClientRect();
@@ -446,7 +497,9 @@ export function basculerPlaques(camp, oui = !plaques[camp]) {
 }
 
 // --- Chaque image ----------------------------------------------------------------------------------------------
-export function update(dt) {
+export function update(dtReel) {
+  const dt = gel > 0 ? 0 : dtReel;
+  gel = Math.max(0, gel - dtReel);
   temps += dt;
   // la file
   if (!courant && file.length) {
@@ -467,14 +520,25 @@ export function update(dt) {
   glisserZoom(dt);
   if (cam.cible && !cam.glisse) { cam.cx += (cam.cible.x - cam.cx) * Math.min(1, dt * 5); cam.cy += (cam.cible.y - cam.cy) * Math.min(1, dt * 5); }
   bornerCamera();
-  rendu.viser(cam.cx - rendu.vue.w / 2, cam.cy - rendu.vue.h / 2);
+  let ox = 0, oy = 0;
+  if (secousse.a > 0) {
+    secousse.t += dtReel;
+    const k = Math.max(0, 1 - secousse.t / SECOUSSE_DUREE), amp = secousse.a * k * k;
+    ox = (Math.random() * 2 - 1) * amp; oy = (Math.random() * 2 - 1) * amp;
+    if (k <= 0) secousse.a = 0;
+  }
+  rendu.viser(cam.cx - rendu.vue.w / 2 + ox, cam.cy - rendu.vue.h / 2 + oy);
   // les états sous les barres : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsPlaques = new Map(combat.S.unites.map((u) => [u.id, etatsActifs(u)]));
   // les personnages
   for (const a of aff.values()) {
     a.t += dt;
+    if (a.eclair > 0) a.eclair = Math.max(0, a.eclair - dt / 0.12);
+    const r = decalageRecul(a, dt);
+    if (r) { a.x += r.x; a.y += r.y; }
     poserPerso(a);
     poserPlaque(a);
+    if (r) { a.x -= r.x; a.y -= r.y; }
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
@@ -485,7 +549,7 @@ export function update(dt) {
   }
   fx.update(dt);
   for (let k = flottants.length - 1; k >= 0; k--) {
-    const f = flottants[k]; f.t += dt;
+    const f = flottants[k]; f.t += dtReel;
     const p = versEcran(f.x, f.y - f.t * 30);
     f.el.style.left = `${p.x}px`; f.el.style.top = `${p.y}px`; f.el.style.opacity = String(Math.max(0, 1 - Math.max(0, f.t - 0.6) / 0.5));
     if (f.t > 1.1) { f.el.remove(); flottants.splice(k, 1); }
@@ -509,12 +573,14 @@ function poserPerso(a) {
       a.s64.cacher(true); a.grand.cacher(false);
       a.grand.poser(a.x - s / 2, a.y - 60 - (s - 64) / 2 + a.enfonce * 20, a.y, c * s, bloc.y + ligne * s);
       a.ombre.cacher(false); a.ombre.poser(a.x, a.y - 1);
+      teinter(a);
       return;
     }
     const [r0, n] = ANIM[anim] ?? ANIM.attaque;
     rang = r0 + ligne; col = Math.min(n - 1, Math.floor(a.t * n / 0.45));
   }
   a.grand?.cacher(true); a.s64.cacher(false);
+  teinter(a);
   // plonge (le Pas dans l'ombre de Shadow) : il descend sous ses pieds, coupé au ras du sol
   const sous = Math.round((a.plonge ?? 0) * 60);
   a.s64.poser(a.x - 32, a.y - 60 + a.enfonce * 26 + sous, a.y, col * 64, rang * 64, 64 - sous);
@@ -528,7 +594,8 @@ function poserChien(a) {
   a.s64.cacher(false);
   a.s64.poser(a.x - 32, a.y - 62 + a.enfonce * 26, a.y, col * 64, LIGNES_CHIEN[a.dir] * 64);
   const m = a.s64.mesh.material, terni = a.ko || a.mort;
-  if (m.userData.terni !== terni) { m.color.setRGB(...(terni ? [0.42, 0.42, 0.48] : [1, 1, 1])); m.userData.terni = terni; }   // (assombri, pas transparent : alphaTest)
+  if (terni) { if (m.userData.terni !== true) { m.color.setRGB(0.42, 0.42, 0.48); m.userData.terni = true; m.userData.teinte = null; } }   // (assombri, pas transparent : alphaTest)
+  else { m.userData.terni = false; teinter(a); }
   a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);
 }
 
@@ -579,4 +646,5 @@ export const api = {
     return null;
   },
   zoomer, ajusterCamera, contact: CONTACT,
+  get ressenti() { return { gel, secousse: secousse.a, calme }; },
 };

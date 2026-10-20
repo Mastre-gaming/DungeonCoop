@@ -676,6 +676,39 @@ export async function selfTest(t, game) {
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
   }
 
+  // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres, sons ------------------------
+  t.group('le ressenti des coups');
+  {
+    jouerFile();
+    const s1 = C2.U('s1'), h = C2.S.unites.find((u) => u.camp === 'h' && !u.ko), a1 = V.aff.get('s1');
+    const coup = (resultat, n) => V.jouer([
+      { type: 'attaque', de: h.id, vers: 's1', cap: 'fracas', anim: 'attaque', jets: [resultat === 'critique' ? 20 : 5], k: 5, mod: 2, resultat },
+      { type: 'degats', id: 's1', n, pv: s1.pv }]);
+    const chiffre = (g) => [...document.querySelectorAll(`.flottant.degats.${g}`)].pop();
+    const jusquA = (f) => { for (let k = 0; k < 60 && !f(); k++) game.dbg.advance(0.05); return f(); };
+    coup('critique', 24);
+    t.ok(jusquA(() => chiffre('critique')), 'un critique : son chiffre éclate, en gros');
+    const R = V.ressenti, gelCrit = R.gel;
+    t.ok(gelCrit > 0.1 && (R.calme || R.secousse > 4) && a1.eclair > 0.5 && (R.calme || a1.recul),
+      `l’impact : arrêt sur image (${Math.round(gelCrit * 1000)} ms), secousse, éclair blanc et recul de la cible`);
+    t.ok([...document.querySelectorAll('.flottant.critique-titre')].some((e) => e.textContent === 'Critique !'), '« Critique ! » au-dessus du chiffre');
+    const fx0 = a1.t; game.dbg.advance(0.05);
+    t.ok(a1.t === fx0 && V.ressenti.gel < gelCrit, 'pendant l’arrêt, les animations attendent');
+    jouerFile(); game.dbg.advance(0.3);
+    t.ok(V.ressenti.gel === 0 && V.ressenti.secousse === 0 && !(a1.eclair > 0) && !a1.recul, 'puis tout revient : plus d’arrêt, plus de secousse, ni éclair, ni recul');
+    coup('eraflure', 5);
+    t.ok(jusquA(() => chiffre('eraflure')) && V.ressenti.gel > 0 && V.ressenti.gel < gelCrit / 3, 'une éraflure : un arrêt bien plus court, un chiffre plus petit');
+    jouerFile();
+    V.jouer([{ type: 'degats', id: 's1', n: 6, pv: s1.pv }]);
+    t.ok(jusquA(() => chiffre('autre')), 'des dégâts sans jet (le feu, un mur) : un impact léger');
+    jouerFile();
+    const b = document.querySelector('#son-combat'), avant = b.textContent;
+    b.click();
+    t.ok(b.textContent !== avant && b.getAttribute('aria-pressed') === String(b.textContent === 'Son : oui'), `le bouton des sons : ${avant} → ${b.textContent}`);
+    b.click();
+    t.eq(b.textContent, avant, 'un autre clic le remet');
+  }
+
   // --- À plusieurs (#80) : les règles du lobby, puis cette page en hôte, puis chez un ami ------------------------
   t.group('à plusieurs : les règles du lobby');
   {

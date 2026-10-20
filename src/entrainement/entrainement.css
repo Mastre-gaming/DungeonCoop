@@ -188,6 +188,15 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .flottant { position: fixed; z-index: 9; pointer-events: none; transform: translate(-50%, -100%); font: 700 1.05rem var(--titre); color: #fff;
   text-shadow: 0 2px 0 #2b1c1d, 1px 0 0 #2b1c1d, -1px 0 0 #2b1c1d, 0 -1px 0 #2b1c1d; white-space: nowrap; }
 .flottant.degats { color: #ff8a7a; } .flottant.soin { color: #9fe28f; } .flottant.info { color: #ffd35a; font-size: .9rem; }
+/* le ressenti des coups : une éraflure plus petite, un touché qui claque, un critique qui éclate */
+.flottant.degats.eraflure { font-size: .9rem; color: #f0b8a8; }
+.flottant.degats.touche { font-size: 1.25rem; animation: claque .18s ease-out; }
+.flottant.degats.critique { font-size: 2.1rem; color: #ffd35a; animation: eclate .32s cubic-bezier(.2, 1.6, .4, 1);
+  text-shadow: 0 3px 0 #7a1a10, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d, 0 -2px 0 #2b1c1d, 0 0 12px rgba(255, 120, 40, .8); }
+.flottant.critique-titre { margin-top: -2.5rem; font-size: .95rem; color: #fff0a0; letter-spacing: .06em; text-transform: uppercase; animation: eclate .32s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes claque { from { transform: translate(-50%, -100%) scale(1.5); } to { transform: translate(-50%, -100%) scale(1); } }
+@keyframes eclate { 0% { transform: translate(-50%, -100%) scale(.4); } 60% { transform: translate(-50%, -100%) scale(1.35); } 100% { transform: translate(-50%, -100%) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .flottant.degats, .flottant.critique-titre { animation: none; } }
 .aide-terrain { left: 8px; bottom: 8px; margin: 0; padding: 4px 8px; font-size: 12px; max-width: 232px; }
 
 /* l'accueil et la fin */
