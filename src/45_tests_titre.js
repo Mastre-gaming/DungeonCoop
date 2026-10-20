@@ -35,7 +35,7 @@ export async function testsTitre(t) {
   const r = titre.racine;
   try {
     const textes = titre.items.map((n) => n.querySelector('.titre-choix-nom').textContent);
-    t.eq(textes, ['Héberger', 'Rejoindre', 'Réglages', 'Retour au dashboard'], 'le menu : Héberger, Rejoindre, Réglages, Retour au dashboard');
+    t.eq(textes, ['Jouer', 'Rejoindre', 'Réglages', 'Retour au dashboard'], 'le menu : Jouer, Rejoindre, Réglages, Retour au dashboard (héberger se fait au camp)');
     const dash = titre.items[3];
     t.ok(dash.tagName === 'A' && dash.href === DASHBOARD && dash.target === '_top', 'Retour au dashboard est un lien vers le dashboard (toute la fenêtre)');
     t.ok(r.textContent.includes('version du 19/10 12:00'), 'la date du build est dans un coin');
@@ -55,9 +55,9 @@ export async function testsTitre(t) {
     titre.items[0].focus();
     const touche = (key) => r.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true }));
     touche('ArrowDown');
-    t.ok(document.activeElement === titre.items[1], '↓ passe de Héberger à Rejoindre');
+    t.ok(document.activeElement === titre.items[1], '↓ passe de Jouer à Rejoindre');
     touche('ArrowUp');
-    t.ok(document.activeElement === titre.items[0], '↑ revient à Héberger');
+    t.ok(document.activeElement === titre.items[0], '↑ revient à Jouer');
     touche('Escape');
     t.ok(titre.panRejoindre.hidden && titre.panReglages.hidden, 'Échap referme le sous-menu');
 
@@ -93,12 +93,20 @@ export async function testsTitre(t) {
     for (let k = 0; k < tete.length; k += 4) if (tete[k] + tete[k + 1] + tete[k + 2] > 260) opaques++;
     t.ok(opaques > 300, `les héros et le feu sont dessinés (${opaques} pixels clairs autour du feu)`);
 
-    // Héberger : le choix part une seule fois, le menu s'efface
+    // Jouer : le choix part une seule fois, le menu s'efface
     titre.items[0].click();
-    t.eq(choix, { action: 'heberger', code: '' }, 'Héberger lance le camp en hôte');
+    t.eq(choix, { action: 'jouer', code: '' }, 'Jouer lance le camp (sans ouvrir de groupe)');
     t.ok(!titre.choisir('rejoindre', 'ABCDE') && r.classList.contains('fini'), 'un second choix est ignoré ; le menu s’efface');
   } finally {
     await titre.retirer();
   }
   t.ok(!document.querySelector('#titre') && !document.documentElement.classList.contains('a-titre'), 'retiré : plus rien de l’écran titre dans la page');
+  // « Retour au dashboard » depuis le menu : la caméra remonte au ciel de nuit, puis on part (ici, sans partir)
+  let vers = null;
+  const t2 = creerTitre({ images, stamp: 'test', figer: true, aller: (u) => { vers = u; } });
+  t2.items[3].click();
+  t.ok(t2.choix?.action === 'dashboard' && t2.racine.classList.contains('fini') && !vers, 'Retour au dashboard : le menu s’efface, la caméra remonte d’abord au ciel');
+  await new Promise((ok) => setTimeout(ok, (0.6 + 0.25) * 1000 + 150));
+  t.eq(vers, DASHBOARD, 'puis le dashboard');
+  await t2.retirer();
 }
