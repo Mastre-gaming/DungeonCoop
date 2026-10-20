@@ -37,6 +37,7 @@ Chaque niveau | +5 PV et le modificateur de CON
 - Le créateur de classe et son cadre (première base) #125
 - Huit classes d'essai au terrain d'entraînement, toutes au budget #76
 - + Baba Brisenclume, la première classe d'un ami, ses animations validées et verrouillées
+- Shadow, la classe de Fraps : jouable au terrain d'entraînement, avec ses règles (Pas dans l'ombre, Coup dans le dos, Élan) #198
 - Créer sa classe, pour chacun des quatre #30 #31 #32 #33
 - Vérifier le budget de chaque fiche #34
 - Décrire l'apparence de son héros, et envoyer son lien du générateur LPC #37 #38 #39 #40

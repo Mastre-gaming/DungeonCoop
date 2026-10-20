@@ -101,9 +101,11 @@ export function creerRendu(canvas) {
       scene.add(mesh);
       return {
         mesh,
-        poser(x, y, pied, sx = 0, sy = 0) {
-          mesh.position.set(Math.round(x) + w / 2, -(Math.round(y) + h / 2), pied * PROFONDEUR);
-          const u0 = sx / tw, u1 = (sx + w) / tw, v0 = 1 - sy / th, v1 = 1 - (sy + h) / th, a = geo.attributes.uv;
+        // hv : la hauteur montrée (le haut de l'image seulement, ex. un personnage qui s'enfonce dans le sol) ; h par défaut
+        poser(x, y, pied, sx = 0, sy = 0, hv = h) {
+          mesh.scale.y = hv / h;
+          mesh.position.set(Math.round(x) + w / 2, -(Math.round(y) + hv / 2), pied * PROFONDEUR);
+          const u0 = sx / tw, u1 = (sx + w) / tw, v0 = 1 - sy / th, v1 = 1 - (sy + hv) / th, a = geo.attributes.uv;
           a.setXY(0, u0, v0); a.setXY(1, u1, v0); a.setXY(2, u0, v1); a.setXY(3, u1, v1); a.needsUpdate = true;
         },
         rafraichir() { t.needsUpdate = true; },

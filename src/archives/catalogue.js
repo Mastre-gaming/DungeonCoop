@@ -3,7 +3,7 @@
 //   Classes : les classes jouables du terrain (regles.js, HEROS), les fiches de l'armurerie (content/classes/*.json)
 //             et celles qu'on a créées dans ce navigateur (l'armurerie les garde sous « dungeoncoop:classes »).
 //   Sorts : les capacités (regles.js, CAPACITES), leurs icônes et leurs fiches (fiches.js).
-//   Animations : les 25 scènes de Fraps (design/animations/esquisses/) et les 42 briques jouées en combat (effets.json).
+//   Animations : les 25 scènes de Fraps (design/animations/esquisses/) et les briques jouées en combat (effets.json).
 import PERSOS from '../entrainement/persos.json';
 import BRIQUES from '../entrainement/effets.json';
 import ESQUISSES from '../../design/animations/esquisses/esquisses.json';

@@ -143,8 +143,8 @@ export async function selfTest(t, game) {
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
-  t.eq(CLASSES_ESSAI.length, 9, 'neuf classes à choisir : les 4 du kit, 4 d’essai et le Traqueur au limier');
-  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.eq(CLASSES_ESSAI.length, 10, 'dix classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier et Shadow');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
   t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
@@ -152,7 +152,7 @@ export async function selfTest(t, game) {
   // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
   t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
     'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
-  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 1 && classesPour('PCrrfng').length === CLASSES_ESSAI.length, 'les classes du kit et d’essai, par tout le monde');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 2 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 1, 'les classes du kit et d’essai, par tout le monde');
   t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
   {
     const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
@@ -256,7 +256,7 @@ export async function selfTest(t, game) {
     poser(C, m.id, tr.x - 2, tr.y + 2); m.pv = 80; m.st.gele = { n: 1, par: null }; tr.t.bonus = true;
     t.ok(C.utiliser(tr, 'lecher', { id: m.id }) && m.pv >= 91 && m.pv <= 94 && !m.st.gele, `Lécher les plaies : +${m.pv - 80} PV à la Mage (11 à 14), et elle n’est plus Gelée`);
   }
-  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9]]) {
+  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9], [['shadow', 'brute', 'mage', 'gardien'], 4]]) {
     const C = essai(equipe, { alea: graine(s) });
     C.commencer();
     let tours = 0;
@@ -280,8 +280,107 @@ export async function selfTest(t, game) {
       }
       if (!C.S.resultat) C.finPhaseHeros();
     }
-    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `une équipe d’essai (${equipe.join(', ')}) joue jusqu’au bout : ${C.S.resultat} au round ${C.S.round}`);
+    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `une équipe (${equipe.join(', ')}) joue jusqu’au bout : ${C.S.resultat} au round ${C.S.round}`);
   }
+
+  // --- Shadow, la classe de FrapsFTW (#198) -------------------------------------------------------------------------
+  t.group('Shadow (#198)');
+  {
+    const H = HEROS.shadow;
+    t.ok(CLASSES_ESSAI.includes('shadow') && peutJouer('shadow', 'FrapsFTW') && !peutJouer('shadow', 'PCrrfng') && !peutJouer('shadow', null), 'Shadow se choisit à l’entrée, et ne se joue que par FrapsFTW, son auteur');
+    t.ok(H.pv === 120 && H.vitesse * 1.5 === 9 && H.dex === 2, 'sa fiche au budget : 120 PV, 9 m par tour, DEX +2');
+    t.ok(H.res.type === 'Élan' && H.res.v === 0 && H.res.max === 5, 'sa ressource : l’Élan de la liste commune (0 au départ, 5 au plus)');
+    t.ok(H.capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && H.faiblesse, 'ses 3 capacités et sa faiblesse');
+    t.eq(equipeDepuis('shadow,brute,mage,gardien'), ['shadow', 'brute', 'mage', 'gardien'], 'une équipe avec Shadow se lit dans l’adresse');
+  }
+  // la scène : la Brute tient un sbire au contact ; Shadow est à quelques mètres, sans personne autour
+  const scene = (o = {}) => {
+    const C = essai(['shadow', 'brute', 'mage', 'gardien'], o);
+    C.commencer();
+    const sh = trouver(C, 'shadow'), b = trouver(C, 'brute');
+    for (const u of C.S.unites) if (u !== sh && u !== b) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    poser(C, 'brute', 8, 12); const s = poser(C, 'br', 9, 12); poser(C, 'shadow', 9, 15.5);
+    return { C, sh, b, s };
+  };
+  {
+    const { C, sh, b, s } = scene();
+    t.ok(C.cibles(sh, CAPACITES.pasOmbre).some((c) => c.id === s.id), 'Pas dans l’ombre : la Brute ennemie, que la Brute tient au contact, est une cible');
+    const avant = { x: sh.x, y: sh.y };
+    t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }), 'il plonge dans son ombre');
+    t.ok(dist(sh, s) <= CONTACT && enTenaille(sh, s, [b]), `il ressort au contact, de l’autre côté de la Brute : Tenaille (${(dist(sh, s) * 1.5).toFixed(1)} m de la cible)`);
+    t.eq(sh.res.v, Math.floor(dist(avant, sh) + 1e-6), `le trajet compte pour l’Élan : ${sh.res.v} (${(dist(avant, sh) * 1.5).toFixed(1)} m)`);
+    t.ok(!sh.t.bonus && sh.t.action, 'c’est son action bonus ; il garde son action');
+    const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
+    t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos sur la cible en Tenaille : ×2, et l’avantage de la Tenaille');
+    t.eq(C.apercu(sh, 'coupDos', s.id).degats.touche, '34–44', 'l’aperçu le montre : 34–44 sur un touché');
+    const pv = s.pv;
+    t.ok(C.utiliser(sh, 'coupDos', { id: s.id }) && (s.mort || s.pv < pv), 'le coup part');
+    t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id && k.quoi === 'Tenaille puis coup dans le dos') || C.S.journal.some((l) => l.t.includes('Raté')),
+      'la Brute tient, Shadow frappe : un combo entre deux héros');
+  }
+  {
+    const { C, sh, s } = scene();
+    poser(C, 'brute', 20, 20);
+    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'sans allié près de l’ennemi, pas de Pas dans l’ombre');
+    poser(C, 'shadow', 10, 12); s.expose = { par: null };
+    t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 2, 'une cible Exposée prend aussi ×2, sans Tenaille');
+    s.expose = false;
+    t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 1, 'ni Tenaille ni Exposée : les dégâts normaux');
+  }
+  {
+    // « tenu » : un allié à 4,5 m au plus, pas forcément collé ; le Pas pose alors la Tenaille lui-même, pour un round
+    const { C, sh, b, s } = scene();
+    poser(C, 'brute', 9 - 2.7, 12);                    // la Brute à 4 m de la Brute ennemie
+    t.ok(C.cibles(sh, CAPACITES.pasOmbre).some((c) => c.id === s.id), 'un allié à 4 m de l’ennemi suffit : il le serre');
+    t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }) && dist(sh, s) <= CONTACT && s.st.tenaille?.par === sh.id, 'Shadow ressort derrière, au contact, et pose la Tenaille');
+    const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
+    t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos : ×2 et l’avantage, même si la Brute n’est pas collée');
+    t.eq(C._.calculer(trouver(C, 'mage'), s, C._.attaqueHeros(CAPACITES.etincelle)).av, 0, 'cette Tenaille ne compte que pour Shadow');
+    C.utiliser(sh, 'coupDos', { id: s.id });
+    t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id) || C.S.journal.some((l) => l.t.includes('Raté')), 'et le combo revient à la Brute qui serre');
+    if (!s.mort) { C.finPhaseHeros(); t.ok(!s.st.tenaille, 'la Tenaille du Pas dure un round'); }
+  }
+  {
+    const { C, sh } = scene();
+    poser(C, 'brute', 9 - 3.4, 12);                    // à 5 m : trop loin
+    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'un allié à 5 m ne serre pas l’ennemi : pas de Pas');
+  }
+  {
+    const { C, sh } = scene();
+    sh.res.v = 2;
+    t.ok(!C.peutUtiliser(sh, CAPACITES.coupDos3), 'le Coup dans le dos critique coûte 3 Élan : pas avec 2');
+    sh.res.v = 3;
+    t.ok(C.peutUtiliser(sh, CAPACITES.coupDos3), 'avec 3, oui');
+    t.eq(resultats(CAPACITES.coupDos3).map((r) => r.degats), ['34–44'], 'un critique assuré, sans jet');
+  }
+  {
+    const { C, sh } = scene();
+    const x0 = sh.x;
+    C.deplacer(sh, sh.x + 3, sh.y);
+    t.eq(sh.res.v, 3, `+1 Élan par case parcourue : 3 cases, 3 Élan (${((sh.x - x0) * 1.5).toFixed(1)} m)`);
+    C.deplacer(sh, sh.x + 0.6, sh.y); C.deplacer(sh, sh.x + 0.6, sh.y);
+    t.eq(sh.res.v, 4, 'deux bouts de 0,6 case s’additionnent : +1');
+    sh.t.mv = 6; C.deplacer(sh, sh.x - 4, sh.y);
+    t.eq(sh.res.v, 5, '5 au plus');
+  }
+  {
+    const { C, sh } = scene();
+    sh.res.v = 4;
+    C.finPhaseHeros();
+    t.ok(sh.res.v === 0 && C.S.journal.some((l) => l.t.includes('son Élan retombe à 0')), 'un tour sans bouger : l’Élan se vide');
+  }
+  {
+    const { C, sh, s } = scene();
+    sh.st.brulure = { n: 2, par: null };
+    t.ok(!C.peutUtiliser(sh, CAPACITES.pasOmbre), 'sa faiblesse : Brûlant, plus de Pas dans l’ombre');
+    delete sh.st.brulure;
+    t.ok(C.peutUtiliser(sh, CAPACITES.pasOmbre), 'éteint, il peut de nouveau');
+    C._.poserZone(trouver(C, 'mage'), CAPACITES.fiole, { x: sh.x, y: sh.y });
+    C._.enflammer({ x: sh.x, y: sh.y }, null);
+    t.ok(C.surfaceA(sh)?.t === 'feu' && !C.peutUtiliser(sh, CAPACITES.pasOmbre) && !C.utiliser(sh, 'pasOmbre', { id: s.id }), 'debout dans le feu non plus');
+  }
+  t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'Coup dans le dos : 14 + d6 + 2, comme sa description');
+  t.ok(icone('pasOmbre').endsWith('enseigne-pasOmbre.png') && icone('coupDos3').endsWith('enseigne-coupDos.png'), 'ses icônes : celles de sa fiche (design/classes/shadow/icones/)');
 
   // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------
   t.group('les fiches des capacités');
@@ -603,5 +702,30 @@ export async function selfTest(t, game) {
   ihm.dom.finPhase.click(); jouerFile();
   t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
   multi.debrancherTest();
+
+  t.group('Shadow à l’écran (#198)');
+  {
+    // Shadow (#198) : au début, personne ne tient d'ennemi, le Pas dans l'ombre est grisé et dit pourquoi ; ensuite, on le joue au clic
+    let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
+    ihm.rejouer(); ihm.ui.choix = ['shadow', 'brute', 'mage', 'gardien'];
+    document.querySelector('#commencer').click(); jouerFile();
+    const C3 = game.dbg.combat, sh = C3.U('h1'), touche = (key) => { window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); game.dbg.advance(0.05); };
+    ihm.choisirHeros('h1'); game.dbg.advance(0.05);
+    const bouton = () => [...document.querySelectorAll('.capacite')][1];
+    t.ok(bouton().classList.contains('indispo'), 'au début, personne ne tient d’ennemi : le Pas dans l’ombre est grisé');
+    touche('2');
+    t.eq(ihm.ui.cap, null, 'et la touche 2 ne le choisit pas');
+    ihm.ui.capSurvol = 'pasOmbre'; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(ihm.dom.ficheCap.textContent.includes('Aucun ennemi à 7,5 m qu’un allié serre'), 'sa fiche dit pourquoi');
+    ihm.ui.capSurvol = null;
+    const place = (id, x, y) => { const u = C3.U(id); u.x = x; u.y = y; C3.S.evenements.push({ type: 'place', id, x, y }); };
+    place('h2', 8, 12); place('br', 9, 12); place('h1', 9, 15.5); jouerFile();
+    ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(!bouton().classList.contains('indispo'), 'la Brute tient la Brute ennemie : le Pas s’allume');
+    touche('2');
+    clic(9, 12 - 0.4); jouerFile();
+    t.ok(dist(sh, C3.U('br')) <= CONTACT && enTenaille(sh, C3.U('br'), [C3.U('h2')]) && !sh.t.bonus, 'un clic sur la cible : Shadow ressort derrière elle, en Tenaille');
+    try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
   ihm.rejouer();
 }
