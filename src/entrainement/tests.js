@@ -412,6 +412,70 @@ export async function selfTest(t, game) {
   t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'Coup dans le dos : 14 + d6 + 2, comme sa description');
   t.ok(icone('pasOmbre').endsWith('enseigne-pasOmbre.png') && icone('coupDos3').endsWith('enseigne-coupDos.png'), 'ses icônes : celles de sa fiche (design/classes/shadow/icones/)');
 
+  // --- Les attaques d'opportunité, et Se désengager (#231) ------------------------------------------------------------
+  t.group('les attaques d’opportunité (#231)');
+  // la scène : la Brute au contact d'un sbire, au milieu du terrain ; les autres loin
+  const opp = (o = {}) => {
+    const C = essai(['brute', 'mage', 'gardien', 'voleur'], { alea: des(Array(30).fill(15)), ...o });
+    C.commencer();
+    for (const u of C.S.unites) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    const b = poser(C, 'brute', 12, 15.5), s = poser(C, 's1', 13, 15.5);
+    return { C, b, s };
+  };
+  {
+    const { C, b, s } = opp();
+    const a = C.apercuMarche(b, 9, 15.5);
+    t.ok(a.ok && a.menaces.length === 1 && a.menaces[0].id === 's1' && a.menaces[0].degats && a.menaces[0].touche > 0.9,
+      `l’aperçu le dit avant de partir : ${a.menaces.map((m) => `${m.nom} ${Math.round(m.touche * 100)} % · ${m.degats}`).join(', ')}`);
+    const pv = b.pv;
+    C.deplacer(b, 9, 15.5);
+    t.ok(C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité : Sbire 1 frappe Brute')) && b.pv < pv, `la Brute part du contact : le sbire la frappe (${pv - b.pv} dégâts)`);
+    t.ok(!s.t.reaction && Math.abs(b.x - 9) < 0.01, 'il a dépensé sa réaction, et la Brute finit sa marche');
+    const marches = C.S.evenements.filter((e) => e.type === 'marche' && e.id === b.id).length, i = C.S.evenements.findIndex((e) => e.type === 'attaque' && e.de === 's1');
+    t.ok(marches === 2 && C.S.evenements.findIndex((e) => e.type === 'marche') < i, 'à l’écran : la marche s’arrête au bord, le coup part, la marche reprend');
+    b.t.mv = 6; C.deplacer(b, 12.2, 16); C.S.journal.length = 0;
+    C.deplacer(b, 9, 15.5);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'une seule réaction par round : repartir ne coûte plus rien');
+  }
+  {
+    const { C, b } = opp();
+    t.ok(C.utiliser(b, 'desengager') && b.t.desengage && !b.t.bonus, 'Se désengager : son action bonus');
+    t.eq(C.apercuMarche(b, 9, 15.5).menaces.length, 0, 'l’aperçu ne montre plus de menace');
+    C.deplacer(b, 9, 15.5);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'désengagée, la Brute part sans prendre de coup');
+    t.ok(!C.peutUtiliser(b, CAPACITES.desengager), 'une fois par tour');
+    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : une flèche qui s’éloigne de l’épée');
+  }
+  {
+    const { C, b, s } = opp();
+    const pv = s.pv;
+    C._.marcher(s, [{ x: 16, y: 15.5 }]);
+    t.ok(C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité : Brute frappe Sbire 1')) && !b.t.reaction && (s.pv < pv || s.mort), 'dans l’autre sens : un sbire qui s’éloigne de la Brute prend son Fracas');
+  }
+  {
+    const { C } = opp();
+    const m = poser(C, 'mage', 20, 18), a = poser(C, 'a1', 21, 18);
+    C._.marcher(a, [{ x: 24, y: 18 }]);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')) && m.t.reaction, 'la Mage n’a pas d’attaque au contact : pas d’attaque d’opportunité');
+    poser(C, 'mage', 20, 18); poser(C, 'a1', 21, 18); m.t.mv = 5;
+    C.deplacer(m, 17, 18);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'un archer non plus (il tire, il ne frappe pas au contact)');
+  }
+  {
+    const { C, b, s } = opp();
+    C.utiliser(b, 'pousser', { id: 's1' });
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')) && s.t.reaction, 'une poussée n’en donne pas : seul celui qui marche la provoque');
+  }
+  {
+    const C = essai(['traqueur-au-limier', 'brute', 'mage', 'gardien'], { alea: des(Array(30).fill(15)) });
+    C.commencer();
+    for (const u of C.S.unites) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    const chien = C.S.unites.find((u) => u.familier), s = poser(C, 's1', 13, 15.5);
+    poser(C, 'h1', 12, 14.5); poser(C, chien.id, 12, 15.5);
+    C._.marcher(s, [{ x: 16, y: 15.5 }]);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')) && chien.t.reaction && Math.abs(s.x - 16) < 0.01, 'le limier n’en fait pas : il ne mord que sur l’ordre de son maître');
+  }
+
   // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------
   t.group('les fiches des capacités');
   t.eq(resultats(CAPACITES.etincelle).map((r) => `${r.degats} ${r.d20}`), ['0 d20 = 1', '5–7 d20 2–7', '11–14 d20 8–19', '22–28 d20 = 20'],
