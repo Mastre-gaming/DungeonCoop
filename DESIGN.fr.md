@@ -85,6 +85,10 @@ Copier ces recettes ; ne pas en inventer une nouvelle sans l'ajouter ici.
 
 **Barre de vie sous un perso** (combat) : sous les pieds, sans cadre derrière ni nom. Jauge bois nuit, bordure noire 1 px et anneau bois clair 1 px (la recette de la jauge, en petit), remplissage rouge pour un ennemi, vert pour un allié, braise sous 30 % ; de près, les PV écrits dedans (Pixelify 10 px, ombre noire). Dessous, une icône par état en pixel art (rampes des icônes des capacités, contour sombre), ×1 de loin, ×2 de près, les tours qui restent en chiffre en bas à droite. Le détail de chaque état est dans la carte de survol. (à confirmer)
 
+**Cadre d'un héros en combat** (la colonne de gauche du terrain) : le médaillon du camp en petit (le même dessin, 60 × 60, ×1 : le héros LPC devant la scène de nuit, l'anneau de laiton), et à sa droite le bandeau de bois au bout arrondi (grain du bois, liseré laiton, rayon 26 px à droite, 54 px de haut : la version compacte, 20 oct). Dans le bandeau : le nom (Pixelify 13 px, contour sombre), le joueur et la potion ; sur une même ligne, la jauge de vie (12 px, vert allié, braise sous 30 %, « PV » écrits dedans) et celle de la ressource (12 px, sa couleur de ressource ci-dessous, le vide teinté d'elle, les chiffres dedans ; le nom de la ressource au survol) ; dessous, déplacement, action, bonus et états en petit. Choisi : liseré or ; pas son tour : terni ; KO : gris.
+
+**Couleurs des ressources** (jauges de combat) : Rage `--res-rage #c8402e`, Mana `--res-mana #3d7fd6`, Concentration `--res-concentration #9a5ad6`, Foi `--res-foi #e0b04a`, Énergie `--res-energie #4fa83a`, Élan **(à confirmer)** `--res-elan #2fa79a`.
+
 **Étiquette au-dessus d'un perso** : bois foncé à 78 %, Pixelify 13 px ; la tienne bordée d'or.
 
 **Focus clavier** : toujours visible, `outline: 3px solid var(--or); outline-offset: 2px`.
@@ -109,7 +113,7 @@ Copier ces recettes ; ne pas en inventer une nouvelle sans l'ajouter ici.
 - En mode visite (`?visite`), pas de barre ni de suivi.
 - Une nouvelle partie du HUD : une chose à la fois (porte T), validée sur capture avant la suivante.
 
-**(à confirmer)** Combat : la même grammaire. Les cadres des quatre héros en bas à gauche (portrait 40 px, vie, statut), l'ordre des tours en bande en haut au centre, les actions en barre de cases en bas, l'aperçu du combo sur parchemin au-dessus de la cible.
+**Combat :** la même grammaire. Les cadres des quatre héros sur le côté gauche, chacun un petit médaillon et son bandeau comme le héros du camp (§5, « Cadre d'un héros en combat » ; décidé le 20 oct). **(à confirmer)** Le reste : l'ordre des tours en bande en haut au centre, les actions en barre de cases en bas, l'aperçu du combo sur parchemin au-dessus de la cible.
 
 ## 7. Les mots à l'écran
 
@@ -141,4 +145,5 @@ Avant de dire qu'un écran est fini : une capture à l'échelle 1 et une à l'é
 | 18 oct | Ce fichier devient le modèle visuel de toutes les builds | le propriétaire |
 | 18 oct | La bannière de campagne va en haut au centre (§1, direction C) ; « Jouer à plusieurs » va sous le médaillon | le propriétaire |
 | 18 oct | **(à confirmer)** Le niveau sur l'écu = le nombre de tes missions rentrées ; la jauge du bandeau = ta renommée de la phase face à la tête du podium | proposé par la build du HUD |
+| 20 oct | Au combat, chaque héros a le médaillon et le bandeau du héros du camp (sur le côté gauche), avec sa jauge de vie et la jauge de sa ressource à sa couleur | Paolitus |
 | 18 oct | **(à confirmer)** Le terrain d'entraînement et l'armurerie prennent le même habillage : plaques de parchemin dans un cadre fin à coins de laiton (`--cadre-fin`), boîtes de bois dans le grand cadre (`--cadre-bois`) ; pas de loups au combat (la barre des capacités est trop large) | proposé par la build du HUD |

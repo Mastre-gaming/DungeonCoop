@@ -14,6 +14,7 @@ import { CONTACT, metres } from './geometrie.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
+import { medaillon } from '../33_cadres.js';
 
 export const name = 'interface';
 export const always = true;
@@ -457,25 +458,38 @@ function dessinerInfo(info) {
   dom.info.style.left = `${Math.max(8, x)}px`; dom.info.style.top = `${Math.max(8, ui.client.y - 24)}px`;
 }
 
+// Le médaillon d'un héros (33_cadres.js, celui du camp, à ×1), dessiné une fois par classe.
+const medaillons = new Map();
+function medaillonDe(type) {
+  if (!medaillons.has(type)) medaillons.set(type, medaillon(vue.planche(type), { p: 1 }).toDataURL());
+  return medaillons.get(type);
+}
+
 function dessinerTout() {
   const S = combat.S, groupe = S.phase === 'heros' ? combat.groupeCourant()?.ids ?? [] : [];
   dom.etat.textContent = S.phase === 'preparation' ? 'Prêt' : S.phase === 'fini' ? (S.resultat === 'victoire' ? `Victoire au round ${S.round}` : `Défaite au round ${S.round}`)
     : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`;
   if (S.phase !== 'heros') dom.chrono.textContent = '';
-  // les fiches des héros
+  // les fiches des héros : le médaillon du héros du camp, en petit, et son bandeau de bois (DESIGN.fr.md §5)
   dom.equipe.replaceChildren(...S.heros.map((id) => {
     const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
     const etats = etatsDe(u);
-    // PV et ressource sur une seule ligne, la jauge dessous (les maquettes)
-    return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
-      vue.portrait(u.type, 40),
-      el('span', { class: 'fh-corps' },
+    const pv = Math.max(0, u.pv), part = (v, max) => `width:${max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0}%`;
+    // une jauge : le texte écrit dedans (court), et le texte entier pour les lecteurs d'écran et au survol
+    const jauge = (classe, v, max, texte, court = texte, extra = {}) => el('span', { class: `fh-jauge ${classe}`, role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(max), 'aria-valuenow': String(v), 'aria-label': texte, title: texte, ...extra },
+      el('span', { class: 'rempli', style: part(v, max) }), el('span', { class: 'texte' }, court));
+    return el('button', { type: 'button', class: `fiche-heros${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id),
+      'aria-label': `${H.nom}${u.ko ? ', KO' : ''} : ${pv} sur ${u.pvMax} PV${u.res.max ? `, ${u.res.type} ${u.res.v} sur ${u.res.max}` : ''}` },
+      el('img', { class: 'fh-medaillon', src: medaillonDe(u.type), alt: '' }),
+      el('span', { class: 'fh-bandeau' },
         el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
           el('span', { class: `fh-potion${u.potion ? '' : ' bue'}`, title: u.potion ? 'Sa potion' : 'Potion bue' }, el('img', { src: icone('potion'), alt: u.potion ? 'potion' : 'potion bue' }))),
-        el('span', { class: 'fh-chiffres' }, el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`), el('span', { class: `fh-res ${u.res.type}` }, `${u.res.type} ${u.res.v}/${u.res.max}`)),
-        el('span', { class: 'jauge' }, el('span', { class: u.pv <= u.pvMax * 0.3 ? 'bas' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
-        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`),
-        etats.length ? el('span', { class: 'fh-etats' }, etats.join(' · ')) : null));
+        // la vie et la ressource sur une ligne (la version compacte) : la ressource se reconnaît à sa couleur
+        el('span', { class: `fh-jauges${u.res.max ? '' : ' seule'}` },
+          jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`, `${pv}/${u.pvMax} PV`),
+          u.res.max ? jauge('res', u.res.v, u.res.max, `${u.res.type} ${u.res.v} / ${u.res.max}`, `${u.res.v}/${u.res.max}`, { dataset: { res: u.res.type } }) : null),
+        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
+          etats.length ? el('span', { class: 'fh-etats' }, ` · ${etats.join(' · ')}`) : null)));
   }));
   // la barre des capacités : l'icône, le nom, action ou bonus, les dégâts d'un touché (ou ce qu'elle fait), la touche
   const h = herosChoisi();

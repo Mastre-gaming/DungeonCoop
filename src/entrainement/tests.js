@@ -26,8 +26,18 @@ export async function selfTest(t, game) {
   const trouver = (C, id) => C.U(id) ?? C.S.unites.find((u) => u.camp === 'h' && u.type === id);
   const poser = (C, id, x, y) => { const u = trouver(C, id); u.x = x; u.y = y; return u; };
 
-  testsHabillage(t, { '.haut-terrain': 'le bandeau', '.fiche-heros': 'la fiche d’un héros', '.journal-terrain': 'le journal',
+  testsHabillage(t, { '.haut-terrain': 'le bandeau', '.journal-terrain': 'le journal',
     '.barre-terrain': 'la barre des capacités', '.coin-phase': 'la fin de phase', '.cadre-terrain': 'l’accueil' });
+  {
+    // les fiches des héros : le médaillon et le bandeau du héros du camp, la vie et la ressource à sa couleur (DESIGN §5)
+    const fiche = document.querySelector('.fiche-heros'), med = fiche?.querySelector('.fh-medaillon'), bandeau = fiche?.querySelector('.fh-bandeau');
+    t.ok(med?.src.startsWith('data:image/png') && med.naturalWidth === 60 && getComputedStyle(bandeau).backgroundImage.includes('url('), 'la fiche d’un héros : le médaillon du camp (60 × 60, ×1) et son bandeau de bois');
+    const couleur = (res) => { const r = document.querySelector(`.fiche-heros .fh-jauge[data-res="${res}"] .rempli`); return r ? getComputedStyle(r).backgroundColor : null; };
+    const pv = document.querySelector('.fiche-heros .fh-jauge.pv .rempli');
+    t.ok(pv && getComputedStyle(pv).backgroundColor === 'rgb(79, 154, 51)' && document.querySelector('.fiche-heros .fh-jauge.pv .texte').textContent.endsWith('PV'), 'la jauge de vie : verte, les PV écrits dedans');
+    const vues = ['Rage', 'Mana', 'Concentration', 'Foi'].map(couleur);
+    t.ok(vues.every(Boolean) && new Set(vues).size === 4, `la jauge de la ressource, à la couleur de son type (Rage, Mana, Concentration, Foi : ${vues.join(' · ')})`);
+  }
 
   // --- La géométrie sans cases ---------------------------------------------------------------------------------
   t.group('sans cases : la géométrie');
