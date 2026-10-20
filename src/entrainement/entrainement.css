@@ -37,20 +37,22 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 /* les héros, à gauche : PV et ressource sur une ligne, la jauge dessous */
 /* les fiches des héros : le médaillon du héros du camp (33_cadres.js, ×1) et son bandeau de bois (DESIGN.fr.md §5) */
 :root { --res-rage: #c8402e; --res-mana: #3d7fd6; --res-concentration: #9a5ad6; --res-foi: #e0b04a; --res-energie: #4fa83a; --res-elan: #2fa79a; --vie-allie: #4f9a33; }
-.equipe-terrain { position: fixed; left: 8px; top: 72px; z-index: 8; display: grid; gap: 8px; width: 292px; }
-.fiche-heros { position: relative; display: block; width: 100%; min-height: 72px; margin: 0; padding: 0 0 0 30px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--creme); font: 500 12px var(--titre); }
+.equipe-terrain { position: fixed; left: 8px; top: 72px; z-index: 8; display: grid; gap: 4px; width: 256px; }
+.fiche-heros { position: relative; display: block; width: 100%; min-height: 60px; margin: 0; padding: 0 0 0 30px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--creme); font: 500 12px var(--titre); }
 .fiche-heros .fh-medaillon { position: absolute; left: 0; top: calc(50% - 30px); z-index: 1; width: 60px; height: 60px; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45)); }
-/* le bout arrondi fait 34 px : le texte et les jauges s'arrêtent avant la courbe */
-.fiche-heros .fh-bandeau { display: grid; gap: 3px; min-height: 72px; box-sizing: border-box; padding: 6px 24px 6px 38px; align-content: center;
-  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); border: 3px solid var(--bois-nuit); border-radius: 5px 34px 34px 5px;
+/* le bout arrondi fait 26 px : le texte et les jauges s'arrêtent avant la courbe (la version compacte : 54 px de haut) */
+.fiche-heros .fh-bandeau { display: grid; gap: 2px; min-height: 54px; margin: 3px 0; box-sizing: border-box; padding: 4px 18px 4px 36px; align-content: center;
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); border: 3px solid var(--bois-nuit); border-radius: 5px 26px 26px 5px;
   box-shadow: inset 0 0 0 2px var(--laiton-clair), inset 0 0 0 3px var(--laiton-fonce), inset 0 0 0 4px var(--bois-fonce), 0 4px 0 rgba(0, 0, 0, .4); image-rendering: pixelated; }
 .fiche-heros .fh-titre { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.fiche-heros strong { font: 700 14px/16px var(--titre); text-shadow: var(--contour-or); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fiche-heros strong { font: 700 13px/15px var(--titre); text-shadow: var(--contour-or); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fiche-heros .fh-potion { margin-left: auto; display: inline-flex; }
 .fiche-heros .fh-potion img { width: 15px; height: 16px; image-rendering: pixelated; }
 .fiche-heros .fh-potion.bue img { filter: grayscale(1); opacity: .35; }
 /* une jauge (DESIGN §5) : bois nuit, bordure noire 1 px, anneau bois clair, remplissage plein, le texte dedans */
-.fh-jauge { position: relative; display: block; height: 12px; background: var(--bois-nuit); border: 1px solid #000; box-shadow: 0 0 0 1px var(--bois-clair); overflow: hidden; }
+.fh-jauges { display: grid; grid-template-columns: 1.65fr 1fr; gap: 4px; }
+.fh-jauges.seule { grid-template-columns: 1fr; }
+.fh-jauge { position: relative; display: block; min-width: 0; height: 12px; background: var(--bois-nuit); border: 1px solid #000; box-shadow: 0 0 0 1px var(--bois-clair); overflow: hidden; }
 .fh-jauge .rempli { position: absolute; left: 0; top: 0; bottom: 0; background: var(--vie-allie); transition: width .25s; }
 .fh-jauge.pv.bas .rempli { background: var(--braise); }
 .fh-jauge .texte { position: relative; display: block; text-align: center; font: 500 10px/12px var(--titre); color: #fff7e6; white-space: nowrap;
@@ -61,7 +63,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .fh-jauge[data-res="Énergie"] { --c: var(--res-energie); } .fh-jauge[data-res="Élan"] { --c: var(--res-elan); }
 .fh-jauge.res { background: color-mix(in srgb, var(--c) 28%, var(--bois-nuit)); }
 .fh-jauge.res .rempli { background: var(--c); }
-.fiche-heros .fh-ligne { font: 500 11px/13px var(--titre); color: var(--laiton-clair); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fiche-heros .fh-ligne { font: 500 11px/12px var(--titre); color: var(--laiton-clair); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fh-etats { color: var(--braise); }
 .fiche-heros.choisi .fh-bandeau { border-color: var(--or); box-shadow: inset 0 0 0 2px var(--or), inset 0 0 0 3px var(--laiton-fonce), inset 0 0 0 4px var(--bois-fonce), 0 4px 0 rgba(0, 0, 0, .4); }
 .fiche-heros.choisi .fh-medaillon, .fiche-heros:hover .fh-medaillon { filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45)) brightness(1.12); }
@@ -210,7 +212,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 
 @media (max-width: 1280px) { .bas-terrain { max-width: calc(100vw - 16px); } .aide-terrain { display: none; } }
 @media (max-width: 900px) {
-  .equipe-terrain { width: 240px; } .droite-terrain { width: 200px; } .coin-phase { width: 200px; } 
+  .equipe-terrain { width: 220px; } .droite-terrain { width: 200px; } .coin-phase { width: 200px; } 
 }
 
 /* le choix de l'équipe, à l'accueil (#76) */

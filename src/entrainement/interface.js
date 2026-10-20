@@ -475,16 +475,19 @@ function dessinerTout() {
     const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
     const etats = etatsDe(u);
     const pv = Math.max(0, u.pv), part = (v, max) => `width:${max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0}%`;
-    const jauge = (classe, v, max, texte, extra = {}) => el('span', { class: `fh-jauge ${classe}`, role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(max), 'aria-valuenow': String(v), 'aria-label': texte, ...extra },
-      el('span', { class: 'rempli', style: part(v, max) }), el('span', { class: 'texte' }, texte));
+    // une jauge : le texte écrit dedans (court), et le texte entier pour les lecteurs d'écran et au survol
+    const jauge = (classe, v, max, texte, court = texte, extra = {}) => el('span', { class: `fh-jauge ${classe}`, role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(max), 'aria-valuenow': String(v), 'aria-label': texte, title: texte, ...extra },
+      el('span', { class: 'rempli', style: part(v, max) }), el('span', { class: 'texte' }, court));
     return el('button', { type: 'button', class: `fiche-heros${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id),
       'aria-label': `${H.nom}${u.ko ? ', KO' : ''} : ${pv} sur ${u.pvMax} PV${u.res.max ? `, ${u.res.type} ${u.res.v} sur ${u.res.max}` : ''}` },
       el('img', { class: 'fh-medaillon', src: medaillonDe(u.type), alt: '' }),
       el('span', { class: 'fh-bandeau' },
         el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
           el('span', { class: `fh-potion${u.potion ? '' : ' bue'}`, title: u.potion ? 'Sa potion' : 'Potion bue' }, el('img', { src: icone('potion'), alt: u.potion ? 'potion' : 'potion bue' }))),
-        jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`),
-        u.res.max ? jauge('res', u.res.v, u.res.max, `${u.res.type} ${u.res.v} / ${u.res.max}`, { dataset: { res: u.res.type } }) : null,
+        // la vie et la ressource sur une ligne (la version compacte) : la ressource se reconnaît à sa couleur
+        el('span', { class: `fh-jauges${u.res.max ? '' : ' seule'}` },
+          jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`, `${pv}/${u.pvMax} PV`),
+          u.res.max ? jauge('res', u.res.v, u.res.max, `${u.res.type} ${u.res.v} / ${u.res.max}`, `${u.res.v}/${u.res.max}`, { dataset: { res: u.res.type } }) : null),
         el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
           etats.length ? el('span', { class: 'fh-etats' }, ` · ${etats.join(' · ')}`) : null)));
   }));
