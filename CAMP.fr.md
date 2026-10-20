@@ -182,6 +182,16 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **Les règles :** une bête ne se pose que là où elle tient tout entière sur le sol dégagé (terre ou herbe), jamais devant un toit, un arbre ou un mur ; les bêtes ne bloquent personne. Elles sont dessinées au pixel dans le style LPC (contour sombre, trois teintes, lumière en haut à gauche).
 - **La maquette** est dans `design/camp/animaux/` (dessinée par `design/camp/outils/animaux.py`). **Dans le jeu :** `src/49_animaux.js` ; la planche des bêtes et leurs places sont fabriquées par `design/camp/outils/animaux_jeu.py` (`public/assets/lpc/animaux.png`, `src/data/animaux.json`).
 
+### Les scènes entre habitants (proposées le 19 oct, design validé par Mope le 20 oct : « parfait je valide »)
+- **De temps en temps** (toutes les 25 à 60 secondes), deux ou trois habitants qui se croisent font quelque chose ensemble pendant une vingtaine de secondes, puis chacun repart à ses occupations. Une scène à la fois.
+- **La veillée au feu** (plus souvent le soir et la nuit) : trois héros autour du feu, chacun parle à son tour ; le héros de départ s'assoit sur le banc et rit (seule sa planche sait s'asseoir ; sinon, un autre se tient debout).
+- **Le crieur et son public :** quand il crie une nouvelle, deux ou trois promeneurs viennent l'écouter au pied de l'estrade.
+- **Une commande à la forge** (le jour) : le chef de chantier quitte son panneau, va à pied chercher des outils devant la forge pendant que le forgeron frappe sur l'enclume, puis il rentre.
+- **Un duel à l'enclos** (pas la nuit) : deux héros s'entraînent l'un contre l'autre, un troisième les encourage, accoudé à la barrière.
+- **Quand ils se parlent, ils bougent :** celui qui parle fait des gestes des mains, ceux qui écoutent hochent la tête. Au-dessus de celui qui parle, une petite bulle à image (un point d'exclamation, un cœur, un rire, une étoile, un marteau…), sans texte : les répliques restent à l'équipe.
+- **On parle à l'un d'eux (E) :** il laisse la scène, elle s'arrête, et chacun repart.
+- **La maquette** est dans `design/camp/scenes/` (des petites animations, dessinées par `design/camp/outils/scenes.py`). **Dans le jeu :** `src/50_scenes.js` (les héros vont à leur place par les chemins, `42_promeneurs.js` les y garde ; le chef de chantier quitte son panneau grâce à `44_chantier.js`).
+
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
 - **Les niveaux :**

@@ -42,7 +42,7 @@ export const TEXTE = {
 
 let game, rendu, images, heros, missions, collision, visite, sol, panneau, gPanneau, chef, bulle, parler;
 const ouvriers = [], obstacles = [], pieces = [];
-const S = { t: 0, a: avancement([]), cache: false, parle: 0, regard: 2, dort: false };   // dort : la nuit (46_jour_nuit.js)
+const S = { t: 0, a: avancement([]), cache: false, parle: 0, regard: 2, dort: false, ailleurs: false };   // dort : la nuit (46_jour_nuit.js) ; ailleurs : parti chercher des outils à la forge (50_scenes.js)
 const P = CHANTIER.pieces.find((p) => p.nom === 'panneau');
 
 const ecran = (x, y) => {
@@ -78,7 +78,7 @@ function ranger() {
   }
   for (const o of ouvriers) {
     // la nuit, les ouvriers et le chef vont se coucher (le chef reste à son panneau quand le chantier est fini, sauf la nuit)
-    const parti = o === chef ? S.dort : fini('tout') || S.dort;
+    const parti = o === chef ? S.dort || S.ailleurs : fini('tout') || S.dort;
     if (o.obstacle && parti !== o.parti) (parti ? collision.retirer : collision.ajouter)(o.obstacle);
     o.parti = parti;
   }
@@ -143,9 +143,9 @@ export function update(dt) {
   const h = heros?.heros, cx = CHANTIER.panneau.chef.x, cy = CHANTIER.panneau.chef.y;
   const pres = !visite && h && Math.hypot(h.x - cx, h.y - cy) < 3 * PRES;
   if (pres) { const dx = h.x - cx, dy = h.y - cy; S.regard = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 3 : 1) : (dy > 0 ? 2 : 0); } else S.regard = 2;
-  chef.sprite.poser(chef.x, chef.y, chef.pied, S.regard * chef.w, chef.sy); chef.sprite.cacher(S.cache || S.dort);
+  chef.sprite.poser(chef.x, chef.y, chef.pied, S.regard * chef.w, chef.sy); chef.sprite.cacher(S.cache || S.dort || S.ailleurs);
 
-  const devant = !S.cache && !S.dort && pres && h.controle && Math.hypot(h.x - cx, h.y - cy) < PRES;
+  const devant = !S.cache && !S.dort && !S.ailleurs && pres && h.controle && Math.hypot(h.x - cx, h.y - cy) < PRES;
   parler.hidden = !devant || S.parle > 0;
   if (devant) {
     const p = ecran(cx, cy + 6); parler.style.left = `${p.x}px`; parler.style.top = `${p.y + 24}px`;
@@ -227,4 +227,8 @@ export const api = {
   // la nuit : tout le monde au lit (le matériel et le panneau restent)
   dormir(oui = true) { S.dort = !!oui; ranger(); if (oui) { bulle.hidden = true; parler.hidden = true; S.parle = 0; } update(0); },
   get dormant() { return S.dort; },
+  // le chef quitte son panneau (une scène : il va chercher des outils à la forge), puis revient
+  partir(oui = true) { S.ailleurs = !!oui; ranger(); if (oui) { bulle.hidden = true; parler.hidden = true; S.parle = 0; } update(0); },
+  get chefLa() { return !S.cache && !S.dort && !S.ailleurs; },
+  CHEF: { x: CHANTIER.panneau.chef.x, y: CHANTIER.panneau.chef.y },
 };
