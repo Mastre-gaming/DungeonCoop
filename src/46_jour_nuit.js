@@ -189,7 +189,8 @@ export function update(dt) {
       lucioles[i].set(Math.round(bx + Math.cos(a) * d), Math.round(by + Math.sin(a * 1.3) * d * 0.8), m.lucioles * Math.max(0, Math.sin(temps * 1.7 + i * 3.1)));
     }
   });
-  const rien = m.ciel[0] >= 0.999 && n === 0;
+  // en plein jour, rien à dessiner : les deux voiles sont cachés (ils coûtent cher, surtout en rendu logiciel)
+  const rien = m.ciel[0] >= 0.999 && multi.material.uniforms.n.value === 0 && m.fenetres <= 0.001 && m.lucioles <= 0.001;
   for (const v of voiles) v.visible = !rien;
 }
 
