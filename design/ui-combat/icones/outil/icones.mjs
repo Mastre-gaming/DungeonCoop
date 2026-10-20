@@ -329,6 +329,20 @@ const G = {
     ".nOOOOOOOOn.",
     "..nOOOOOOn..",
     "...nnnnnn..."],
+  // Se désengager (#231) : une flèche qui s’éloigne de l’épée
+  desengager: [
+    "...........SS.",
+    "....F......SS.",
+    "...FF......SS.",
+    "..FFF......SS.",
+    ".FFFFFFFF..SS.",
+    "FFFFFFFFF..SS.",
+    ".FFFFFFFF..SS.",
+    "..FFF......SS.",
+    "...FF.....GGGG",
+    "....F......WW.",
+    "...........WW.",
+    "...........GG."],
   fiole: [
     ".....WW.....",
     "....WWWW....",

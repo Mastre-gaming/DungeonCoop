@@ -77,7 +77,7 @@ export const FAMILIERS = {
 export const ENNEMIS = {
   sbire: { nom: 'Sbire', pv: 30, vitesse: 5, dex: 0, atk: { nom: 'Coup', base: 8, de: 4, portee: CONTACT, anim: 'attaque' }, habitude: 'frappe le héros le plus proche' },
   archer: { nom: 'Archer', pv: 25, vitesse: 5, dex: 2, atk: { nom: 'Flèche', base: 8, de: 4, portee: 8, anim: 'tir' }, habitude: 'reste à 6 m, tire sur le plus proche qu’il voit' },
-  brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros qui a le moins de PV et le repousse' },
+  brt: { nom: 'Brute ennemie', pv: 60, vitesse: 5, dex: 0, coriace: true, atk: { nom: 'Charge', base: 14, de: 6, portee: CONTACT, anim: 'attaque' }, habitude: 'charge le héros le plus blessé (en part de ses PV) et le repousse' },
   chef: { nom: 'Chef', pv: 90, vitesse: 5, dex: 1, coriace: true, atk: { nom: 'Frappe du chef', base: 22, de: 8, anim: 'attaque' }, habitude: 'tours 1–2 : avantage aux ennemis · tour 3 : une zone de 5 m' },
 };
 const R2 = 1.7 / 1.5, R3 = 2.5 / 1.5;        // les zones 2×2 et 3×3 : des cercles de 1,7 m et 2,5 m de rayon
@@ -89,6 +89,8 @@ export const CAPACITES = {
   projection20: { nom: 'Projection furieuse', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 5, proj: true, cout: 20, ds: '20 Rage · pousse de 7,5 m' },
   pousser: { nom: 'Pousser', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 2, ds: '3 m ; +8 contre un obstacle ; fossé : sbire éliminé, sinon 20' },
   potion: { nom: 'Potion', slot: 'bonus', type: 'potion', ds: '+20 PV · une seule par héros' },
+  // l'action commune de tous les héros (#231), hors de la barre : un bouton et la touche D
+  desengager: { nom: 'Se désengager', slot: 'bonus', type: 'desengager', ds: 'Ce tour-ci, il s’éloigne sans attaque d’opportunité' },
   relever: { nom: 'Relever', slot: 'action', type: 'relever', portee: CONTACT, ds: 'Un allié KO au contact revient à 25 PV' },
   etincelle: { nom: 'Étincelle', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 8, de: 4, anim: 'sort', ds: 'Portée 9 m · 5–7 / 11–14 / 22–28' },
   eclaboussure: { nom: 'Éclaboussure', slot: 'action', type: 'zone', surf: 'eau', rayon: R2, portee: 5, cout: 10, anim: 'sort', ds: '10 Mana · une flaque de 1,7 m à 7,5 m ; ceux dedans sont Trempés' },
@@ -186,13 +188,23 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const ennemisVivants = () => S.unites.filter((u) => u.camp === 'e' && !u.mort);
   const estHeros = (id) => !!id && U(id)?.camp === 'h' && !U(id).familier;
   const familierDe = (h) => S.unites.find((u) => u.familier && u.maitre === h?.id) ?? null;
-  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient à côté de lui s'il s'en est éloigné.
-  function suivreFamiliers() {
+  // Sa place : derrière son maître, à l'opposé de l'ennemi le plus proche (Paolitus : devant, il se faisait viser dès le tour 1).
+  const ennemiProche = (m) => S.unites.filter((u) => u.camp === 'e' && !u.mort).sort((a, b) => dist(a, m) - dist(b, m))[0] ?? null;
+  function placeFamilier(f, m) {
+    const e = ennemiProche(m), l = e ? dist(e, m) : 0;
+    const dx = e && l > 0.01 ? (m.x - e.x) / l : -1, dy = e && l > 0.01 ? (m.y - e.y) / l : 0;
+    return pointLibreProche(trame, { x: m.x + dx * 0.95, y: m.y + dy * 0.95 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+  }
+  // Le familier suit son maître : après chaque pas, ordre ou action ennemie, il revient derrière lui s'il s'en est éloigné,
+  // ou s'il se retrouve devant lui (plus près de l'ennemi que lui). sansScene : au début du combat, sans le montrer marcher.
+  function suivreFamiliers(sansScene = false) {
     for (const f of S.unites.filter((u) => u.familier && !u.ko)) {
-      const m = U(f.maitre); if (!m || m.ko || dist(f, m) <= 1.6) continue;
-      const p = pointLibreProche(trame, { x: m.x + 0.9, y: m.y + 0.5 }, S.unites.filter((u) => u !== f && !u.mort && !u.ko));
+      const m = U(f.maitre); if (!m || m.ko) continue;
+      const e = ennemiProche(m), devant = !!e && dist(f, e) < dist(m, e) - 0.3;
+      if (dist(f, m) <= 1.6 && !devant) continue;
+      const p = placeFamilier(f, m);
       f.x = p.x; f.y = p.y;
-      ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
+      if (!sansScene) ev({ type: 'marche', id: f.id, chemin: [{ x: p.x, y: p.y }] });
     }
   }
   const nomHeros = (id) => U(id)?.nom ?? '';
@@ -534,9 +546,54 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const carte = carteDe(u);
     return { carte, atteint: (p) => { const k = indiceDe(trame, p.x, p.y); return carte.longueur[k] <= u.t.mv + 1e-6 && finPossible(u, p); } };
   }
+  // --- Les attaques d'opportunité (FIGHT_RULES, à l'essai, #231 : comme dans Baldur's Gate 3) --------------------------
+  // Le coup au contact qu'une créature donne en réaction : l'attaque de base au contact d'un héros (sans coût), celle d'un
+  // ennemi qui frappe au contact (le chef aussi) ; null sans attaque au contact (les archers, la Mage, l'Éclaireuse…).
+  function attaqueReflexe(o) {
+    if (o.familier) return null;          // le limier n'a pas de tour à lui : il ne frappe que sur l'ordre de son maître
+    if (o.camp === 'h') {
+      const id = HEROS[o.type].capacites.find((k) => { const c = CAPACITES[k]; return c.type === 'attaque' && c.portee === CONTACT && !c.cout && !c.auto; });
+      return id ? { ...attaqueHeros(CAPACITES[id]), id } : null;
+    }
+    const a = ENNEMIS[o.type].atk;
+    return a.portee == null || a.portee === CONTACT ? { ...attaqueEnnemi(o), melee: true } : null;
+  }
+  const peutReagir = (o, u) => o.camp !== u.camp && !o.mort && !o.ko && o.t.reaction && !!attaqueReflexe(o);
+  // Le long d'un chemin, chaque point où le marcheur sort du contact d'une créature d'en face : appelle quitte(o, q, i)
+  // (i : l'indice du point du chemin d'où part ce bout ; il rend true pour s'arrêter). Seulement si elle peut réagir.
+  function sortiesDeContact(u, pts, quitte) {
+    if (u.t.desengage) return;
+    const proches = new Set(S.unites.filter((o) => peutReagir(o, u) && dist(o, u) <= CONTACT));
+    let a = { x: u.x, y: u.y };
+    for (const [i, p] of pts.entries()) {
+      const l = dist(a, p), n = Math.max(1, Math.ceil(l / 0.1));
+      for (let k = 1; k <= n; k++) {
+        const q = { x: a.x + (p.x - a.x) * (k / n), y: a.y + (p.y - a.y) * (k / n) };
+        for (const o of S.unites) {
+          if (!peutReagir(o, u)) { proches.delete(o); continue; }
+          const pres = dist(o, q) <= CONTACT;
+          if (pres) proches.add(o);
+          else if (proches.has(o)) { proches.delete(o); if (quitte(o, q, i)) return; }
+        }
+      }
+      a = p;
+    }
+  }
+  // L'aperçu : qui frappera ce héros s'il prend ce chemin, avec ses chances de toucher et les dégâts d'un touché.
+  function menacesDuChemin(h, pts) {
+    const out = [];
+    sortiesDeContact(h, pts, (o) => {
+      const A = attaqueReflexe(o), c = calculer(o, h, A), ch = chances(A, c);
+      out.push({ id: o.id, nom: o.nom, touche: 1 - ch.rate, degats: fourchette(A, c, 'touche') });
+    });
+    return out;
+  }
   function marcher(u, pts) {
     const parcours = [{ x: u.x, y: u.y }];
-    let fait = 0, vu = surfaceA(u), stop = false;
+    let fait = 0, vu = surfaceA(u), stop = false, montre = 0;
+    // les attaques d'opportunité : où elles tombent sur le chemin (le point, puis l'attaquant)
+    const coups = [];
+    sortiesDeContact(u, pts, (o, q) => { coups.push({ o, q }); });
     for (const p of pts) {
       const a = parcours[parcours.length - 1], l = dist(a, p), n = Math.max(1, Math.ceil(l / 0.1));
       for (let k = 1; k <= n; k++) {
@@ -545,6 +602,18 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         const s = surfaceA(q);
         if (s && s !== vu && s.t !== (vu?.t)) { u.x = q.x; u.y = q.y; stop = entrerSurface(u, s, true); }
         vu = s;
+        // il sort du contact d'une créature d'en face qui a sa réaction : elle frappe, et la marche reprend
+        const ici = coups.filter((c) => Math.abs(c.q.x - q.x) < 1e-9 && Math.abs(c.q.y - q.y) < 1e-9);
+        for (const { o } of ici) {
+          if (stop || u.mort || u.ko || !peutReagir(o, u)) continue;
+          parcours.push(q); u.x = q.x; u.y = q.y;
+          ev({ type: 'marche', id: u.id, chemin: parcours.slice(montre + 1) }); montre = parcours.length - 1;
+          o.t.reaction = false;
+          log(`Attaque d’opportunité : ${o.nom} frappe ${u.nom}, qui s’éloigne.`, o.camp === 'e' ? 'ennemi' : 'combo');
+          flotter(o, 'Opportunité !', 'info');
+          const A = attaqueReflexe(o);
+          attaquer(o, u, { ...A, nom: `${A.nom} (opportunité)` });
+        }
         if (stop || u.mort || u.ko) { parcours.push(q); break; }
       }
       if (stop || u.mort || u.ko) break;
@@ -552,7 +621,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     const fin = parcours[parcours.length - 1];
     u.x = fin.x; u.y = fin.y;
-    ev({ type: 'marche', id: u.id, chemin: parcours.slice(1) });
+    if (parcours.length - 1 > montre) ev({ type: 'marche', id: u.id, chemin: parcours.slice(montre + 1) });
     u.t.mv = Math.max(0, u.t.mv - fait);
     if (u.st.aTerre) u.t.mv = 0;
     jouerApres();
@@ -561,14 +630,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // Le chemin qu'un héros prendrait jusqu'en (x, y), et sa longueur ; ok : il tient dans son déplacement.
   // `P` : sa portée déjà calculée (l'interface la garde tant qu'il ne bouge pas).
   function apercuMarche(h, x, y, P = portee(h)) {
-    if (!peutAgir(h) || !P.atteint({ x, y })) return { ok: false, pts: [], longueur: 0 };
+    if (!peutAgir(h) || !P.atteint({ x, y })) return { ok: false, pts: [], longueur: 0, menaces: [] };
     const pts = chemin(P.carte, h, indiceDe(trame, x, y), genantsDe(h));
-    if (!pts.length) return { ok: false, pts: [], longueur: 0 };
+    if (!pts.length) return { ok: false, pts: [], longueur: 0, menaces: [] };
     // on finit sur le point visé s'il est en ligne droite du point d'avant, sinon au centre de sa maille
     const exact = [...pts.slice(0, -1), { x, y }];
     if (trajetLibre(trame, exact.length > 1 ? exact[exact.length - 2] : h, { x, y }, genantsDe(h)) && longueurChemin(h, exact) <= h.t.mv + 1e-6) pts.splice(0, pts.length, ...exact);
     const longueur = longueurChemin(h, pts);
-    return { ok: longueur <= h.t.mv + 1e-6 && finPossible(h, pts[pts.length - 1]), pts, longueur };
+    return { ok: longueur <= h.t.mv + 1e-6 && finPossible(h, pts[pts.length - 1]), pts, longueur, menaces: menacesDuChemin(h, pts) };
   }
   // L'Élan (CLASS_TEMPLATE.fr.md §4) : +1 par case parcourue (les morceaux de case s'additionnent pendant le tour), max 5.
   function elan(h, cases) {
@@ -634,6 +703,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function commencer() {
     S.debut = horloge(); S.round = 1; S.gi = 0; S.stats.rounds = [];
+    suivreFamiliers(true);                          // (les ennemis sont là : le limier se met derrière son maître)
     log(`Début du combat · ${S.mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} · sans cases.`, 'round');
     if (S.mode === 'initiative') {
       const jets = S.unites.filter((u) => !u.familier).map((u) => ({ id: u.id, v: d(20) + u.dex, dex: u.dex, r: alea() }));
@@ -731,12 +801,15 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const g = attaquer(e, t, attaqueEnnemi(e));
     if (e.type === 'brt' && g !== 'rate' && !t.ko && !t.mort) pousser(e, t, { longueur: 2 });
   }
+  const entame = (h) => h.pv / h.pvMax;            // la part de PV qui reste : plus elle est basse, plus il est blessé
+  const cibleBrute = (e, heros = herosVivants()) => heros.slice().sort((a, b) => entame(a) - entame(b) || dist(a, e) - dist(b, e))[0];
   function agirMelee(e) {
     const heros = herosVivants(); if (!heros.length) return;
-    let t = e.type === 'brt' ? heros.slice().sort((a, b) => a.pv - b.pv || dist(a, e) - dist(b, e))[0] : plusProcheParChemin(e, heros);
+    // la Brute : le plus blessé en part de ses PV (pas en PV bruts : sinon le limier, 30 PV, était toujours sa cible)
+    let t = e.type === 'brt' ? cibleBrute(e, heros) : plusProcheParChemin(e, heros);
     approcher(e, t);
     if (e.mort || S.resultat) return;
-    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => a.pv - b.pv)[0];
+    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => entame(a) - entame(b))[0];
     if (t) attaqueEnnemie(e, t); else log(`${e.nom} avance.`, 'muet');
   }
   function agirArcher(e) {
@@ -810,6 +883,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.slot === 'bonus' && !h.t.bonus) return false;
     if (cap.cout && h.res.v < cap.cout) return false;
     if (cap.type === 'potion' && (h.potion < 1 || h.pv >= h.pvMax)) return false;
+    if (cap.type === 'desengager' && h.t.desengage) return false;
     if (cap.chien && (!familierDe(h) || familierDe(h).ko)) return false;
     return true;
   }
@@ -858,6 +932,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         u.pv += a; ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
       }
       h.res.v = Math.min(h.res.max, h.res.v + 1);
+      return true;
+    }
+    if (cap.type === 'desengager') {          // Se désengager : plus d'attaque d'opportunité pour ce tour
+      payer(h, cap); h.t.desengage = true;
+      flotter(h, 'Désengagé', 'info');
+      log(`${h.nom} se désengage : il peut s’éloigner sans attaque d’opportunité.`);
       return true;
     }
     if (cap.type === 'potion') {
@@ -985,12 +1065,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
 
   return {
-    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
+    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
     portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros },
+    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe },
   };
 }

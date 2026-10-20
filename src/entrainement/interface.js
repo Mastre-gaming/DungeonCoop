@@ -71,6 +71,8 @@ function construire() {
   // en bas à droite : finir la phase (« Je suis prêt » à plusieurs), et annuler le dernier déplacement
   dom.coin = el('div', { class: 'coin-phase bois' },
     dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
+    // l'action commune de tous les héros (#231) : partir du contact sans attaque d'opportunité, pour son action bonus
+    dom.desengager = el('button', { type: 'button', class: 'bouton-jeu discret', id: 'desengager', onclick: () => desengager(), title: 'Action bonus : ce tour-ci, il s’éloigne sans attaque d’opportunité (touche D)' }, el('img', { class: 'bouton-icone', src: icone('desengager'), alt: '' }), 'Se désengager (D)'),
     dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
   // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
   dom.bas = el('div', { class: 'bas-terrain' },
@@ -259,6 +261,13 @@ function choisirCapacite(id) {
   ui.sale = true;
   return true;
 }
+// Se désengager (#231) : l'action commune, sans cible, pour le héros choisi
+function desengager() {
+  const h = herosChoisi();
+  if (!h || vue.occupe() || !utilisable(h, CAPACITES.desengager)) return false;
+  ui.cap = 'desengager';
+  return agir({});
+}
 function agir(cible) {
   const h = herosChoisi(); if (!h || !ui.cap) return false;
   if (reseau) { reseau.agir({ type: 'capacite', id: h.id, cap: ui.cap, cible }); ui.cap = null; ui.portee = null; ui.sale = true; return true; }
@@ -284,13 +293,14 @@ function cliquer(p) {
   const copie = combat.instantane();
   combat.deplacer(h, p.x, p.y, P);
   const evs = combat.S.evenements;
-  if (evs.some((e) => e.type === 'de')) ui.annuler = []; else ui.annuler.push(copie);   // sur la glace, le dé a parlé : pas d'annulation
+  if (evs.some((e) => e.type === 'de' || e.type === 'attaque')) ui.annuler = []; else ui.annuler.push(copie);   // sur la glace, ou une attaque d'opportunité : le dé a parlé, pas d'annulation
   ui.portee = null;
   vider();
 }
 function clavier(e) {
   if (e.target.closest?.('input, textarea')) return;
   if (e.key === 'Escape') { if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; return; }
+  if (e.code === 'KeyD' && !e.ctrlKey && !e.metaKey && !e.altKey) { desengager(); return; }
   if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const camp = e.shiftKey ? 'h' : 'e', oui = vue.basculerPlaques(camp);
     banniere(`Barres de vie ${camp === 'h' ? 'des alliés' : 'des ennemis'} : ${oui ? 'affichées' : 'cachées'}`);
@@ -341,8 +351,11 @@ export function update() {
       if (ui.survol && !vue.sous(ui.survol.x, ui.survol.y)) {
         const a = combat.apercuMarche(h, ui.survol.x, ui.survol.y, portee(h));
         if (a.pts.length) {
-          m.chemin = a.pts; m.cheminOk = a.ok;
-          dom.distance.hidden = false; dom.distance.textContent = `${metres(a.longueur)} m${a.ok ? '' : ' : trop loin'}`;
+          // une attaque d'opportunité sur ce chemin (#231) : il passe en rouge, et dit qui frappera, ses chances et ses dégâts
+          m.chemin = a.pts; m.cheminOk = a.ok; m.cheminDanger = a.ok && a.menaces.length > 0;
+          const menaces = a.ok ? a.menaces.map((x) => `${x.nom} (${Math.round(x.touche * 100)} % · ${x.degats})`).join(', ') : '';
+          dom.distance.hidden = false; dom.distance.classList.toggle('danger', !!menaces);
+          dom.distance.textContent = `${metres(a.longueur)} m${a.ok ? '' : ' : trop loin'}${menaces ? ` · attaque d’opportunité : ${menaces}` : ''}`;
           dom.distance.style.left = `${ui.client.x + 14}px`; dom.distance.style.top = `${ui.client.y + 12}px`;
         }
       }
@@ -480,6 +493,7 @@ function dessinerTout() {
   dom.capacites.style.setProperty('--col', n <= 5 ? n : Math.ceil(n / 2));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
+  { const h = herosChoisi(); dom.desengager.disabled = !h || vue.occupe() || !utilisable(h, CAPACITES.desengager); }
   dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)
   dom.finPhase.classList.toggle('pret', !!reseau?.estPret());
   if (!reseau) dom.finPhase.textContent = 'Fin de la phase des héros';

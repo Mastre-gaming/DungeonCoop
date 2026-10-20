@@ -14,7 +14,7 @@ const ICONES = {
   ronce: 'ronce', liane: 'liane', pluie: 'pluie',
   dague: 'dague', chant: 'chant', moquerie: 'moquerie',
   arc: 'tirRapide', machoires: 'fracas', glu: 'vase', collet: 'liane', lecher: 'soin', mordre: 'dague', rabattre: 'pousser',
-  pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos',
+  pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos', desengager: 'desengager',
 };
 export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;

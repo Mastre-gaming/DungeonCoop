@@ -78,7 +78,7 @@ export function arbitrer(combat, L, qui, a) {
     return combat.deplacer(h, x, y, combat.portee(h));
   }
   if (a.type === 'capacite') {
-    if (!HEROS[h.type].capacites.includes(a.cap)) return false;
+    if (!HEROS[h.type].capacites.includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
     const c = a.cible ?? {}, cible = c.id ? { id: String(c.id) } : Number.isFinite(c.x) && Number.isFinite(c.y) ? { x: c.x, y: c.y } : {};
     return combat.utiliser(h, a.cap, cible);
   }
