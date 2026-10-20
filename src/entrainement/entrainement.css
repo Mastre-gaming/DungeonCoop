@@ -196,7 +196,30 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .flottant.critique-titre { margin-top: -2.5rem; font-size: .95rem; color: #fff0a0; letter-spacing: .06em; text-transform: uppercase; animation: eclate .32s cubic-bezier(.2, 1.6, .4, 1); }
 @keyframes claque { from { transform: translate(-50%, -100%) scale(1.5); } to { transform: translate(-50%, -100%) scale(1); } }
 @keyframes eclate { 0% { transform: translate(-50%, -100%) scale(.4); } 60% { transform: translate(-50%, -100%) scale(1.35); } 100% { transform: translate(-50%, -100%) scale(1); } }
-@media (prefers-reduced-motion: reduce) { .flottant.degats, .flottant.critique-titre { animation: none; } }
+/* les styles à comparer (?ressenti=…, vue.js STYLES) : sobre, percutant (ci-dessus), manga, cinéma */
+[data-ressenti="sobre"] .flottant.degats.touche { font-size: 1.1rem; animation: none; }
+[data-ressenti="sobre"] .flottant.degats.critique { font-size: 1.45rem; animation: claque .2s ease-out; text-shadow: 0 2px 0 #7a1a10, 1px 0 0 #2b1c1d, -1px 0 0 #2b1c1d, 0 -1px 0 #2b1c1d; }
+[data-ressenti="sobre"] .flottant.critique-titre { margin-top: -1.9rem; font-size: .8rem; animation: none; }
+[data-ressenti="manga"] .flottant.degats.touche { font-size: 1.5rem; color: #fff; text-shadow: 0 3px 0 #c22a1a, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d, 0 -2px 0 #2b1c1d; animation: tampon .2s ease-out; }
+[data-ressenti="manga"] .flottant.degats.critique { font-size: 2.9rem; color: #fff; letter-spacing: -.02em; animation: tampon .26s cubic-bezier(.2, 1.4, .4, 1);
+  text-shadow: 3px 3px 0 #c22a1a, -3px 3px 0 #c22a1a, 3px -3px 0 #c22a1a, -3px -3px 0 #c22a1a, 0 6px 0 #2b1c1d, 5px 5px 0 #2b1c1d, -5px 5px 0 #2b1c1d; }
+[data-ressenti="manga"] .flottant.critique-titre { margin-top: -3.4rem; padding: 1px 8px; background: #c22a1a; color: #fff; font-size: .9rem; box-shadow: 0 3px 0 #2b1c1d; animation: tampon .26s cubic-bezier(.2, 1.4, .4, 1); }
+[data-ressenti="cinema"] .flottant.degats.critique { font-size: 2.4rem; animation: tombe .45s cubic-bezier(.5, 0, .7, 1.5);
+  text-shadow: 0 3px 0 #7a1a10, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d, 0 -2px 0 #2b1c1d, 0 0 18px rgba(255, 200, 80, .9); }
+[data-ressenti="cinema"] .flottant.critique-titre { margin-top: -2.8rem; letter-spacing: .3em; font-size: .85rem; animation: apparait .5s ease-out; }
+@keyframes tampon { 0% { transform: translate(-50%, -100%) scale(2.4) rotate(-8deg); opacity: .4; } 70% { transform: translate(-50%, -100%) scale(.92) rotate(-5deg); opacity: 1; } 100% { transform: translate(-50%, -100%) scale(1) rotate(-5deg); } }
+@keyframes tombe { 0% { transform: translate(-50%, -100%) translateY(-34px) scale(1.25); opacity: 0; } 100% { transform: translate(-50%, -100%) scale(1); opacity: 1; } }
+@keyframes apparait { from { opacity: 0; letter-spacing: .8em; } to { opacity: 1; } }
+/* par-dessus le terrain, sous les barres et l'interface : l'éclair de l'écran, les traits de vitesse, le voile sombre */
+.voile-impact { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; --x: 50%; --y: 50%; --flash: 0; --traits: 0; --voile: 0; --tour: 0deg; }
+.voile-impact > div { position: absolute; inset: 0; }
+.vi-flash { background: #fff8e0; opacity: var(--flash); mix-blend-mode: screen; }
+.vi-voile { opacity: var(--voile); background: radial-gradient(circle at var(--x) var(--y), transparent 70px, rgba(10, 6, 14, .55) 150px, rgba(10, 6, 14, .85) 60%); }
+.vi-traits { opacity: var(--traits);
+  background: repeating-conic-gradient(from var(--tour) at var(--x) var(--y), rgba(255, 255, 255, .95) 0deg 1.6deg, transparent 1.6deg 9deg, rgba(255, 240, 200, .8) 9deg 10deg, transparent 10deg 17deg);
+  -webkit-mask: radial-gradient(circle at var(--x) var(--y), transparent 64px, #000 120px, #000 230px, transparent 330px);
+  mask: radial-gradient(circle at var(--x) var(--y), transparent 64px, #000 120px, #000 230px, transparent 330px); }
+@media (prefers-reduced-motion: reduce) { .flottant.degats, .flottant.critique-titre { animation: none !important; } .voile-impact { display: none; } }
 .aide-terrain { left: 8px; bottom: 8px; margin: 0; padding: 4px 8px; font-size: 12px; max-width: 232px; }
 
 /* l'accueil et la fin */

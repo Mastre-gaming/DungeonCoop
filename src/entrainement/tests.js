@@ -676,7 +676,7 @@ export async function selfTest(t, game) {
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
   }
 
-  // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres, sons ------------------------
+  // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres ------------------------
   t.group('le ressenti des coups');
   {
     jouerFile();
@@ -686,8 +686,11 @@ export async function selfTest(t, game) {
       { type: 'degats', id: 's1', n, pv: s1.pv }]);
     const chiffre = (g) => [...document.querySelectorAll(`.flottant.degats.${g}`)].pop();
     const jusquA = (f) => { for (let k = 0; k < 60 && !f(); k++) game.dbg.advance(0.05); return f(); };
+    t.ok(V.ressenti.styles.join() === 'sobre,percutant,manga,cinema' && V.ressenti.style === 'percutant', 'quatre styles à essayer (?ressenti=…) ; Percutant par défaut');
     coup('critique', 24);
-    t.ok(jusquA(() => chiffre('critique')), 'un critique : son chiffre éclate, en gros');
+    let pas = 0;
+    t.ok(jusquA(() => (pas++, chiffre('critique'))), 'un critique : son chiffre éclate, en gros');
+    t.ok(pas * 0.05 < 0.45, `l’impact tombe quand la hache touche, avant la fin de l’animation (après ${(pas * 0.05).toFixed(2)} s ; l’animation dure 0,6 s)`);
     const R = V.ressenti, gelCrit = R.gel;
     t.ok(gelCrit > 0.1 && (R.calme || R.secousse > 4) && a1.eclair > 0.5 && (R.calme || a1.recul),
       `l’impact : arrêt sur image (${Math.round(gelCrit * 1000)} ms), secousse, éclair blanc et recul de la cible`);
@@ -702,11 +705,6 @@ export async function selfTest(t, game) {
     V.jouer([{ type: 'degats', id: 's1', n: 6, pv: s1.pv }]);
     t.ok(jusquA(() => chiffre('autre')), 'des dégâts sans jet (le feu, un mur) : un impact léger');
     jouerFile();
-    const b = document.querySelector('#son-combat'), avant = b.textContent;
-    b.click();
-    t.ok(b.textContent !== avant && b.getAttribute('aria-pressed') === String(b.textContent === 'Son : oui'), `le bouton des sons : ${avant} → ${b.textContent}`);
-    b.click();
-    t.eq(b.textContent, avant, 'un autre clic le remet');
   }
 
   // --- À plusieurs (#80) : les règles du lobby, puis cette page en hôte, puis chez un ami ------------------------

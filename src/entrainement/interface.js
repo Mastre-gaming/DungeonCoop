@@ -15,7 +15,6 @@ import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './f
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
 import { medaillon } from '../33_cadres.js';
-import * as son from './son.js';
 
 export const name = 'interface';
 export const always = true;
@@ -55,8 +54,6 @@ export function init(g, options) {
 }
 
 // --- La page ----------------------------------------------------------------------------------------------------
-// le bouton des sons du combat (son.js) : il dit l'état, un clic le change
-function majSon() { const m = son.estMuet(); dom.son.textContent = m ? 'Son : non' : 'Son : oui'; dom.son.setAttribute('aria-pressed', String(!m)); }
 function construire() {
   dom.haut = el('header', { class: 'haut-terrain plaque' },
     el('strong', { class: 'titre-terrain' }, 'Terrain d’entraînement'),
@@ -64,9 +61,7 @@ function construire() {
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
     dom.boutonFiche = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => montrerFin(true) }, 'Fiche'),
-    dom.son = el('button', { type: 'button', class: 'bouton-jeu discret', id: 'son-combat', title: 'Les sons du combat', onclick: () => { son.basculer(); majSon(); } }),
     el('a', { class: 'bouton-jeu retour-camp', id: 'retour-camp', href: RETOUR_CAMP }, 'Retour au camp'));
-  majSon();
   dom.equipe = el('aside', { class: 'equipe-terrain', 'aria-label': 'Les héros' });
   // le journal, en haut à droite : les dernières lignes ; « Tout » le déplie
   dom.droite = el('aside', { class: 'droite-terrain' },
