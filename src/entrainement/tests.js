@@ -255,6 +255,20 @@ export async function selfTest(t, game) {
     const m = trouver(C, 'mage');
     poser(C, m.id, tr.x - 2, tr.y + 2); m.pv = 80; m.st.gele = { n: 1, par: null }; tr.t.bonus = true;
     t.ok(C.utiliser(tr, 'lecher', { id: m.id }) && m.pv >= 91 && m.pv <= 94 && !m.st.gele, `Lécher les plaies : +${m.pv - 80} PV à la Mage (11 à 14), et elle n’est plus Gelée`);
+    // Lié à sa bête : le limier est une créature du combat ; tombé, son maître a le désavantage et ne lui donne plus d'ordre
+    const chien = C.S.unites.find((u) => u.familier && u.maitre === tr.id), ko0 = C.S.stats.ko;
+    t.ok(chien && chien.camp === 'h' && chien.pv === 30 && dist(chien, tr) < 2, `le limier est sur le terrain, à côté du Traqueur (${dist(chien, tr).toFixed(1)} case) : 30 PV`);
+    t.ok(!C.groupeCourant().ids.includes(chien.id) && C.cibles(tr, CAPACITES.lecher).every((c) => c.id !== chien.id), 'il n’a pas de tour à lui, et ne se lèche pas lui-même');
+    const a2 = C.U('a2'); a2.x = chien.x + 1; a2.y = chien.y;
+    C._.attaquer(a2, chien, { nom: 'Coup', mod: 30, dmod: 0, base: 40, de: 4, melee: true });
+    t.ok(chien.ko && !C.S.resultat && C.S.stats.ko === ko0, 'un ennemi l’abat : il tombe (ni défaite, ni héros KO de plus)');
+    const s5 = C.U('s3'), arc = () => C._.calculer(tr, s5, C._.attaqueHeros(CAPACITES.arc));
+    t.ok(arc().notes.includes('son limier est à terre : désavantage'), 'le Traqueur attaque avec le désavantage');
+    tr.t.bonus = true;
+    t.ok(!C.peutUtiliser(tr, CAPACITES.mordre) && !C.peutUtiliser(tr, CAPACITES.rabattre), 'et ne peut plus lui donner d’ordre');
+    poser(C, tr.id, chien.x + 1, chien.y); tr.t.action = true;
+    t.ok(C.utiliser(tr, 'relever', { id: chien.id }) && !chien.ko && !arc().notes.some((n) => n.includes('limier')) && C.peutUtiliser(tr, CAPACITES.mordre),
+      'il le relève (une action, au contact) : plus de désavantage, les ordres reviennent');
   }
   for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9], [['shadow', 'brute', 'mage', 'gardien'], 4]]) {
     const C = essai(equipe, { alea: graine(s) });
