@@ -101,6 +101,13 @@ export async function testsTitre(t) {
     await titre.retirer();
   }
   t.ok(!document.querySelector('#titre') && !document.documentElement.classList.contains('a-titre'), 'retiré : plus rien de l’écran titre dans la page');
+  // (le 20 oct : le style de l'écran titre visait « .titre », la classe du sous-titre du médaillon du HUD — « Bâtisseur »
+  // chez un joueur connu de la sentinelle — qui devenait un rideau noir plein écran par-dessus le camp)
+  const sousTitre = document.createElement('span');
+  sousTitre.className = 'titre'; sousTitre.textContent = 'Bâtisseur'; document.body.append(sousTitre);
+  const cs = getComputedStyle(sousTitre);
+  t.ok(cs.position !== 'fixed' && cs.zIndex !== '50', 'le style de l’écran titre ne touche pas une autre « .titre » du jeu (le sous-titre du médaillon)');
+  sousTitre.remove();
   // « Retour au dashboard » depuis le menu : la caméra remonte au ciel de nuit, puis on part (ici, sans partir)
   let vers = null;
   const t2 = creerTitre({ images, stamp: 'test', figer: true, aller: (u) => { vers = u; } });

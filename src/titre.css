@@ -1,11 +1,11 @@
 /* L'écran titre (src/45_titre.js) : la scène en pixels ; le menu et « Autour du feu » dans le cadre de bois du HUD épique
    (hud.css, .cadre-epique), des plaques de bois aux bords nets dedans.
    --s : la taille d'un pixel du HUD, en pixels d'écran ; --px : la même chose, en longueur CSS. */
-.titre { --s: 3; --px: calc(var(--s) * 1px); position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #07040b; color: var(--creme);
+.ecran-titre { --s: 3; --px: calc(var(--s) * 1px); position: fixed; inset: 0; z-index: 50; overflow: hidden; background: #07040b; color: var(--creme);
   font-family: var(--titre); }
 /* pendant les passages vers le camp et depuis le camp (45_titre.js : retirer, remonter), l'écran titre se dissout en trame
    sur le camp : son fond devient transparent, et il ne prend plus la souris */
-.titre.transparent { background: transparent; pointer-events: none; }
+.ecran-titre.transparent { background: transparent; pointer-events: none; }
 html.a-titre #aide, html.a-titre #tampon, html.a-titre #chargement { visibility: hidden; }
 .titre-scene { position: absolute; left: 0; top: 0; image-rendering: pixelated; image-rendering: crisp-edges; }
 .titre-bascule { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; pointer-events: none; image-rendering: pixelated; }
@@ -14,8 +14,8 @@ html.a-titre #aide, html.a-titre #tampon, html.a-titre #chargement { visibility:
 
 /* pendant le portail, et dès qu'on a choisi : le HUD s'efface */
 .titre-menu, .titre-equipe, .titre-aide, .titre-tampon { transition: opacity .35s steps(4), transform .35s steps(4); }
-.titre.intro .titre-menu, .titre.intro .titre-equipe, .titre.intro .titre-aide, .titre.intro .titre-tampon { opacity: 0; transform: translateY(calc(var(--px) * 4)); }
-.titre.fini .titre-menu, .titre.fini .titre-equipe, .titre.fini .titre-aide, .titre.fini .titre-tampon { opacity: 0; }
+.ecran-titre.intro .titre-menu, .ecran-titre.intro .titre-equipe, .ecran-titre.intro .titre-aide, .ecran-titre.intro .titre-tampon { opacity: 0; transform: translateY(calc(var(--px) * 4)); }
+.ecran-titre.fini .titre-menu, .ecran-titre.fini .titre-equipe, .ecran-titre.fini .titre-aide, .ecran-titre.fini .titre-tampon { opacity: 0; }
 
 /* --- Le menu -------------------------------------------------------------------------------------------------------- */
 .titre-menu.cadre-epique { position: absolute; display: grid; gap: calc(var(--px) * 2.5); box-sizing: border-box; width: calc(var(--px) * 104);
@@ -60,7 +60,7 @@ html.a-titre #aide, html.a-titre #tampon, html.a-titre #chargement { visibility:
 /* --- Autour du feu : les héros de l'équipe (la règle des sièges), en bas au milieu ------------------------------------- */
 .titre-equipe.cadre-epique { position: absolute; left: 50%; bottom: calc(var(--px) * 5); transform: translateX(-50%); margin: 0;
   padding: calc(var(--px) * 1) calc(var(--px) * 4) calc(var(--px) * 2); display: grid; justify-items: center; gap: calc(var(--px) * 1); }
-.titre.intro .titre-equipe.cadre-epique { transform: translate(-50%, calc(var(--px) * 4)); }
+.ecran-titre.intro .titre-equipe.cadre-epique { transform: translate(-50%, calc(var(--px) * 4)); }
 .titre-equipe h2 { margin: 0; font: 700 calc(var(--px) * 5) / 1 var(--titre); color: var(--or); letter-spacing: .08em; text-transform: uppercase; text-shadow: var(--contour-or); }
 .titre-equipe ul { display: flex; gap: calc(var(--px) * 6); margin: 0; padding: 0; list-style: none; }
 .titre-equipe li { display: grid; justify-items: center; gap: calc(var(--px) * .5); min-width: calc(var(--px) * 26); }
