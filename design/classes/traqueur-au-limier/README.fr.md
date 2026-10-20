@@ -64,7 +64,7 @@ Au niveau 1, environ 12 à 15 par round, soit un cinquième des dégâts de l'é
 ## Comment c'est fait
 - **Le Traqueur** est le personnage du générateur LPC, tel quel : capuche brune, manteau marron fourré, mantelet et pantalon vert foncé, écharpe et bandoulière noires, bracelets de bronze, ceinture de cuir, bottes à revers noires, carquois et arc long, barbe de trois jours (le lien est en tête de `public/assets/credits/entrainement-traqueur-au-limier.txt`). Le look a été choisi par Paolitus parmi une dizaine de variantes rendues.
 - **Le limier et ses étapes** partent du loup de « [LPC] Wolf Animation » (Redshrike, OpenGameArt), repeint selon la clarté de chaque pixel. Le malinois : robe fauve, masque noir qui fonce en dégradé du cou au museau, voile charbonné sur le dos (des poils épars, pas une selle), sans collier. Le loup : gris. Le loup alpha : sombre et bleuté. Pour l'instant, le masque et le voile ne sont peints que sur les vues de profil.
-- **Au camp** (`src/47_limier.js`) : quand le héros incarné est le Traqueur, le limier le suit sur ses traces, un peu derrière lui, et s'arrête avec lui. Il ne bloque personne. Pour l'instant, il n'est que chez soi : les autres joueurs voient le Traqueur sans son chien.
+- **Au camp** (`src/47_limier.js`) : quand le héros incarné est le Traqueur, le limier le suit sur ses traces, un peu derrière lui, et s'arrête avec lui. Il ne bloque personne. À plusieurs, chaque joueur voit le limier de tout ami qui incarne le Traqueur : rien de plus ne passe sur le réseau, chacun le fait suivre la copie de cet ami.
 
 ## Au terrain d'entraînement
 Le Traqueur est la 9e classe à choisir au terrain (`src/entrainement/regles.js`), la première vraie classe de l'équipe à s'y battre. Ce qui y est joué, au niveau 1 :
