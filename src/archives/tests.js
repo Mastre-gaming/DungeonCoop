@@ -22,7 +22,7 @@ export async function selfTest(t, game) {
   t.eq(C.personnages.filter((p) => p.ennemi).length, MOBS.length, `une carte par fichier de content/ennemis/ (${MOBS.length})`);
   t.ok(MOBS.every((m) => m.id && m.nom && m.rang && m.pv > 0 && m.capacites?.length && (m.rang !== 'boss' || m.mecanique_combo)), 'chaque ennemi a son rang, ses PV, ses attaques (et un boss, sa mécanique de combo)');
   t.eq(C.personnages.filter((p) => p.groupe !== 'Le camp' && !p.ennemi).length, Object.keys(PERSOS).length, `les ${Object.keys(PERSOS).length} personnages du terrain d’entraînement`);
-  t.ok(['heros-camp', 'sentinelle', 'barde-camp', 'rat-conflit', 'rat-tests', 'rat-relecture'].every((id) => C.personnages.some((p) => p.id === id)), 'et ceux du camp : le héros de départ, la sentinelle, le barde, les 3 rats');
+  t.ok(['heros-camp', 'sentinelle', 'crieur', 'barde-camp', 'rat-conflit', 'rat-tests', 'rat-relecture'].every((id) => C.personnages.some((p) => p.id === id)), 'et ceux du camp : le héros de départ, la sentinelle, le crieur, le barde, les 3 rats');
   t.eq(C.classes.filter((c) => c.source === 'regles').length, Object.keys(HEROS).length, 'les 8 classes jouables au terrain');
   t.ok(C.classes.filter((c) => c.source === 'armurerie').length >= 5, 'les fiches de l’armurerie (content/classes/)');
   t.eq(C.sorts.length, Object.keys(CAPACITES).length, `toutes les capacités (${Object.keys(CAPACITES).length})`);
@@ -85,5 +85,23 @@ export async function selfTest(t, game) {
   t.ok(q('#ouvrir-armurerie') && q('.detail-archives').textContent.includes('115 PV'), 'une fiche de l’armurerie : ses PV calculés (115), et « Ouvrir dans l’armurerie »');
   t.ok(!q('.archives').textContent.includes('null'), 'aucun « null » à l’écran');
   t.ok(etat.nombre > 0 && qa('canvas.apercu').every((c) => c.apercu), 'chaque aperçu est suivi par la boucle des archives');
+  // Baba Brisenclume : sa planche, ses gestes à la forge, ses scènes
+  vue.changerOnglet('personnages');
+  vue.choisir('baba-brisenclume');
+  t.ok(!q('.detail-archives [data-valeur="tir"]') && q('.detail-archives [data-valeur="taille"]'), 'Baba Brisenclume : ses animations LPC, sans le tir (le corps musclé n’en a pas)');
+  clic(q('#voir-fiche'));
+  t.ok(vue.onglet === 'classes' && vue.choix === 'fiche-baba-brisenclume', '« Voir sa fiche de classe » ouvre sa fiche de l’armurerie');
+  const liens = qa('.detail-archives [data-scene]').map((b) => b.dataset.scene);
+  t.eq(liens.join(' '), 'marteau tenailles tenailles-allie tenailles-enclume lame-ardente trempe chute-enclume interposition chef-oeuvre-combattant chef-oeuvre-soutien chef-oeuvre-distance chef-oeuvre-mage', 'sa fiche mène aux animations de toutes ses capacités (les Tenailles sur trois cibles, le Chef-d’œuvre par archétype)');
+  clic(q('.detail-archives [data-scene="chute-enclume"]'));
+  t.ok(vue.onglet === 'animations' && vue.choix === 'chute-enclume' && q('.detail-archives .scene-grande canvas'), 'la Chute d’Enclume : sa scène en grand');
+  vue.changerOnglet('personnages');
+  vue.choisir('baba-forge');
+  const forge = q('.detail-archives .scene-grande canvas').apercu;
+  t.ok(['forge', 'attise', 'sonne', 'marche', 'feu'].every((g) => q(`.detail-archives [data-valeur="${g}"]`)) && forge.joue.durees?.length === 8, 'Baba à la forge : ses cinq gestes, et la frappe joue ses 8 images à leurs durées');
+  clic(q('.detail-archives [data-valeur="attise"]')); game.dbg.advance(0.1);
+  t.ok(forge.joue.sy === 64 && forge.cadre?.sw === 96 && !q('.detail-archives [data-valeur="gauche"]'), 'il attise le feu : sa rangée, sans flèches de direction');
+  clic(q('.detail-archives [data-valeur="marche"]')); clic(q('.detail-archives [data-valeur="gauche"]')); game.dbg.advance(0.1);
+  t.ok(forge.joue.sy === 5 * 64 && forge.cadre.sx >= 96, 'il marche vers la gauche : sa rangée, la boucle commence à l’image 1');
   vue.changerOnglet('personnages');
 }

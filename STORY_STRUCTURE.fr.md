@@ -47,7 +47,7 @@ L'histoire reste dans des emplacements fixes : un combat n'est jamais coupé.
 | Avant la salle 1 | **ouverture** : où on est, pourquoi on entre | oui : une nouvelle version chaque fois que la chaîne avance |
 | 3 (événement) | le **maillon d'histoire suivant**, ou un événement d'ambiance | oui |
 | 4 et 8 (repos) | une **réplique au coin du feu** entre héros | oui, et selon les archétypes présents |
-| 7 (boutique) | répliques du marchand (facultatif) | peuvent réagir aux drapeaux |
+| 7 (échoppe) | répliques de l'échoppier (facultatif) | peuvent réagir aux drapeaux |
 | 9 (boss) | **arrivée du boss** avant, **moment d'après** une fois gagné ; pose le drapeau du boss | l'arrivée peut rappeler les parties d'avant |
 | Après le boss | l'usure du Boss final monte (partie 3) | |
 
@@ -77,7 +77,7 @@ Le format du fichier sera fixé dans `docs/REGLES_CONTENU.md` à l'étape M2. Un
 | Champ | Ce que c'est |
 |---|---|
 | id, chapitre, auteur | ce que c'est, où ça va, qui l'a écrit |
-| sorte | ouverture · maillon d'histoire · ambiance · feu de camp · boutique · arrivée du boss · après le boss |
+| sorte | ouverture · maillon d'histoire · ambiance · feu de camp · échoppe · arrivée du boss · après le boss |
 | besoins | les drapeaux qu'il attend (aucun pour l'ambiance) |
 | pose | les drapeaux qu'il pose une fois joué |
 | ordre | sa place dans la chaîne (maillons d'histoire seulement) |

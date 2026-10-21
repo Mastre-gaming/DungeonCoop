@@ -6,6 +6,11 @@ import { createLoopback, createParty } from './skills/party-net/module/03_skill.
 import { LIEUX_AXES } from './10_missions.js';
 import { testsHudEpique } from './34_tests_hud.js';
 import { testsArmurerie } from './35_tests_armurerie.js';
+import { testsPlace } from './37_tests_place.js';
+import { testsTableau } from './39_tests_tableau.js';
+import { testsPlans } from './46_tests_plans.js';
+import { HEROS } from './41_choix_heros.js';
+import { testsTitre } from './45_tests_titre.js';
 
 export const name = 'camp';
 let ctx;
@@ -23,16 +28,25 @@ function tenir(liste) {
 // Marche à pied (touches tenues) jusqu'à (bx, by). Renvoie { arrive, coince: [x, y] | null, temps, traverse }.
 function marcherVers(bx, by, { courir = false, limite = 40 } = {}) {
   const { heros, collision, game } = ctx, h = heros.heros, pas = 1 / 30;
-  const route = collision.chemin(h.x, h.y, bx, by);
+  let route = collision.chemin(h.x, h.y, bx, by);
   if (!route) return { arrive: false, coince: [Math.round(h.x), Math.round(h.y)], temps: 0, introuvable: true };
-  let k = 0, temps = 0, immobile = 0, traverse = null;
+  // un joueur qui bute (à huit directions, une pente douce le fait couper le coin d'un poteau) repart de là où il est :
+  // sans progrès vers le point visé pendant une seconde, on recalcule le chemin depuis sa place (quatre fois au plus)
+  let k = 0, temps = 0, immobile = 0, traverse = null, proche = Infinity, sansProgres = 0, reprises = 0;
   while (temps < limite) {
     if (k >= route.length) break;
-    const [tx, ty] = route[k], vx = tx - h.x, vy = ty - h.y;
-    if (Math.hypot(vx, vy) < 4) { k++; continue; }
-    const l = [];
-    if (vx < -1) l.push(touches.gauche); else if (vx > 1) l.push(touches.droite);
-    if (vy < -1) l.push(touches.haut); else if (vy > 1) l.push(touches.bas);
+    const [tx, ty] = route[k], vx = tx - h.x, vy = ty - h.y, d = Math.hypot(vx, vy);
+    if (d < 4) { k++; proche = Infinity; sansProgres = 0; continue; }
+    if (d < proche - 1) { proche = d; sansProgres = 0; }
+    else if ((sansProgres += pas) > 1 && reprises < 4) {
+      const autre = collision.chemin(h.x, h.y, bx, by);
+      if (autre) { route = autre; k = 0; proche = Infinity; sansProgres = 0; reprises++; continue; }
+    }
+    // les flèches de la direction voulue, en huit directions (secteurs de 45°) : une route presque horizontale se suit
+    // avec une seule flèche, comme le ferait un joueur, au lieu de partir en diagonale et de quitter la route
+    const l = [], s8 = 0.38 * d;
+    if (vx < -s8) l.push(touches.gauche); else if (vx > s8) l.push(touches.droite);
+    if (vy < -s8) l.push(touches.haut); else if (vy > s8) l.push(touches.bas);
     if (courir) l.push(touches.courir);
     tenir(l);
     const x0 = h.x, y0 = h.y;
@@ -88,7 +102,7 @@ export async function selfTest(t, game) {
   if (visite) {
     t.group('la vue visite');
     t.ok(rendu.vue.w >= W * T - 0.5 && rendu.vue.h >= H * T - 0.5, `tout le camp tient dans le cadre (vue ${Math.round(rendu.vue.w)} x ${Math.round(rendu.vue.h)})`);
-    t.ok(ctx.muraille.fantome === 0 && ctx.muraille.opacite === 1, 'en visite, la muraille de l’entrée est pleine');
+    t.ok(ctx.muraille.estompe === 0 && ctx.muraille.opacite === 1, 'en visite, la muraille de l’entrée est pleine');
     game.dbg.freeze(false);
     return;
   }
@@ -200,17 +214,30 @@ export async function selfTest(t, game) {
   t.eq(ouvertes, [], 'la muraille et les douves bloquent partout, sauf à la porte');
   t.ok(rangees.every((j) => !collision.bloque((p0 + 1) * T, (j + 0.6) * T)), `la porte et le pont-levis sont ouverts (colonnes ${p0} et ${p1})`);
   const route = [15 * T, (H - 1.4) * T];
-  heros.placer(...route, 'haut'); camera.snap(); game.dbg.advance(0.5);
-  t.ok(muraille.fantome === 0 && muraille.opacite === 1, 'sur la route, dehors : la muraille est pleine');
+  heros.placer(...route, 'haut'); camera.snap(); game.dbg.advance(2);   // (la muraille revient en douceur)
+  const pleine = () => muraille.estompe === 0 && Math.abs(muraille.opacite - 1) < 0.01 && muraille.flou === 0;
+  t.ok(pleine(), 'sur la route, dehors : la muraille est pleine et nette');
   const parLaPorte = marcherVers(...devantFeu(), { limite: 60 });
   rapport.push({ vers: 'le feu, depuis la route, par la porte', ...parLaPorte });
   t.ok(parLaPorte.arrive && !parLaPorte.traverse, `depuis la route, par le pont et la porte, jusqu’au feu${parLaPorte.arrive ? ` (${parLaPorte.temps.toFixed(1)} s)` : ` : coincé en (${parLaPorte.coince})`}`);
-  game.dbg.advance(0.5);
-  t.ok(muraille.fantome === 1 && muraille.floue && Math.abs(muraille.opacite - 0.2) < 0.01, `dedans : la muraille est fantôme (opacité ${muraille.opacite.toFixed(2)}, floue)`);
-  heros.placer(15 * T, (MURAILLE.pied - 1.2) * T, 'bas'); camera.snap(); game.dbg.advance(0.1);
-  t.ok(muraille.fantome > 0, 'sous la voûte, déjà fantôme (le héros n’est jamais caché par la porte)');
-  heros.placer(...route, 'haut'); game.dbg.advance(0.5);
-  t.ok(muraille.fantome === 0 && muraille.opacite === 1, 'ressorti : la muraille redevient pleine');
+  game.dbg.advance(2);
+  t.ok(muraille.opacite < 0.01, `au feu, loin de la muraille : elle a disparu (opacité ${muraille.opacite.toFixed(2)})`);
+  // en reculant vers la muraille, elle revient : de plus en plus nette et visible (demande de Mope, 18 oct)
+  const vu = [];
+  for (const d of [8, 5, 2.5, 0.8]) {
+    heros.placer(15 * T, (MURAILLE.pied - d) * T, 'bas'); camera.snap(); game.dbg.advance(2);
+    vu.push({ d, o: muraille.opacite, f: muraille.flou });
+  }
+  t.ok(vu.every((v, i) => i === 0 || (v.o > vu[i - 1].o && v.f <= vu[i - 1].f)), `plus près de la muraille, plus visible et moins floue (${vu.map((v) => `${v.d} cases : ${Math.round(v.o * 100)} %, flou ${v.f}`).join(' ; ')})`);
+  t.ok(vu[3].o > 0.5 && vu[3].o < 0.9 && vu[3].f <= 0.8, 'collée à la muraille, sous la voûte : presque nette, un peu transparente (le héros reste visible)');
+  t.ok(vu[0].o < 0.15 && vu[0].f >= 2.6, 'à 8 cases : très floue, presque disparue');
+  // en ressortant, elle redevient pleine en douceur, sans à-coup à la fin
+  heros.placer(...route, 'haut');
+  const sortie = [muraille.opacite];
+  for (let n = 0; n < 60; n++) { game.dbg.advance(1 / 30); sortie.push(muraille.opacite); }
+  const saut = Math.max(...sortie.slice(1).map((o, n) => Math.abs(o - sortie[n])));
+  t.ok(saut < 0.12 && sortie.every((o, n) => n === 0 || o >= sortie[n - 1] - 1e-6), `en ressortant, la muraille revient en douceur (plus grand saut d’une image à l’autre : ${Math.round(saut * 100)} %)`);
+  t.ok(pleine(), 'ressorti : la muraille redevient pleine');
   heros.placer(15 * T, (H - 0.2) * T, 'bas'); camera.snap();
   tenir(['ArrowDown']); game.dbg.advance(1.5); tenir([]);
   t.ok(h.y <= H * T, 'au bout de la route, le bord de la carte arrête le héros');
@@ -230,7 +257,8 @@ export async function selfTest(t, game) {
   const caches = [...LIEUX.map((l) => [l.id, devant(l)]), ['feu', devantFeu()], ['apparition', [APPARITION[0] * T, APPARITION[1] * T]]]
     .filter(([, [x, y]]) => cache(x, y)).map(([id]) => id);
   t.eq(caches, [], 'devant chaque lieu, au feu et à l’apparition, aucune cime ne cache le héros');
-  t.ok(camp.objets.length > 300, `les bois et les emplacements sont posés (${camp.objets.length} pièces)`);
+  // (plus de 250 : la rangée d'arbres du haut, derrière le mur nord, est enlevée depuis les murs qui montent, 45_murs.js)
+  t.ok(camp.objets.length > 250, `les bois et les emplacements sont posés (${camp.objets.length} pièces)`);
   t.ok(document.querySelector('#tampon')?.textContent.includes(game.stamp), 'le tampon de version est à l’écran');
 
   testsMissions(t, game);
@@ -242,8 +270,12 @@ export async function selfTest(t, game) {
   testsHudEpique(t, ctx, game);   // le HUD épique (DESIGN.fr.md) : src/34_tests_hud.js
   testsBoite(t, game);
   testsArmurerie(t, ctx);   // l'armurerie et ses 5 niveaux : src/35_tests_armurerie.js
+  testsPlace(t, ctx);       // la place du village et ses 5 niveaux : src/37_tests_place.js
+  await testsTitre(t);      // l'écran titre : src/45_tests_titre.js
+  testsTableau(t, ctx, game);   // le tableau d'affichage qui devient pierre, et son crieur : src/39_tests_tableau.js
   await testsDirect(t, game);
   await testsTableauGithub(t, game);
+  await testsPlans(t, ctx);   // l'onglet Plans du tableau des missions : src/46_tests_plans.js
   await testsParties(t, game);
 
   heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'bas'); camera.snap();
@@ -546,8 +578,8 @@ function testsReseau(t, game) {
   const hub = createLoopback({ latency: 0.03, jitter: 0.01 });
   const pas = 1 / 60;
   const ami = (nom) => {
-    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0 }, recus: [] };
-    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 },
+    const P = { me: { x: 20 * T, y: 15 * T, vx: 0, vy: 0, dir: 2, court: 0, bouge: 0, heros: 0 }, recus: [] };
+    P.party = createParty({ transport: () => hub.transport(), fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge', 'heros'], me: () => P.me, name: () => nom, now: () => hub.time, settings: { snap: 320 },
       on: (type, d) => { if (type === 'game') P.recus.push(d.m); } });
     return P;
   };
@@ -571,6 +603,29 @@ function testsReseau(t, game) {
   let pire = 0;
   jouer(2, (temps) => { ana.me.vx = 74; ana.me.x += 74 * pas; ana.me.bouge = 1; ana.me.dir = 3; const o = party.others.values().next().value; if (o && temps > 0.5) pire = Math.max(pire, Math.abs(o.shown.x - ana.me.x)); });
   t.ok(pire < 12, `Ana marche : sa copie la suit à ${pire.toFixed(1)} px près`);
+  // Ana incarne un héros : sa copie le porte, et ce héros quitte le camp (Baba sa forge, les autres leur promenade)
+  const { forgeron, promeneurs } = game.dbg, copieAna = () => [...reseau.copies.values()][0];
+  const prendre = (id) => { ana.me.heros = HEROS.findIndex((x) => x.id === id); jouer(0.3); };
+  prendre('baba-brisenclume');
+  t.ok(copieAna().heros.id === 'baba-brisenclume' && (!forgeron || forgeron.absent), 'Ana incarne Baba Brisenclume : sa copie le porte, et Baba quitte sa forge');
+  prendre('barde');
+  const barde = promeneurs?.promeneurs.find((p) => p.h.id === 'barde');
+  t.ok(copieAna().heros.id === 'barde' && (!barde || (barde.absent && !barde.sprite.mesh.visible)) && (!forgeron || !forgeron.absent), 'Ana prend la Barde : la Barde ne se promène plus, Baba revient à sa forge');
+  // Ana incarne le Traqueur au limier : Paul voit son limier la suivre (rien de plus ne passe sur le réseau)
+  const { limier } = game.dbg;
+  if (limier) {
+    prendre('traqueur-au-limier');
+    const lAna = () => [...limier.amis.values()][0];
+    t.ok(limier.amis.size === 1 && lAna()?.actif, 'Ana incarne le Traqueur au limier : son limier apparaît chez Paul');
+    const x0 = ana.me.x;
+    jouer(1.5, () => { ana.me.vx = -60; ana.me.x -= 60 * pas; ana.me.bouge = 1; ana.me.dir = 1; });
+    const c = copieAna(), l = lAna();
+    t.ok(l.dir === 'gauche' && l.x - c.x > 10 && l.x - c.x < 60 && (!l.sprite || l.sprite.mesh.visible), `Ana marche vers la gauche : son limier la suit, ${Math.round(l.x - c.x)} px derrière elle`);
+    ana.me.x = x0; ana.me.vx = 0; ana.me.bouge = 0;
+    prendre('depart');
+    t.ok(limier.amis.size === 0, 'Ana change de héros : son limier s’en va');
+  }
+  prendre('depart');
   // Paul marche : Ana le voit bouger
   const vu = () => [...ana.party.others.values()].find((o) => o.name === 'Paul')?.shown.x ?? 0;
   heros.placer(18 * T, 17 * T, 'droite'); jouer(0.5);
@@ -691,7 +746,9 @@ function testsHud(t, game) {
   const touche = (code) => { window.dispatchEvent(new KeyboardEvent('keydown', { code })); game.dbg.advance(0.05); window.dispatchEvent(new KeyboardEvent('keyup', { code })); game.dbg.advance(0.02); };
   t.group('le HUD : la barre d’action');
   const cases = [...hud.barre.querySelectorAll('.case')];
-  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres', 'reglages'], 'sept cases, une par partie du dashboard, puis les réglages (#95)');
+  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres', 'reglages', 'dashboard'], 'sept cases, une par partie du dashboard, puis les réglages (#95) et le retour au dashboard');
+  const versDash = cases.at(-1);
+  t.ok(!versDash.classList.contains('bientot') && versDash.textContent.includes('B') && versDash.querySelector('canvas'), 'la case « Retour au dashboard » (B) est prête, avec son arche');
   t.ok(cases.every((c) => c.querySelector('canvas.icone') && c.querySelector('kbd')), 'chacune avec son icône en pixels et sa touche');
   t.ok(cases.every((c) => !c.classList.contains('bientot')), 'toutes les cases sont prêtes');
   panneau.fermer();

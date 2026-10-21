@@ -1,0 +1,566 @@
+{
+ "_lisez_moi": "Fabriqué par design/camp/outils/chantier_jeu.py : ne pas modifier à la main.",
+ "pieces": [
+  {
+   "nom": "souche",
+   "x": 70,
+   "y": 112,
+   "sx": 923,
+   "sy": 0,
+   "sw": 25,
+   "sh": 25,
+   "pied": 137,
+   "bloque": [
+    72,
+    129,
+    21,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "souche et hache",
+   "x": 150,
+   "y": 104,
+   "sx": 590,
+   "sy": 0,
+   "sw": 32,
+   "sh": 31,
+   "pied": 135,
+   "bloque": [
+    152,
+    127,
+    28,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "bûches",
+   "x": 84,
+   "y": 128,
+   "sx": 528,
+   "sy": 0,
+   "sw": 30,
+   "sh": 32,
+   "pied": 160,
+   "bloque": [
+    86,
+    152,
+    26,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "chèvre de levage",
+   "x": 168,
+   "y": 25,
+   "sx": 67,
+   "sy": 0,
+   "sw": 49,
+   "sh": 100,
+   "pied": 125,
+   "bloque": [
+    170,
+    116,
+    46,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "palette nord",
+   "x": 232,
+   "y": 100,
+   "sx": 623,
+   "sy": 0,
+   "sw": 34,
+   "sh": 30,
+   "pied": 130,
+   "bloque": [
+    234,
+    122,
+    30,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "palette nord 2",
+   "x": 272,
+   "y": 108,
+   "sx": 949,
+   "sy": 0,
+   "sw": 34,
+   "sh": 22,
+   "pied": 130,
+   "bloque": [
+    274,
+    122,
+    30,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "bûches du bûcheron",
+   "x": 588,
+   "y": 134,
+   "sx": 559,
+   "sy": 0,
+   "sw": 30,
+   "sh": 32,
+   "pied": 166,
+   "bloque": [
+    590,
+    158,
+    26,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "masse",
+   "x": 524,
+   "y": 86,
+   "sx": 492,
+   "sy": 0,
+   "sw": 17,
+   "sh": 45,
+   "pied": 131,
+   "bloque": null,
+   "fin": "tout"
+  },
+  {
+   "nom": "brouette",
+   "x": 440,
+   "y": 78,
+   "sx": 117,
+   "sy": 0,
+   "sw": 82,
+   "sh": 62,
+   "pied": 140,
+   "bloque": [
+    442,
+    132,
+    78,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "porte nord, base ouest",
+   "x": 267,
+   "y": 31,
+   "sx": 360,
+   "sy": 0,
+   "sw": 32,
+   "sh": 48,
+   "pied": 79,
+   "bloque": [
+    268,
+    32,
+    30,
+    46
+   ],
+   "fin": "nord"
+  },
+  {
+   "nom": "porte nord, base est",
+   "x": 351,
+   "y": 31,
+   "sx": 393,
+   "sy": 0,
+   "sw": 32,
+   "sh": 48,
+   "pied": 79,
+   "bloque": [
+    352,
+    32,
+    30,
+    46
+   ],
+   "fin": "nord"
+  },
+  {
+   "nom": "porte nord, cintre",
+   "x": 298,
+   "y": 22,
+   "sx": 200,
+   "sy": 0,
+   "sw": 55,
+   "sh": 56,
+   "pied": 78,
+   "bloque": null,
+   "fin": "nord"
+  },
+  {
+   "nom": "pancarte porte nord",
+   "x": 312,
+   "y": 86,
+   "sx": 658,
+   "sy": 0,
+   "sw": 51,
+   "sh": 30,
+   "pied": 116,
+   "bloque": null,
+   "fin": null
+  },
+  {
+   "nom": "pancarte porte ouest",
+   "x": 128,
+   "y": 270,
+   "sx": 710,
+   "sy": 0,
+   "sw": 53,
+   "sh": 30,
+   "pied": 300,
+   "bloque": null,
+   "fin": null
+  },
+  {
+   "nom": "pancarte porte est",
+   "x": 1206,
+   "y": 570,
+   "sx": 764,
+   "sy": 0,
+   "sw": 48,
+   "sh": 30,
+   "pied": 600,
+   "bloque": null,
+   "fin": null
+  },
+  {
+   "nom": "pierre à monter",
+   "x": 228,
+   "y": 662,
+   "sx": 80,
+   "sy": 107,
+   "sw": 16,
+   "sh": 11,
+   "pied": 673,
+   "bloque": null,
+   "fin": "tout"
+  },
+  {
+   "nom": "cabane",
+   "x": 108,
+   "y": 684,
+   "sx": 0,
+   "sy": 0,
+   "sw": 66,
+   "sh": 106,
+   "pied": 790,
+   "bloque": [
+    110,
+    782,
+    62,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "palette ouest 1",
+   "x": 180,
+   "y": 678,
+   "sx": 813,
+   "sy": 0,
+   "sw": 34,
+   "sh": 30,
+   "pied": 708,
+   "bloque": [
+    182,
+    700,
+    30,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "palette ouest 2",
+   "x": 180,
+   "y": 722,
+   "sx": 984,
+   "sy": 0,
+   "sw": 34,
+   "sh": 22,
+   "pied": 744,
+   "bloque": [
+    182,
+    736,
+    30,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "palette ouest 3",
+   "x": 180,
+   "y": 768,
+   "sx": 45,
+   "sy": 107,
+   "sw": 34,
+   "sh": 14,
+   "pied": 782,
+   "bloque": [
+    182,
+    774,
+    30,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "tas de sable",
+   "x": 104,
+   "y": 784,
+   "sx": 319,
+   "sy": 0,
+   "sw": 40,
+   "sh": 52,
+   "pied": 836,
+   "bloque": [
+    106,
+    828,
+    36,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "auge à mortier",
+   "x": 146,
+   "y": 807,
+   "sx": 848,
+   "sy": 0,
+   "sw": 74,
+   "sh": 30,
+   "pied": 837,
+   "bloque": [
+    148,
+    829,
+    70,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "masse est",
+   "x": 1258,
+   "y": 596,
+   "sx": 510,
+   "sy": 0,
+   "sw": 17,
+   "sh": 45,
+   "pied": 641,
+   "bloque": null,
+   "fin": "tout"
+  },
+  {
+   "nom": "charrette",
+   "x": 1190,
+   "y": 743,
+   "sx": 426,
+   "sy": 0,
+   "sw": 65,
+   "sh": 47,
+   "pied": 790,
+   "bloque": [
+    1192,
+    782,
+    61,
+    8
+   ],
+   "fin": "tout"
+  },
+  {
+   "nom": "pierres de la charrette",
+   "x": 1196,
+   "y": 748,
+   "sx": 0,
+   "sy": 107,
+   "sw": 44,
+   "sh": 17,
+   "pied": 765,
+   "bloque": null,
+   "fin": "tout"
+  },
+  {
+   "nom": "panneau",
+   "x": 212,
+   "y": 574,
+   "sx": 256,
+   "sy": 0,
+   "sw": 62,
+   "sh": 54,
+   "pied": 628,
+   "bloque": [
+    212,
+    620,
+    62,
+    8
+   ],
+   "fin": null
+  }
+ ],
+ "gens": [
+  {
+   "nom": "ouvrier au treuil",
+   "x": 204,
+   "y": 46,
+   "sy": 125,
+   "w": 64,
+   "images": 6,
+   "pas": 0.16,
+   "pied": 108,
+   "bloque": [
+    228,
+    102,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "ouvrier à la tranchée nord",
+   "x": 468,
+   "y": 18,
+   "sy": 190,
+   "w": 64,
+   "images": 6,
+   "pas": 0.14,
+   "pied": 80,
+   "bloque": [
+    492,
+    74,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "bûcheron",
+   "x": 528,
+   "y": 42,
+   "sy": 255,
+   "w": 64,
+   "images": 6,
+   "pas": 0.13,
+   "pied": 104,
+   "bloque": [
+    552,
+    98,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "ouvrier à la brouette",
+   "x": 498,
+   "y": 78,
+   "sy": 320,
+   "w": 64,
+   "images": 1,
+   "pas": 0.12,
+   "pied": 140,
+   "bloque": [
+    522,
+    134,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "porteur de pierre",
+   "x": 204,
+   "y": 628,
+   "sy": 385,
+   "w": 64,
+   "images": 1,
+   "pas": 0.12,
+   "pied": 690,
+   "bloque": [
+    228,
+    684,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "ouvrier à la tranchée ouest",
+   "x": 118,
+   "y": 176,
+   "sy": 450,
+   "w": 64,
+   "images": 6,
+   "pas": 0.15,
+   "pied": 238,
+   "bloque": [
+    142,
+    232,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "ouvrier aux piquets est",
+   "x": 1212,
+   "y": 566,
+   "sy": 515,
+   "w": 64,
+   "images": 6,
+   "pas": 0.15,
+   "pied": 628,
+   "bloque": [
+    1236,
+    622,
+    16,
+    6
+   ]
+  },
+  {
+   "nom": "chef de chantier",
+   "x": 260,
+   "y": 572,
+   "sy": 580,
+   "w": 64,
+   "images": 4,
+   "pas": 0.12,
+   "pied": 634,
+   "bloque": [
+    284,
+    628,
+    16,
+    6
+   ]
+  }
+ ],
+ "panneau": {
+  "barres": [
+   {
+    "mur": "nord",
+    "x": 229,
+    "y": 588,
+    "w": 36,
+    "h": 4
+   },
+   {
+    "mur": "ouest",
+    "x": 229,
+    "y": 596,
+    "w": 36,
+    "h": 4
+   },
+   {
+    "mur": "est",
+    "x": 229,
+    "y": 604,
+    "w": 36,
+    "h": 4
+   }
+  ],
+  "chef": {
+   "x": 292,
+   "y": 634
+  }
+ }
+}

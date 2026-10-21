@@ -1,8 +1,8 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
-import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis } from './regles.js';
+import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour } from './regles.js';
 import { adresseEquipe } from './interface.js';
-import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
+import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
@@ -26,8 +26,18 @@ export async function selfTest(t, game) {
   const trouver = (C, id) => C.U(id) ?? C.S.unites.find((u) => u.camp === 'h' && u.type === id);
   const poser = (C, id, x, y) => { const u = trouver(C, id); u.x = x; u.y = y; return u; };
 
-  testsHabillage(t, { '.haut-terrain': 'le bandeau', '.fiche-heros': 'la fiche d’un héros', '.journal-terrain': 'le journal',
+  testsHabillage(t, { '.haut-terrain': 'le bandeau', '.journal-terrain': 'le journal',
     '.barre-terrain': 'la barre des capacités', '.coin-phase': 'la fin de phase', '.cadre-terrain': 'l’accueil' });
+  {
+    // les fiches des héros : le médaillon et le bandeau du héros du camp, la vie et la ressource à sa couleur (DESIGN §5)
+    const fiche = document.querySelector('.fiche-heros'), med = fiche?.querySelector('.fh-medaillon'), bandeau = fiche?.querySelector('.fh-bandeau');
+    t.ok(med?.src.startsWith('data:image/png') && med.naturalWidth === 60 && getComputedStyle(bandeau).backgroundImage.includes('url('), 'la fiche d’un héros : le médaillon du camp (60 × 60, ×1) et son bandeau de bois');
+    const couleur = (res) => { const r = document.querySelector(`.fiche-heros .fh-jauge[data-res="${res}"] .rempli`); return r ? getComputedStyle(r).backgroundColor : null; };
+    const pv = document.querySelector('.fiche-heros .fh-jauge.pv .rempli');
+    t.ok(pv && getComputedStyle(pv).backgroundColor === 'rgb(79, 154, 51)' && document.querySelector('.fiche-heros .fh-jauge.pv .texte').textContent.endsWith('PV'), 'la jauge de vie : verte, les PV écrits dedans');
+    const vues = ['Rage', 'Mana', 'Concentration', 'Foi'].map(couleur);
+    t.ok(vues.every(Boolean) && new Set(vues).size === 4, `la jauge de la ressource, à la couleur de son type (Rage, Mana, Concentration, Foi : ${vues.join(' · ')})`);
+  }
 
   // --- La géométrie sans cases ---------------------------------------------------------------------------------
   t.group('sans cases : la géométrie');
@@ -143,12 +153,27 @@ export async function selfTest(t, game) {
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
-  t.eq(CLASSES_ESSAI.length, 8, 'huit classes à choisir : les 4 du kit et 4 d’essai');
-  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.eq(CLASSES_ESSAI.length, 11, 'onze classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier, Shadow et Baba Brisenclume');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9, 6], 'une distance par tour selon la classe (6 m à 10,5 m)');
   t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
   const essai = (equipe, o = {}) => neuf({ equipe, ...o });
+  // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
+  t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
+    'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 3 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 2, 'les classes du kit et d’essai, par tout le monde');
+  t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
+  {
+    const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
+    t.ok(!regler(L, 'ana', { t: 'classe', k: 1, type: 'traqueur-au-limier', github: 'AnaGH' }) && L.equipe[1] === EQUIPE_KIT[1], 'au lobby, Ana ne peut pas prendre le Traqueur au limier');
+    t.ok(regler(L, 'paul', { t: 'classe', k: 2, type: 'traqueur-au-limier', github: 'PCrrfng' }) && L.equipe[2] === 'traqueur-au-limier', 'Paolitus, si');
+    regler(L, 'paul', { t: 'rendre', k: 2 });
+    t.ok(L.equipe[2] === EQUIPE_KIT[2], 'il rend sa place : elle redevient une classe du kit (personne d’autre ne le joue)');
+    L.equipe[3] = 'traqueur-au-limier';
+    regler(L, 'ana', { t: 'prendre', k: 3, github: 'AnaGH' });
+    t.ok(L.proprio[3] === 'ana' && L.equipe[3] === EQUIPE_KIT[3], 'une place libre qui le portait, prise par Ana : la classe du kit');
+  }
   {
     const C = essai(['brute', 'brute', 'mage', 'barde']);
     t.eq(C.S.unites.filter((u) => u.camp === 'h').map((u) => u.nom), ['Brute', 'Brute 2', 'Mage', 'Barde'], 'deux fois la même classe : « Brute » et « Brute 2 »');
@@ -206,7 +231,72 @@ export async function selfTest(t, game) {
     C._.attaquer(poser(C, 's3', ba.x + 1, ba.y), ba, { nom: 'Coup', mod: 2, dmod: 0, base: 8, de: 4, melee: true });
     t.ok(C.S.journal.some((l) => l.t.includes('fragile au contact')) || ba.pv === pv, 'la Barde est fragile au contact : +3');
   }
-  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9]]) {
+  {
+    // le Traqueur au limier (la classe de Paolitus) : ses pièges, et les trois ordres au limier
+    const C = essai(['traqueur-au-limier', 'brute', 'mage', 'gardien'], { alea: des(Array(40).fill(15)) });
+    C.commencer();
+    const tr = trouver(C, 'traqueur-au-limier'), b = trouver(C, 'brute'), pieges = () => Object.values(C.mailles()).filter((m) => m.t === 'piege');
+    t.ok(tr.pv === 120 && tr.res.type === 'Concentration' && tr.t.mv === 6, 'le Traqueur : 120 PV, 9 m, Concentration');
+    const s = poser(C, 's1', tr.x + 6, tr.y), p = { x: tr.x + 3, y: tr.y };
+    t.ok(C.utiliser(tr, 'machoires', p) && pieges().length && pieges().every((m) => m.v === 'machoires'), 'Piège à mâchoires : posé à 4,5 m');
+    C._.marcher(s, [{ x: tr.x + 1.2, y: tr.y }]);
+    t.ok(s.st.aTerre && Math.abs(s.x - p.x) < 0.9 && !pieges().length, `un sbire y marche : À terre, il s’arrête dans le piège (${Math.abs(s.x - p.x).toFixed(1)} case du centre), et le piège a servi`);
+    poser(C, b.id, s.x - 1, s.y);
+    C.utiliser(b, 'fracas', { id: 's1' });
+    t.ok(C.S.stats.combos.some((k) => k.a === tr.id && k.b === b.id && k.quoi === 'cible À terre') && tr.res.v === 1, 'la Brute frappe la proie À terre : un combo, et +1 Concentration au Traqueur');
+    tr.t.action = true;
+    const s2 = poser(C, 's2', tr.x + 4, tr.y + 2);
+    t.ok(C.utiliser(tr, 'glu', { x: s2.x, y: s2.y }) && s2.st.gele && !pieges().length, 'Piège à glu posé sous un ennemi : il se referme tout de suite, Gelé');
+    tr.t.action = true;
+    C.utiliser(tr, 'collet', { x: tr.x + 4.4, y: tr.y - 2 }); tr.t.action = true;
+    t.ok(C.utiliser(tr, 'machoires', { x: tr.x + 2, y: tr.y - 2 }) && new Set(pieges().map((m) => m.id)).size === 1 && pieges()[0].v === 'machoires', 'un seul piège à la fois : le nouveau remplace l’ancien');
+    tr.t.action = true;
+    const s3 = poser(C, 's3', tr.x + 3, tr.y - 2), l3 = Math.hypot(3, 2);           // le collet, 1,8 m plus loin sur la ligne de la poussée
+    C.utiliser(tr, 'collet', { x: s3.x + (3 / l3) * 1.2, y: s3.y - (2 / l3) * 1.2 });
+    const d0 = dist(s3, tr);
+    const n0 = C.S.evenements.length;
+    t.ok(C.utiliser(tr, 'rabattre', { id: 's3' }) && C.S.journal.some((l) => l.t.includes('dans le collet')) && dist(s3, tr) < d0 + 0.5,
+      `Rabattre : le limier pousse le sbire dans le collet, qui le ramène vers le Traqueur (${(dist(s3, tr) * 1.5).toFixed(1)} m de lui)`);
+    t.ok(C.S.evenements.slice(n0).filter((e) => e.type === 'limier').length === 2, 'le limier court à la cible, puis revient (deux scènes)');
+    t.ok(!C.peutUtiliser(tr, CAPACITES.mordre), 'un seul ordre au limier par tour (l’action bonus)');
+    tr.t.bonus = true;
+    const s4 = poser(C, 'a1', tr.x - 4, tr.y);
+    t.ok(C.utiliser(tr, 'mordre', { id: 'a1' }) && s4.expose?.par === tr.id, 'Mordre : la cible est Exposée');
+    const m = trouver(C, 'mage');
+    poser(C, m.id, tr.x - 2, tr.y + 2); m.pv = 80; m.st.gele = { n: 1, par: null }; tr.t.bonus = true;
+    t.ok(C.utiliser(tr, 'lecher', { id: m.id }) && m.pv >= 91 && m.pv <= 94 && !m.st.gele, `Lécher les plaies : +${m.pv - 80} PV à la Mage (11 à 14), et elle n’est plus Gelée`);
+    // Lié à sa bête : le limier est une créature du combat ; tombé, son maître a le désavantage et ne lui donne plus d'ordre
+    const chien = C.S.unites.find((u) => u.familier && u.maitre === tr.id), ko0 = C.S.stats.ko;
+    t.ok(chien && chien.camp === 'h' && chien.pv === 30 && dist(chien, tr) < 2, `le limier est sur le terrain, à côté du Traqueur (${dist(chien, tr).toFixed(1)} case) : 30 PV`);
+    t.ok(!C.groupeCourant().ids.includes(chien.id) && C.cibles(tr, CAPACITES.lecher).every((c) => c.id !== chien.id), 'il n’a pas de tour à lui, et ne se lèche pas lui-même');
+    {
+      // sa place : derrière son maître, à l'opposé de l'ennemi le plus proche (devant, il se faisait viser dès le tour 1)
+      const C2 = essai(['traqueur-au-limier', 'brute', 'mage', 'gardien']); C2.commencer();
+      const t2 = trouver(C2, 'traqueur-au-limier'), c2 = C2.S.unites.find((u) => u.familier);
+      const proche = () => C2.ennemisVivants().sort((a, b) => dist(a, t2) - dist(b, t2))[0];
+      t.ok(dist(c2, proche()) > dist(t2, proche()) && dist(c2, t2) < 1.6, 'au début du combat, le limier est derrière le Traqueur (à l’opposé de l’ennemi le plus proche)');
+      C2.deplacer(t2, t2.x + 3, t2.y);
+      t.ok(dist(c2, proche()) > dist(t2, proche()) - 0.3 && dist(c2, t2) < 1.7, 'le Traqueur avance de 4,5 m : le limier reste derrière lui');
+      // la Brute ennemie vise le plus blessé en part de ses PV, pas en PV bruts (sinon le limier, 30 PV, était toujours sa cible)
+      const br = C2.U('br'), m2 = trouver(C2, 'mage');
+      t.ok(C2._.cibleBrute(br).id !== c2.id, `tout le monde en pleine forme : la Brute ennemie ne vise pas le limier (elle vise ${C2._.cibleBrute(br).nom})`);
+      m2.pv = 60;
+      t.eq(C2._.cibleBrute(br).id, m2.id, 'la Mage à 60/125 PV (48 %) : c’est elle, et pas le limier à 30/30');
+      c2.pv = 10;
+      t.eq(C2._.cibleBrute(br).id, c2.id, 'le limier à 10/30 (33 %) : c’est lui, le plus blessé');
+    }
+    const a2 = C.U('a2'); a2.x = chien.x + 1; a2.y = chien.y;
+    C._.attaquer(a2, chien, { nom: 'Coup', mod: 30, dmod: 0, base: 40, de: 4, melee: true });
+    t.ok(chien.ko && !C.S.resultat && C.S.stats.ko === ko0, 'un ennemi l’abat : il tombe (ni défaite, ni héros KO de plus)');
+    const s5 = C.U('s3'), arc = () => C._.calculer(tr, s5, C._.attaqueHeros(CAPACITES.arc));
+    t.ok(arc().notes.includes('son limier est à terre : désavantage'), 'le Traqueur attaque avec le désavantage');
+    tr.t.bonus = true;
+    t.ok(!C.peutUtiliser(tr, CAPACITES.mordre) && !C.peutUtiliser(tr, CAPACITES.rabattre), 'et ne peut plus lui donner d’ordre');
+    poser(C, tr.id, chien.x + 1, chien.y); tr.t.action = true;
+    t.ok(C.utiliser(tr, 'relever', { id: chien.id }) && !chien.ko && !arc().notes.some((n) => n.includes('limier')) && C.peutUtiliser(tr, CAPACITES.mordre),
+      'il le relève (une action, au contact) : plus de désavantage, les ordres reviennent');
+  }
+  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9], [['shadow', 'brute', 'mage', 'gardien'], 4], [['baba-brisenclume', 'chevalier', 'druide', 'barde'], 6]]) {
     const C = essai(equipe, { alea: graine(s) });
     C.commencer();
     let tours = 0;
@@ -230,7 +320,282 @@ export async function selfTest(t, game) {
       }
       if (!C.S.resultat) C.finPhaseHeros();
     }
-    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `une équipe d’essai (${equipe.join(', ')}) joue jusqu’au bout : ${C.S.resultat} au round ${C.S.round}`);
+    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `une équipe (${equipe.join(', ')}) joue jusqu’au bout : ${C.S.resultat} au round ${C.S.round}`);
+  }
+
+  // --- Shadow, la classe de FrapsFTW (#198) -------------------------------------------------------------------------
+  t.group('Shadow (#198)');
+  {
+    const H = HEROS.shadow;
+    t.ok(CLASSES_ESSAI.includes('shadow') && peutJouer('shadow', 'FrapsFTW') && !peutJouer('shadow', 'PCrrfng') && !peutJouer('shadow', null), 'Shadow se choisit à l’entrée, et ne se joue que par FrapsFTW, son auteur');
+    t.ok(H.pv === 120 && H.vitesse * 1.5 === 9 && H.dex === 2, 'sa fiche au budget : 120 PV, 9 m par tour, DEX +2');
+    t.ok(H.res.type === 'Élan' && H.res.v === 0 && H.res.max === 5, 'sa ressource : l’Élan de la liste commune (0 au départ, 5 au plus)');
+    t.ok(H.capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && H.faiblesse, 'ses 3 capacités et sa faiblesse');
+    t.eq(equipeDepuis('shadow,brute,mage,gardien'), ['shadow', 'brute', 'mage', 'gardien'], 'une équipe avec Shadow se lit dans l’adresse');
+  }
+  // la scène : la Brute tient un sbire au contact ; Shadow est à quelques mètres, sans personne autour
+  const scene = (o = {}) => {
+    const C = essai(['shadow', 'brute', 'mage', 'gardien'], o);
+    C.commencer();
+    const sh = trouver(C, 'shadow'), b = trouver(C, 'brute');
+    for (const u of C.S.unites) if (u !== sh && u !== b) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    poser(C, 'brute', 8, 12); const s = poser(C, 'br', 9, 12); poser(C, 'shadow', 9, 15.5);
+    return { C, sh, b, s };
+  };
+  {
+    const { C, sh, b, s } = scene();
+    t.ok(C.cibles(sh, CAPACITES.pasOmbre).some((c) => c.id === s.id), 'Pas dans l’ombre : la Brute ennemie, que la Brute tient au contact, est une cible');
+    const avant = { x: sh.x, y: sh.y };
+    t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }), 'il plonge dans son ombre');
+    t.ok(dist(sh, s) <= CONTACT && enTenaille(sh, s, [b]), `il ressort au contact, de l’autre côté de la Brute : Tenaille (${(dist(sh, s) * 1.5).toFixed(1)} m de la cible)`);
+    t.eq(sh.res.v, 0, `le Pas ne donne pas d’Élan : ${(dist(avant, sh) * 1.5).toFixed(1)} m sous terre, 0 Élan (l’Élan vient de la course)`);
+    t.ok(!sh.t.bonus && sh.t.action, 'c’est son action bonus ; il garde son action');
+    const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
+    t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos sur la cible en Tenaille : ×2, et l’avantage de la Tenaille');
+    t.eq(C.apercu(sh, 'coupDos', s.id).degats.touche, '22–28', 'l’aperçu le montre : 22–28 sur un touché');
+    const pv = s.pv;
+    t.ok(C.utiliser(sh, 'coupDos', { id: s.id }) && (s.mort || s.pv < pv), 'le coup part');
+    t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id && k.quoi === 'Tenaille puis coup dans le dos') || C.S.journal.some((l) => l.t.includes('Raté')),
+      'la Brute tient, Shadow frappe : un combo entre deux héros');
+  }
+  {
+    const { C, sh, s } = scene();
+    poser(C, 'brute', 20, 20);
+    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'sans allié près de l’ennemi, pas de Pas dans l’ombre');
+    poser(C, 'shadow', 10, 12); s.expose = { par: null };
+    t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 2, 'une cible Exposée prend aussi ×2, sans Tenaille');
+    s.expose = false;
+    t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 1, 'ni Tenaille ni Exposée : les dégâts normaux');
+  }
+  {
+    // « tenu » : un allié à 4,5 m au plus, pas forcément collé ; le Pas pose alors la Tenaille lui-même, pour un round
+    const { C, sh, b, s } = scene();
+    poser(C, 'brute', 9 - 2.7, 12);                    // la Brute à 4 m de la Brute ennemie
+    t.ok(C.cibles(sh, CAPACITES.pasOmbre).some((c) => c.id === s.id), 'un allié à 4 m de l’ennemi suffit : il le serre');
+    t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }) && dist(sh, s) <= CONTACT && s.st.tenaille?.par === sh.id, 'Shadow ressort derrière, au contact, et pose la Tenaille');
+    const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
+    t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos : ×2 et l’avantage, même si la Brute n’est pas collée');
+    t.eq(C._.calculer(trouver(C, 'mage'), s, C._.attaqueHeros(CAPACITES.etincelle)).av, 0, 'cette Tenaille ne compte que pour Shadow');
+    C.utiliser(sh, 'coupDos', { id: s.id });
+    t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id) || C.S.journal.some((l) => l.t.includes('Raté')), 'et le combo revient à la Brute qui serre');
+    if (!s.mort) { C.finPhaseHeros(); t.ok(!s.st.tenaille, 'la Tenaille du Pas dure un round'); }
+  }
+  {
+    const { C, sh } = scene();
+    poser(C, 'brute', 9 - 3.4, 12);                    // à 5 m : trop loin
+    t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'un allié à 5 m ne serre pas l’ennemi : pas de Pas');
+  }
+  {
+    const { C, sh, s } = scene();
+    sh.res.v = 2;
+    t.ok(!C.peutUtiliser(sh, CAPACITES.coupDos3), 'le Coup dans le dos critique coûte 3 Élan : pas avec 2');
+    sh.res.v = 3;
+    t.ok(C.peutUtiliser(sh, CAPACITES.coupDos3), 'avec 3, oui');
+    C.utiliser(sh, 'pasOmbre', { id: s.id }); C.finPhaseHeros();
+    t.eq(sh.res.v, 3, 'un tour avec seulement le Pas : il a bougé, son Élan ne retombe pas (et le Pas n’en donne pas)');
+    t.eq(resultats(CAPACITES.coupDos3).map((r) => r.degats), ['22–28'], 'un critique assuré, sans jet');
+  }
+  {
+    const { C, sh } = scene();
+    const x0 = sh.x;
+    C.deplacer(sh, sh.x + 3, sh.y);
+    t.eq(sh.res.v, 3, `+1 Élan par case parcourue : 3 cases, 3 Élan (${((sh.x - x0) * 1.5).toFixed(1)} m)`);
+    C.deplacer(sh, sh.x + 0.6, sh.y); C.deplacer(sh, sh.x + 0.6, sh.y);
+    t.eq(sh.res.v, 4, 'deux bouts de 0,6 case s’additionnent : +1');
+    sh.t.mv = 6; C.deplacer(sh, sh.x - 4, sh.y);
+    t.eq(sh.res.v, 5, '5 au plus');
+  }
+  {
+    const { C, sh } = scene();
+    sh.res.v = 4;
+    C.finPhaseHeros();
+    t.ok(sh.res.v === 0 && C.S.journal.some((l) => l.t.includes('son Élan retombe à 0')), 'un tour sans bouger : l’Élan se vide');
+  }
+  {
+    const { C, sh, s } = scene();
+    sh.st.brulure = { n: 2, par: null };
+    t.ok(!C.peutUtiliser(sh, CAPACITES.pasOmbre), 'sa faiblesse : Brûlant, plus de Pas dans l’ombre');
+    delete sh.st.brulure;
+    t.ok(C.peutUtiliser(sh, CAPACITES.pasOmbre), 'éteint, il peut de nouveau');
+    C._.poserZone(trouver(C, 'mage'), CAPACITES.fiole, { x: sh.x, y: sh.y });
+    C._.enflammer({ x: sh.x, y: sh.y }, null);
+    t.ok(C.surfaceA(sh)?.t === 'feu' && !C.peutUtiliser(sh, CAPACITES.pasOmbre) && !C.utiliser(sh, 'pasOmbre', { id: s.id }), 'debout dans le feu non plus');
+  }
+  t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '5–7', '11–14', '22–28'], 'Coup dans le dos : 8 + d4 + 2, comme sa description');
+  t.ok(icone('pasOmbre').endsWith('enseigne-pasOmbre.png') && icone('coupDos3').endsWith('enseigne-coupDos.png'), 'ses icônes : celles de sa fiche (design/classes/shadow/icones/)');
+
+  // --- Baba Brisenclume, la classe de DonBabaa ---------------------------------------------------------------------
+  t.group('Baba Brisenclume');
+  {
+    const H = HEROS['baba-brisenclume'];
+    t.ok(CLASSES_ESSAI.includes('baba-brisenclume') && peutJouer('baba-brisenclume', 'DonBabaa') && !peutJouer('baba-brisenclume', 'FrapsFTW') && !peutJouer('baba-brisenclume', null),
+      'Baba se choisit à l’entrée, et ne se joue que par DonBabaa, son auteur');
+    t.ok(H.pv === 130 && H.vitesse * 1.5 === 6 && H.dex === -1 && H.res.type === 'Rage' && H.res.max === 50, 'sa fiche : 130 PV, 6 m par tour, DEX −1, la Rage');
+    t.eq(resultats(CAPACITES.chuteEnclume).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'Chute d’Enclume : 14 + d6 + 2, comme sa description');
+    t.ok(['marteau', 'chuteEnclume', 'lameArdente', 'trempe', 'tenailles'].every((k) => icone(k).endsWith(`enseigne-${k === 'chuteEnclume' ? 'enclume' : k}.png`)), 'ses icônes');
+    t.eq(ordreBarre(H.capacites, CAPACITES).slice(0, 5), ['marteau', 'tenailles', 'chuteEnclume', 'lameArdente', 'trempe'], 'sa barre : Marteau, Tenailles (préparation), puis l’Enclume et la Forge (exploitation)');
+  }
+  // la scène : Baba au milieu du terrain (au nord du foin), la Brute à côté de lui, une Brute ennemie à 4,5 m ; les autres loin
+  const forge = (o = {}) => {
+    const C = essai(['baba-brisenclume', 'brute', 'mage', 'gardien'], { alea: des(Array(40).fill(15)), ...o });
+    C.commencer();
+    const ba = trouver(C, 'baba-brisenclume'), b = trouver(C, 'brute'), m = trouver(C, 'mage');
+    for (const u of C.S.unites) if (![ba, b, m].includes(u)) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    poser(C, ba.id, 6, 10); poser(C, b.id, 6, 10.9); poser(C, m.id, 3, 13); const s = poser(C, 'br', 9, 10);
+    return { C, ba, b, m, s };
+  };
+  {
+    const { C, ba, s } = forge();
+    t.ok(C.cibles(ba, CAPACITES.chuteEnclume).some((c) => c.id === s.id) && !C.peutUtiliser(ba, CAPACITES.lameArdente), 'la Chute d’Enclume vise la Brute ennemie ; sans enclume, pas de Forge');
+    const pv = s.pv, case0 = { x: s.x, y: s.y };
+    t.ok(C.utiliser(ba, 'chuteEnclume', { id: s.id }) && s.pv < pv && s.st.aTerre, `l’enclume l’écrase : ${pv - s.pv} dégâts, À terre`);
+    const e = C.S.enclume;
+    t.ok(e && dist(e, case0) < 0.01, 'elle se pose sur la case visée');
+    t.ok(dist(s, e) >= 0.72 && s.x > case0.x, `la cible en est repoussée, à l’opposé de Baba (${(dist(s, case0) * 1.5).toFixed(1)} m)`);
+    t.ok(C.S.evenements.some((v) => v.type === 'enclume' && v.chute), 'la vue la fait tomber (l’événement « enclume »)');
+    ba.t.action = true;
+    t.ok(!C.peutUtiliser(ba, CAPACITES.chuteEnclume), 'une fois par combat');
+    C.finPhaseHeros();
+    t.ok(!C.peutUtiliser(ba, CAPACITES.chuteEnclume), 'même au round suivant');
+  }
+  {
+    const { C, ba, b, m, s } = forge();
+    C.utiliser(ba, 'chuteEnclume', { x: 7.5, y: 10 });
+    const e = C.S.enclume;
+    t.ok(e && Math.abs(e.x - 7.5) < 0.01, 'sur le sol : elle tombe là où l’on vise');
+    {
+      const { C: C2, ba: ba2, m: m2 } = forge();
+      poser(C2, m2.id, 7.5, 8.5);
+      t.ok(C2.utiliser(ba2, 'chuteEnclume', { x: 7.5, y: 8.5 }) && dist(C2.S.enclume, { x: 7.5, y: 8.5 }) < 0.01 && dist(m2, C2.S.enclume) >= 0.72, 'sur une alliée : elle tombe quand même sur sa case, et la pousse hors de la case');
+    }
+    t.ok(!C.apercuMarche(m, e.x, e.y).ok, 'elle bloque le passage : on ne s’y arrête pas');
+    const P = C._.carteDe(s, 20), k = indiceDe(trame, e.x, e.y);
+    t.ok(!(P.longueur[k] < Infinity), 'les ennemis non plus ne la traversent pas');
+    poser(C, m.id, 4, 10);
+    t.ok(C._.calculer(m, s, C._.attaqueHeros(CAPACITES.etincelle)).notes.includes('la cible est derrière l’enclume : désavantage'), 'un tir qui passe derrière elle a le désavantage (le couvert)');
+    poser(C, m.id, 9, 13);
+    t.eq(C._.calculer(m, s, C._.attaqueHeros(CAPACITES.etincelle)).av, 0, 'tiré de côté : pas de couvert');
+    // une poussée contre elle : +8, et un combo pour Baba qui l'a posée
+    poser(C, b.id, 10.2, 10); poser(C, 'br', 9.2, 10); s.st = {};
+    const pv = s.pv;
+    t.ok(C.utiliser(b, 'projection', { id: s.id }) && C.S.journal.some((l) => l.t.includes('heurte l’enclume : +8')), 'la Brute projette la Brute ennemie contre l’enclume : +8');
+    t.ok(s.pv === pv - 8 && C.S.stats.combos.some((k2) => k2.a === ba.id && k2.b === b.id && k2.quoi === 'poussé contre l’enclume'), 'un combo entre Baba et la Brute');
+  }
+  {
+    const { C, ba, b, s } = forge();
+    C.utiliser(ba, 'chuteEnclume', { x: 6.9, y: 9.3 });
+    ba.res.v = 10;
+    t.ok(!C.peutUtiliser(ba, CAPACITES.lameArdente), 'la Forge coûte 20 Rage : pas avec 10');
+    ba.res.v = 40;
+    t.ok(C.cibles(ba, CAPACITES.lameArdente).map((c) => c.id).sort().join() === [ba.id, b.id].sort().join(), 'au contact de l’enclume : lui-même ou la Brute, à son contact');
+    t.ok(C.utiliser(ba, 'lameArdente', { id: b.id }) && b.st.lame && ba.res.v === 20 && !ba.t.bonus, 'Lame ardente pour la Brute (une action bonus, 20 Rage)');
+    poser(C, b.id, s.x - 0.95, s.y); s.st.huile = { ttl: 3, par: null };
+    const ap = C.apercu(b, 'fracas', s.id);
+    t.ok(ap.notes.includes('Lame ardente : +d6, et compte comme du feu') && ap.notes.some((n) => n.startsWith('Huilé : feu ×2')), 'l’aperçu le dit : +d6, du feu, ×2 sur la cible Huilée');
+    t.eq(ap.degats.touche, '24–40', 'Fracas 8 + d4 + d6 + 2, ×2 : 24–40 sur un touché');
+    C.utiliser(b, 'fracas', { id: s.id });
+    t.ok(!b.st.lame && C.S.stats.combos.some((k) => k.a === ba.id && k.b === b.id && k.quoi === 'lame ardente'), 'elle sert une fois, et compte comme un combo de Baba vers la Brute');
+    ba.t.bonus = true;
+    t.ok(C.utiliser(ba, 'trempe', { id: ba.id }) && ba.st.bouclier?.v === 10, 'Trempe sur lui-même : un bouclier de 10');
+    const pv = ba.pv;
+    C._.attaquer(poser(C, 's1', ba.x - 1, ba.y), ba, { nom: 'Coup', mod: 30, dmod: 0, base: 6, de: 1, melee: true });
+    t.ok(ba.pv === pv && ba.st.bouclier?.v === 3, 'un coup de 7 : le bouclier le prend (il en reste 3)');
+    C._.attaquer(C.U('s1'), ba, { nom: 'Coup', mod: 30, dmod: 0, base: 8, de: 1, melee: true });
+    t.ok(!ba.st.bouclier && ba.pv === pv - 6, 'un coup de 9 le brise, 6 passent');
+    poser(C, ba.id, 3, 3); ba.t.bonus = true;
+    t.ok(!C.peutUtiliser(ba, CAPACITES.trempe), 'loin de son enclume, il ne forge plus (sa faiblesse)');
+  }
+  {
+    const { C, ba, m, s } = forge();
+    poser(C, m.id, 8, 8.4);
+    const d0 = dist(m, ba);
+    t.ok(C.cibles(ba, CAPACITES.tenailles).some((c) => c.id === m.id) && C.utiliser(ba, 'tenailles', { id: m.id }) && dist(m, ba) < d0 - 1.5, `Tenailles : il tire la Mage vers lui (${((d0 - dist(m, ba)) * 1.5).toFixed(1)} m), pour la sauver`);
+    ba.t.action = true;
+    const x0 = s.x;
+    t.ok(C.utiliser(ba, 'tenailles', { id: s.id }) && s.x < x0 - 1.5, 'et un ennemi');
+    C.S.enclume = { id: 'enclume', x: 8.8, y: 10, par: ba.id };
+    ba.t.action = true; poser(C, 'br', 30, 3);
+    t.ok(C.cibles(ba, CAPACITES.tenailles).some((c) => c.id === 'enclume') && C.utiliser(ba, 'tenailles', { id: 'enclume' }) && C.S.enclume.x < 7.6, `et son enclume, pour la rapprocher (à ${(dist(C.S.enclume, ba) * 1.5).toFixed(1)} m de lui)`);
+  }
+  {
+    const { C, ba, s } = forge();
+    poser(C, 'br', 6.95, 10);
+    t.ok(C.utiliser(ba, 'pousser', { id: s.id }) && s.x > 6.95 + 2.8, `Marteau lourd : sa poussée va 1,5 m plus loin (${((s.x - 6.95) * 1.5).toFixed(1)} m)`);
+    ba.st.aTerre = { par: null }; poser(C, 'br', 30, 3); C.finPhaseHeros();
+    t.ok(!C.peutAgir(ba) || ba.t.mv === 0, 'Vieux Os : À terre, se relever lui prend tout son déplacement');
+  }
+  {
+    const { C, ba, m } = forge({ alea: des([12, 12, 12]) });
+    C._.poserZone(trouver(C, 'gardien'), CAPACITES.givre, { x: ba.x + 2, y: ba.y });
+    C.deplacer(ba, ba.x + 2, ba.y);
+    t.ok(ba.st.aTerre, 'Vieux Os : un 12 sur la glace le renverse (1 à 14)');
+    poser(C, m.id, ba.x - 0.5, ba.y + 1.6); m.t.mv = 4;
+    C.deplacer(m, ba.x + 1.2, ba.y + 0.8);
+    t.ok(!m.st.aTerre, 'les autres tiennent sur un 12');
+  }
+
+  // --- Les attaques d'opportunité, et Se désengager (#231) ------------------------------------------------------------
+  t.group('les attaques d’opportunité (#231)');
+  // la scène : la Brute au contact d'un sbire, au milieu du terrain ; les autres loin
+  const opp = (o = {}) => {
+    const C = essai(['brute', 'mage', 'gardien', 'voleur'], { alea: des(Array(30).fill(15)), ...o });
+    C.commencer();
+    for (const u of C.S.unites) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    const b = poser(C, 'brute', 12, 15.5), s = poser(C, 's1', 13, 15.5);
+    return { C, b, s };
+  };
+  {
+    const { C, b, s } = opp();
+    const a = C.apercuMarche(b, 9, 15.5);
+    t.ok(a.ok && a.menaces.length === 1 && a.menaces[0].id === 's1' && a.menaces[0].degats && a.menaces[0].touche > 0.9,
+      `l’aperçu le dit avant de partir : ${a.menaces.map((m) => `${m.nom} ${Math.round(m.touche * 100)} % · ${m.degats}`).join(', ')}`);
+    const pv = b.pv;
+    C.deplacer(b, 9, 15.5);
+    t.ok(C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité : Sbire 1 frappe Brute')) && b.pv < pv, `la Brute part du contact : le sbire la frappe (${pv - b.pv} dégâts)`);
+    t.ok(!s.t.reaction && Math.abs(b.x - 9) < 0.01, 'il a dépensé sa réaction, et la Brute finit sa marche');
+    const marches = C.S.evenements.filter((e) => e.type === 'marche' && e.id === b.id).length, i = C.S.evenements.findIndex((e) => e.type === 'attaque' && e.de === 's1');
+    t.ok(marches === 2 && C.S.evenements.findIndex((e) => e.type === 'marche') < i, 'à l’écran : la marche s’arrête au bord, le coup part, la marche reprend');
+    b.t.mv = 6; C.deplacer(b, 12.2, 16); C.S.journal.length = 0;
+    C.deplacer(b, 9, 15.5);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'une seule réaction par round : repartir ne coûte plus rien');
+  }
+  {
+    const { C, b } = opp();
+    t.ok(C.utiliser(b, 'desengager') && b.t.desengage && !b.t.bonus, 'Se désengager : son action bonus');
+    t.eq(C.apercuMarche(b, 9, 15.5).menaces.length, 0, 'l’aperçu ne montre plus de menace');
+    C.deplacer(b, 9, 15.5);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'désengagée, la Brute part sans prendre de coup');
+    t.ok(!C.peutUtiliser(b, CAPACITES.desengager), 'une fois par tour');
+    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : un héros qui se replie (Paolitus, 20 oct)');
+  }
+  {
+    const { C, b, s } = opp();
+    const pv = s.pv;
+    C._.marcher(s, [{ x: 16, y: 15.5 }]);
+    t.ok(C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité : Brute frappe Sbire 1')) && !b.t.reaction && (s.pv < pv || s.mort), 'dans l’autre sens : un sbire qui s’éloigne de la Brute prend son Fracas');
+  }
+  {
+    const { C } = opp();
+    const m = poser(C, 'mage', 20, 18), a = poser(C, 'a1', 21, 18);
+    C._.marcher(a, [{ x: 24, y: 18 }]);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')) && m.t.reaction, 'la Mage n’a pas d’attaque au contact : pas d’attaque d’opportunité');
+    poser(C, 'mage', 20, 18); poser(C, 'a1', 21, 18); m.t.mv = 5;
+    C.deplacer(m, 17, 18);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'un archer non plus (il tire, il ne frappe pas au contact)');
+  }
+  {
+    const { C, b, s } = opp();
+    C.utiliser(b, 'pousser', { id: 's1' });
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')) && s.t.reaction, 'une poussée n’en donne pas : seul celui qui marche la provoque');
+  }
+  {
+    const C = essai(['traqueur-au-limier', 'brute', 'mage', 'gardien'], { alea: des(Array(30).fill(15)) });
+    C.commencer();
+    for (const u of C.S.unites) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    const chien = C.S.unites.find((u) => u.familier), s = poser(C, 's1', 13, 15.5);
+    poser(C, 'h1', 12, 14.5); poser(C, chien.id, 12, 15.5);
+    C._.marcher(s, [{ x: 16, y: 15.5 }]);
+    t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')) && chien.t.reaction && Math.abs(s.x - 16) < 0.01, 'le limier n’en fait pas : il ne mord que sur l’ordre de son maître');
   }
 
   // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------
@@ -298,9 +663,22 @@ export async function selfTest(t, game) {
   t.ok(V.marques.cibles?.includes('s1') && V.marques.cercle?.r === 6, 'la portée (9 m) et la cible à portée sont montrées');
   t.ok(!ihm.dom.ficheCap.hidden && ihm.dom.ficheCap.dataset.capacite === 'etincelle' && ihm.dom.ficheCap.textContent.includes('11–14') && ihm.dom.ficheCap.textContent.includes('d20 8–19'),
     'la fiche d’Étincelle (#85) : les dégâts d’un touché et les d20 qui y mènent, avant de viser');
-  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite')];
+  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite:not(#desengager)')];   // (les sorts de la classe ; Se désengager est à part)
   t.ok(boutons.length === HEROS.mage.capacites.length && boutons.every((b) => b.querySelector('img')?.getAttribute('src').includes('icones/enseigne-')) && boutons[0].classList.contains('choisie'),
     'la barre : chaque capacité avec son icône LPC, Étincelle choisie');
+  {
+    // la barre des sorts (la barre du camp) : les capacités rangées par sorte, sous le nom de leur groupe ; A ou B, le coût, la touche
+    const groupes = [...ihm.dom.capacites.querySelectorAll('.groupe-sorts')].map((g) => g.querySelector('.groupe-nom').textContent);
+    t.eq(groupes, ['Attaque', 'Préparation', 'Exploitation', 'Commun', 'Mouvement'], 'la barre des sorts de la Mage : ses capacités rangées par sorte, le commun à part, le mouvement en dernier');
+    t.ok(ihm.dom.desengager.closest('.s-mouvement') && ihm.dom.desengager.querySelector('kbd').textContent === 'D' && ihm.dom.desengager.querySelector('img').src.endsWith('enseigne-desengager.png'), 'Se désengager, dans la barre : sa case, son icône, la touche D');
+    const foudre = ihm.dom.capacites.querySelector('[data-capacite="foudre"]');
+    t.ok(foudre.dataset.sorte === 'exploitation' && foudre.querySelector('.cap-slot').textContent === 'A' && foudre.querySelector('.cap-cout').textContent === '15' && foudre.querySelector('kbd').textContent === '3',
+      'Foudre : une exploitation, une action (A), 15 de Mana en coin, touche 3');
+    t.ok(document.querySelector('.socle-sorts .embout.gauche') && document.querySelector('.socle-sorts .loup.droite'), 'la barre entre ses embouts de laiton et ses loups, comme au camp');
+    const tr = ordreBarre(HEROS['traqueur-au-limier'].capacites, CAPACITES);
+    t.ok(tr.length === 10 && TOUCHES[tr.indexOf('relever')] === '0' && ['lecher', 'mordre', 'rabattre'].every((id) => sorteDe(id, CAPACITES[id]) === 'familier'),
+      'le Traqueur et ses 10 sorts : les ordres au limier en groupe à part, Relever sur la touche 0');
+  }
   boutons[2].dispatchEvent(new MouseEvent('mouseenter')); game.dbg.advance(0.05);
   t.ok(ihm.dom.ficheCap.dataset.capacite === 'foudre' && ihm.dom.ficheCap.textContent.includes('15 Mana') && ihm.dom.ficheCap.textContent.includes('Trempé'), 'survoler Foudre dans la barre montre sa fiche : son coût, ses effets');
   ihm.dom.capacites.querySelectorAll('.capacite')[2].dispatchEvent(new MouseEvent('mouseleave')); game.dbg.advance(0.05);
@@ -421,6 +799,43 @@ export async function selfTest(t, game) {
     t.ok(plaque.hidden, 'sans barre ni état : rien sous le sbire');
     canvas.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true })); game.dbg.advance(0.05);
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
+  }
+
+  // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres ------------------------
+  t.group('le ressenti des coups');
+  {
+    jouerFile();
+    const s1 = C2.U('s1'), h = C2.S.unites.find((u) => u.camp === 'h' && !u.ko), a1 = V.aff.get('s1');
+    const coup = (resultat, n) => V.jouer([
+      { type: 'attaque', de: h.id, vers: 's1', cap: 'fracas', anim: 'attaque', jets: [resultat === 'critique' ? 20 : 5], k: 5, mod: 2, resultat },
+      { type: 'degats', id: 's1', n, pv: s1.pv }]);
+    const chiffre = (g) => [...document.querySelectorAll(`.flottant.degats.${g}`)].pop();
+    const jusquA = (f) => { for (let k = 0; k < 60 && !f(); k++) game.dbg.advance(0.05); return f(); };
+    t.ok(V.ressenti.styles.join() === 'sobre,percutant,manga,cinema' && V.ressenti.style === 'percutant', 'quatre styles à essayer (?ressenti=…) ; Percutant par défaut');
+    coup('critique', 24);
+    let pas = 0;
+    t.ok(jusquA(() => (pas++, chiffre('critique'))), 'un critique : son chiffre éclate, en gros');
+    t.ok(pas * 0.05 < 0.45, `l’impact tombe quand la hache touche, avant la fin de l’animation (après ${(pas * 0.05).toFixed(2)} s ; l’animation dure 0,6 s)`);
+    const R = V.ressenti, gelCrit = R.gel;
+    t.ok(gelCrit > 0.1 && (R.calme || R.secousse > 4) && a1.eclair > 0.5 && (R.calme || a1.recul),
+      `l’impact : arrêt sur image (${Math.round(gelCrit * 1000)} ms), secousse, éclair blanc et recul de la cible`);
+    t.ok([...document.querySelectorAll('.flottant.critique-titre')].some((e) => e.textContent === 'Critique !'), '« Critique ! » au-dessus du chiffre');
+    const fx0 = a1.t; game.dbg.advance(0.05);
+    t.ok(a1.t === fx0 && V.ressenti.gel < gelCrit, 'pendant l’arrêt, les animations attendent');
+    jouerFile(); game.dbg.advance(0.3);
+    t.ok(V.ressenti.gel === 0 && V.ressenti.secousse === 0 && !(a1.eclair > 0) && !a1.recul, 'puis tout revient : plus d’arrêt, plus de secousse, ni éclair, ni recul');
+    // la même secousse à l'écran, que la vue soit loin ou zoomée (elle est comptée en px d'écran)
+    const ecranA = (() => { coup('touche', 12); jusquA(() => V.ressenti.secousse > 0); const v = V.ressenti.secousseEcran; jouerFile(); game.dbg.advance(0.4); return v; })();
+    V.zoomer(1); V.zoomer(1); V.zoomer(1); game.dbg.advance(1.5);
+    const ecranB = (() => { coup('touche', 12); jusquA(() => V.ressenti.secousse > 0); const v = V.ressenti.secousseEcran; jouerFile(); game.dbg.advance(0.4); return v; })();
+    V.zoomer(-1); V.zoomer(-1); V.zoomer(-1); game.dbg.advance(1.5);
+    t.ok(R.calme || (ecranA > 2 && Math.abs(ecranA - ecranB) < 0.5), `un touché secoue l’écran de ${ecranA.toFixed(1)} px de loin, ${ecranB.toFixed(1)} px zoomé : pareil`);
+    coup('eraflure', 5);
+    t.ok(jusquA(() => chiffre('eraflure')) && V.ressenti.gel > 0 && V.ressenti.gel < gelCrit / 3, 'une éraflure : un arrêt bien plus court, un chiffre plus petit');
+    jouerFile();
+    V.jouer([{ type: 'degats', id: 's1', n: 6, pv: s1.pv }]);
+    t.ok(jusquA(() => chiffre('autre')), 'des dégâts sans jet (le feu, un mur) : un impact léger');
+    jouerFile();
   }
 
   // --- À plusieurs (#80) : les règles du lobby, puis cette page en hôte, puis chez un ami ------------------------
@@ -553,5 +968,55 @@ export async function selfTest(t, game) {
   ihm.dom.finPhase.click(); jouerFile();
   t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
   multi.debrancherTest();
+
+  t.group('Shadow à l’écran (#198)');
+  {
+    // Shadow (#198) : au début, personne ne tient d'ennemi, le Pas dans l'ombre est grisé et dit pourquoi ; ensuite, on le joue au clic
+    let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
+    ihm.rejouer(); ihm.ui.choix = ['shadow', 'brute', 'mage', 'gardien'];
+    document.querySelector('#commencer').click(); jouerFile();
+    const C3 = game.dbg.combat, sh = C3.U('h1'), touche = (key) => { window.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })); game.dbg.advance(0.05); };
+    ihm.choisirHeros('h1'); game.dbg.advance(0.05);
+    const bouton = () => [...document.querySelectorAll('.capacite')][1];
+    t.ok(bouton().classList.contains('indispo'), 'au début, personne ne tient d’ennemi : le Pas dans l’ombre est grisé');
+    touche('2');
+    t.eq(ihm.ui.cap, null, 'et la touche 2 ne le choisit pas');
+    ihm.ui.capSurvol = 'pasOmbre'; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(ihm.dom.ficheCap.textContent.includes('Aucun ennemi à 7,5 m qu’un allié serre'), 'sa fiche dit pourquoi');
+    ihm.ui.capSurvol = null;
+    const place = (id, x, y) => { const u = C3.U(id); u.x = x; u.y = y; C3.S.evenements.push({ type: 'place', id, x, y }); };
+    place('h2', 8, 12); place('br', 9, 12); place('h1', 9, 15.5); jouerFile();
+    ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(!bouton().classList.contains('indispo'), 'la Brute tient la Brute ennemie : le Pas s’allume');
+    touche('2');
+    clic(9, 12 - 0.4); jouerFile();
+    t.ok(dist(sh, C3.U('br')) <= CONTACT && enTenaille(sh, C3.U('br'), [C3.U('h2')]) && !sh.t.bonus, 'un clic sur la cible : Shadow ressort derrière elle, en Tenaille');
+    try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
+  t.group('Baba à l’écran');
+  {
+    // Baba : la Chute d'Enclume au clic sur le sol, l'enclume dessinée là ; sans elle, la Forge est grisée et dit pourquoi
+    let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
+    ihm.rejouer(); ihm.ui.choix = ['baba-brisenclume', 'brute', 'mage', 'gardien'];
+    document.querySelector('#commencer').click(); jouerFile();
+    const C4 = game.dbg.combat, ba = C4.U('h1');
+    t.eq(ba.type, 'baba-brisenclume', 'Baba entre au terrain');
+    ihm.choisirHeros('h1'); game.dbg.advance(0.05);
+    const bouton = (id) => document.querySelector(`.capacite[data-capacite="${id}"]`);
+    t.ok(bouton('lameArdente')?.classList.contains('indispo'), 'sans enclume, la Lame ardente est grisée');
+    ihm.ui.capSurvol = 'trempe'; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(ihm.dom.ficheCap.textContent.includes('la Chute d’Enclume d’abord'), 'sa fiche dit pourquoi');
+    ihm.ui.capSurvol = null;
+    const p = { x: ba.x + 2, y: ba.y };
+    ihm.choisirCapacite('chuteEnclume');
+    clic(p.x, p.y); jouerFile();
+    t.ok(V.films.actif('chute-enclume') && V.enclume.cache === false, 'elle tombe dans son animation validée (le film de la Chute d’Enclume), qui continue après le coup');
+    for (let k = 0; k < 60 && V.films.actifs; k++) game.dbg.advance(0.1);
+    const E = V.enclume;
+    t.ok(C4.S.enclume && Math.abs(C4.S.enclume.x - p.x) < 0.05 && E && !E.cache && Math.abs(E.x / 32 - p.x) < 0.05 && !V.films.actif('chute-enclume'),
+      'un clic sur le sol : l’enclume tombe là, et la vue la dessine posée');
+    t.eq(V.sous(C4.S.enclume.x, C4.S.enclume.y - 0.3), 'enclume', 'on peut la viser (les Tenailles)');
+    try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
   ihm.rejouer();
 }

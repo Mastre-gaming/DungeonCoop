@@ -8,11 +8,13 @@
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
-import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour } from './regles.js';
+import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
-import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
+import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
+import { medaillon } from '../33_cadres.js';
 
 export const name = 'interface';
 export const always = true;
@@ -39,7 +41,7 @@ export function init(g, options) {
   ({ combat, vue, canvas, nouveauCombat } = options);
   if (options.horloge) ui.horloge = options.horloge;
   // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
-  ui.choix = (new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe).slice();
+  ui.choix = equipePour(new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe, monGithub());
   construire();
   if (options.mode === 'initiative') dom.accueil.querySelector('input[value=initiative]').checked = true;
   if (options.demarrer) commencer();
@@ -71,10 +73,16 @@ function construire() {
   dom.coin = el('div', { class: 'coin-phase bois' },
     dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
     dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
-  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
+  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des sorts
+  const loupSculpte = (cote) => el('div', { class: `loup ${cote}`, 'aria-hidden': 'true' }, el('div', { class: 'loup-bois' }), el('div', { class: 'socle' }));
   dom.bas = el('div', { class: 'bas-terrain' },
     dom.ficheCap = el('section', { class: 'fiche-capacite bois', hidden: true, 'aria-live': 'polite' }),
-    dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les capacités du héros choisi' }, dom.capacites = el('div', { class: 'capacites' })));
+    // la barre des sorts, comme celle du camp (BABA) : entre ses embouts de laiton et ses deux loups sculptés sur leur socle
+    el('div', { class: 'socle-sorts' }, loupSculpte('gauche'), el('span', { class: 'embout gauche', 'aria-hidden': 'true' }),
+      dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les sorts du héros choisi' },
+        ['hg', 'hd', 'bg', 'bd'].map((p) => el('span', { class: `rivet ${p}`, 'aria-hidden': 'true' })),
+        dom.capacites = el('div', { class: 'capacites' })),
+      el('span', { class: 'embout droite', 'aria-hidden': 'true' }), loupSculpte('droite')));
   dom.de = el('div', { class: 'de-grand', hidden: true, 'aria-live': 'polite' });
   dom.banniere = el('div', { class: 'banniere-terrain', hidden: true });
   dom.info = el('div', { class: 'carte-cible bois', hidden: true });
@@ -88,7 +96,7 @@ function construire() {
       ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
     dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
     dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
-    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, ou des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester ; les vraies classes restent celles de chacun). ◀ ▶ pour changer.'),
+    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (le Traqueur de Paolitus, Shadow de Fraps : chacune ne se joue que par son auteur). ◀ ▶ pour changer.'),
     dom.places = el('div', { class: 'places-accueil' }),
     dom.boutonsEquipe = el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { ui.choix = EQUIPE_KIT.slice(); dessinerPlaces(); } }, 'Le kit D1'),
@@ -123,7 +131,9 @@ const CLE_CHOIX = 'dungeoncoop:equipe-entrainement';
 function lireChoix() { try { return equipeDepuis(localStorage.getItem(CLE_CHOIX)); } catch { return null; } }
 const equipeAffichee = () => (reseau ? reseau.L.equipe : ui.choix);
 function changerClasse(k, sens) {
-  const i = CLASSES_ESSAI.indexOf(equipeAffichee()[k]), type = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  // (seulement les classes que je peux jouer : celle d'un autre joueur n'est qu'à lui)
+  const liste = classesPour(monGithub()), i = liste.indexOf(equipeAffichee()[k]);
+  const type = liste[i < 0 ? (sens > 0 ? 0 : liste.length - 1) : (i + sens + liste.length) % liste.length];
   if (reseau) return void reseau.classe(k, type);
   ui.choix[k] = type;
   dessinerPlaces();
@@ -131,7 +141,7 @@ function changerClasse(k, sens) {
 // à plusieurs : ma place, ou une place libre pour l'hôte (celle d'un ami, non)
 const peutRegler = (k) => !reseau || reseau.L.proprio[k] === reseau.moi || (reseau.hote && reseau.L.proprio[k] === null);
 function auHasard() {
-  const melange = CLASSES_ESSAI.slice().sort(() => Math.random() - 0.5);
+  const melange = classesPour(monGithub()).sort(() => Math.random() - 0.5);
   ui.choix = melange.slice(0, 4);
   dessinerPlaces();
 }
@@ -249,12 +259,19 @@ function choisirHeros(id) {
 }
 function choisirCapacite(id) {
   const h = herosChoisi();
-  if (id && (!h || !combat.peutUtiliser(h, CAPACITES[id]))) return false;
+  if (id && (!h || !utilisable(h, CAPACITES[id]))) return false;
   ui.cap = id && ui.cap !== id ? id : null;
   // une capacité sans cible (la potion) se lance tout de suite
   if (ui.cap && CAPACITES[ui.cap].type === 'potion') { agir({}); return true; }
   ui.sale = true;
   return true;
+}
+// Se désengager (#231) : l'action commune, sans cible, pour le héros choisi
+function desengager() {
+  const h = herosChoisi();
+  if (!h || vue.occupe() || !utilisable(h, CAPACITES.desengager)) return false;
+  ui.cap = 'desengager';
+  return agir({});
 }
 function agir(cible) {
   const h = herosChoisi(); if (!h || !ui.cap) return false;
@@ -270,6 +287,7 @@ function cliquer(p) {
     const cap = CAPACITES[ui.cap];
     if (cap.type === 'zone') return void agir({ x: p.x, y: p.y });
     if (dessous && combat.cibles(h, cap).some((c) => c.id === dessous)) return void agir({ id: dessous });
+    if (cap.type === 'enclume') return void agir({ x: p.x, y: p.y });          // la Chute d'Enclume sur le sol
     if (cap.el === 'feu' && combat.huileVisable(h, cap, p)) return void agir({ x: p.x, y: p.y });
     return;
   }
@@ -281,13 +299,14 @@ function cliquer(p) {
   const copie = combat.instantane();
   combat.deplacer(h, p.x, p.y, P);
   const evs = combat.S.evenements;
-  if (evs.some((e) => e.type === 'de')) ui.annuler = []; else ui.annuler.push(copie);   // sur la glace, le dé a parlé : pas d'annulation
+  if (evs.some((e) => e.type === 'de' || e.type === 'attaque')) ui.annuler = []; else ui.annuler.push(copie);   // sur la glace, ou une attaque d'opportunité : le dé a parlé, pas d'annulation
   ui.portee = null;
   vider();
 }
 function clavier(e) {
   if (e.target.closest?.('input, textarea')) return;
   if (e.key === 'Escape') { if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; return; }
+  if (e.code === 'KeyD' && !e.ctrlKey && !e.metaKey && !e.altKey) { desengager(); return; }
   if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const camp = e.shiftKey ? 'h' : 'e', oui = vue.basculerPlaques(camp);
     banniere(`Barres de vie ${camp === 'h' ? 'des alliés' : 'des ennemis'} : ${oui ? 'affichées' : 'cachées'}`);
@@ -299,9 +318,8 @@ function clavier(e) {
     if (ids.length) choisirHeros(ids[(ids.indexOf(ui.sel) + 1) % ids.length]);
     return;
   }
-  const n = Number(e.key);
-  const h = herosChoisi();
-  if (n >= 1 && n <= 9 && h) { const id = HEROS[h.type].capacites[n - 1]; if (id) choisirCapacite(id); }
+  const n = TOUCHES.indexOf(e.key), h = herosChoisi();
+  if (n >= 0 && h && !e.ctrlKey && !e.metaKey && !e.altKey) { const id = ordreBarre(HEROS[h.type].capacites, CAPACITES)[n]; if (id) choisirCapacite(id); }
 }
 function portee(h) { if (!ui.portee || ui.portee.id !== h.id || ui.portee.mv !== h.t.mv || ui.portee.x !== h.x || ui.portee.y !== h.y) ui.portee = { id: h.id, mv: h.t.mv, x: h.x, y: h.y, P: combat.portee(h) }; return ui.portee.P; }
 
@@ -331,6 +349,7 @@ export function update() {
       if (ui.survol) {
         if (cap.type === 'zone') m.zone = { x: ui.survol.x, y: ui.survol.y, r: cap.rayon, surf: cap.surf, ok: combat.zonePossible(h, cap, ui.survol) };
         const d = vue.sous(ui.survol.x, ui.survol.y);
+        if (cap.type === 'enclume' && !(d && m.cibles.includes(d))) m.zone = { x: ui.survol.x, y: ui.survol.y, r: 0.45, surf: 'enclume', ok: combat.zonePossible(h, cap, ui.survol) };
         if (d && m.cibles.includes(d)) { m.survolCible = d; info = combat.apercu(h, ui.cap, d); }
       }
     } else {
@@ -338,8 +357,11 @@ export function update() {
       if (ui.survol && !vue.sous(ui.survol.x, ui.survol.y)) {
         const a = combat.apercuMarche(h, ui.survol.x, ui.survol.y, portee(h));
         if (a.pts.length) {
-          m.chemin = a.pts; m.cheminOk = a.ok;
-          dom.distance.hidden = false; dom.distance.textContent = `${metres(a.longueur)} m${a.ok ? '' : ' : trop loin'}`;
+          // une attaque d'opportunité sur ce chemin (#231) : il passe en rouge, et dit qui frappera, ses chances et ses dégâts
+          m.chemin = a.pts; m.cheminOk = a.ok; m.cheminDanger = a.ok && a.menaces.length > 0;
+          const menaces = a.ok ? a.menaces.map((x) => `${x.nom} (${Math.round(x.touche * 100)} % · ${x.degats})`).join(', ') : '';
+          dom.distance.hidden = false; dom.distance.classList.toggle('danger', !!menaces);
+          dom.distance.textContent = `${metres(a.longueur)} m${a.ok ? '' : ' : trop loin'}${menaces ? ` · attaque d’opportunité : ${menaces}` : ''}`;
           dom.distance.style.left = `${ui.client.x + 14}px`; dom.distance.style.top = `${ui.client.y + 12}px`;
         }
       }
@@ -361,30 +383,47 @@ function joueurFiche(id) {
 // La fiche de la capacité (#85) : ce qu'elle fait, sans avoir besoin d'une cible. Celle qu'on survole dans la barre,
 // sinon celle qu'on a choisie.
 const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
+// Le Pas dans l’ombre de Shadow n’a de sens qu’avec un ennemi tenu par un allié : sans cible, on le montre indisponible.
+const sansCible = (h, cap) => cap.type === 'ombre' && !combat.cibles(h, cap).length;
+const utilisable = (h, cap) => combat.peutUtiliser(h, cap) && !sansCible(h, cap);
 function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
-  if (cap.cout && h.res.v < cap.cout) return `Pas assez de ${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
+  if (cap.type === 'enclume' && h.enclumeTombee) return 'Son enclume est déjà tombée : une fois par combat.';
+  if (cap.type === 'forge' && !combat.presDeLEnclume(h)) return combat.S.enclume ? 'Loin de son enclume : il doit être à son contact pour forger.' : 'Pas d’enclume : la Chute d’Enclume d’abord.';
+  if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m qu’un allié serre à 4,5 m.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
   return 'Pas maintenant.';
+}
+// la tête tient sur une ligne : sans « Sans coût », et la poussée (ou l’attraction) passe aux effets, où elle est souvent déjà
+const puces = (cap, ressource) => caracteristiques(cap, ressource).filter((t) => t !== 'Sans coût' && !/^(Pousse|Attire) de /.test(t));
+function effetsFiche(cap) {
+  const liste = effets(cap).map((e) => (/^[\d,]+ m$/.test(e.texte) ? { ...e, texte: `Pousse de ${e.texte}` } : e));
+  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${['attraction', 'tenailles'].includes(cap.type) ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
+  return liste;
 }
 function dessinerFiche(h) {
   const id = ui.capSurvol ?? ui.cap, cap = id ? CAPACITES[id] : null;
   if (!cap || !h || combat.S.phase !== 'heros' || vue.occupe()) { dom.ficheCap.hidden = true; return; }
-  const r = resultats(cap), ok = combat.peutUtiliser(h, cap), k = HEROS[h.type].capacites.indexOf(id) + 1;
+  const r = resultats(cap), ok = utilisable(h, cap);
+  const refus = ok ? null : el('span', { class: 'effet refus' }, pourquoiPas(h, cap));
   dom.ficheCap.dataset.capacite = id;
   dom.ficheCap.replaceChildren(
     el('header', { class: 'fc-tete' },
       el('img', { class: 'fc-icone', src: icone(id), alt: '' }),
       el('h2', {}, cap.nom),
       el('span', { class: `tampon ${cap.slot}` }, cap.slot === 'action' ? 'ACTION' : 'BONUS'),
-      el('span', { class: 'fc-carac' }, caracteristiques(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
+      el('span', { class: 'fc-carac' }, puces(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
     r ? el('div', { class: `fc-resultats n${r.length}` }, r.map((x) => el('div', { class: `fc-res ${x.g}` },
-      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : null,
-    el('div', { class: 'fc-effets' }, effets(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))),
-    el('p', { class: 'fc-aide' }, !ok ? pourquoiPas(h, cap)
-      : ui.cap === id ? (cap.type === 'zone' ? 'Clique là où poser la zone.' : cap.type === 'potion' ? '' : 'Clique sur une cible entourée d’or.')
-        : `${k ? `Touche ${k} ou clic` : 'Clic'} pour la choisir.${r && !cap.auto ? ` Contre un coriace (Brute ennemie, Chef), l’éraflure va jusqu’à d20 ${12 - cap.mod}.` : ''}`));
+      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20))))
+      : refus ? el('div', { class: 'fc-effets' }, refus) : '',
+    // pas d’aide en dessous (la touche est sur le bouton, les chances contre un coriace dans la carte de la cible) : la fiche
+    // garde la même hauteur ; quand la capacité est indisponible, la raison passe en tête des effets (ou à la place des
+    // résultats, pour une capacité sans dégâts)
+    el('div', { class: 'fc-effets' }, r ? refus : null,
+      effetsFiche(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))));
   dom.ficheCap.hidden = false;
 }
 
@@ -393,7 +432,7 @@ const etatsDe = (u) => Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean)
 // les états d'une créature, dans la carte : l'icône, le nom et les tours qui restent, puis ce que l'état fait
 function listeEtats(u) {
   const liste = etatsActifs(u);
-  if (!liste.length) return null;
+  if (!liste.length) return '';          // (replaceChildren écrirait « null »)
   return el('ul', { class: 'cc-etats' }, liste.map((e) => el('li', { class: e.genre, dataset: { etat: e.id } },
     el('img', { src: e.src, alt: '' }),
     el('span', { class: 'cc-etat-nom' }, e.nom, e.n != null ? el('small', {}, ` · encore ${e.n} tour${e.n > 1 ? 's' : ''}`) : null),
@@ -418,7 +457,7 @@ function dessinerInfo(info) {
     dom.info.replaceChildren(tete,
       el('div', { class: 'cc-jauge' }, el('span', { class: u.camp === 'e' ? 'ennemi' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
       listeEtats(u),
-      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : HEROS[u.type].role));
+      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : (HEROS[u.type] ?? FAMILIERS[u.type]).role));
   }
   dom.info.hidden = false;
   // à droite du pointeur, ou à gauche s'il n'y a pas la place
@@ -426,40 +465,70 @@ function dessinerInfo(info) {
   dom.info.style.left = `${Math.max(8, x)}px`; dom.info.style.top = `${Math.max(8, ui.client.y - 24)}px`;
 }
 
+// Le médaillon d'un héros (33_cadres.js, celui du camp, à ×1), dessiné une fois par classe.
+const medaillons = new Map();
+function medaillonDe(type) {
+  if (!medaillons.has(type)) medaillons.set(type, medaillon(vue.planche(type), { p: 1 }).toDataURL());
+  return medaillons.get(type);
+}
+
 function dessinerTout() {
   const S = combat.S, groupe = S.phase === 'heros' ? combat.groupeCourant()?.ids ?? [] : [];
   dom.etat.textContent = S.phase === 'preparation' ? 'Prêt' : S.phase === 'fini' ? (S.resultat === 'victoire' ? `Victoire au round ${S.round}` : `Défaite au round ${S.round}`)
     : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`;
   if (S.phase !== 'heros') dom.chrono.textContent = '';
-  // les fiches des héros
+  // les fiches des héros : le médaillon du héros du camp, en petit, et son bandeau de bois (DESIGN.fr.md §5)
   dom.equipe.replaceChildren(...S.heros.map((id) => {
     const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
     const etats = etatsDe(u);
-    // PV et ressource sur une seule ligne, la jauge dessous (les maquettes)
-    return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
-      vue.portrait(u.type, 40),
-      el('span', { class: 'fh-corps' },
+    const pv = Math.max(0, u.pv), part = (v, max) => `width:${max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0}%`;
+    // une jauge : le texte écrit dedans (court), et le texte entier pour les lecteurs d'écran et au survol
+    const jauge = (classe, v, max, texte, court = texte, extra = {}) => el('span', { class: `fh-jauge ${classe}`, role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(max), 'aria-valuenow': String(v), 'aria-label': texte, title: texte, ...extra },
+      el('span', { class: 'rempli', style: part(v, max) }), el('span', { class: 'texte' }, court));
+    return el('button', { type: 'button', class: `fiche-heros${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id),
+      'aria-label': `${H.nom}${u.ko ? ', KO' : ''} : ${pv} sur ${u.pvMax} PV${u.res.max ? `, ${u.res.type} ${u.res.v} sur ${u.res.max}` : ''}` },
+      el('img', { class: 'fh-medaillon', src: medaillonDe(u.type), alt: '' }),
+      el('span', { class: 'fh-bandeau' },
         el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
           el('span', { class: `fh-potion${u.potion ? '' : ' bue'}`, title: u.potion ? 'Sa potion' : 'Potion bue' }, el('img', { src: icone('potion'), alt: u.potion ? 'potion' : 'potion bue' }))),
-        el('span', { class: 'fh-chiffres' }, el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`), el('span', { class: `fh-res ${u.res.type}` }, `${u.res.type} ${u.res.v}/${u.res.max}`)),
-        el('span', { class: 'jauge' }, el('span', { class: u.pv <= u.pvMax * 0.3 ? 'bas' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
-        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`),
-        etats.length ? el('span', { class: 'fh-etats' }, etats.join(' · ')) : null));
+        // la vie et la ressource sur une ligne (la version compacte) : la ressource se reconnaît à sa couleur
+        el('span', { class: `fh-jauges${u.res.max ? '' : ' seule'}` },
+          jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`, `${pv}/${u.pvMax} PV`),
+          u.res.max ? jauge('res', u.res.v, u.res.max, `${u.res.type} ${u.res.v} / ${u.res.max}`, `${u.res.v}/${u.res.max}`, { dataset: { res: u.res.type } }) : null),
+        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
+          etats.length ? el('span', { class: 'fh-etats' }, ` · ${etats.join(' · ')}`) : null)));
   }));
-  // la barre des capacités : l'icône, le nom, action ou bonus, les dégâts d'un touché (ou ce qu'elle fait), la touche
+  // la barre des sorts : une case par capacité (l'icône, A ou B, son coût, sa touche), rangées par sorte ; le nom et le reste
+  // sont dans la fiche au-dessus, au survol ou au choix
   const h = herosChoisi();
-  dom.capacites.replaceChildren(...(h && S.phase === 'heros' ? HEROS[h.type].capacites.map((id, k) => {
-    const c = CAPACITES[id], ok = combat.peutUtiliser(h, c);
-    const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
-    return el('button', { type: 'button', class: `capacite ${c.slot}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
-      dataset: { capacite: id }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
-    el('span', { class: 'cap-icone' }, el('img', { src: icone(id), alt: '' }), TAMPONS[id] ? el('span', { class: 'cap-tampon' }, TAMPONS[id]) : null),
-    el('span', { class: 'cap-texte' }, el('span', { class: 'cap-nom' }, c.nom),
-      el('span', { class: 'cap-slot' }, el('span', { class: `tampon ${c.slot}` }, c.slot === 'action' ? 'ACT' : 'BONUS'), el('span', { class: 'cap-resume' }, resume(c)))),
-    el('kbd', {}, String(k + 1)));
-  }) : [el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : '')]));
-  const n = dom.capacites.children.length;
-  dom.capacites.style.setProperty('--col', n <= 5 ? n : Math.ceil(n / 2));
+  if (h && S.phase === 'heros') {
+    const ordre = ordreBarre(HEROS[h.type].capacites, CAPACITES);
+    const caseSort = (id) => {
+      const c = CAPACITES[id], ok = utilisable(h, c), touche = TOUCHES[ordre.indexOf(id)] ?? '', s = sorteDe(id, c);
+      const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
+      return el('button', { type: 'button', class: `capacite ${c.slot} s-${s}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
+        'aria-label': `${c.nom}, ${c.slot === 'action' ? 'action' : 'action bonus'}${c.cout ? `, ${c.cout} ${h.res.type}` : ''}${touche ? `, touche ${touche}` : ''}`, title: c.nom,
+        dataset: { capacite: id, sorte: s }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
+      el('img', { class: 'cap-img', src: icone(id), alt: '' }),
+      el('span', { class: `cap-slot ${c.slot}`, 'aria-hidden': 'true' }, c.slot === 'action' ? 'A' : 'B'),
+      TAMPONS[id] ? el('span', { class: 'cap-tampon', 'aria-hidden': 'true' }, TAMPONS[id]) : null,
+      c.cout ? el('span', { class: 'cap-cout', dataset: { res: h.res.type }, 'aria-hidden': 'true' }, String(c.cout)) : null,
+      touche ? el('kbd', {}, touche) : null);
+    };
+    const groupes = SORTES.map((s) => ({ ...s, ids: ordre.filter((id) => sorteDe(id, CAPACITES[id]) === s.id) })).filter((g) => g.ids.length);
+    // la dernière catégorie : le mouvement, l'action commune de tous les héros (#231) : se désengager (partir du contact sans
+    // attaque d'opportunité, pour son action bonus), sur la touche D
+    const dg = CAPACITES.desengager, okD = !vue.occupe() && utilisable(h, dg);
+    const survolD = (oui) => () => { if (oui ? ui.capSurvol !== 'desengager' : ui.capSurvol === 'desengager') { ui.capSurvol = oui ? 'desengager' : null; ui.sale = true; } };
+    dom.desengager = el('button', { type: 'button', id: 'desengager', class: `capacite bonus s-mouvement${okD ? '' : ' indispo'}`, 'aria-disabled': okD ? null : 'true',
+      'aria-label': `${dg.nom}, action bonus, touche D`, title: dg.nom, dataset: { capacite: 'desengager', sorte: 'mouvement' },
+      onclick: () => desengager(), onmouseenter: survolD(true), onmouseleave: survolD(false), onfocus: survolD(true), onblur: survolD(false) },
+    el('img', { class: 'cap-img', src: icone('desengager'), alt: '' }), el('span', { class: 'cap-slot bonus', 'aria-hidden': 'true' }, 'B'), el('kbd', {}, 'D'));
+    dom.capacites.replaceChildren(...groupes.map((g) => el('div', { class: `groupe-sorts s-${g.id}`, role: 'group', 'aria-label': g.nom },
+      el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, g.nom), el('div', { class: 'cases-sorts' }, g.ids.map(caseSort)))),
+      el('div', { class: 'groupe-sorts s-mouvement', role: 'group', 'aria-label': 'Mouvement' },
+        el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, 'Mouvement'), el('div', { class: 'cases-sorts' }, dom.desengager)));
+  } else dom.capacites.replaceChildren(el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : ''));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
   dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)

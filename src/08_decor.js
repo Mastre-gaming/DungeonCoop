@@ -18,7 +18,7 @@ const VIE = [0, 1, 2, 3, 2, 1, 0];
 // Où une étoile peut naître (coordonnées du panneau 96 x 80) : la carte (plus souvent), la traverse, le haut des poteaux.
 const ZONES_ETOILE = [[6, 8, 90, 17], [18, 19, 77, 58], [10, 3, 17, 30], [79, 3, 86, 30]];
 
-let feu, spriteFeu, panneau, spritePanneau, gPanneau, images, temps = 0, niveaux = {};
+let feuCache = false, feu, spriteFeu, panneau, spritePanneau, gPanneau, images, temps = 0, niveaux = {};
 const etoiles = { liste: [], prochaine: 0, appel: false, force: false };   // force : la sentinelle le montre (le tour)
 
 export function init(game, { rendu, camp, images: im }) {
@@ -71,5 +71,8 @@ export const api = {
   get nbEtoiles() { return etoiles.liste.length; },
   zoneVisee: null,           // une zone qui clignote sur la carte (celle choisie dans le panneau des missions)
   get imageFeu() { return Math.floor(temps / feu.pas) % feu.images; },
+  // La place du village (36_place.js) dessine le feu elle-même : elle cache celui-ci.
+  cacherFeu(oui = true) { spriteFeu.cacher(oui); feuCache = oui; },
+  get feuCache() { return feuCache; },
   panneau: () => panneau,
 };

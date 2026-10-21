@@ -1,0 +1,97 @@
+Character: Baba Brisenclume
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=muscular&body=Body_Color_amber&head=Human_Male_Elderly_amber&expression=Angry_amber&hair=Balding_white&beard=Winter_Beard_white&bauldron=Bauldron_leather&shoulders=Pauldrons_black&bracers=Bracers_copper&legs=Pants_charcoal&shoes=Rimmed_Boots_brown&mustache=Mustache_white
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/muscular/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, JaidynReiman, Evert, TheraHedwig, MuffinElZangano, Durrani, Sander Frenken (castelonia), Benjamin K. Smith (BenCreating), Eliza Wyatt (ElizaWy), dalonedrau, Stephen Challener (Redshrike)
+
+head/heads/human/male_elderly/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY 3.0
+
+Authors: Benjamin K. Smith (BenCreating), Eliza Wyatt (ElizaWy), Stephen Challener (Redshrike)
+
+head/faces/elderly/anger/walk.png
+
+Original by Redshrike, Expressions by ElizaWy, mapped to all frames by JaidynReiman
+
+Licenses: OGA-BY 3.0
+
+Authors: JaidynReiman, ElizaWy, Stephen Challener (Redshrike)
+
+hair/balding/adult/walk.png
+
+Licenses: OGA-BY 3.0
+
+Authors: ElizaWy
+
+beards/beard/winter/male/walk.png
+
+Licenses: CC0
+
+Authors: bluecarrot16
+
+shoulders/bauldron/male/walk.png
+
+Original by Nila122, climb/jump/sit/emote/run by JaidynReiman
+
+Licenses: GPL 2.0, GPL 3.0, OGA-BY 3.0, CC-BY-SA 3.0
+
+Authors: Nila122, JaidynReiman
+
+shoulders/pauldrons/male/walk.png
+
+adapted to female base by makrohn, adapted to v3 bases by bluecarrot16, climb/jump/sit/emote/run/revised combat by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Matthew Krohn (makrohn), Johannes Sjölund (wulax), bluecarrot16, JaidynReiman
+
+arms/bracers/male/walk.png
+
+original by wulax, adjustments by Makrohn, climb/emote/jump/sit/run by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Matthew Krohn (makrohn), Johannes Sjölund (wulax), JaidynReiman
+
+legs/pants/male/walk.png
+
+original male pants by wulax, recolors and edits to v3 base by bluecarrot16, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+feet/boots/rimmed/male/walk.png
+
+Licenses: OGA-BY 3.0+, CC-BY 3.0+, GPL 3.0
+
+Authors: JaidynReiman
+
+beards/mustache/basic/walk.png
+
+Original by Nemisys, repositioning by JaidynReiman.
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: JaidynReiman, Carlo Enrico Victoria (Nemisys)
+
+Download TXT
+Download CSV
+
+Retravaillé pour le jeu par l'équipe (design/classes/baba-brisenclume/outil/forge.mjs), CC-BY-SA 3.0 comme les pièces qu'il touche :
+- les deux marteaux à une main (manche, tête de fer, faces chauffées à blanc), dessinés dans chaque image, placés grâce aux gants LPC (Gloves, non livrés) ;
+- la peau bronzée, les yeux en feu, les épaulières de fer noirci aux bords incandescents et aux fissures de lave, les brassards de cuivre brûlant avec leurs rivets ;
+- les braises et les pointes roussies de la barbe, les étincelles qui montent, la lueur des marteaux ;
+- les rangées du tir (absentes pour le corps musclé) remplacées par la pose debout.

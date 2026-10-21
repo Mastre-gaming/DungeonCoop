@@ -6,7 +6,11 @@
 // Le nom affiché vient de la sentinelle (le nom de dev) ; en ?visite, rien de tout ça.
 // En revenant du terrain d'entraînement à plusieurs (#80) : ?hote=ABCDE rouvre le groupe avec le même code, ?code=ABCDE
 // le rejoint ; on réessaie un moment (l'hôte n'est peut-être pas encore revenu, son ancien code pas encore libéré).
+// Chacun dit aussi quel héros il incarne (41_choix_heros.js) : sa copie porte ce héros, et le héros pris quitte le camp
+// (il ne se promène plus, 42_promeneurs.js ; Baba quitte sa forge). Un ami qui arrive, qui part ou qui change de héros :
+// la colonne dorée tombe sur lui (43_apparitions.js) ; il se montre (ou s'en va) quand elle touche le sol.
 import * as partyNet from './skills/party-net/module/03_skill.js';
+import { HEROS, DEPART } from './41_choix_heros.js';
 
 export const name = 'reseau';
 export const always = true;
@@ -39,7 +43,7 @@ function el(tag, attrs = {}, ...enfants) {
   return n;
 }
 
-let game, party, rendu, heros, images, sentinelle, visite, panneau, noms, statut = '', copie = 0;
+let game, party, rendu, heros, images, sentinelle, apparitions, visite, panneau, noms, statut = '', copie = 0;
 let attente = null;          // { sorte: 'hote' | 'invite', code, essais } : un groupe qu'on réessaie d'ouvrir ou de rejoindre
 const RATE = { hote: 'That code is taken, try again', invite: 'No room with that code' };
 const copies = new Map();   // id → { sprite, ombre, etiquette, t }
@@ -50,8 +54,8 @@ const nomAffiche = () => sentinelle?.qui?.nom || 'Voyageur';
 function creerParty(transport) {
   party?.dispose?.();
   party = partyNet.createParty({
-    transport, fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge'],
-    me: () => { const h = heros.heros; return { x: h.x, y: h.y, vx: h.vx, vy: h.vy, dir: DIRS.indexOf(h.dir), court: h.court ? 1 : 0, bouge: h.bouge ? 1 : 0 }; },
+    transport, fields: ['x', 'y', 'vx', 'vy', 'dir', 'court', 'bouge', 'heros'],
+    me: () => { const h = heros.heros; return { x: h.x, y: h.y, vx: h.vx, vy: h.vy, dir: DIRS.indexOf(h.dir), court: h.court ? 1 : 0, bouge: h.bouge ? 1 : 0, heros: Math.max(0, HEROS.findIndex((x) => x.id === heros.incarne?.id)) }; },
     name: nomAffiche,
     settings: { snap: 320 },   // (en pixels : au-delà de 10 cases d'écart, la copie saute au lieu de glisser)
     ...(api.horloge ? { now: api.horloge } : {}),
@@ -67,7 +71,7 @@ function creerParty(transport) {
 
 export function init(g, options) {
   game = g;
-  ({ rendu, heros, images, sentinelle, visite } = options);
+  ({ rendu, heros, images, sentinelle, apparitions, visite } = options);
   noms = el('div', { id: 'noms', 'aria-hidden': 'true' });
   panneau = el('section', { id: 'groupe', class: 'groupe-jeu', 'aria-label': 'Jouer à plusieurs' });
   document.body.append(noms, panneau);
@@ -154,20 +158,35 @@ export function update(dt) {
   party.update(dt);
 
   // les autres héros : une copie qui glisse là où ils ont dit être, avec leur animation et leur nom
-  for (const [id, c] of copies) if (!party.others.has(id)) { c.sprite.retirer(); c.ombre.retirer(); c.etiquette.remove(); copies.delete(id); }
+  for (const [id, c] of copies) if (!party.others.has(id)) {
+    apparitions?.jouer('disparait', c.x ?? 0, c.y ?? 0);   // il part : la lumière tombe là où il était
+    c.sprite.retirer(); c.ombre.retirer(); c.etiquette.remove(); copies.delete(id);
+  }
   for (const o of party.others.values()) {
     let c = copies.get(o.id);
     if (!c) {
-      c = { sprite: rendu.sprite(images.heros, 'heros', 64, 64), ombre: rendu.ombre(18, 4), etiquette: el('div', { class: 'etiquette' }), t: 0 };
+      c = { sprite: rendu.sprite(images.heros, 'heros', 64, 64), feuille: { source: images.heros, nom: 'heros' }, ombre: rendu.ombre(18, 4), etiquette: el('div', { class: 'etiquette' }), t: 0, heros: DEPART, montre: 0, nouveau: true };
       noms.append(c.etiquette);
       copies.set(o.id, c);
     }
+    // le héros qu'il incarne : sa copie change de planche
+    const h = HEROS[Math.round(o.state.heros)] ?? DEPART;
+    if (h !== c.heros && images[h.image]) {
+      c.sprite.retirer(); c.sprite = rendu.sprite(images[h.image], `heros-${h.id}`, 64, 64); c.heros = h; c.feuille = { source: images[h.image], nom: `heros-${h.id}` };
+      if (!c.nouveau) c.montre = apparitions?.jouer('apparait', o.shown.x, o.shown.y) ?? 0;   // il change de héros : la lumière aussi
+    }
+    // il arrive : la colonne dorée, puis lui
+    if (c.nouveau) { c.nouveau = false; c.montre = apparitions?.jouer('apparait', o.shown.x, o.shown.y) ?? 0; }
+    c.montre = Math.max(0, c.montre - dt);
+    c.sprite.cacher(c.montre > 0); c.ombre.cacher(c.montre > 0); c.etiquette.hidden = c.montre > 0;
     const s = o.shown, bouge = o.state.bouge > 0.5, court = o.state.court > 0.5;
     const ligne = Math.max(0, Math.min(3, Math.round(o.state.dir)));
     c.t = bouge ? c.t + dt : 0;
-    const rang = (bouge && court ? 38 : 8) + ligne, col = !bouge ? 0 : court ? Math.floor(c.t * 14) % 8 : 1 + (Math.floor(c.t * 10) % 8);
+    const course = court && c.heros.course;   // (sans rangée de course : la marche, au rythme de la course)
+    const rang = (bouge && course ? 38 : 8) + ligne, col = !bouge ? 0 : course ? Math.floor(c.t * 14) % 8 : 1 + (Math.floor(c.t * (court ? 14 : 10)) % 8);
     c.sprite.poser(s.x - 32, s.y - 60, s.y, col * 64, rang * 64);
     c.ombre.poser(s.x, s.y - 1);
+    c.x = s.x; c.y = s.y; c.ligne = ligne; c.rang = rang; c.col = col;   // (pour sa torche et la main qui la tient, 46_jour_nuit.js)
     placerEtiquette(c.etiquette, s.x, s.y, o.name);
   }
   // mon nom au-dessus de mon héros (dès que la sentinelle le connaît)
@@ -183,6 +202,8 @@ export const api = {
   copies,
   horloge: null,
   heberger, rejoindre, quitter, nom: nomAffiche,
+  // les héros incarnés par les autres joueurs du groupe (leurs id)
+  herosPris() { return new Set([...copies.values()].map((c) => c.heros.id)); },
   get statut() { return statut; },
   get panneau() { return panneau; },
   // Pour les tests : le même camp sur un fil « loopback » (party-net), avec son horloge.

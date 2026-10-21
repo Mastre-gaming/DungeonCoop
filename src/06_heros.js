@@ -5,6 +5,8 @@
 // Pendant le tour de la sentinelle, il la suit tout seul (une route), et court s'il est loin (presser).
 // Mordu par un rat, il rougit un instant (rougir) : la même planche, teintée de rouge.
 // Le déplacement se fait par pas fixes (step), l'animation à chaque image (update).
+// Le héros incarné (41_choix_heros.js) change de planche avec incarner() : une planche LPC de 64 px, la marche en rangées
+// 8 à 11 ; sans rangée de course (les classes), Maj le fait marcher au rythme de la course.
 import { PIED } from './05_collision.js';
 
 export const name = 'heros';
@@ -14,6 +16,8 @@ const MARCHE = 8, COURSE = 38;                            // les rangées de la 
 const DEFAUTS = { marche: 74, course: 138, imagesMarche: 10, imagesCourse: 14 };   // px/s : ~2,3 et ~4,3 cases par seconde
 
 let game, cfg, rendu, collision, sprite, spriteRouge, ombre, canvas, rouge = 0, cache = false;
+let feuille = null;   // la planche montrée et le nom de sa texture (la main qui tient la torche la reprend : 46_jour_nuit.js)
+let incarne = { id: 'depart', course: true };   // le héros incarné : son id, et s'il a une rangée de course
 // controle : false pendant une scène (la sentinelle) : le clavier et les clics ne le font plus bouger, une route oui.
 const heros = { x: 0, y: 0, vx: 0, vy: 0, dir: 'bas', bouge: false, court: false, t: 0, route: null, bloqueDepuis: 0, controle: true, presse: false };
 const doigt = { tenu: false, x: 0, y: 0, recalcule: 0 };
@@ -24,6 +28,7 @@ export function init(g, options) {
   heros.x = options.x; heros.y = options.y;
   ombre = rendu.ombre(18, 4);
   sprite = rendu.sprite(options.images.heros, 'heros', 64, 64);
+  feuille = { source: options.images.heros, nom: 'heros' };
   spriteRouge = rendu.sprite(teinter(options.images.heros), 'heros-rouge', 64, 64);
   spriteRouge.cacher(true);
 
@@ -106,11 +111,13 @@ export function update(dt) {
   if (heros.bouge) heros.t += dt; else heros.t = 0;
   const ligne = LIGNES[heros.dir];
   let rang = MARCHE + ligne, col = 0;
-  if (heros.bouge && heros.court) { rang = COURSE + ligne; col = Math.floor(heros.t * cfg.imagesCourse) % 8; }
+  if (heros.bouge && heros.court && incarne.course) { rang = COURSE + ligne; col = Math.floor(heros.t * cfg.imagesCourse) % 8; }
+  else if (heros.bouge && heros.court) col = 1 + Math.floor(heros.t * cfg.imagesCourse) % 8;
   else if (heros.bouge) col = 1 + Math.floor(heros.t * cfg.imagesMarche) % 8;
   rouge = Math.max(0, rouge - dt);
   sprite.cacher(cache || rouge > 0); spriteRouge.cacher(cache || rouge <= 0);
   sprite.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
+  heros.rang = rang; heros.col = col;
   spriteRouge.poser(heros.x - 32, heros.y - 60, heros.y, col * 64, rang * 64);
   ombre.poser(heros.x, heros.y - 1);
 }
@@ -127,4 +134,19 @@ export const api = {
   rougir(duree = 0.12) { rouge = duree; update(0); },
   get rouge() { return rouge; },
   pied: PIED,
+  // incarner un autre héros : sa planche LPC (64 px) ; course : s'il a les rangées de course
+  incarner(def, planche) {
+    if (!def || !planche) return;
+    sprite.retirer(); spriteRouge.retirer();
+    sprite = rendu.sprite(planche, `heros-${def.id}`, 64, 64);
+    feuille = { source: planche, nom: `heros-${def.id}` };
+    spriteRouge = rendu.sprite(teinter(planche), `heros-${def.id}-rouge`, 64, 64);
+    incarne = { ...def, course: !!def.course };
+    sprite.cacher(cache); spriteRouge.cacher(true);
+    update(0);
+    game.bus.emit('heros:incarne', incarne);
+  },
+  get incarne() { return incarne; },
+  get sprite() { return sprite; },
+  get feuille() { return feuille; },
 };

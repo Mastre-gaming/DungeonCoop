@@ -8,13 +8,15 @@ import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
 import * as SALLE from './salle.js';
 import { creerTrame } from './geometrie.js';
-import { creerCombat, equipeDepuis, EQUIPE_KIT } from './regles.js';
+import { creerCombat, equipeDepuis, equipePour, EQUIPE_KIT } from './regles.js';
+import { monGithub } from './joueur.js';
 import * as vueSkill from './vue.js';
 import * as interfaceSkill from './interface.js';
 import * as multiSkill from './multi.js';
 import * as tests from './tests.js';
 import PERSOS from './persos.json';
 import { PLANCHES as EFFETS } from './effets.js';
+import { PLANCHES as FILMS } from './films.js';
 import { habiller } from '../33_cadres.js';
 import '../panneau.css';
 import '../jeu.css';
@@ -30,9 +32,10 @@ const game = createGame({ storage: { prefix: 'dungeoncoop:' } });
 
 async function demarrer() {
   const planches = {
-    herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
+    limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
+    ...FILMS,                     // les animations validées de Baba Brisenclume (films.js)
   };
   const images = await chargerImages('./assets/lpc/', planches);
   const canvas = document.querySelector('#jeu');
@@ -44,7 +47,7 @@ async function demarrer() {
   const salle = SALLE.salle(), trame = creerTrame(salle);
   const alea = query.has('graine') || query.has('test') ? graine(Number(query.get('graine')) || 20261018) : Math.random;
   // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
-  const equipe = equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT;
+  const equipe = equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (la classe d'un autre joueur : pas pour moi)
   const creer = (eq) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, equipe: eq, alea });
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.

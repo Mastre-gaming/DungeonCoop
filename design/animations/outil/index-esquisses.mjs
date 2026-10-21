@@ -8,7 +8,7 @@ import { W, H, FPS } from './moteur.mjs';
 
 const FAMILLES = [
   ['Le Mage', 'mage'], ["Le Voleur et l'Éclaireuse", 'tireurs'], ['Le Druide et la Barde', 'nature'],
-  ['Le Gardien et le Chevalier', 'soutien'], ['La mêlée et les gestes de tous', 'melee'],
+  ['Le Gardien et le Chevalier', 'soutien'], ['La mêlée et les gestes de tous', 'melee'], ['Baba Brisenclume', 'forgeron'],
 ];
 const index = { w: W, h: H, fps: FPS, effets: [] };
 for (const [famille, m] of FAMILLES) {

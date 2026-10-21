@@ -35,23 +35,41 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .haut-terrain .bouton-jeu, .barre-terrain .bouton-jeu, .cadre-terrain .bouton-jeu { font-size: .9rem; padding: 4px 10px; text-decoration: none; display: inline-block; }
 
 /* les héros, à gauche : PV et ressource sur une ligne, la jauge dessous */
-.equipe-terrain { position: fixed; left: 8px; top: 72px; z-index: 8; display: grid; gap: 12px; width: 284px; }   /* (12 px : les coins de laiton ne se touchent pas) */
-.fiche-heros { position: static; display: grid; grid-template-columns: auto 1fr; gap: 8px; align-items: center; padding: 6px 8px; text-align: left; cursor: pointer; }
-.fiche-heros .portrait-terrain { width: 40px; height: 40px; image-rendering: pixelated; background: #fffaf0; border: 2px solid var(--bois-clair); border-radius: 3px; }
-.fiche-heros .fh-corps { display: grid; gap: 2px; min-width: 0; font: 500 12px var(--titre); }
-.fiche-heros .fh-titre { display: flex; align-items: center; gap: 6px; }
-.fiche-heros strong { font: 700 .95rem var(--titre); }
+/* les fiches des héros : le médaillon du héros du camp (33_cadres.js, ×1) et son bandeau de bois (DESIGN.fr.md §5) */
+:root { --res-rage: #c8402e; --res-mana: #3d7fd6; --res-concentration: #9a5ad6; --res-foi: #e0b04a; --res-energie: #4fa83a; --res-elan: #2fa79a; --vie-allie: #4f9a33; }
+.equipe-terrain { position: fixed; left: 8px; top: 72px; z-index: 8; display: grid; gap: 4px; width: 256px; }
+.fiche-heros { position: relative; display: block; width: 100%; min-height: 60px; margin: 0; padding: 0 0 0 30px; border: 0; background: none; text-align: left; cursor: pointer; color: var(--creme); font: 500 12px var(--titre); }
+.fiche-heros .fh-medaillon { position: absolute; left: 0; top: calc(50% - 30px); z-index: 1; width: 60px; height: 60px; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45)); }
+/* le bout arrondi fait 26 px : le texte et les jauges s'arrêtent avant la courbe (la version compacte : 54 px de haut) */
+.fiche-heros .fh-bandeau { display: grid; gap: 2px; min-height: 54px; margin: 3px 0; box-sizing: border-box; padding: 4px 18px 4px 36px; align-content: center;
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); border: 3px solid var(--bois-nuit); border-radius: 5px 26px 26px 5px;
+  box-shadow: inset 0 0 0 2px var(--laiton-clair), inset 0 0 0 3px var(--laiton-fonce), inset 0 0 0 4px var(--bois-fonce), 0 4px 0 rgba(0, 0, 0, .4); image-rendering: pixelated; }
+.fiche-heros .fh-titre { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.fiche-heros strong { font: 700 13px/15px var(--titre); text-shadow: var(--contour-or); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fiche-heros .fh-potion { margin-left: auto; display: inline-flex; }
 .fiche-heros .fh-potion img { width: 15px; height: 16px; image-rendering: pixelated; }
 .fiche-heros .fh-potion.bue img { filter: grayscale(1); opacity: .35; }
-.fiche-heros .fh-chiffres { display: flex; gap: 10px; white-space: nowrap; }
-.fh-res { color: var(--parchemin-doux); }
-.fh-res.Rage { color: #a3261c; } .fh-res.Mana { color: #2f5fa8; } .fh-res.Concentration { color: #7a3fb8; } .fh-res.Foi { color: #a8761b; } .fh-res.Énergie { color: #2c7a2a; }
-.fiche-heros .fh-ligne { color: var(--parchemin-doux); }
-.fiche-heros.choisi { outline: 3px solid #7ce0ff; outline-offset: 1px; }
+/* une jauge (DESIGN §5) : bois nuit, bordure noire 1 px, anneau bois clair, remplissage plein, le texte dedans */
+.fh-jauges { display: grid; grid-template-columns: 1.65fr 1fr; gap: 4px; }
+.fh-jauges.seule { grid-template-columns: 1fr; }
+.fh-jauge { position: relative; display: block; min-width: 0; height: 12px; background: var(--bois-nuit); border: 1px solid #000; box-shadow: 0 0 0 1px var(--bois-clair); overflow: hidden; }
+.fh-jauge .rempli { position: absolute; left: 0; top: 0; bottom: 0; background: var(--vie-allie); transition: width .25s; }
+.fh-jauge.pv.bas .rempli { background: var(--braise); }
+.fh-jauge .texte { position: relative; display: block; text-align: center; font: 500 10px/12px var(--titre); color: #fff7e6; white-space: nowrap;
+  text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
+/* la ressource : sa couleur pleine, et le vide teinté d'elle (on reconnaît la ressource même à 0) */
+.fh-jauge[data-res="Rage"] { --c: var(--res-rage); } .fh-jauge[data-res="Mana"] { --c: var(--res-mana); }
+.fh-jauge[data-res="Concentration"] { --c: var(--res-concentration); } .fh-jauge[data-res="Foi"] { --c: var(--res-foi); }
+.fh-jauge[data-res="Énergie"] { --c: var(--res-energie); } .fh-jauge[data-res="Élan"] { --c: var(--res-elan); }
+.fh-jauge.res { background: color-mix(in srgb, var(--c) 28%, var(--bois-nuit)); }
+.fh-jauge.res .rempli { background: var(--c); }
+.fiche-heros .fh-ligne { font: 500 11px/12px var(--titre); color: var(--laiton-clair); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fh-etats { color: var(--braise); }
+.fiche-heros.choisi .fh-bandeau { border-color: var(--or); box-shadow: inset 0 0 0 2px var(--or), inset 0 0 0 3px var(--laiton-fonce), inset 0 0 0 4px var(--bois-fonce), 0 4px 0 rgba(0, 0, 0, .4); }
+.fiche-heros.choisi .fh-medaillon, .fiche-heros:hover .fh-medaillon { filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .45)) brightness(1.12); }
+.fiche-heros:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
 .fiche-heros.attend { opacity: .72; }
 .fiche-heros.ko { filter: grayscale(.9); opacity: .6; }
-.fh-etats { color: #8a3d12; font-weight: 600; }
 .jauge { display: block; height: 7px; background: var(--bois-nuit); border: 2px solid var(--bois-fonce); box-shadow: 0 0 0 1px var(--bois-clair); overflow: hidden; }
 .jauge > span { display: block; height: 100%; background: #3f9a3b; transition: width .25s; }
 .jauge > span.bas { background: #d8742c; }
@@ -72,48 +90,84 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 
 /* en bas : la fiche de la capacité, au-dessus de la barre des capacités (du bois sombre) */
 .bas-terrain { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 9; display: flex; flex-direction: column; align-items: center; gap: 8px;
-  width: max-content; max-width: calc(100vw - 600px); min-width: min(640px, calc(100vw - 16px)); pointer-events: none; }
+  width: max-content; max-width: calc(100vw - 520px); min-width: min(640px, calc(100vw - 16px)); pointer-events: none; }
 .bas-terrain > * { pointer-events: auto; }
 .barre-terrain { padding: 8px; max-width: 100%; box-sizing: border-box; }
-/* une ligne jusqu'à 5 capacités, sinon deux lignes égales (--col : posé par interface.js) */
-.capacites { display: grid; grid-template-columns: repeat(var(--col, 5), auto); justify-content: center; gap: 6px; }
-.capacites > .muet { color: var(--creme-doux); padding: 6px 10px; }
-.capacite { position: relative; width: 168px; height: 62px; box-sizing: border-box; padding: 5px 8px; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer;
-  background: #1e161e; color: #fff7e6; border: 0; border-radius: 0; box-shadow: inset 0 0 0 1px #5a3b22; font: 500 12px var(--titre); }
-.capacite:hover, .capacite:focus-visible { background: #2a1d10; box-shadow: inset 0 0 0 2px #85581b; outline: none; }
-.capacite .cap-icone { position: relative; flex: none; width: 36px; height: 39px; }
-.capacite .cap-icone img { width: 36px; height: 39px; image-rendering: pixelated; display: block; }
-.capacite .cap-tampon { position: absolute; right: -4px; bottom: -2px; font: 700 9px var(--titre); padding: 0 3px; background: #ffd35a; color: #2b1c1d; box-shadow: 0 0 0 1px #1e161e; }
-.capacite .cap-texte { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.capacite .cap-nom { font: 700 13.5px var(--titre); color: #ffe2a8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.capacite .cap-slot { display: flex; gap: 6px; align-items: center; color: #a8956f; white-space: nowrap; }
-.capacite .cap-slot .tampon { font-size: 9.5px; padding: 0 4px; }
-.capacite .cap-resume { overflow: hidden; text-overflow: ellipsis; }
-.capacite kbd { position: absolute; top: 4px; right: 5px; min-width: 10px; padding: 0 3px; border: 0; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; color: #e9d3ad; font: 700 10px var(--titre); }
-.capacite.choisie { background: #2a1d10; box-shadow: inset 0 0 0 2px #ffd35a, 0 0 14px 2px rgba(255, 211, 90, .35); }
-.capacite.choisie .cap-nom { color: #ffd35a; }
+/* La barre des sorts (DESIGN §5) : la barre d'action du camp (BABA), ses cases de 52 px, ses rivets, ses embouts et ses loups ;
+   les sorts rangés par sorte (le nom du groupe et une bande de sa couleur sur chaque case), le commun à part. */
+:root { --sorte-base: #ccbd7b; --sorte-preparation: #4a8fd8; --sorte-exploitation: #e0603a; --sorte-soutien: #5fb84a; --sorte-familier: #c8913a; --sorte-commun: #a8956f; --sorte-mouvement: #7fc8d8; }
+.s-base { --c: var(--sorte-base); } .s-preparation { --c: var(--sorte-preparation); } .s-exploitation { --c: var(--sorte-exploitation); }
+.s-soutien { --c: var(--sorte-soutien); } .s-familier { --c: var(--sorte-familier); } .s-commun { --c: var(--sorte-commun); } .s-mouvement { --c: var(--sorte-mouvement); }
+.socle-sorts { display: flex; align-items: flex-end; pointer-events: none; }
+.socle-sorts > * { pointer-events: auto; }
+.socle-sorts .embout { align-self: center; width: 16px; height: 88px; background: var(--embout) 0 0 / 16px 88px; image-rendering: pixelated; position: relative; z-index: 1; }
+.socle-sorts .embout.gauche { margin-right: -2px; }
+.socle-sorts .embout.droite { margin-left: -2px; transform: scaleX(-1); }
+.socle-sorts .loup { display: flex; flex-direction: column; align-items: center; }
+.socle-sorts .loup.gauche { margin-right: -6px; } .socle-sorts .loup.droite { margin-left: -6px; }
+.socle-sorts .loup-bois { width: 124px; height: 82px; margin-bottom: -2px; background: var(--loup) -2px -46px / 128px 128px no-repeat; image-rendering: pixelated; filter: drop-shadow(0 3px 0 rgba(0, 0, 0, .5)); }
+.socle-sorts .loup.droite .loup-bois { transform: scaleX(-1); }
+.socle-sorts .socle { width: 116px; height: 12px; background: var(--socle) 0 0 / 116px 12px; image-rendering: pixelated; }
+.barre-terrain { position: relative; padding: 4px 10px 8px; }
+.barre-terrain .rivet { position: absolute; width: 10px; height: 10px; background: var(--rivet) 0 0 / 10px 10px; image-rendering: pixelated; pointer-events: none; }
+.barre-terrain .rivet.hg { left: 25%; top: -12px; } .barre-terrain .rivet.hd { right: 25%; top: -12px; }
+.barre-terrain .rivet.bg { left: 25%; bottom: -12px; } .barre-terrain .rivet.bd { right: 25%; bottom: -12px; }
+.capacites { display: flex; align-items: flex-end; gap: 10px; }
+.capacites > .muet { color: var(--creme-doux); padding: 18px 10px; }
+.groupe-sorts { display: flex; flex-direction: column; gap: 2px; }
+.groupe-sorts .groupe-nom { font: 700 11px/12px var(--titre); letter-spacing: .06em; text-transform: uppercase; color: var(--c); text-shadow: 0 1px 0 #000; white-space: nowrap; }
+.groupe-sorts.s-commun, .groupe-sorts.s-mouvement { padding-left: 10px; border-left: 2px solid var(--bois-nuit); box-shadow: -2px 0 0 var(--bois-clair); }
+.cases-sorts { display: flex; gap: 4px; }
+/* la case (DESIGN §5) : 52 × 52, un creux de bois ; la bande de sa sorte en haut, A ou B en haut à gauche, le coût en bas à gauche,
+   la touche en bas à droite */
+.capacite { position: relative; width: 52px; height: 52px; box-sizing: border-box; padding: 0; display: grid; place-items: center; cursor: pointer;
+  background: color-mix(in srgb, var(--c) 14%, var(--bois-creux)); border: 2px solid color-mix(in srgb, var(--c) 55%, var(--bois-nuit)); border-radius: 4px;
+  box-shadow: inset 0 3px 0 var(--c), inset 0 2px 0 rgba(255, 255, 255, .08), inset 0 -3px 0 rgba(0, 0, 0, .35); }
+.capacite .cap-img { width: 36px; height: 39px; margin-top: 2px; clip-path: inset(6px 0 0 0); image-rendering: pixelated; display: block; }   /* (sans la tringle de l'enseigne : la bande et le tampon ont leur place) */
+.capacite .cap-slot { position: absolute; left: 2px; top: 4px; font: 700 11px/12px var(--titre); padding: 0 2px; background: #ffd35a; color: #2b1c1d; box-shadow: 0 0 0 1px #1e161e; }
+.capacite .cap-slot.bonus { background: #2f5fa8; color: #dbe8ff; }
+.capacite .cap-tampon { position: absolute; right: 1px; top: 4px; font: 700 11px/12px var(--titre); padding: 0 2px; background: #ffd35a; color: #2b1c1d; box-shadow: 0 0 0 1px #1e161e; }
+.capacite .cap-cout { position: absolute; left: 2px; bottom: 2px; min-width: 10px; text-align: center; font: 700 11px/12px var(--titre); padding: 0 2px; color: #fff7e6; background: var(--bois-nuit); box-shadow: 0 0 0 1px #1e161e; }
+.capacite .cap-cout[data-res="Rage"] { background: var(--res-rage); } .capacite .cap-cout[data-res="Mana"] { background: var(--res-mana); }
+.capacite .cap-cout[data-res="Concentration"] { background: var(--res-concentration); } .capacite .cap-cout[data-res="Foi"] { background: #a8761b; }
+.capacite .cap-cout[data-res="Énergie"] { background: #2c7a2a; } .capacite .cap-cout[data-res="Élan"] { background: #1f7a70; }
+.capacite kbd { position: absolute; right: 2px; bottom: 1px; min-width: 0; padding: 0; border: 0; background: none; box-shadow: none; font: 700 11px/12px var(--titre); color: #ffe2a8; text-shadow: 0 1px 0 #000, 1px 0 0 #000; }
+.capacite:hover, .capacite:focus-visible { border-color: var(--or); outline: none; }
+.capacite.choisie { border-color: var(--or); box-shadow: 0 0 0 2px var(--or), inset 0 3px 0 var(--c), inset 0 -3px 0 rgba(0, 0, 0, .35); }
 .capacite.indispo { cursor: not-allowed; }
-.capacite.indispo .cap-icone, .capacite.indispo .cap-texte { opacity: .4; filter: grayscale(.6); }
+.capacite.indispo .cap-img { opacity: .35; filter: grayscale(.8); }
+.capacite.indispo .cap-cout { opacity: .6; }
+/* les loups, seulement quand il y a la place (pas contre l'aide ni la fin de phase) */
+@media (max-width: 1500px) { .socle-sorts .loup { display: none; } }
+@media (max-width: 900px) { .socle-sorts .embout { display: none; } .capacite { width: 44px; height: 44px; } .capacite .cap-img { width: 30px; height: 32px; } .capacites { gap: 6px; } }
 
 /* la fiche de la capacité (#85) : ce qu'elle fait, sans cible */
-.fiche-capacite { width: 640px; max-width: 100%; box-sizing: border-box; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; animation: monte .12s ease-out; }
+/* toujours la même hauteur, quelle que soit la capacité : trois rangées d’une ligne (la tête, les résultats, les effets) ;
+   une capacité sans dégâts monte ses effets d’une rangée */
+.fiche-capacite { width: 480px; max-width: 100%; height: 99px; box-sizing: border-box; padding: 5px 8px 6px; display: grid; grid-template-rows: 26px 20px 18px; align-content: start; gap: 4px; animation: monte .12s ease-out;
+  border-width: 8px; border-image: var(--cadre-fin) 20 / 20px / 4px repeat; }
+.fiche-capacite .fc-tete, .fiche-capacite .fc-carac, .fiche-capacite .fc-effets { flex-wrap: nowrap; min-width: 0; overflow: hidden; }
+.fiche-capacite .fc-tete h2 { white-space: nowrap; }
+.fiche-capacite .effet { white-space: nowrap; }
+.effet.refus { background: #3a1414; box-shadow: inset 0 0 0 1px #a8463a; color: #ff8a7a; }
+.fiche-capacite h2 { font-size: 15px; }
+.fiche-capacite .puce { font-size: 11px; padding: 1px 5px; }
+.fiche-capacite .effet { font-size: 11.5px; padding: 2px 6px; }
 @keyframes monte { from { transform: translateY(6px); } }
-.fc-tete { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.fc-icone { width: 36px; height: 39px; image-rendering: pixelated; }
+.fc-tete { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fc-icone { width: 24px; height: 26px; image-rendering: pixelated; }
 .fc-carac { display: flex; flex-wrap: wrap; gap: 4px; margin-left: auto; }
-.fc-resultats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
-.fc-resultats.n1 { grid-template-columns: minmax(0, 1fr); }
-.fc-res { padding: 6px 8px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; flex-direction: column; gap: 2px; }
+/* les résultats sur une ligne (« Touché 17–22 ») ; les d20 restent dans la carte de la cible */
+.fc-resultats { display: flex; gap: 4px; }
+.fc-res { flex: 1; padding: 2px 6px; background: #1e161e; box-shadow: inset 0 0 0 1px #5a3b22; display: flex; align-items: baseline; gap: 5px; }
 .fc-res.touche { box-shadow: inset 0 0 0 2px #85581b; }
-.fc-res strong { font: 700 20px var(--titre); color: #fff7e6; }
-.fc-res .fc-nom { font-size: 12px; }
-.fc-res .fc-d20 { font-size: 11px; color: #a8956f; }
+.fc-res strong { font: 700 13px var(--titre); color: #fff7e6; }
+.fc-res .fc-nom { font-size: 11px; }
+.fc-res .fc-d20 { display: none; }
 .fc-res.rate .fc-nom, .cc-ligne.rate .cc-nom { color: #ff8a7a; }
 .fc-res.eraflure .fc-nom, .cc-ligne.eraflure .cc-nom { color: #f3c48a; }
 .fc-res.touche .fc-nom, .cc-ligne.touche .cc-nom { color: #9fe28f; }
 .fc-res.critique .fc-nom, .cc-ligne.critique .cc-nom { color: #ffd35a; }
-.fc-aide { margin: 0; font: 400 13px var(--texte); color: #e9d3ad; }
-.fc-aide:empty { display: none; }
 
 /* la carte de la cible survolée */
 .carte-cible { position: fixed; z-index: 13; pointer-events: none; width: 248px; box-sizing: border-box; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
@@ -137,6 +191,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .coin-phase #fin-phase { font: 700 1.05rem var(--titre); padding: 12px 10px; background: #85581b; border-color: #ffd35a; box-shadow: inset 0 -3px 0 rgba(0,0,0,.3), 0 0 12px rgba(255, 211, 90, .25); }
 .coin-phase #fin-phase:disabled { box-shadow: none; border-color: var(--bois-fonce); }
 .bouton-jeu:disabled { opacity: .5; cursor: not-allowed; filter: none; }
+.bouton-jeu .bouton-icone { width: 24px; height: 26px; image-rendering: pixelated; vertical-align: middle; margin: -6px 6px -6px -4px; }
 
 /* le d20 en grand, les bannières, le survol */
 .de-grand { position: fixed; left: 50%; top: 64px; transform: translateX(-50%); z-index: 12; pointer-events: none; display: grid; justify-items: center; gap: 2px;
@@ -157,9 +212,42 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .banniere-terrain.combo { color: #7ce0ff; } .banniere-terrain.ennemi { color: #ff9a7a; } .banniere-terrain.heros { color: #ffd35a; }
 .carte-cible[hidden], .distance-survol[hidden] { display: none; }
 .distance-survol { position: fixed; z-index: 13; pointer-events: none; font: 500 .85rem var(--titre); color: #fff7e6; background: rgba(43, 28, 29, .85); border-radius: 3px; padding: 1px 6px; }
+.distance-survol.danger { background: rgba(110, 24, 18, .92); box-shadow: inset 0 0 0 1px #ff6e3c; color: #ffd9c8; }   /* une attaque d'opportunité sur le chemin (#231) */
 .flottant { position: fixed; z-index: 9; pointer-events: none; transform: translate(-50%, -100%); font: 700 1.05rem var(--titre); color: #fff;
   text-shadow: 0 2px 0 #2b1c1d, 1px 0 0 #2b1c1d, -1px 0 0 #2b1c1d, 0 -1px 0 #2b1c1d; white-space: nowrap; }
 .flottant.degats { color: #ff8a7a; } .flottant.soin { color: #9fe28f; } .flottant.info { color: #ffd35a; font-size: .9rem; }
+/* le ressenti des coups : une éraflure plus petite, un touché qui claque, un critique qui éclate */
+.flottant.degats.eraflure { font-size: .9rem; color: #f0b8a8; }
+.flottant.degats.touche { font-size: 1.25rem; animation: claque .18s ease-out; }
+.flottant.degats.critique { font-size: 2.1rem; color: #ffd35a; animation: eclate .32s cubic-bezier(.2, 1.6, .4, 1);
+  text-shadow: 0 3px 0 #7a1a10, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d, 0 -2px 0 #2b1c1d, 0 0 12px rgba(255, 120, 40, .8); }
+.flottant.critique-titre { margin-top: -2.5rem; font-size: .95rem; color: #fff0a0; letter-spacing: .06em; text-transform: uppercase; animation: eclate .32s cubic-bezier(.2, 1.6, .4, 1); }
+@keyframes claque { from { transform: translate(-50%, -100%) scale(1.5); } to { transform: translate(-50%, -100%) scale(1); } }
+@keyframes eclate { 0% { transform: translate(-50%, -100%) scale(.4); } 60% { transform: translate(-50%, -100%) scale(1.35); } 100% { transform: translate(-50%, -100%) scale(1); } }
+/* les styles à comparer (?ressenti=…, vue.js STYLES) : sobre, percutant (ci-dessus), manga, cinéma */
+[data-ressenti="sobre"] .flottant.degats.touche { font-size: 1.1rem; animation: none; }
+[data-ressenti="sobre"] .flottant.degats.critique { font-size: 1.45rem; animation: claque .2s ease-out; text-shadow: 0 2px 0 #7a1a10, 1px 0 0 #2b1c1d, -1px 0 0 #2b1c1d, 0 -1px 0 #2b1c1d; }
+[data-ressenti="sobre"] .flottant.critique-titre { margin-top: -1.9rem; font-size: .8rem; animation: none; }
+[data-ressenti="manga"] .flottant.degats.touche { font-size: 1.5rem; color: #fff; text-shadow: 0 3px 0 #c22a1a, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d, 0 -2px 0 #2b1c1d; animation: tampon .2s ease-out; }
+[data-ressenti="manga"] .flottant.degats.critique { font-size: 2.9rem; color: #fff; letter-spacing: -.02em; animation: tampon .26s cubic-bezier(.2, 1.4, .4, 1);
+  text-shadow: 3px 3px 0 #c22a1a, -3px 3px 0 #c22a1a, 3px -3px 0 #c22a1a, -3px -3px 0 #c22a1a, 0 6px 0 #2b1c1d, 5px 5px 0 #2b1c1d, -5px 5px 0 #2b1c1d; }
+[data-ressenti="manga"] .flottant.critique-titre { margin-top: -3.4rem; padding: 1px 8px; background: #c22a1a; color: #fff; font-size: .9rem; box-shadow: 0 3px 0 #2b1c1d; animation: tampon .26s cubic-bezier(.2, 1.4, .4, 1); }
+[data-ressenti="cinema"] .flottant.degats.critique { font-size: 2.4rem; animation: tombe .45s cubic-bezier(.5, 0, .7, 1.5);
+  text-shadow: 0 3px 0 #7a1a10, 2px 0 0 #2b1c1d, -2px 0 0 #2b1c1d, 0 -2px 0 #2b1c1d, 0 0 18px rgba(255, 200, 80, .9); }
+[data-ressenti="cinema"] .flottant.critique-titre { margin-top: -2.8rem; letter-spacing: .3em; font-size: .85rem; animation: apparait .5s ease-out; }
+@keyframes tampon { 0% { transform: translate(-50%, -100%) scale(2.4) rotate(-8deg); opacity: .4; } 70% { transform: translate(-50%, -100%) scale(.92) rotate(-5deg); opacity: 1; } 100% { transform: translate(-50%, -100%) scale(1) rotate(-5deg); } }
+@keyframes tombe { 0% { transform: translate(-50%, -100%) translateY(-34px) scale(1.25); opacity: 0; } 100% { transform: translate(-50%, -100%) scale(1); opacity: 1; } }
+@keyframes apparait { from { opacity: 0; letter-spacing: .8em; } to { opacity: 1; } }
+/* par-dessus le terrain, sous les barres et l'interface : l'éclair de l'écran, les traits de vitesse, le voile sombre */
+.voile-impact { position: fixed; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; --x: 50%; --y: 50%; --flash: 0; --traits: 0; --voile: 0; --tour: 0deg; }
+.voile-impact > div { position: absolute; inset: 0; }
+.vi-flash { background: #fff8e0; opacity: var(--flash); mix-blend-mode: screen; }
+.vi-voile { opacity: var(--voile); background: radial-gradient(circle at var(--x) var(--y), transparent 70px, rgba(10, 6, 14, .55) 150px, rgba(10, 6, 14, .85) 60%); }
+.vi-traits { opacity: var(--traits);
+  background: repeating-conic-gradient(from var(--tour) at var(--x) var(--y), rgba(255, 255, 255, .95) 0deg 1.6deg, transparent 1.6deg 9deg, rgba(255, 240, 200, .8) 9deg 10deg, transparent 10deg 17deg);
+  -webkit-mask: radial-gradient(circle at var(--x) var(--y), transparent 64px, #000 120px, #000 230px, transparent 330px);
+  mask: radial-gradient(circle at var(--x) var(--y), transparent 64px, #000 120px, #000 230px, transparent 330px); }
+@media (prefers-reduced-motion: reduce) { .flottant.degats, .flottant.critique-titre { animation: none !important; } .voile-impact { display: none; } }
 .aide-terrain { left: 8px; bottom: 8px; margin: 0; padding: 4px 8px; font-size: 12px; max-width: 232px; }
 
 /* l'accueil et la fin */
@@ -184,7 +272,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 
 @media (max-width: 1280px) { .bas-terrain { max-width: calc(100vw - 16px); } .aide-terrain { display: none; } }
 @media (max-width: 900px) {
-  .equipe-terrain { width: 200px; } .droite-terrain { width: 200px; } .coin-phase { width: 200px; } .fiche-heros .fh-chiffres { flex-wrap: wrap; gap: 0 8px; }
+  .equipe-terrain { width: 220px; } .droite-terrain { width: 200px; } .coin-phase { width: 200px; } 
 }
 
 /* le choix de l'équipe, à l'accueil (#76) */

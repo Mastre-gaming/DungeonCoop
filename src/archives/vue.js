@@ -1,7 +1,7 @@
 // Les archives du camp : quatre onglets (Personnages, Classes, Sorts, Animations), des cartes avec un petit aperçu
 // animé, une recherche, et à droite le détail de ce qu'on a choisi (un grand aperçu, ses réglages et tout ce qu'on sait).
 // L'adresse garde l'onglet et le choix (?onglet=sorts&id=foudre), pour partager un lien vers un asset.
-import { catalogue, classesDuNavigateur, RANGS, ANIMS_LPC, DIRECTIONS, ESQUISSES, BRIQUES, HEROS, CAPACITES } from './catalogue.js';
+import { catalogue, classesDuNavigateur, joueForge, RANGS, ANIMS_LPC, DIRECTIONS, ESQUISSES, BRIQUES, HEROS, CAPACITES } from './catalogue.js';
 import { creerApercu, retirer, avancer, brancherVisibilite, etat } from './apercus.js';
 import { icone } from '../entrainement/fiches.js';
 import { fiche } from '../classe/budget.js';
@@ -134,6 +134,7 @@ function marquerChoix() { for (const c of dom.liste.querySelectorAll('.carte')) 
 function apercuPerso(x, w, h, anim, dir) {
   if (x.format === 'bande') return creerApercu({ genre: 'planche', planche: x.planche, w: x.w, h: x.h, images: x.images, fps: x.fps }, { w, h });
   if (x.format === 'rat') return creerApercu({ genre: 'rat', planche: x.planche, espece: x.espece, dir }, { w, h });
+  if (x.format === 'forgeron') return creerApercu(joueForge(x.planche, x.anims.includes(anim) ? anim : x.anims[0], dir), { w, h });
   return creerApercu({ genre: 'lpc', planche: x.planche, anim, dir, attaque: x.attaque }, { w, h });
 }
 function apercuClasse(x, w, h) {
@@ -153,7 +154,7 @@ function choisir(id, maj = true) {
   marquerChoix();
   if (maj) adresse();
   const x = C[onglet].find((y) => y.id === id);
-  reglage.anim = 'marche'; reglage.dir = 'bas'; reglage.pause = false;
+  reglage.anim = x?.format === 'forgeron' ? x.anims[0] : 'marche'; reglage.dir = 'bas'; reglage.pause = false;   // (Baba à la forge : d'abord il forge)
   dessinerDetail(x);
 }
 function dessinerDetail(x) {
@@ -169,12 +170,14 @@ const boutons = (liste, actif, f, etiquette) => el('div', { class: 'reglages', r
 
 function detailPerso(x) {
   const grand = apercuPerso(x, 256, 256, reglage.anim, reglage.dir), j = grand.joue;
-  const anims = (x.anims ?? []).map((a) => [a, a === 'grande' ? 'Grande attaque' : ANIMS_LPC[a].nom]);
-  const changer = (cle, v) => { reglage[cle] = v; j[cle] = v; grand.t0 = etat.temps; dessinerReglages(); };
+  const anims = (x.anims ?? []).map((a) => [a, x.noms?.[a] ?? (a === 'grande' ? 'Grande attaque' : ANIMS_LPC[a].nom)]);
+  if (x.format === 'forgeron' && !x.anims.includes(reglage.anim)) reglage.anim = x.anims[0];
+  // (Baba à la forge : chaque geste a sa rangée, on remplace ce que joue l'aperçu)
+  const changer = (cle, v) => { reglage[cle] = v; if (x.format === 'forgeron') Object.assign(j, joueForge(x.planche, reglage.anim, reglage.dir)); else j[cle] = v; grand.t0 = etat.temps; dessinerReglages(); };
   const zone = el('div', { class: 'zone-reglages' });
   const dessinerReglages = () => zone.replaceChildren(
     anims.length ? boutons(anims, reglage.anim, (v) => changer('anim', v), 'L’animation') : null,
-    x.format === 'bande' ? null : boutons(DIRECTIONS.map(([d, , aria]) => [d, { haut: '↑', gauche: '←', bas: '↓', droite: '→' }[d], aria]), reglage.dir, (v) => changer('dir', v), 'La direction'));
+    x.format === 'bande' || (x.format === 'forgeron' && reglage.anim !== 'marche') ? null : boutons(DIRECTIONS.map(([d, , aria]) => [d, { haut: '↑', gauche: '←', bas: '↓', droite: '→' }[d], aria]), reglage.dir, (v) => changer('dir', v), 'La direction'));
   dessinerReglages();
   return [
     el('div', { class: 'scene-grande' }, grand.canvas), zone,
@@ -184,6 +187,7 @@ function detailPerso(x) {
       x.lien ? ligne('Son look', el('a', { href: x.lien, target: '_blank', rel: 'noopener' }, 'ouvrir dans le générateur LPC')) : null,
       x.credits ? ligne('Les crédits', el('a', { href: x.credits, target: '_blank', rel: 'noopener' }, 'qui a dessiné chaque pièce')) : null),
     x.classe ? el('button', { type: 'button', class: 'bouton-jeu', onclick: () => { changerOnglet('classes'); choisir(x.classe); } }, `Voir la classe ${HEROS[x.classe].nom}`) : null,
+    x.fiche ? el('button', { type: 'button', class: 'bouton-jeu', id: 'voir-fiche', onclick: () => { changerOnglet('classes'); choisir(x.fiche); } }, 'Voir sa fiche de classe') : null,
     x.ennemi ? ficheEnnemi(x.ennemi) : null,
   ];
 }
@@ -235,9 +239,12 @@ function detailClasse(x) {
       x.source === 'regles' ? ligne('Statut', x.kit ? 'un héros du kit D1 (le combat sur papier)' : 'une classe d’essai (#76), faite au budget de la fiche') : null),
     sorts.length ? el('div', { class: 'sorts-de' }, el('h3', {}, 'Ses capacités'), ...sorts) : null,
     x.capacitesTexte?.length ? el('div', { class: 'sorts-de' }, el('h3', {}, 'Ses capacités'), el('p', {}, x.capacitesTexte.join(' · '))) : null,
+    scenesDe(x).length ? el('div', { class: 'sorts-de' }, el('h3', {}, 'Leurs animations'), ...scenesDe(x).map((e) => el('button', { type: 'button', class: 'sort-lien', dataset: { scene: e.id }, onclick: () => { changerOnglet('animations'); choisir(e.id); } }, e.nom))) : null,
     x.source !== 'regles' ? el('button', { type: 'button', class: 'bouton-jeu', id: 'ouvrir-armurerie', onclick: () => ouvrirArmurerie(x) }, 'Ouvrir dans l’armurerie') : null,
   ];
 }
+// les scènes d'une fiche de l'armurerie : celles dont la classe porte son nom (design/animations/outil/, une famille par classe)
+const scenesDe = (x) => (x.source === 'regles' || !x.nom ? [] : ESQUISSES.effets.filter((e) => e.classe.split(' · ')[0] === x.nom));
 function ouvrirArmurerie(x) {
   if (x.source === 'navigateur') { try { localStorage.setItem('dungeoncoop:classe-courante', JSON.stringify(x.brut?.id ?? x.id)); } catch {} location.href = './classe.html'; }
   else location.href = `./classe.html?classe=${encodeURIComponent(x.brut?.id ?? x.id)}`;

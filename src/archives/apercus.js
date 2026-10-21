@@ -48,10 +48,12 @@ export function cadreDe(j, t) {
     return { src: j.planche, sx: n * 32, sy: ligne * 32, sw: 32, sh: 32, n, total: 3 };
   }
   // une bande d'images côte à côte (le barde, une scène, une brique) ; une brique qui ne boucle pas marque une pause
+  // (une rangée d'une planche : `sy` ; des images de durées différentes : `durees`, en secondes ; la boucle commence à `debut`)
   const pauseFin = j.boucle === false ? Math.max(4, Math.round(j.images * 0.6)) : 0, cycle = j.images + pauseFin;
-  const k = j.image != null ? j.image : Math.floor(t * (j.fps ?? 12)) % cycle;
+  let k = j.image != null ? j.image : Math.floor(t * (j.fps ?? 12)) % cycle;
+  if (j.image == null && j.durees) { let r = t % j.durees.reduce((a, b) => a + b, 0); k = j.durees.findIndex((d) => (r -= d) < 0); if (k < 0) k = j.images - 1; }
   if (k >= j.images) return { src: j.planche, vide: true, n: k, total: j.images };
-  return { src: j.planche, sx: k * j.w, sy: 0, sw: j.w, sh: j.h, n: k, total: j.images };
+  return { src: j.planche, sx: (k + (j.debut ?? 0)) * j.w, sy: j.sy ?? 0, sw: j.w, sh: j.h, n: k, total: j.images };
 }
 
 const FONDS = { herbe: '#3f7a2c', terre: '#9a7448', nuit: '#2b1c1d', aucun: null };

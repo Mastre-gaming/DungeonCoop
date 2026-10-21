@@ -1,0 +1,85 @@
+Character: Shadow
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hat=Hood_blue&clothes=Longsleeve_tan&legs=Pants_tan&shoes=Sandals_brown&cape=Solid_tan&weapon=Dagger_dagger
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/male/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases; 'Thick' Male Revised Run/Climb by JaidynReiman (based on ElizaWy's LPC Revised)
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/human/male/walk.png
+
+original head by Redshrike, tweaks by BenCreating, modular version by bluecarrot16
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Benjamin K. Smith (BenCreating), Stephen Challener (Redshrike)
+
+head/faces/male/neutral/walk.png
+
+Original by Redshrike, Expressions by ElizaWy, mapped to all frames by JaidynReiman
+
+Licenses: OGA-BY 3.0
+
+Authors: JaidynReiman, ElizaWy, Stephen Challener (Redshrike)
+
+hat/cloth/hood/adult/walk.png
+
+Brown hood by Wulax, original black/white recolors by ??, mapped to idle/run/jump/revised combat by JaidynReiman, along with additional recolors.
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Johannes Sjölund (wulax), JaidynReiman
+
+torso/clothes/longsleeve/longsleeve/male/walk.png
+
+original by wulax; tweaks and further recolors by bluecarrot16; cleanup and climb/jump/run/sit/emote/revised combat adapted from LPC Revised by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: JaidynReiman, Johannes Sjölund (wulax)
+
+legs/pants/male/walk.png
+
+original male pants by wulax, recolors and edits to v3 base by bluecarrot16, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+feet/sandals/male/walk.png
+
+edited for v3 bases by bluecarrot16, Jump/Sit/Emote/Run/Revised Combat by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 2.0, GPL 3.0
+
+Authors: Nila122, JaidynReiman, Matthew Krohn (makrohn), Johannes Sjölund (wulax)
+
+cape/solid/fg/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, JaidynReiman
+
+cape/solid/bg/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Nila122, JaidynReiman
+
+weapon/sword/dagger/walk/dagger.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Johannes Sjölund (wulax), Matthew Krohn (makrohn)
+
+Download TXT
+Download CSV

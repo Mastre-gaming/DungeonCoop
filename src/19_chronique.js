@@ -113,7 +113,8 @@ export const api = {
   // Les événements (de tous les repos), du plus récent au plus ancien. Un nouveau, après le premier chargement : on le crie.
   charger(liste) {
     entrees = [...liste].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    if (vus && !visite) for (const e of entrees.slice(0, 3).reverse()) if (!vus.has(e.id)) crier(e);
+    // (et le bus le dit : le crieur du tableau d'affichage le crie aussi, 38_crieur.js)
+    if (vus && !visite) for (const e of entrees.slice(0, 3).reverse()) if (!vus.has(e.id)) { crier(e); game?.bus.emit('chronique:nouveau', e); }
     vus = new Set(entrees.map((e) => e.id));
     if (ouvert) dessiner();
   },

@@ -3,7 +3,7 @@
 // Un niveau montre ses pièces et celles des niveaux d'avant. Une pièce peut s'animer (lanternes, torches) et bloquer
 // le passage (sa base). Quand un lieu monte de niveau en direct, il s'illumine un instant.
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
-import { T, LIEUX, emprise } from './01_plan.js';
+import { T, LIEUX, emprise, terre } from './01_plan.js';
 import ARMURERIE from './data/armurerie.json';
 
 export const name = 'lieux';
@@ -17,19 +17,32 @@ const P = (sx, sy, w, h, dx, dy, plus = {}) => ({ sx, sy, w, h, dx, dy, ...plus 
 const LANTERNE = { anim: [13, 14, 15], pas: 0.18 };
 const TORCHE = { anim: [13, 14, 15], pas: 0.12 };
 
-// Le tableau d'affichage, autour du panneau-carte (proposition du 18 oct, à choisir par le propriétaire).
-// Le panneau-carte occupe dx 1,5 à 4,5 et dy 2,1 à 4,6 dans l'emprise.
+// Le tableau d'affichage apprivoise la nature autour de lui et devient pierre (maquette validée par le propriétaire le
+// 18 oct) : des pierres de gué, puis des pavés qui suivent la terre battue et les sentiers, puis le panneau, la potence et
+// l'étal en pierre blanche. Le crieur (38_crieur.js) monte sur son estrade de bois au niveau 2, avant les pavés (niveau 3).
+// Le panneau-carte occupe dx 1,5 à 4,5 et dy 2,1 à 4,6 dans l'emprise. `jusqua` : la pièce s'en va au-delà de ce niveau
+// (la potence de bois, remplacée par celle de pierre). Les pièces img 'tableau' sont dessinées par tableau_jeu.py.
+const PIERRE = { img: 'tableau' };
+export const ESTRADE = { dx: 6.0, dy: 2.4 };          // l'estrade du crieur (2 x 2 cases), à droite de la potence
 export const NIVEAUX = {
   interface: [
-    [],                                                                  // 0 : le panneau-carte seul
-    [P(7, 5, 1, 1, 0.45, 3.55, { bloque: true })],                      // 1 : un panneau à feuilles épinglées, à côté
-    [P(11, 0, 1, 2, 4.75, 2.55, { bloque: true }),                       // 2 : une potence, sa lanterne allumée
-      P(13, 0, 1, 1, 5.35, 2.95, { ...LANTERNE, pied: 4.6 })],
-    [P(0, 38, 5, 2, 0.5, 0.35, { pied: 2.0 }),                           // 3 : les bannières des couleurs, derrière ;
-      P(6, 34, 2, 1, 0.1, 4.45, { bloque: true })],                      //     un banc pour lire les missions
-    [P(13, 5, 1, 1, 1.0, 2.2, { ...TORCHE, pied: 4.55 }),                // 4 : des torches allumées sur le panneau
-      P(13, 5, 1, 1, 4.0, 2.2, { ...TORCHE, pied: 4.55 }),               //     et un étal couvert : de la lumière et de la vie
-      P(8, 5, 1, 1, 5.05, 3.95, { bloque: true })],
+    [],                                                                  // 0 : le panneau-carte seul, dans la terre
+    [P(7, 5, 1, 1, 0.45, 3.55, { bloque: true }),                       // 1 : un panneau à feuilles épinglées, à côté ;
+      P(0, 4, 3, 1, 1.4, 4.7, { ...PIERRE, pied: 0, jusqua: 2 })],             //     des pierres de gué posées dans la terre
+    [P(11, 0, 1, 2, 4.75, 2.55, { bloque: true, jusqua: 3 }),            // 2 : une potence, sa lanterne allumée ;
+      P(13, 0, 1, 1, 5.35, 2.95, { ...LANTERNE, pied: 4.6 }),            //     des socles de pierre au pied des poteaux ;
+      P(3, 4, 3, 0.5, 1.5, 4.1, { ...PIERRE, pied: 4.63 }),              //     l'estrade du crieur (pas encore de pavés)
+      P(7, 30, 2, 2, ESTRADE.dx, ESTRADE.dy, { bloque: true })],
+    [P(6, 34, 2, 1, -0.3, 4.45, { bloque: true }),                        // 3 : un banc pour lire les missions, deux buis,
+      P(7, 1, 1, 2, 0.7, 3.0, { ...PIERRE, bloque: true }),              //     les premiers pavés
+      P(7, 1, 1, 2, 4.12, 3.0, { ...PIERRE, bloque: true })],
+    [P(0, 1, 3, 2.5, 1.5, 2.1, { ...PIERRE, pied: 4.62 }),               // 4 : tout en pierre : le panneau, la potence,
+      P(3, 1, 1, 2, 4.75, 2.55, { ...PIERRE, bloque: true }),            //     l'étal ; des torches sur le panneau,
+      P(13, 5, 1, 1, 1.0, 2.2, { ...TORCHE, pied: 4.65 }),               //     deux réverbères
+      P(13, 5, 1, 1, 4.0, 2.2, { ...TORCHE, pied: 4.65 }),
+      P(4, 1, 2, 2, 5.0, 3.7, { ...PIERRE, bloque: true }),
+      P(6, 1, 1, 2, -0.75, 3.4, { ...PIERRE, bloque: true }),
+      P(6, 1, 1, 2, 7.3, 3.6, { ...PIERRE, bloque: true })],
   ],
   // Le terrain d'entraînement, dans son enclos (#77, proposition à choisir par le propriétaire du camp) : au fond, de
   // quoi viser et frapper ; devant, les armes ; au niveau 4, les torches de l'entrée. Le milieu reste libre.
@@ -48,13 +61,40 @@ export const NIVEAUX = {
   ],
 };
 
+// Les pavés du tableau d'affichage : la terre battue (sa cour, ses sentiers) se pave à partir du pied du tableau, de
+// plus en plus loin avec le niveau ; au niveau 4, un parvis sous la potence, l'étal, l'estrade et les réverbères.
+// Pas de cercle dessiné : les pavés suivent le décor, et s'arrêtent là où le sentier continue en terre.
+// `portee` : jusqu'où (en cases, depuis le devant du tableau) ; `parvis` : [x0, y0, x1, y1] en cases depuis le coin de
+// l'emprise, x1 et y1 exclus. Une case est pavée si deux de ses coins au moins sont de la terre battue (le sol se
+// dessine coin par coin) : le bord des pavés suit celui du sentier.
+export const PAVES = { 3: { portee: 4.2 }, 4: { portee: 6.5, parvis: [-1, 2, 9, 6] } };
+const DEVANT = [3, 5.5];   // le devant du tableau, en cases depuis le coin de l'emprise
+export function pavesDe(lieu, niveau) {
+  const p = PAVES[Math.min(niveau, 4)];
+  if (!p) return [];
+  const [x0, y0] = emprise(lieu), r = Math.ceil(p.portee), cases = [];
+  const dans = (q, i, j) => q && i >= q[0] && i < q[2] && j >= q[1] && j < q[3];
+  for (let j = Math.floor(DEVANT[1]) - r - 1; j <= DEVANT[1] + r; j++) {
+    for (let i = DEVANT[0] - r - 1; i <= DEVANT[0] + r; i++) {
+      const I = x0 + i, J = y0 + j, loin = Math.hypot(i + 0.5 - DEVANT[0], j + 0.5 - DEVANT[1]) > p.portee;
+      const sol = terre(I, J) + terre(I + 1, J) + terre(I, J + 1) + terre(I + 1, J + 1) >= 2;
+      if (dans(p.parvis, i, j) || (sol && !loin)) cases.push([i, j]);
+    }
+  }
+  return cases;
+}
+
 // L'armurerie (validée par le propriétaire le 18 oct, design/camp/outils/armurerie.json) : chaque niveau est une
 // composition entière (piquets, tente, tente et abri de forge, atelier de pierre, grand atelier), pas une pièce de plus.
 // Ses pièces viennent de deux planches (img : deco, ou armurerie pour le mur, le toit, la gueule du foyer, l'enseigne) ;
 // ses dalles de pierre, de plus en plus nombreuses, se posent sous tout le reste. Fabriqué par armurerie_jeu.py.
 export const COMPLETS = { classes: ARMURERIE.niveaux };
-// Le niveau d'office (demande du propriétaire, 18 oct) : l'armurerie est livrée au niveau 2, la tente et son abri de forge.
-export const PLANCHERS = { classes: 2 };
+// Le niveau d'office (demandes du propriétaire, 18 et 19 oct, ramené avant la pierre le 19) : l'armurerie est livrée au
+// niveau 2, la tente et son abri de forge ; le tableau d'affichage au niveau 2, ses premiers pavés.
+export const PLANCHERS = { classes: 2, interface: 2 };
+// Le plafond (demande du propriétaire, 19 oct) : le tableau d'affichage ne dépasse pas le niveau 2 pour l'instant, même
+// avec des missions rentrées (elles comptent toujours ; le niveau monte quand on lève le plafond). dbg.lieux.forcer passe outre.
+export const PLAFONDS = { interface: 2 };
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
@@ -98,7 +138,11 @@ function construire(lieu, niveau) {
   }
   const liste = NIVEAUX[lieu.id];
   if (!liste) return;
-  for (let n = 1; n <= Math.min(niveau, liste.length - 1); n++) liste[n].forEach(poserPiece);
+  for (const [i, j] of pavesDe(lieu, niveau)) {   // une variante de dalle par case, toujours la même
+    const sprite = rendu.sprite(images.tableau, 'tableau', T, T);
+    e.sprites.push({ sprite, p: { sx: ((i + 5) * 7 + (j + 5) * 13) % 8, sy: 0 }, x: o.x + i * T, y: o.y + j * T, pied: DALLES });
+  }
+  for (let n = 1; n <= Math.min(niveau, liste.length - 1); n++) liste[n].filter((p) => !(p.jusqua < niveau)).forEach(poserPiece);
   poser(e);
 }
 
@@ -112,6 +156,7 @@ function poser(e) {
 function niveauxVoulus() {
   const n = { ...(missions?.resume().niveaux ?? {}) };
   for (const [id, v] of Object.entries(PLANCHERS)) n[id] = Math.max(v, n[id] ?? 0);
+  for (const [id, v] of Object.entries(PLAFONDS)) n[id] = Math.min(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(forces)) n[id] = v;
   return n;
 }
@@ -141,7 +186,7 @@ export function update(dt) {
 export function dispose() { for (const id of Object.keys(etat)) retirer(id); }
 
 export const api = {
-  etat, NIVEAUX, COMPLETS, PLANCHERS,
+  etat, NIVEAUX, COMPLETS, PLANCHERS, PLAFONDS,
   // dbg.lieux.forcer('interface', 3) : voir un niveau sans mission ; forcer('interface', null) : revenir aux vraies
   forcer(id, n) { if (n == null) delete forces[id]; else forces[id] = n; update(0); },
   niveau: (id) => etat[id]?.niveau ?? 0,

@@ -10,7 +10,8 @@
 import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
 import { fr } from '../13_reseau.js';
-import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI } from './regles.js';
+import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer } from './regles.js';
+import { monGithub } from './joueur.js';
 import { arme } from './armes.js';
 
 export const name = 'multi';
@@ -32,13 +33,18 @@ export function regler(L, qui, m) {
   if (m.t === 'mode') { if (qui !== HOTE || !['equipe', 'initiative'].includes(m.mode)) return false; L.mode = m.mode; return true; }
   const k = Number(m.k);
   if (!(k >= 0 && k < PLACES.length)) return false;
-  if (m.t === 'prendre' && L.proprio[k] === null) { L.proprio[k] = qui; return true; }
-  if (m.t === 'rendre' && L.proprio[k] === qui) { L.proprio[k] = null; return true; }
-  if (m.t === 'classe' && CLASSES_ESSAI.includes(m.type) && (L.proprio[k] === qui || (qui === HOTE && L.proprio[k] === null))) { L.equipe[k] = m.type; return true; }
+  // (la classe d'un joueur ne se joue que par lui : m.github, le pseudo de celui qui demande ; une place qui change de
+  // main avec une telle classe redevient une classe du kit)
+  if (m.t === 'prendre' && L.proprio[k] === null) { L.proprio[k] = qui; if (!peutJouer(L.equipe[k], m.github)) L.equipe[k] = EQUIPE_KIT[k]; return true; }
+  if (m.t === 'rendre' && L.proprio[k] === qui) { L.proprio[k] = null; liberer(L, k); return true; }
+  if (m.t === 'classe' && CLASSES_ESSAI.includes(m.type) && peutJouer(m.type, m.github) && (L.proprio[k] === qui || (qui === HOTE && L.proprio[k] === null))) { L.equipe[k] = m.type; return true; }
   return false;
 }
+// Une place libérée ou donnée sans qu'on sache à qui : la classe d'un joueur y redevient celle du kit.
+function liberer(L, k) { if (HEROS[L.equipe[k]]?.auteur) L.equipe[k] = EQUIPE_KIT[k]; }
 // Quelqu'un arrive : la première place libre est à lui. Pendant un combat, ses héros lui reviennent s'il était parti.
-export function arrivee(L, qui) {
+// github : son pseudo s'il est connu (l'hôte) ; sinon une classe de joueur sur sa place redevient celle du kit.
+export function arrivee(L, qui, github = null) {
   if (L.phase === 'combat') {
     for (const k of L.absents[qui] ?? []) if (L.proprio[k] === HOTE) L.proprio[k] = qui;
     delete L.absents[qui];
@@ -46,13 +52,13 @@ export function arrivee(L, qui) {
   }
   if (L.proprio.includes(qui)) return;
   const k = L.proprio.indexOf(null);
-  if (k >= 0) L.proprio[k] = qui;
+  if (k >= 0) { L.proprio[k] = qui; if (!peutJouer(L.equipe[k], github)) L.equipe[k] = EQUIPE_KIT[k]; }
 }
 // Quelqu'un part : au lobby, ses places se libèrent ; en combat, l'hôte joue ses héros en attendant.
 export function depart(L, qui) {
   const siennes = L.proprio.flatMap((p, k) => (p === qui ? [k] : []));
   if (L.phase === 'combat') { if (siennes.length) L.absents[qui] = siennes; siennes.forEach((k) => { L.proprio[k] = HOTE; }); }
-  else siennes.forEach((k) => { L.proprio[k] = null; });
+  else siennes.forEach((k) => { L.proprio[k] = null; liberer(L, k); });
   L.pret = L.pret.filter((p) => p !== qui);
 }
 // Ceux qu'on attend pour finir la phase des héros : les joueurs d'un héros debout du groupe qui joue.
@@ -72,7 +78,7 @@ export function arbitrer(combat, L, qui, a) {
     return combat.deplacer(h, x, y, combat.portee(h));
   }
   if (a.type === 'capacite') {
-    if (!HEROS[h.type].capacites.includes(a.cap)) return false;
+    if (!HEROS[h.type].capacites.includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
     const c = a.cible ?? {}, cible = c.id ? { id: String(c.id) } : Number.isFinite(c.x) && Number.isFinite(c.y) ? { x: c.x, y: c.y } : {};
     return combat.utiliser(h, a.cap, cible);
   }
@@ -125,7 +131,7 @@ function brancher(transport) {
   ihm.brancher(api);
   ouvrir();
 }
-function ouvrir() { if (hote) { party.host(code); arrivee(L, HOTE); } else party.join(code); }
+function ouvrir() { if (hote) { party.host(code); arrivee(L, HOTE, monGithub()); } else party.join(code); }
 
 // Ouvert, raté (on réessaie un peu : l'hôte n'est peut-être pas encore là), ou perdu (on continue seul).
 function surStatut({ status }) {
@@ -287,9 +293,9 @@ export const api = {
   joueurs, couleurDe,
   nomDe(id) { if (!party) return ''; if (id === party.id) return monNom(); return party.others.get(id)?.name ?? 'parti'; },
   aMoi(idHeros) { return !party || L.proprio[PLACES.indexOf(idHeros)] === party.id; },
-  prendre: (k) => party?.toHost({ t: 'prendre', k }),
+  prendre: (k) => party?.toHost({ t: 'prendre', k, github: monGithub() }),
   rendre: (k) => party?.toHost({ t: 'rendre', k }),
-  classe: (k, type) => party?.toHost({ t: 'classe', k, type }),
+  classe: (k, type) => party?.toHost({ t: 'classe', k, type, github: monGithub() }),
   mode: (m) => party?.toHost({ t: 'mode', mode: m }),
   commencer: () => party?.toHost({ t: 'commencer' }),
   rejouer: () => party?.toHost({ t: 'rejouer' }),

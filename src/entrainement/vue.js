@@ -12,6 +12,7 @@ import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
+import { creerFilms, traction, ENCLUME as ENCLUME_FILM } from './films.js';
 
 export const name = 'vue';
 export const always = true;
@@ -25,11 +26,26 @@ const COULEURS = {
   huile: [[44, 30, 18], [62, 44, 26], [120, 96, 60], [20, 12, 6]],
   glace: [[176, 222, 240], [206, 238, 250], [255, 255, 255], [96, 150, 186]],
   feu: [[214, 80, 22], [244, 136, 30], [255, 220, 90], [130, 36, 14]],
+  // les pièges du Traqueur : le fer des mâchoires, l'ambre de la glu, la corde du collet
+  'piege-machoires': [[92, 92, 98], [120, 120, 128], [200, 200, 210], [40, 40, 46]],
+  'piege-glu': [[176, 128, 40], [200, 156, 60], [240, 210, 120], [100, 70, 20]],
+  'piege-collet': [[150, 110, 60], [176, 136, 80], [220, 190, 130], [80, 56, 26]],
 };
+// Le limier du Traqueur (public/assets/lpc/compagnons/limier.png, comme au camp) : une créature du combat (regles.js,
+// FAMILIERS), dessinée avec sa planche ; il court à la cible d'un ordre et revient ; à terre, il est terni.
+const LIGNES_CHIEN = { haut: 0, gauche: 1, bas: 2, droite: 3 };
+const VITESSE_CHIEN = 9 * T;
+const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' };
 
 let game, rendu, images, combat, salle, canvas;
 const aff = new Map();                 // ce que la vue montre de chaque créature (ça suit la file, pas l'état final)
 const tonneaux = new Map();
+// l'enclume de Baba Brisenclume : { x, y, s, cache }, celle de sa Chute d'Enclume (films.js) ; ses animations validées
+// (les films) la cachent quand elles la dessinent elles-mêmes (sa chute, la Forge)
+let enclume = null;
+let films = null;
+const BABA = 'baba-brisenclume';
+const FILMS_ENCLUME = ['chute-enclume', 'lame-ardente', 'trempe'];
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
@@ -45,9 +61,53 @@ let marques = {};                      // ce que l'interface demande de montrer 
 const CLE_PLAQUES = 'dungeoncoop:barres-terrain';
 const plaques = { e: true, h: true }; // les barres de vie montrées : des ennemis (e), des alliés (h)
 let calquePlaques = null;
+// Le ressenti des coups : au moment où le coup touche (l'arme ou le projectile arrive, pas à la fin de l'animation),
+// un arrêt sur image (la file et les animations attendent), une secousse de la caméra, un éclair blanc et un recul
+// de la cible, et son chiffre ; dosés sur le résultat du d20 et sur les dégâts. Quatre styles, à essayer avec
+// ?ressenti=sobre|percutant|manga|cinema ; en plus, selon le style : des étincelles, un éclair de tout l'écran,
+// des traits de vitesse autour de la cible, un coup de zoom, un ralenti, un voile sombre qui isole la cible.
+//   gel : l'arrêt (s) · secousse, recul : en px d'écran, à tous les zooms (mesurés à l'échelle des maquettes, ×1,8) · flash, traits, voile : leur force (0 à 1) · zoom : +x % ·
+//   ralenti : { k : la vitesse, d : sa durée réelle (s) } · etincelles : des briques en plus sur la cible
+const STYLES = {
+  sobre: {
+    eraflure: { gel: 0.025, secousse: 0.8, recul: 1.5 }, touche: { gel: 0.05, secousse: 1.6, recul: 3 },
+    critique: { gel: 0.11, secousse: 3.2, recul: 5 }, autre: { gel: 0.02, secousse: 1, recul: 1.5 },
+  },
+  percutant: {
+    eraflure: { gel: 0.035, secousse: 1.2, recul: 2 }, touche: { gel: 0.075, secousse: 2.6, recul: 4, etincelles: ['impact-etoile'] },
+    critique: { gel: 0.2, secousse: 6, recul: 7, etincelles: ['impact-dore', 'impact-etoile'] }, autre: { gel: 0.03, secousse: 1.4, recul: 2 },
+  },
+  manga: {
+    eraflure: { gel: 0.04, secousse: 1.4, recul: 2.5 }, touche: { gel: 0.1, secousse: 3.2, recul: 5, traits: 0.55, etincelles: ['impact-etoile'] },
+    critique: { gel: 0.3, secousse: 7, recul: 9, traits: 1, flash: 0.4, zoom: 0.07, etincelles: ['impact-dore', 'impact-etoile'] },
+    autre: { gel: 0.03, secousse: 1.6, recul: 2 },
+  },
+  cinema: {
+    eraflure: { gel: 0.03, secousse: 1, recul: 2 }, touche: { gel: 0.06, secousse: 2, recul: 4 },
+    critique: { gel: 0.05, ralenti: { k: 0.18, d: 0.6 }, secousse: 4, recul: 8, voile: 0.6, zoom: 0.12, etincelles: ['impact-dore'] },
+    autre: { gel: 0.025, secousse: 1.2, recul: 2 },
+  },
+};
+const STYLE_DEFAUT = 'percutant';
+// (en px d'écran : sans ça, au zoom normal, 1 px du monde ≈ 1 px d'écran, et la secousse du style Sobre ne se voyait pas)
+const ECRAN = 1.8, SECOUSSE_MAX = 14, RECUL_MAX = 12, SECOUSSE_DUREE = 0.32;
+const calme = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let style = STYLE_DEFAUT;
+let gel = 0, coup = null;                              // l'arrêt sur image restant (s) ; le dernier jet (attaque)
+const secousse = { a: 0, t: 0 };
+const ralenti = { k: 1, reste: 0 };
+// ce qui se joue par-dessus le terrain (sous l'interface) : l'éclair de l'écran, les traits, le voile ; et le zoom
+const ecran = { cible: null, t: 9, flash: 0, traits: 0, voile: 0, zoom: 0, tenue: 0 };
+let voile = null;
 
 export function init(g, options) {
   game = g;
+  const q = new URLSearchParams(location.search).get('ressenti');
+  style = STYLES[q] ? q : STYLE_DEFAUT;
+  document.documentElement.dataset.ressenti = style;
+  voile = Object.assign(document.createElement('div'), { className: 'voile-impact' });
+  voile.innerHTML = '<div class="vi-voile"></div><div class="vi-traits"></div><div class="vi-flash"></div>';
+  document.body.append(voile);
   ({ rendu, images, combat, salle, canvas } = options);
   const W = salle.l * T, H = salle.h * T;
 
@@ -69,6 +129,7 @@ export function init(g, options) {
   try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); if (lu) { plaques.e = !!lu.e; plaques.h = !!lu.h; } } catch {}
 
   fx = creerEffets(rendu, images);
+  films = creerFilms(rendu, images);
   peupler();
 
   // la caméra : molette (zoom fin et animé, sous la souris), clic droit glissé (déplacer la vue)
@@ -96,8 +157,9 @@ export function init(g, options) {
 // Les personnages et les tonneaux du combat, en sprites LPC.
 function peupler() {
   for (const u of combat.S.unites) {
-    const img = images[`perso_${u.type === 'brt' ? 'brute-ennemie' : u.type}`];
-    const meta = PERSOS[u.type === 'brt' ? 'brute-ennemie' : u.type];
+    const chien = u.type === 'limier';
+    const img = chien ? images.limier : images[`perso_${u.type === 'brt' ? 'brute-ennemie' : u.type}`];
+    const meta = chien ? { attaque: null } : PERSOS[u.type === 'brt' ? 'brute-ennemie' : u.type];
     const nomTex = `perso-${u.type}`;
     const s64 = rendu.sprite(img, nomTex, 64, 64);
     const grand = meta.attaque ? rendu.sprite(img, nomTex, meta.attaque.taille, meta.attaque.taille) : null;
@@ -105,16 +167,19 @@ function peupler() {
     aff.set(u.id, {
       id: u.id, type: u.type, camp: u.camp, x: u.x * T, y: u.y * T, dir: u.camp === 'h' ? 'droite' : 'gauche', anim: 'repos', t: Math.random(),
       pv: u.pv, ko: u.ko, mort: u.mort, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20, 5),
-      pvMax: u.pvMax, plaque: creerPlaque(u),
+      pvMax: u.pvMax, plaque: creerPlaque(u), chien,
     });
   }
   for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
+  const e = combat.S.enclume;
+  enclume = { x: (e?.x ?? 0) * T, y: (e?.y ?? 0) * T, s: rendu.sprite(images.film_enclume, 'film-enclume', ENCLUME_FILM.w, ENCLUME_FILM.h), cache: !e };
 }
 
 // Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
 export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
+  enclume?.s.retirer(); films.vider();
   aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
   peupler();
@@ -173,10 +238,10 @@ export function viser(x, y) { cam.cible = { x, y }; }
 function redessinerSurfaces(flammes = 0) {
   const W = fondSurfaces.width, H = fondSurfaces.height, M = combat.MAILLE * T;
   const img = ctxSurfaces.createImageData(W, H), p = img.data;
-  const type = new Uint8Array(W * H), TYPES = ['', 'eau', 'huile', 'glace', 'feu'];
+  const type = new Uint8Array(W * H), TYPES = ['', 'eau', 'huile', 'glace', 'feu', 'piege-machoires', 'piege-glu', 'piege-collet'];
   const r = M * 0.72;
   for (const [k, s] of Object.entries(combat.mailles())) {
-    const [i, j] = k.split(',').map(Number), cx = (i + 0.5) * M, cy = (j + 0.5) * M, n = TYPES.indexOf(s.t);
+    const [i, j] = k.split(',').map(Number), cx = (i + 0.5) * M, cy = (j + 0.5) * M, n = TYPES.indexOf(s.t === 'piege' ? `piege-${s.v}` : s.t);
     for (let y = Math.floor(cy - r); y <= cy + r; y++) for (let x = Math.floor(cx - r); x <= cx + r; x++) {
       if (x < 0 || y < 0 || x >= W || y >= H) continue;
       // un bord un peu irrégulier, toujours pareil au même endroit
@@ -231,7 +296,7 @@ export function dessinerMarques(m = marques) {
     g.putImageData(img, 0, 0);
   }
   const anneau = (id, couleur, epais = 2) => {
-    const a = aff.get(id) ?? tonneaux.get(id); if (!a) return;
+    const a = aff.get(id) ?? tonneaux.get(id) ?? (id === 'enclume' && !enclume?.cache ? enclume : null); if (!a) return;
     g.strokeStyle = couleur; g.lineWidth = epais; g.beginPath(); g.ellipse(a.x, a.y - 1, 15, 7, 0, 0, Math.PI * 2); g.stroke();
   };
   for (const id of m.cibles ?? []) anneau(id, 'rgba(255, 214, 90, 0.9)');
@@ -253,7 +318,7 @@ export function dessinerMarques(m = marques) {
   }
   if (m.chemin?.length) {
     const h = aff.get(m.selection);
-    g.strokeStyle = m.cheminOk === false ? 'rgba(255, 90, 74, 0.9)' : 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 2; g.setLineDash([4, 4]);
+    g.strokeStyle = m.cheminOk === false ? 'rgba(255, 90, 74, 0.9)' : m.cheminDanger ? 'rgba(255, 110, 60, 1)' : 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 2; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(h.x, h.y);
     for (const p of m.chemin) g.lineTo(p.x * T, p.y * T);
     g.stroke(); g.setLineDash([]);
@@ -289,6 +354,8 @@ function scene(e) {
     }
     case 'poussee': {
       const cible = e.tonneau ? tonneaux.get(e.id) : a, dep = { x: cible.x, y: cible.y };
+      const tiree = !e.tonneau && films.de(cible);                // tirée par les Tenailles de Baba : au rythme de ses à-coups
+      if (tiree) return tirer(tiree, cible, e.chemin, () => { a.anim = 'blesse'; }, () => { a.anim = 'repos'; });
       const pts = e.chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
       const duree = Math.min(0.6, 0.12 + Math.hypot(fin.x - dep.x, fin.y - dep.y) / (12 * T));
       fx.jouer('poussiere', { x: dep.x, y: dep.y }); fx.jouer('poussiere', { x: fin.x, y: fin.y, retard: duree });
@@ -297,19 +364,38 @@ function scene(e) {
       }, fin() { if (!e.tonneau) a.anim = 'repos'; } };
     }
     case 'attaque': case 'lance': {
+      if (aff.get(e.type === 'attaque' ? e.de : e.id)?.type === BABA) { const sb = sceneBaba(e); if (sb) return sb; }
       const att = aff.get(e.type === 'attaque' ? e.de : e.id), cible = e.type === 'attaque' ? aff.get(e.vers) : { x: e.x * T, y: e.y * T };
       tourner(att, cible);
       att.anim = e.anim ?? 'attaque'; att.t = 0;
+      coup = e.type === 'attaque' ? { de: e.de, vers: e.vers, resultat: e.resultat } : null;
       viser((att.x + cible.x) / 2, (att.y + cible.y) / 2);
       if (e.type === 'attaque') pourEcouteurs({ ...e, type: 'de' });
       // l'effet de la capacité : la scène dure jusqu'à ce que le coup arrive (les dégâts s'affichent après)
       const genre = att.camp === 'e' ? (e.anim === 'tir' ? 'tir' : ['brt', 'chef'].includes(att.type) ? 'lourd' : 'taille') : null;
       const d = e.type === 'attaque' ? effetsAttaque(fx, e.cap, att, cible, genre) : effetsLance(fx, e.cap, att, cible, e.cap === 'fioleCible' ? cible : null);
-      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj() {}, fin() { att.anim = 'repos'; } };
+      // (effetsAttaque rend la fin de l'effet : l'impact est 0,05 s avant)
+      const quand = Math.max(0.12, d - 0.05);
+      let porte = e.type !== 'attaque';
+      const toucher = () => {
+        porte = true;
+        const suite = file[0];
+        if (suite?.type !== 'degats' || suite.id !== e.vers || !cible) return;
+        suite.porte = true; coup = null;
+        cible.anim = 'blesse'; cible.t = 0;
+        impact(cible, att, suite.n, e.resultat, suite.pv <= 0);
+        chiffre(cible, suite.n, e.resultat);
+      };
+      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj(t) { if (!porte && t >= quand) toucher(); }, fin() { if (!porte) toucher(); att.anim = 'repos'; } };
     }
     case 'degats': {
-      a.pv = e.pv; a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
-      flottant(a, `−${e.n}`, 'degats');
+      a.pv = e.pv;
+      if (e.porte) return { duree: 0.2, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };   // (déjà montré à l'impact)
+      a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
+      const jet = coup?.vers === e.id ? coup : null; coup = null;
+      const resultat = jet?.resultat ?? 'autre';
+      impact(a, jet ? aff.get(jet.de) : null, e.n, resultat, e.pv <= 0);
+      chiffre(a, e.n, resultat);
       return { duree: 0.32, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };
     }
     case 'soin':
@@ -325,26 +411,174 @@ function scene(e) {
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
+    // le Pas dans l’ombre de Shadow : il s’enfonce dans son ombre, et en ressort derrière la cible
+    // (l'esquisse : design/classes/shadow/captures/pas-ombre.gif ; les briques « flaque-ombre », « fumee-ombre », « ombre-file »,
+    // « chevrons-tenaille »). Il s'enfonce dans sa flaque, son ombre file au ras du sol jusque derrière la cible, il remonte
+    // d'une flaque qui s'ouvre là-bas, tourné vers elle ; deux chevrons clignent autour d'elle : elle est prise entre deux.
+    case 'ombre': {
+      const dep = { x: a.x, y: a.y }, p = { x: e.x * T, y: e.y * T }, c = aff.get(e.cible) ?? p;
+      const PLONGE = 0.4, vol = Math.min(0.5, 0.18 + Math.hypot(p.x - dep.x, p.y - dep.y) / (14 * T)), MONTE = 0.45, arrive = PLONGE + vol;
+      fx.jouer('ombre-file', { x: dep.x, y: dep.y, vers: p, retard: PLONGE, duree: vol, miroir: p.x < dep.x });
+      fx.jouer('flaque-ombre', { x: p.x, y: p.y, retard: arrive - 0.2 });
+      fx.jouer('fumee-ombre', { x: p.x, y: p.y, retard: arrive });
+      fx.jouer('chevrons-tenaille', { x: c.x, y: c.y - 58, retard: arrive + MONTE });
+      let passe = false;
+      return { duree: arrive + MONTE, maj(t) {
+        if (t < PLONGE) { a.plonge = t / PLONGE; a.cache = a.plonge > 0.95; return; }
+        if (t < arrive) { a.cache = true; return; }
+        if (!passe) { passe = true; a.x = p.x; a.y = p.y; tourner(a, c); }
+        a.cache = false; a.plonge = Math.max(0, 1 - (t - arrive) / MONTE);
+      }, fin() { a.x = p.x; a.y = p.y; a.plonge = 0; a.cache = false; tourner(a, c); } };
+    }
+    // l'enclume de Baba : posée (sa chute est dans le film de la Chute d'Enclume), ou tirée par les Tenailles
+    case 'enclume': {
+      const p = { x: e.x * T, y: e.y * T };
+      if (e.chute) { Object.assign(enclume, { x: p.x, y: p.y, cache: false }); return { duree: 0 }; }
+      const tiree = films.de(enclume);
+      if (tiree) return tirer(tiree, enclume, e.chemin.length ? e.chemin : [{ x: e.x, y: e.y }]);
+      const dep = { x: enclume.x, y: enclume.y };
+      return { duree: 0.35, maj(t, k) { enclume.x = dep.x + (p.x - dep.x) * k; enclume.y = dep.y + (p.y - dep.y) * k; }, fin() { enclume.x = p.x; enclume.y = p.y; } };
+    }
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
+    case 'piege': flottant(a, NOM_PIEGE[e.v] ?? 'Piège !', 'info'); fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-lourd', { x: a.x, y: a.y }); return { duree: 0.35 };
+    case 'limier': {
+      // le limier court au contact de la cible d'un ordre, puis revient à sa place (à côté de son maître)
+      const c = a; if (!c) return { duree: 0 };
+      const u = combat.U(e.id), b = e.vers ? aff.get(e.vers) : null, dep = { x: c.x, y: c.y };
+      const fin = b ? { x: b.x + (c.x < b.x ? -24 : 24), y: b.y + 4 } : { x: u.x * T, y: u.y * T };
+      const duree = Math.min(0.7, Math.max(0.15, Math.hypot(fin.x - dep.x, fin.y - dep.y) / VITESSE_CHIEN));
+      if (b) viser((dep.x + b.x) / 2, (dep.y + b.y) / 2);
+      return { duree, maj(t, k) {
+        c.x = dep.x + (fin.x - dep.x) * k; c.y = dep.y + (fin.y - dep.y) * k; c.anim = 'marche';
+        if (Math.abs(fin.x - dep.x) + Math.abs(fin.y - dep.y) > 1) c.dir = versDir(fin.x - dep.x, fin.y - dep.y);
+      }, fin() { c.anim = 'repos'; if (b) c.dir = versDir(b.x - c.x, b.y - c.y); } };
+    }
     case 'zone': marques.zone = { x: e.x, y: e.y, r: e.r, surf: e.surf }; dessinerMarques(); return { duree: 0.35, fin() { marques.zone = null; dessinerMarques(); } };
     case 'menace': marques.menace = { x: e.x, y: e.y, r: e.r }; dessinerMarques(); viser(e.x * T, e.y * T); return { duree: 0.85, fin() { marques.menace = null; dessinerMarques(); } };
     case 'eclair': pourEcouteurs(e); return { duree: 0.35 };
     case 'flottant': case 'texte': flottant(a, e.texte, e.genre ?? 'info'); return { duree: 0.2 };
-    case 'de': pourEcouteurs({ type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= 9 ? 'glisse' : 'tient', de: e.id, glace: true }); return { duree: 0.5 };
+    case 'de': pourEcouteurs({ type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= (e.seuil ?? 9) ? 'glisse' : 'tient', de: e.id, glace: true }); return { duree: 0.5 };
     case 'agit': marques.actif = e.id; dessinerMarques(); viser(a.x, a.y); return { duree: 0.25 };
     default: pourEcouteurs(e); return { duree: e.type === 'combo' ? 0.7 : 0 };
   }
 }
 function pourEcouteurs(e) { for (const f of ecouteurs) f(e); }
 
+// --- Baba Brisenclume : ses animations validées (films.js) -----------------------------------------------------------
+// Chaque capacité joue sa scène verrouillée ; la file reprend quand le coup porte (l'image « impact »), le film continue.
+function sceneBaba(e) {
+  const b = aff.get(e.type === 'attaque' ? e.de : e.id);
+  if (e.type === 'attaque' && e.cap === 'marteau') {
+    const c = aff.get(e.vers);
+    pourEcouteurs({ ...e, type: 'de' });
+    viser((b.x + c.x) / 2, (b.y + c.y) / 2);
+    return { duree: Math.max(0.5, films.jouer('marteau', { baba: b, cible: c }).impact + 0.05) };
+  }
+  if (e.type === 'attaque' && e.cap === 'chuteEnclume') { pourEcouteurs({ ...e, type: 'de' }); return { duree: 0.5 }; }   // (le film tourne déjà)
+  if (e.type !== 'lance') return null;
+  if (e.cap === 'chuteEnclume') {
+    const p = { x: e.x * T, y: e.y * T };
+    viser(p.x, p.y - 30);
+    return { duree: films.jouer('chute-enclume', { baba: b, cible: p }).impact };
+  }
+  if (e.cap === 'tenailles') {
+    const c = e.vers === 'enclume' ? enclume : aff.get(e.vers);
+    viser((b.x + c.x) / 2, (b.y + c.y) / 2);
+    return { duree: films.jouer(e.vers === 'enclume' ? 'tenailles-enclume' : 'tenailles', { baba: b, cible: c }).impact };
+  }
+  if (e.cap === 'lameArdente' || e.cap === 'trempe') {
+    // il se tourne vers son enclume (la scène la fait apparaître devant lui, là où elle est) ; l'allié, au contact, reçoit
+    // le feu ou le bouclier où qu'il soit (la traînée s'étire jusqu'à lui)
+    const c = aff.get(e.vers), soi = c === b;
+    viser(b.x, b.y);
+    return { duree: films.jouer(e.cap === 'lameArdente' ? 'lame-ardente' : 'trempe', { baba: b, cible: c, vers: enclume, sansMilieu: soi }).impact };
+  }
+  return null;
+}
+// une cible tirée par les Tenailles : elle avance de son chemin au rythme des à-coups du film (jusqu'au dernier)
+function tirer(film, cible, chemin, pendant = () => {}, apres = () => {}) {
+  const dep = { x: cible.x, y: cible.y }, pts = chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
+  const F = film.F, dernier = F.tire[F.tire.length - 1] + 2, reste = Math.max(0.05, (dernier - (films.image(film) ?? dernier)) / 12);
+  return { duree: reste, maj() {
+    const f = films.image(film), k = f == null ? 1 : traction(F, f);
+    cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k; pendant();
+  }, fin() { cible.x = fin.x; cible.y = fin.y; apres(); } };
+}
+
 // --- Les textes qui montent (dégâts, soins, « Raté ! ») ----------------------------------------------------------
 const flottants = [];
-function flottant(a, texte, genre) {
+function flottant(a, texte, genre, haut = 0) {
   if (!a) return;
   const el = Object.assign(document.createElement('div'), { className: `flottant ${genre}`, textContent: texte });
   document.body.append(el);
-  flottants.push({ el, x: a.x, y: a.y - 58, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
+  flottants.push({ el, x: a.x, y: a.y - 58 - haut, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
+}
+
+// le chiffre des dégâts (et « Critique ! » au-dessus)
+function chiffre(a, n, resultat) {
+  flottant(a, `−${n}`, `degats ${resultat}`);
+  if (resultat === 'critique') flottant(a, 'Critique !', 'critique-titre');
+}
+// Un coup porte sur `a` (venu de `att`, s'il y en a un) : l'arrêt sur image, la secousse, l'éclair, le recul, et les
+// extras du style (étincelles, traits, éclair de l'écran, zoom, ralenti, voile).
+function impact(a, att, n, resultat, tombe) {
+  const S = STYLES[style], r = S[resultat] ?? S.autre, poids = Math.min(1.5, 0.6 + n / 25);   // 10 dégâts ≈ 1, 22 ≈ 1,5
+  gel = Math.max(gel, r.gel * (tombe ? 1.6 : 1));
+  a.eclair = 1;
+  for (const id of r.etincelles ?? []) fx.jouer(id, { x: a.x, y: a.y - 26 });
+  if (calme) return;
+  const ech = Math.max(0.5, canvas.clientWidth / rendu.vue.w);             // px d'écran par px du monde
+  secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids * ECRAN) / ech); secousse.t = 0;
+  if (att) {
+    const dx = a.x - att.x, dy = a.y - att.y, l = Math.hypot(dx, dy) || 1;
+    a.recul = { x: dx / l, y: dy / l, n: Math.min(RECUL_MAX, r.recul * poids * ECRAN / ech), t: 0 };
+  }
+  if (r.ralenti) { ralenti.k = r.ralenti.k; ralenti.reste = r.ralenti.d; }
+  if (r.flash || r.traits || r.voile || r.zoom) {
+    Object.assign(ecran, { cible: a, t: 0, flash: r.flash ?? 0, traits: r.traits ?? 0, voile: r.voile ?? 0, zoom: r.zoom ?? 0,
+      tenue: r.gel * (tombe ? 1.6 : 1) + (r.ralenti?.d ?? 0) });
+  }
+}
+// chaque image (en temps réel) : l'éclair de l'écran, les traits, le voile, le zoom, autour de la cible
+function poserEcran(dt) {
+  if (!voile) return;
+  ecran.t += dt;
+  const t = ecran.t, actif = ecran.cible && t < ecran.tenue + 0.6;
+  voile.hidden = !actif;
+  if (!actif) { if (canvas.style.transform) canvas.style.transform = ''; return; }
+  const p = versEcranBrut(ecran.cible.x, ecran.cible.y - 28);
+  const sortie = (d) => Math.max(0, 1 - Math.max(0, t - ecran.tenue) / d);      // tenu pendant l'arrêt, puis s'efface en d
+  voile.style.setProperty('--x', `${p.x}px`); voile.style.setProperty('--y', `${p.y}px`);
+  voile.style.setProperty('--flash', String(ecran.flash * Math.max(0, 1 - t / 0.14)));
+  voile.style.setProperty('--traits', String(ecran.traits * Math.min(1, t / 0.03) * sortie(0.25)));
+  voile.style.setProperty('--tour', `${(t * 40) % 360}deg`);
+  voile.style.setProperty('--voile', String(ecran.voile * Math.min(1, t / 0.12) * sortie(0.45)));
+  const z = ecran.zoom * Math.min(1, t / 0.07) * sortie(0.35) ** 2;
+  canvas.style.transformOrigin = `${p.x}px ${p.y}px`;
+  canvas.style.transform = z > 0.001 ? `scale(${1 + z})` : '';
+}
+// le décalage du recul (px) : la cible part en arrière et revient, en 0,22 s
+function decalageRecul(a, dt) {
+  const r = a.recul; if (!r) return null;
+  r.t += dt;
+  const k = r.t / 0.22;
+  if (k >= 1) { a.recul = null; return null; }
+  const d = r.n * Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k * 0.3);
+  return { x: r.x * d, y: r.y * d * 0.5 };
+}
+// l'éclair blanc : le matériau du personnage éclairci (la couleur multiplie l'image), puis il revient en 0,12 s
+function teinter(a, base = 1) {
+  const e = Math.max(0, a.eclair ?? 0), v = base * (1 + e * 3.5);
+  for (const sp of [a.s64, a.grand]) {
+    if (!sp) continue;
+    const m = sp.mesh.material;
+    if (m.userData.teinte !== v) { m.color.setScalar(v); m.userData.teinte = v; }
+  }
+}
+function versEcranBrut(x, y) {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  return { x: ((x - rendu.cam.x) / rendu.vue.w) * w, y: ((y - rendu.cam.y) / rendu.vue.h) * h };
 }
 export function versEcran(x, y) {
   const r = canvas.getBoundingClientRect();
@@ -404,7 +638,9 @@ export function basculerPlaques(camp, oui = !plaques[camp]) {
 }
 
 // --- Chaque image ----------------------------------------------------------------------------------------------
-export function update(dt) {
+export function update(dtReel) {
+  const dt = gel > 0 ? 0 : ralenti.reste > 0 ? dtReel * ralenti.k : dtReel;
+  if (gel > 0) gel = Math.max(0, gel - dtReel); else ralenti.reste = Math.max(0, ralenti.reste - dtReel);
   temps += dt;
   // la file
   if (!courant && file.length) {
@@ -425,16 +661,33 @@ export function update(dt) {
   glisserZoom(dt);
   if (cam.cible && !cam.glisse) { cam.cx += (cam.cible.x - cam.cx) * Math.min(1, dt * 5); cam.cy += (cam.cible.y - cam.cy) * Math.min(1, dt * 5); }
   bornerCamera();
-  rendu.viser(cam.cx - rendu.vue.w / 2, cam.cy - rendu.vue.h / 2);
+  let ox = 0, oy = 0;
+  if (secousse.a > 0) {
+    secousse.t += dtReel;
+    const k = Math.max(0, 1 - secousse.t / SECOUSSE_DUREE), amp = secousse.a * k * k;
+    ox = (Math.random() * 2 - 1) * amp; oy = (Math.random() * 2 - 1) * amp;
+    if (k <= 0) secousse.a = 0;
+  }
+  rendu.viser(cam.cx - rendu.vue.w / 2 + ox, cam.cy - rendu.vue.h / 2 + oy);
+  poserEcran(dtReel);
   // les états sous les barres : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsPlaques = new Map(combat.S.unites.map((u) => [u.id, etatsActifs(u)]));
   // les personnages
   for (const a of aff.values()) {
     a.t += dt;
+    if (a.eclair > 0) a.eclair = Math.max(0, a.eclair - dt / 0.12);
+    const r = decalageRecul(a, dt);
+    if (r) { a.x += r.x; a.y += r.y; }
     poserPerso(a);
     poserPlaque(a);
+    if (r) { a.x -= r.x; a.y -= r.y; }
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
+  if (enclume) {
+    const cachee = enclume.cache || FILMS_ENCLUME.some((id) => films.actif(id));
+    enclume.s.cacher(cachee);
+    if (!cachee) enclume.s.poser(enclume.x - ENCLUME_FILM.w / 2, enclume.y - ENCLUME_FILM.h, enclume.y);
+  }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
   for (const [id, liste] of etatsVus) {
@@ -442,8 +695,11 @@ export function update(dt) {
     for (const [k, brique, dy] of liste) if (!(a.ko && k !== 'aTerre')) fx.garder(`${id}:${k}`, brique, a.x, a.y + dy);
   }
   fx.update(dt);
+  // les films de Baba, et leur secousse de l'écran
+  const [sx, sy] = films.update(dt);
+  if (sx || sy) rendu.viser(cam.cx - rendu.vue.w / 2 + ox - sx, cam.cy - rendu.vue.h / 2 + oy - sy);   // (avec la secousse des coups)
   for (let k = flottants.length - 1; k >= 0; k--) {
-    const f = flottants[k]; f.t += dt;
+    const f = flottants[k]; f.t += dtReel;
     const p = versEcran(f.x, f.y - f.t * 30);
     f.el.style.left = `${p.x}px`; f.el.style.top = `${p.y}px`; f.el.style.opacity = String(Math.max(0, 1 - Math.max(0, f.t - 0.6) / 0.5));
     if (f.t > 1.1) { f.el.remove(); flottants.splice(k, 1); }
@@ -451,10 +707,19 @@ export function update(dt) {
 }
 
 function poserPerso(a) {
+  if (a.chien) return void poserChien(a);
   if (a.cache) { a.s64.cacher(true); a.grand?.cacher(true); a.ombre.cacher(true); return; }
   const ligne = DIR[a.dir];
   let anim = a.anim, rang, col;
+  let decale = 0;
   if (a.ko || a.mort || anim === 'tombe') { rang = ANIM.blesse[0]; col = anim === 'tombe' ? Math.min(5, Math.floor(a.t * 11)) : 5; }
+  else if (anim === 'film' && a.film) {
+    // Baba dans une de ses scènes validées : sa pose image par image (au repos : l'image debout de la marche, comme les esquisses)
+    const p = a.film; decale = p.dx * (p.miroir ? -1 : 1);
+    if (p.anim === 'repos') { rang = ANIM.marche[0] + ligne; col = 0; }
+    else if (p.anim === 'blesse') { rang = ANIM.blesse[0]; col = Math.min(5, p.i); }
+    else { rang = (ANIM[p.anim] ?? ANIM.attaque)[0] + ligne; col = p.i; }
+  }
   else if (anim === 'marche') { rang = ANIM.marche[0] + ligne; col = 1 + (Math.floor(a.t * 10) % 8); }
   else if (anim === 'blesse') { rang = ANIM.blesse[0]; col = Math.min(2, Math.floor(a.t * 10)); }
   else if (anim === 'repos') { rang = ANIM.repos[0] + ligne; col = Math.floor(a.t * 1.6) % 2; }
@@ -466,13 +731,29 @@ function poserPerso(a) {
       a.s64.cacher(true); a.grand.cacher(false);
       a.grand.poser(a.x - s / 2, a.y - 60 - (s - 64) / 2 + a.enfonce * 20, a.y, c * s, bloc.y + ligne * s);
       a.ombre.cacher(false); a.ombre.poser(a.x, a.y - 1);
+      teinter(a);
       return;
     }
     const [r0, n] = ANIM[anim] ?? ANIM.attaque;
     rang = r0 + ligne; col = Math.min(n - 1, Math.floor(a.t * n / 0.45));
   }
   a.grand?.cacher(true); a.s64.cacher(false);
-  a.s64.poser(a.x - 32, a.y - 60 + a.enfonce * 26, a.y, col * 64, rang * 64);
+  teinter(a);
+  // plonge (le Pas dans l'ombre de Shadow) : il descend sous ses pieds, coupé au ras du sol
+  const sous = Math.round((a.plonge ?? 0) * 60);
+  a.s64.poser(a.x - 32 + decale, a.y - 60 + a.enfonce * 26 + sous, a.y, col * 64, rang * 64, 64 - sous);
+  a.ombre.cacher(a.enfonce > 0.3 || (a.plonge ?? 0) > 0.2); a.ombre.poser(a.x, a.y - 1);
+}
+
+// Le limier : sa planche à lui (4 rangées : la marche, colonnes 0 à 4 ; l'arrêt, colonne 5) ; à terre, terni.
+function poserChien(a) {
+  if (a.cache) { a.s64.cacher(true); a.ombre.cacher(true); return; }
+  const col = a.anim === 'marche' ? Math.floor(a.t * 10) % 5 : 5;
+  a.s64.cacher(false);
+  a.s64.poser(a.x - 32, a.y - 62 + a.enfonce * 26, a.y, col * 64, LIGNES_CHIEN[a.dir] * 64);
+  const m = a.s64.mesh.material, terni = a.ko || a.mort;
+  if (terni) { if (m.userData.terni !== true) { m.color.setRGB(0.42, 0.42, 0.48); m.userData.terni = true; m.userData.teinte = null; } }   // (assombri, pas transparent : alphaTest)
+  else { m.userData.terni = false; teinter(a); }
   a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);
 }
 
@@ -487,8 +768,12 @@ function resynchroniser() {
     const t = combat.S.tonneaux.find((o) => o.id === id);
     if (!t) b.cache = true; else { b.x = t.x * T; b.y = t.y * T; b.cache = false; }
   }
+  const e = combat.S.enclume;
+  if (enclume) { if (!e) enclume.cache = true; else Object.assign(enclume, { x: e.x * T, y: e.y * T, cache: false }); }
 }
 
+// La planche LPC d'un personnage (pour le médaillon de sa fiche).
+export const planche = (type) => images[`perso_${type === 'brt' ? 'brute-ennemie' : type}`] ?? null;
 // Un portrait (la tête, de face) pris sur la planche d'un personnage, pour l'interface.
 export function portrait(type, taille = 64) {
   const nom = type === 'brt' ? 'brute-ennemie' : type, img = images[`perso_${nom}`];
@@ -498,11 +783,11 @@ export function portrait(type, taille = 64) {
   return c;
 }
 
-export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); }
+export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); films?.retirer(); voile?.remove(); canvas.style.transform = ''; }
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces, remplacer, basculerPlaques, effets,
+  aff, tonneaux, get enclume() { return enclume; }, get films() { return films; }, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },
@@ -518,7 +803,9 @@ export const api = {
     }
     if (best) return best;
     for (const [id, b] of tonneaux) { if (!b.cache && Math.abs(b.x / T - x) < 0.5 && y > b.y / T - 1.2 && y < b.y / T + 0.2) return id; }
+    if (enclume && !enclume.cache && Math.abs(enclume.x / T - x) < 1 && y > enclume.y / T - 1.15 && y < enclume.y / T + 0.2) return 'enclume';
     return null;
   },
   zoomer, ajusterCamera, contact: CONTACT,
+  get ressenti() { return { style, styles: Object.keys(STYLES), gel, secousse: secousse.a, secousseEcran: secousse.a * (canvas.clientWidth / rendu.vue.w), ralenti: ralenti.reste, ecran: { ...ecran, cible: ecran.cible?.id ?? null }, calme }; },
 };

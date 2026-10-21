@@ -101,5 +101,23 @@
       "y": 1664,
       "images": 6
     }
+  },
+  "baba-brisenclume": {
+    "nom": "Baba Brisenclume",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=muscular&body=Body_Color_amber&head=Human_Male_Elderly_amber&expression=Angry_amber&hair=Balding_white&beard=Winter_Beard_white&bauldron=Bauldron_leather&shoulders=Pauldrons_black&bracers=Bracers_copper&legs=Pants_charcoal&shoes=Rimmed_Boots_brown&mustache=Mustache_white",
+    "attaque": null,
+    "anims": ["marche", "sort", "estoc", "taille", "blesse"]
+  },
+  "shadow": {
+    "nom": "Shadow",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hat=Hood_blue&clothes=Longsleeve_tan&legs=Pants_tan&shoes=Sandals_brown&cape=Solid_tan&weapon=Dagger_dagger",
+    "attaque": null,
+    "anims": ["marche", "sort", "estoc", "taille", "tir", "blesse"]
+  },
+  "traqueur-au-limier": {
+    "nom": "Le Traqueur au limier",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hair=Plain_raven&beard=5_O'clock_Shadow_raven&hat=Hood_brown&neck=Scarf_black&quiver=Quiver_quiver&weapon=Normal_medium&shoulders=Mantal_forest&jacket=Santa_coat_brown&bauldron=Bauldron_black&belt=Leather_Belt_leather&legs=Pants_forest&shoes=Rimmed_Boots_black",
+    "attaque": null,
+    "anims": ["marche", "sort", "estoc", "taille", "tir", "blesse"]
   }
 }

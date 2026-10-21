@@ -1,0 +1,62 @@
+{
+  "_lisez_moi": "Les répliques des héros qui se promènent au camp (src/42_promeneurs.js). Texte provisoire : les textes du jeu sont à l'équipe, réécrivez-les. Une liste par héros (son id de content/classes/, ou « depart ») ; E devant lui : la suivante.",
+  "depart": [
+    "Salut ! Belle journée pour ne rien casser.",
+    "Je n'ai ni classe ni armure. Mais mon tee-shirt est propre.",
+    "On m'a dit « choisis une classe ». J'ai choisi d'attendre.",
+    "Un jour, je serai un héros. Pour l'instant, je marche.",
+    "La sentinelle m'a demandé mon nom trois fois. Je commence à douter."
+  ],
+  "barde": [
+    "Je ne gagne pas les combats. Je les rends plus beaux.",
+    "Une chanson pour ton courage ? Ou pour ton enterrement ? C'est le même refrain.",
+    "Ma Moquerie a fait pleurer un chevalier. Il dit que c'était la pluie.",
+    "Ma dague sert à couper les cordes cassées. Et parfois autre chose.",
+    "Avantage pour toi, mon ami ! Ne le gâche pas."
+  ],
+  "chevalier": [
+    "Je suis lent. Mais quand j'arrive, tout le monde le sait.",
+    "DEBOUT ! … Pardon, c'est un réflexe.",
+    "La glace ? Non merci. Très mauvais souvenirs.",
+    "Derrière mon bouclier. Tout le monde. Maintenant.",
+    "Cette armure pèse plus lourd que mes regrets."
+  ],
+  "druide": [
+    "Ne marche pas sur la mousse. Elle a des sentiments.",
+    "Je ne frappe pas fort. Je décide juste où tu vas tomber.",
+    "Un orage ? … Je rentre. Je rentre tout de suite.",
+    "Il va pleuvoir. Je le sais : c'est moi qui décide.",
+    "Les ronces sont mes amies. Les ronces n'ont pas d'amis, à part moi."
+  ],
+  "eclaireuse": [
+    "J'ai déjà fait le tour du camp. Deux fois. Tu marches lentement.",
+    "Un filet, une flèche, et c'est réglé.",
+    "Ne te colle pas à moi : je vise mal quand on me respire dans le cou.",
+    "J'ai vu des traces vers la tour. Grosses. Très grosses.",
+    "Prête quand tu veux. Enfin, j'étais prête il y a dix minutes."
+  ],
+  "voleur-exemple": [
+    "De l'huile, une ouverture, et le feu fait le reste. Recule un peu.",
+    "Ta bourse ? Je n'y ai pas touché. Elle est tombée. Dans ma main.",
+    "Le feu me brûle deux fois plus. Je joue avec quand même.",
+    "Je prépare le coup, les autres prennent la gloire. C'est mon métier.",
+    "Chut. Je ne suis pas là."
+  ],
+  "baba-brisenclume": [
+    "Pousse-toi, gamin. Le fer n'attend pas.",
+    "Mes os sont vieux. Mon marteau, lui, a toujours vingt ans.",
+    "Une enclume, ça ne se lance pas. … Sauf par moi.",
+    "Une Lame Ardente ? Reviens avec du charbon.",
+    "Un monstre plus gros que les autres ? Je lui forgerai son cercueil."
+  ],
+  "shadow": [
+    "Je suis derrière toi. Non, l'autre côté.",
+    "La lumière ? Allergique.",
+    "Bidos m'a appris tout ce que je sais. Il ne le sait pas."
+  ],
+  "traqueur-au-limier": [
+    "Un piège posé, un limier qui rabat : la proie n’a plus qu’à venir.",
+    "Mon limier a déjà senti la piste. Moi, je suis ses traces.",
+    "Pas un bruit. La forêt écoute avec nous."
+  ]
+}
