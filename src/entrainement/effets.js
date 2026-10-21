@@ -89,8 +89,6 @@ export function effetsAttaque(fx, cap, a, c, ennemi) {
     case 'mordre': return impact('impact-etoile', { x: c.x, y: c.y - 16 }, 0.1);          // le limier est déjà au contact
     case 'epee': taille('croissant-taille'); return impact('impact-etoile', t, 0.22);
     case 'fracas': taille('croissant-lourd'); return impact('impact-lourd', { x: c.x, y: c.y }, 0.24);
-    case 'marteau': taille('croissant-lourd'); return impact('impact-lourd', { x: c.x, y: c.y }, 0.24);          // Baba
-    case 'chuteEnclume': return impact('impact-lourd', { x: c.x, y: c.y }, 0.05);          // (l'enclume vient de tomber : « enclume », dans la vue)
     case 'coupDos': case 'coupDos3':                      // Shadow : deux entailles croisées, un X d’ombre sur le dos
       fx.jouer('entaille-x', { ...t, retard: 0.18, miroir });
       return 0.36;
@@ -119,11 +117,6 @@ export function effetsLance(fx, cap, a, p, u) {
     case 'filet': { const q = { x: p.x, y: p.y - 24 }, d = vol(m, q); fx.jouer('fleche', { ...m, vers: q, retard: 0.45, duree: d, miroir }); fx.jouer('filet-pose', { x: p.x, y: p.y, retard: 0.45 + d, duree: 0.5 }); return 0.45 + d + 0.2; }
     // Shadow baisse la tête, une flaque d’encre s’ouvre à ses pieds (la suite, la plongée et le trajet : « ombre », dans la vue)
     case 'pasOmbre': fx.jouer('flaque-ombre', { x: a.x, y: a.y }); fx.jouer('fumee-ombre', { x: a.x, y: a.y, retard: 0.2 }); return 0.35;
-    // Baba : la Forge au marteau sur l'enclume (la Lame ardente jaillit en feu, la Trempe en or), les Tenailles comme une liane
-    case 'lameArdente': fx.jouer('impact-feu', { x: p.x, y: p.y - 12, retard: 0.2 }); return 0.4;
-    case 'trempe': fx.jouer('impact-dore', { x: p.x, y: p.y - 12, retard: 0.2 }); return 0.4;
-    case 'chuteEnclume': return 0.3;
-    case 'tenailles': fx.jouer('estoc', { x: a.x + 10 * sens, y: a.y - 28, retard: 0.25, miroir }); fx.jouer('poussiere', { x: p.x, y: p.y, retard: 0.35 }); return 0.45;
     case 'liane': fx.jouer('estoc', { x: a.x + 10 * sens, y: a.y - 28, retard: 0.25, miroir }); fx.jouer('poussiere', { x: p.x, y: p.y, retard: 0.35 }); return 0.45;
     case 'chant': { const q = tete({ x: p.x, y: p.y }); let fin = 0; for (let k = 0; k < 3; k++) { const d = vol(m, q) * 1.4; fx.jouer('note', { ...m, vers: q, retard: 0.2 + k * 0.15, duree: d, arc: 10 }); fin = 0.2 + k * 0.15 + d; } return fin; }
     case 'moquerie': { const q = tete({ x: p.x, y: p.y }), d = vol(m, q) * 1.3; fx.jouer('bulle-moquerie', { x: a.x, y: a.y - 56, vers: q, retard: 0.2, duree: d, arc: 12 }); fx.jouer('colere', { x: q.x + 8, y: q.y - 4, retard: 0.2 + d, duree: 0.9 }); return 0.2 + d + 0.1; }

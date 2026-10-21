@@ -43,15 +43,24 @@ Baba se choisit à l'entrée du terrain (`entrainement.html`), seulement par Don
 |---|---|
 | **Fiche** | 130 PV, 6 m par tour, DEX −1, la Rage de la Brute (+10 par coup donné ou reçu, 50 au plus) |
 | **Marteau** (action) | au contact, 8 + d4 + 2. Passif *Marteau lourd* : ses poussées vont 1,5 m plus loin |
-| **Chute d'Enclume** (action, une fois par combat) | à 7,5 m, 14 + d6 + 2, la cible est À terre. L'enclume roule à ses pieds, du côté de Baba (ou tombe sur le sol visé) et **reste** : elle bloque le passage, couvre (un tir qui passe derrière elle a le désavantage), et une poussée contre elle fait +8, un combo pour Baba quand c'est un allié qui pousse |
+| **Chute d'Enclume** (action, une fois par combat) | à 7,5 m, 14 + d6 + 2, la cible est À terre. L'enclume se pose **sur la case visée** (l'ennemi, ou le sol) ; ceux qui s'y tiennent en sont repoussés d'une case (une poussée ordinaire), et elle **reste** : elle bloque le passage, couvre (un tir qui passe derrière elle a le désavantage), et une poussée contre elle fait +8, un combo pour Baba quand c'est un allié qui pousse |
 | **Lame Ardente** (bonus, 20 Rage) | Baba au contact de l'enclume, sur lui ou un allié à son contact : la prochaine attaque fait +d6 et compte comme du feu (Huilé ×2, enflamme l'huile et les tonneaux) ; un combo quand c'est un allié qui frappe |
 | **Trempe** (bonus, 20 Rage) | même condition : un bouclier de 10, qui prend les coups d'abord |
 | **Tenailles** (action) | à 4,5 m, tire de 3 m vers lui un ennemi, un allié (pour le sauver, sans attaque d'opportunité) ou son enclume |
 | **Vieux Os** (faiblesse) | se relever d'À terre lui prend tout son déplacement ; la glace le renverse sur 1 à 14 ; loin de son enclume, pas de Forge |
 
-Les icônes (`marteau`, `enclume`, `lameArdente`, `trempe`, `tenailles`) sont peintes par `design/ui-combat/icones/outil/icones.mjs`, et les états *Lame ardente* et *Trempe* par `design/terrain-entrainement/etats/outil/etats.mjs`. L'enclume du terrain est celle du camp (la planche des décorations), qui tombe avec son ombre au sol.
+Les icônes (`marteau`, `enclume`, `lameArdente`, `trempe`, `tenailles`) sont peintes par `design/ui-combat/icones/outil/icones.mjs`, et les états *Lame ardente* et *Trempe* par `design/terrain-entrainement/etats/outil/etats.mjs`.
 
-En combat, il joue pour l'instant ses rangées LPC (taille, sort, estoc) et les effets communs du terrain ; ses animations validées (`design/animations/esquisses/`, verrouillées dans `LOCKED.md`) ne sont pas encore branchées au combat.
+### En combat, uniquement ses animations validées
+Le propriétaire (21 oct.) : Baba ne joue que ses animations validées (verrouillées dans `LOCKED.md`). `outil/films.mjs` lit les scènes de `design/animations/outil/forgeron.mjs` **sans les modifier** et en fait des films pour le terrain (`public/assets/lpc/effets/baba/`, `src/entrainement/baba-films.json`) : les effets de chaque image sans les personnages (une planche sous eux, une par-dessus), la pose de Baba à chaque image, la secousse et l'éclair. `src/entrainement/films.js` les joue : la partie gauche du film suit Baba, la partie droite suit sa cible (l'ennemi tiré par les Tenailles avance au rythme des trois à-coups), et le milieu (la chaîne, la traînée de feu) s'étire entre les deux ; vers la gauche, le film se retourne.
 
-`node tools/capture-baba-terrain.mjs` (après `npm run build`) photographie la Chute d'Enclume visée, en l'air, posée, puis la Forge, dans `captures/terrain-*.png`.
+| Capacité | Sa scène |
+|---|---|
+| Marteau | `marteau` |
+| Chute d'Enclume | `chute-enclume` : l'enclume énorme tombe en flammes sur la case visée, puis reste et refroidit. L'enclume qui reste au terrain est la sienne (deux fois celle du camp, sans souche) |
+| Tenailles | `tenailles` (un ennemi ou un allié), `tenailles-enclume` |
+| Lame Ardente, Trempe | `lame-ardente`, `trempe` : il se tourne vers son enclume, qui « apparaît » devant lui le temps de la scène |
 
+Deux écarts : sauver un allié avec les Tenailles joue la scène de l'ennemi (celle de l'allié dessine une flaque de feu sous lui, même quand il n'y en a pas) ; à la fin de la Forge, l'enclume de la scène (celle du camp) redevient la grande enclume posée sur le terrain.
+
+`node tools/capture-baba-terrain.mjs` (après `npm run build`) photographie les images clés de chaque scène au terrain, dans `captures/terrain-*.png`.

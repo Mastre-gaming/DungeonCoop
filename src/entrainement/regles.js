@@ -939,15 +939,25 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.type === 'forge' && !presDeLEnclume(h)) return false;
     return true;
   }
-  // La Chute d'Enclume : où elle se pose. Sur un ennemi, elle l'écrase puis roule à ses pieds, du côté de Baba (à 1 case
-  // de lui, sur un point libre) ; sur le sol, là où l'on vise. null si elle ne peut pas s'y poser.
+  // La Chute d'Enclume : elle se pose sur la case visée (l'ennemi visé, ou le sol), jamais sur Baba ni sur un tonneau ;
+  // ceux qui s'y tiennent en sont repoussés (degager). null si elle ne peut pas s'y poser.
   function poseEnclume(h, cible) {
-    const libres = S.unites.filter((u) => !u.mort && !u.ko);
-    if (cible.camp) {
-      const l = dist(h, cible) || 1;
-      return pointLibreProche(trame, { x: cible.x + ((h.x - cible.x) / l) * 1.05, y: cible.y + ((h.y - cible.y) / l) * 1.05 }, [...libres, ...S.tonneaux]);
+    const p = { x: cible.x, y: cible.y };
+    if (!libre(trame, p.x, p.y) || dist(h, p) < ECART_MIN || S.tonneaux.some((b) => dist(b, p) < ECART_MIN)) return null;
+    return p;
+  }
+  // Ceux qui sont sur la case de l'enclume en sont repoussés d'une case (1,5 m), à l'opposé de Baba (ou du centre de la
+  // case) : une poussée ordinaire (surfaces, fossé, choc +8). Bloqué, on le pose sur le point libre le plus proche.
+  function degager(h, p) {
+    for (const u of S.unites.filter((o) => !o.mort && !o.ko && o !== h && dist(o, p) < ECART_MIN + 0.05)) {
+      const l = dist(u, p), d = l > 0.05 ? { x: (u.x - p.x) / l, y: (u.y - p.y) / l } : { x: (p.x - h.x) / (dist(h, p) || 1), y: (p.y - h.y) / (dist(h, p) || 1) };
+      log(`${u.nom} est repoussé de la case de l’enclume.`, u.camp === 'h' ? 'mauvais' : 'bon');
+      pousser({ id: h.id, nom: h.nom, camp: h.camp, x: u.x - d.x, y: u.y - d.y }, u, { longueur: 1 });
+      if (!u.mort && !u.ko && dist(u, p) < ECART_MIN) {
+        const q = pointLibreProche(trame, { x: p.x + d.x * ECART_MIN, y: p.y + d.y * ECART_MIN }, [...S.unites.filter((o) => o !== u && !o.mort && !o.ko), ...S.tonneaux, p]);
+        u.x = q.x; u.y = q.y; ev({ type: 'place', id: u.id, x: q.x, y: q.y });
+      }
     }
-    return finPossible(h, cible) && dist(h, cible) >= ECART_MIN ? { x: cible.x, y: cible.y } : null;
   }
   const aPortee = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && (cap.portee <= CONTACT || vue(trame.salle, h, p));
   // Les cibles possibles d'une capacité : des créatures, des tonneaux, et (feu) des taches d'huile.
@@ -1022,20 +1032,19 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (!e && !(cible.x != null && zonePossible(h, cap, cible))) return false;
       const p = poseEnclume(h, e ?? cible); if (!p) return false;
       payer(h, cap); h.enclumeTombee = true;
-      const vise = e ?? cible;
-      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: vise.x, y: vise.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: p.x, y: p.y, vers: e?.id ?? null });
       ev({ type: 'enclume', x: p.x, y: p.y, chute: true, sur: e?.id ?? null });
       if (e) attaquer(h, e, { ...attaqueHeros(cap), id: capId });          // (avant qu'elle soit posée : elle ne couvre pas sa propre cible)
+      degager(h, p);
       S.enclume = { id: 'enclume', x: p.x, y: p.y, par: h.id };
-      log(`L’enclume de ${h.nom} reste là, à ${metres(dist(h, p))} m de lui : elle bloque le passage et couvre des tirs.`);
+      log(`L’enclume de ${h.nom} reste sur sa case, à ${metres(dist(h, p))} m de lui : elle bloque le passage et couvre des tirs.`);
       const s = surfaceA(p); if (s?.t === 'huile' || s?.t === 'eau') log('Elle s’enfonce dans la flaque, et y reste.', 'muet');
       return true;
     }
     if (cap.type === 'forge') {                    // la Forge : au contact de l'enclume, sur lui ou un allié au contact
       if (!u || u.camp !== 'h' || u.ko || u.familier || (u !== h && dist(h, u) > CONTACT)) return false;
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: S.enclume.x, y: S.enclume.y });
-      ev({ type: 'forge', id: h.id, vers: u.id, forge: cap.forge });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y, vers: u.id });
       if (cap.forge === 'lame') { u.st.lame = { par: h.id }; ev({ type: 'texte', id: u.id, texte: 'Lame ardente !' }); log(`${h.nom} forge une Lame ardente pour ${u === h ? 'lui-même' : u.nom} : +d6 et du feu à sa prochaine attaque.`, 'bon'); }
       else { u.st.bouclier = { v: 10, par: h.id }; ev({ type: 'texte', id: u.id, texte: 'Trempe : 10' }); log(`${h.nom} trempe l’armure de ${u === h ? 'lui-même' : u.nom} : un bouclier de 10.`, 'bon'); }
       return true;
@@ -1044,7 +1053,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (cible.id === 'enclume') {
         if (!S.enclume || !aPortee(h, cap, S.enclume)) return false;
         payer(h, cap);
-        ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: S.enclume.x, y: S.enclume.y });
+        ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: S.enclume.x, y: S.enclume.y, vers: 'enclume' });
         const derriere = { x: S.enclume.x + (S.enclume.x - h.x), y: S.enclume.y + (S.enclume.y - h.y) };
         const autres = [...S.unites.filter((o) => !o.mort && !o.ko), ...S.tonneaux];
         const sim = simulerPoussee(trame, derriere, S.enclume, cap.longueur, { obstacles: autres });
@@ -1057,7 +1066,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       }
       if (!u || u === h || u.mort || u.ko || !aPortee(h, cap, u)) return false;
       payer(h, cap);
-      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y, vers: u.id });
       attirer(h, u, cap.longueur);
       return true;
     }

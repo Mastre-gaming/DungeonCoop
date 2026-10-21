@@ -447,10 +447,11 @@ export async function selfTest(t, game) {
   {
     const { C, ba, s } = forge();
     t.ok(C.cibles(ba, CAPACITES.chuteEnclume).some((c) => c.id === s.id) && !C.peutUtiliser(ba, CAPACITES.lameArdente), 'la Chute d’Enclume vise la Brute ennemie ; sans enclume, pas de Forge');
-    const pv = s.pv;
+    const pv = s.pv, case0 = { x: s.x, y: s.y };
     t.ok(C.utiliser(ba, 'chuteEnclume', { id: s.id }) && s.pv < pv && s.st.aTerre, `l’enclume l’écrase : ${pv - s.pv} dégâts, À terre`);
     const e = C.S.enclume;
-    t.ok(e && dist(e, s) < 1.6 && dist(e, ba) < dist(s, ba), `elle reste à ses pieds, du côté de Baba (${(dist(e, s) * 1.5).toFixed(1)} m de la cible)`);
+    t.ok(e && dist(e, case0) < 0.01, 'elle se pose sur la case visée');
+    t.ok(dist(s, e) >= 0.72 && s.x > case0.x, `la cible en est repoussée, à l’opposé de Baba (${(dist(s, case0) * 1.5).toFixed(1)} m)`);
     t.ok(C.S.evenements.some((v) => v.type === 'enclume' && v.chute), 'la vue la fait tomber (l’événement « enclume »)');
     ba.t.action = true;
     t.ok(!C.peutUtiliser(ba, CAPACITES.chuteEnclume), 'une fois par combat');
@@ -462,6 +463,11 @@ export async function selfTest(t, game) {
     C.utiliser(ba, 'chuteEnclume', { x: 7.5, y: 10 });
     const e = C.S.enclume;
     t.ok(e && Math.abs(e.x - 7.5) < 0.01, 'sur le sol : elle tombe là où l’on vise');
+    {
+      const { C: C2, ba: ba2, m: m2 } = forge();
+      poser(C2, m2.id, 7.5, 8.5);
+      t.ok(C2.utiliser(ba2, 'chuteEnclume', { x: 7.5, y: 8.5 }) && dist(C2.S.enclume, { x: 7.5, y: 8.5 }) < 0.01 && dist(m2, C2.S.enclume) >= 0.72, 'sur une alliée : elle tombe quand même sur sa case, et la pousse hors de la case');
+    }
     t.ok(!C.apercuMarche(m, e.x, e.y).ok, 'elle bloque le passage : on ne s’y arrête pas');
     const P = C._.carteDe(s, 20), k = indiceDe(trame, e.x, e.y);
     t.ok(!(P.longueur[k] < Infinity), 'les ennemis non plus ne la traversent pas');
@@ -967,8 +973,10 @@ export async function selfTest(t, game) {
     const p = { x: ba.x + 2, y: ba.y };
     ihm.choisirCapacite('chuteEnclume');
     clic(p.x, p.y); jouerFile();
+    t.ok(V.films.actif('chute-enclume') && V.enclume.cache === false, 'elle tombe dans son animation validée (le film de la Chute d’Enclume), qui continue après le coup');
+    for (let k = 0; k < 60 && V.films.actifs; k++) game.dbg.advance(0.1);
     const E = V.enclume;
-    t.ok(C4.S.enclume && Math.abs(C4.S.enclume.x - p.x) < 0.05 && E && !E.cache && Math.abs(E.x / 32 - p.x) < 0.05 && E.haut === 0,
+    t.ok(C4.S.enclume && Math.abs(C4.S.enclume.x - p.x) < 0.05 && E && !E.cache && Math.abs(E.x / 32 - p.x) < 0.05 && !V.films.actif('chute-enclume'),
       'un clic sur le sol : l’enclume tombe là, et la vue la dessine posée');
     t.eq(V.sous(C4.S.enclume.x, C4.S.enclume.y - 0.3), 'enclume', 'on peut la viser (les Tenailles)');
     try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
