@@ -3,7 +3,8 @@
 // canards dans les douves, des papillons sur l'herbe. Les poules s'écartent quand un héros passe, et rentrent sous la
 // cabane la nuit et quand il pleut ; le chat dort, et s'étire de temps en temps ; les lapins détalent vers la forêt quand
 // on s'approche (ils reviennent plus tard), et dorment la nuit ; les canards nagent doucement le long des douves ; les
-// papillons ne sortent qu'au beau temps, le jour.
+// papillons ne sortent qu'au beau temps, le jour. Avec les saisons (51_saisons.js) : en hiver, les douves sont gelées et
+// les canards partis ; les papillons ne volent qu'au printemps et en été ; sous la neige, les poules rentrent comme sous la pluie.
 // La planche et les places sont fabriquées par design/camp/outils/animaux_jeu.py (public/assets/lpc/animaux.png,
 // src/data/animaux.json) : une bête ne va que là où elle tient toute entière sur le sol dégagé, jamais devant un toit,
 // un arbre ou un mur. Les bêtes ne bloquent personne.
@@ -19,7 +20,7 @@ const TERRIER = [20, 40];                              // le lapin parti revient
 
 let rendu, images, heros, collision, reseau, promeneurs, jourNuit, meteo, visite;
 const betes = [];
-const S = { t: 0, nuit: false, pluie: false, beau: true, force: null, menaces: [], aleat: Math.random };
+const S = { t: 0, nuit: false, pluie: false, beau: true, force: null, menaces: [], aleat: Math.random, saison: 'ete' };
 const hasard = (a, b) => a + S.aleat() * (b - a);
 const choisir = (l) => l[Math.floor(S.aleat() * l.length)];
 
@@ -142,6 +143,7 @@ function image(b) {
 
 export function init(game, options) {
   ({ rendu, images, heros, collision, reseau, promeneurs, jourNuit, meteo, visite } = options);
+  S.saison = options.saison ?? 'ete';
   // les poules ne vont pas là où le héros ne passe pas (un tonneau, une pierre posée là depuis la capture) ; les lapins,
   // eux, vivent aussi à la lisière, où les héros ne vont pas
   A.poules = A.poules.filter(([x, y]) => !collision.bloque(x, y - 2));
@@ -168,7 +170,7 @@ export function update(dt) {
   // la nuit (46_jour_nuit.js) et le temps qu'il fait (48_meteo.js) ; la vue visite : toujours le beau jour
   const nuit = S.force?.nuit ?? (!visite && jourNuit?.etat?.nom === 'nuit');
   const m = visite ? null : meteo?.etat;
-  const pluie = S.force?.pluie ?? (!!m && (m.temps === 'pluie' || m.temps === 'orage') && m.force > 0.5);
+  const pluie = S.force?.pluie ?? (!!m && (m.temps === 'pluie' || m.temps === 'orage' || m.temps === 'neige') && m.force > 0.5);
   S.nuit = nuit; S.pluie = pluie;
   S.beau = !nuit && !pluie && (!!S.force || (!(m && m.temps === 'brouillard' && m.force > 0.3) && !(!visite && jourNuit?.etat?.nom === 'crépuscule')));
   const l = menaces();
@@ -186,14 +188,15 @@ export function update(dt) {
       b.x = b.ax + Math.sin(S.t * 0.7 + k) * 12; b.y = b.ay + Math.cos(S.t * 1.1 + k) * 8;
       const [sx, sy] = A.images[`papillon-${b.robe}`];
       b.sprite.poser(b.x - 1, b.y - 12 + Math.sin(S.t * 3 + k) * 2, b.ay + 4, sx + (Math.floor(S.t / 0.12 + k) % 2) * 5, sy);
-      b.sprite.cacher(!S.beau);
+      b.sprite.cacher(!S.beau || S.saison === 'automne' || S.saison === 'hiver');
       continue;
     }
     const [sx, sy] = A.images[image(b)];
     // les canards montent et descendent un peu sur l'eau
     const flotte = b.espece === 'canard' && !S.nuit ? Math.round(Math.sin(S.t * 1.6 + b.decalage * 5) * 0.6) : 0;
     b.sprite.poser(b.x - CW / 2, b.y - CH + flotte, b.y, sx, sy);
-    b.sprite.cacher(b.parti);
+    const gele = b.espece === 'canard' && S.saison === 'hiver';   // les douves gelées : plus de canards
+    b.sprite.cacher(b.parti || gele);
     if (b.ombre) { b.ombre.poser(b.x, b.y - 1); b.ombre.cacher(b.parti); }
   }
 }
@@ -230,6 +233,13 @@ export function selfTest(t) {
   S.force = { nuit: true, pluie: false }; pas(1);
   t.ok(de('lapin').every((b) => !b.sprite.mesh.visible) && de('chat')[0].sprite.mesh.visible && de('canard').every((b) => b.sprite.mesh.visible), 'la nuit : les lapins dorment, le chat et les canards restent');
   // les canards restent sur leur ligne d'eau
+  // l'hiver : plus de canards sur les douves gelées, ni de papillons ; ils reviennent au printemps
+  const saison = S.saison;
+  S.force = { nuit: false, pluie: false }; S.saison = 'hiver'; pas(0.2);
+  t.ok(de('canard').every((b) => !b.sprite.mesh.visible) && de('papillon').every((b) => !b.sprite.mesh.visible), 'l’hiver : plus de canards ni de papillons');
+  S.saison = 'printemps'; pas(0.2);
+  t.ok(de('canard').every((b) => b.sprite.mesh.visible) && de('papillon').every((b) => b.sprite.mesh.visible), 'au printemps, canards et papillons reviennent');
+  S.saison = saison;
   S.force = { nuit: false, pluie: false }; pas(30);
   t.ok(de('canard').every((b) => b.x >= b.ligne.x[0] && b.x <= b.ligne.x[1] && b.y === b.ligne.y), 'les canards nagent sans quitter les douves');
   t.ok(de('poule').every((b) => !b.parti && b.sprite.mesh.visible), 'le beau temps revient : les poules ressortent');

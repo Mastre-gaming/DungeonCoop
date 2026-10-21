@@ -65,7 +65,7 @@ function icone(images, src) {
     }
     for (const [x, y] of [[13, 9], [18, 7], [16, 13], [11, 15]]) { g.fillStyle = '#fff3c2'; g.fillRect(x, y, 1, 1); }
     g.fillStyle = '#2b1c1d'; g.fillRect(3, 28, 26, 2);
-  } else g.drawImage(images.deco, src[0] * T, src[1] * T, T, T, 0, 0, T, T);
+  } else g.drawImage(images.decoOriginal ?? images.deco, src[0] * T, src[1] * T, T, T, 0, 0, T, T);   // (sans la neige de l'hiver)
   return c;
 }
 

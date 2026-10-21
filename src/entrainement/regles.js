@@ -16,8 +16,9 @@ import {
 // Les vraies classes restent celles de chacun (missions #30 à #33).
 export const EQUIPE_KIT = ['brute', 'mage', 'voleur', 'gardien'];
 // La 9e : le Traqueur au limier, la classe de Paolitus (content/classes/traqueur-au-limier.json), la première vraie classe ici ;
-// la 10e : Shadow, la classe de FrapsFTW (content/classes/shadow.json, #198). Chacune ne se joue que par son auteur (peutJouer).
-export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'traqueur-au-limier', 'shadow'];
+// la 10e : Shadow, la classe de FrapsFTW (content/classes/shadow.json, #198) ; la 11e : Baba Brisenclume, la classe de DonBabaa
+// (content/classes/baba-brisenclume.json). Chacune ne se joue que par son auteur (peutJouer).
+export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'traqueur-au-limier', 'shadow', 'baba-brisenclume'];
 export const PLACES = ['h1', 'h2', 'h3', 'h4'];            // les 4 héros : une place, une classe choisie à l'entrée
 // « brute,chevalier,druide,barde » (l'adresse : ?equipe=…) → une équipe valable de 4 classes, ou null.
 export function equipeDepuis(texte) {
@@ -60,8 +61,15 @@ export const HEROS = {
   // exploitation (3) renforcée d'un Critique pour 3 Élan (+1) · 2 points restants = +10 PV. PV : 100 + 10 (CON) + 10 = 120.
   shadow: { nom: 'Shadow', court: 'SHA', pv: 120, vitesse: 6, dex: 2, res: { type: 'Élan', v: 0, max: 5 }, role: 'Dégâts · frappe dans le dos', auteur: 'FrapsFTW',
     faiblesse: 'La lumière le trahit : Brûlant ou dans le feu, plus de Pas dans l’ombre.',
-    passif: 'Élan : +1 par case parcourue (1,5 m), le Pas dans l’ombre compris ; il se vide s’il finit son tour sans avoir bougé.',
+    passif: 'Élan : +1 par case parcourue à pied (1,5 m), pas par le Pas dans l’ombre ; il se vide s’il finit son tour sans avoir bougé.',
     capacites: ['dague', 'pasOmbre', 'coupDos', 'coupDos3', 'pousser', 'potion', 'relever'] },
+  // Baba Brisenclume (content/classes/baba-brisenclume.json, par DonBabaa) : FOR 15 (+2), DEX 9 (−1), CON 15, 130 PV,
+  // déplacement 4 cases (6 m), la Rage de la Brute. Marteau (base) · Enclume et Forge (exploitation) : la Chute d'Enclume
+  // une fois par combat, puis la Forge en action bonus près de l'enclume · Tenailles (préparation).
+  'baba-brisenclume': { nom: 'Baba Brisenclume', court: 'BAB', auteur: 'DonBabaa', pv: 130, vitesse: 4, dex: -1, res: { type: 'Rage', v: 0, max: 50 }, role: 'Tank · forge pour ses alliés',
+    faiblesse: 'Vieux Os : se relever d’À terre lui coûte tout son déplacement, et la glace le renverse sur 1 à 14 ; loin de son enclume, il ne forge pas.',
+    passif: 'Marteau lourd : ses poussées vont 1,5 m plus loin. Rage : +10 par coup donné ou reçu.',
+    capacites: ['marteau', 'chuteEnclume', 'lameArdente', 'trempe', 'tenailles', 'pousser', 'potion', 'relever'] },
 };
 // Une classe faite par un joueur (« auteur » : son pseudo GitHub, comme dans content/classes/) ne se joue que par lui ;
 // les classes du kit et d'essai, par tout le monde (Paolitus, 20 oct).
@@ -120,9 +128,9 @@ export const CAPACITES = {
   dague: { nom: 'Dague', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'estoc', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
   chant: { nom: 'Chant de bataille', slot: 'bonus', type: 'inspiration', portee: 6, cout: 1, anim: 'sort', ds: '1 Énergie · un allié à 9 m a l’avantage à sa prochaine attaque' },
   // Shadow
-  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'repos', ds: 'Portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille · +Élan du trajet' },
-  coupDos: { nom: 'Coup dans le dos', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, anim: 'attaque', ds: 'Au contact · 8–11 / 17–22 / 34–44 ; ×2 si Tenaille ou Exposée' },
-  coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré · ×2 si Tenaille ou Exposée' },
+  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'repos', ds: 'Portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille' },
+  coupDos: { nom: 'Coup dans le dos', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, dansLeDos: true, anim: 'attaque', ds: 'Au contact · 5–7 / 11–14 / 22–28 ; ×2 si Tenaille ou Exposée' },
+  coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré · ×2 si Tenaille ou Exposée' },
   moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
   // le Traqueur au limier : l'arc, un piège posé au sol (un seul à la fois, le premier ennemi qui y entre le déclenche),
   // et un ordre au limier par tour (l'action bonus) : il court à la cible, agit, et revient
@@ -133,11 +141,22 @@ export const CAPACITES = {
   lecher: { nom: 'Lécher les plaies', slot: 'bonus', type: 'soin', chien: true, soin: { base: 8, de: 4, mod: 2 }, portee: 6, anim: 'repos', ds: 'Le limier · 11–14 PV à un allié à 9 m, sans jet ; retire Brûlure, Gelé ou Huilé' },
   mordre: { nom: 'Mordre', slot: 'bonus', type: 'attaque', chien: true, expose: true, portee: 6, mod: 0, base: 5, de: 4, anim: 'repos', ds: 'Le limier · à 9 m · 3–4 / 6–9 / 12–18 ; la cible est Exposée' },
   rabattre: { nom: 'Rabattre', slot: 'bonus', type: 'poussee', chien: true, ennemi: true, portee: 6, longueur: 2, anim: 'repos', ds: 'Le limier · un ennemi à 9 m est poussé de 3 m, à l’opposé du Traqueur (dans un piège, une surface, le fossé)' },
+  // Baba Brisenclume : une seule enclume à la fois, qui reste jusqu'à la fin du combat (S.enclume) ; la Forge se fait à son contact
+  marteau: { nom: 'Marteau', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, anim: 'attaque', ds: 'Au contact · 5–7 / 11–14 / 22–28' },
+  chuteEnclume: { nom: 'Chute d’Enclume', slot: 'action', type: 'enclume', portee: 5, mod: 2, base: 14, de: 6, aTerre: true, anim: 'sort',
+    ds: 'Une fois par combat · portée 7,5 m · 8–11 / 17–22 / 34–44 ; la cible est À terre ; l’enclume reste : elle bloque le passage, couvre des tirs, et une poussée contre elle fait +8' },
+  lameArdente: { nom: 'Lame Ardente', slot: 'bonus', type: 'forge', forge: 'lame', portee: CONTACT, cout: 20, anim: 'attaque',
+    ds: '20 Rage · près de l’enclume, sur lui ou un allié au contact · +d6 à sa prochaine attaque · elle compte comme du feu (Huilé ×2, enflamme l’huile)' },
+  trempe: { nom: 'Trempe', slot: 'bonus', type: 'forge', forge: 'trempe', portee: CONTACT, cout: 20, anim: 'attaque',
+    ds: '20 Rage · près de l’enclume, sur lui ou un allié au contact · un bouclier de 10' },
+  tenailles: { nom: 'Tenailles', slot: 'action', type: 'tenailles', portee: 3, longueur: 2, anim: 'estoc',
+    ds: 'Portée 4,5 m · tire de 3 m vers lui · un ennemi (dans l’huile, le feu, la glace…) · un allié (pour le sauver) · ou son enclume' },
 };
+export const BABA = 'baba-brisenclume';
 export const NOM_SURFACE = { eau: 'l’eau', huile: 'l’huile', feu: 'le feu', glace: 'la glace', piege: 'le piège' };
 export const NOM_PIEGE = { machoires: 'les mâchoires', glu: 'la glu', collet: 'le collet' };
 export const NOM_RESULTAT = { rate: 'Raté', eraflure: 'Éraflure', touche: 'Touché', critique: 'Critique' };
-export const NOM_ETAT = { trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé', inspire: 'Inspiré' };
+export const NOM_ETAT = { trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé', inspire: 'Inspiré', lame: 'Lame ardente', bouclier: 'Trempe' };
 
 // --- Les surfaces : des taches sur une trame fine (un demi-pas de case), dessinées sans cases -----------------------
 const MAILLE = 0.5;
@@ -154,7 +173,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
 
   // --- L'état (des données seulement : on peut le copier pour « Annuler ») ---------------------------------------
   const S = {
-    mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], surfaces: {}, journal: [], evenements: [],
+    mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], enclume: null, surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
     heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
     stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [] },
@@ -252,11 +271,19 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const v = U(a);
     if (['voleur', 'traqueur-au-limier'].includes(v.type) && v.res.v < v.res.max) { v.res.v++; log(`${v.nom} gagne 1 Concentration.`, 'muet'); }
   }
-  const rage = (u, n) => { if (u && u.type === 'brute' && u.camp === 'h') u.res.v = Math.min(u.res.max, u.res.v + n); };
+  const rage = (u, n) => { if (u && u.camp === 'h' && u.res?.type === 'Rage') u.res.v = Math.min(u.res.max, u.res.v + n); };
   function blesser(u, n, par, o = {}) {
     if (!u || u.mort || u.ko || n <= 0) return 0;
     if (!o.sansFaiblesse && u.type === 'mage' && surfaceA(u)?.t === 'eau') { n *= 2; log('La Mage est dans l’eau : dégâts ×2.', 'muet'); }
     if (o.melee && u.type === 'barde') { n += 3; log(`${u.nom} est fragile au contact : +3.`, 'muet'); }
+    if (u.st.bouclier) {                             // la Trempe de Baba : le bouclier prend les coups d'abord
+      const b = Math.min(u.st.bouclier.v, n);
+      u.st.bouclier.v -= b; n -= b;
+      log(`La Trempe de ${u.nom} absorbe ${b}${u.st.bouclier.v > 0 ? ` (reste ${u.st.bouclier.v})` : ' : elle se brise'}.`, 'muet');
+      if (u.st.bouclier.v <= 0) delete u.st.bouclier;
+      ev({ type: 'texte', id: u.id, texte: `Trempe −${b}` });
+      if (n <= 0) return 0;
+    }
     const avant = u.pv; u.pv -= n;
     if (estHeros(par) && u.camp === 'e') S.stats.degats[par] += Math.min(n, avant);
     ev({ type: 'degats', id: u.id, n, pv: Math.max(0, u.pv) });
@@ -302,9 +329,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     else if (s.t === 'glace' && enMarchant && u.type === 'chevalier') {
       u.st.aTerre = { par: s.par }; log(`${u.nom} pose son armure sur la glace : À terre, sans jet.`, 'mauvais'); return true;
     } else if (s.t === 'glace' && enMarchant) {
-      const r = d(20);
-      ev({ type: 'de', id: u.id, k: r, quoi: 'glace' });
-      if (r <= 9) { u.st.aTerre = { par: s.par }; log(`${u.nom} glisse sur la glace (d20 : ${r}) : À terre.`, u.camp === 'h' ? 'mauvais' : 'bon'); return true; }
+      const r = d(20), seuil = u.type === BABA ? 14 : 9;     // Vieux Os : Baba glisse sur 1 à 14
+      ev({ type: 'de', id: u.id, k: r, quoi: 'glace', seuil });
+      if (r <= seuil) { u.st.aTerre = { par: s.par }; log(`${u.nom} glisse sur la glace (d20 : ${r}) : À terre.`, u.camp === 'h' ? 'mauvais' : 'bon'); return true; }
       log(`${u.nom} garde l’équilibre sur la glace (d20 : ${r}).`, 'muet');
     }
     return false;
@@ -382,6 +409,20 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     ev({ type: 'surfaces' });
   }
 
+  // --- L'enclume de Baba ----------------------------------------------------------------------------------------
+  // Un tir passe derrière elle quand elle est sur la ligne, entre le tireur et sa cible (à 0,7 case de la ligne au plus).
+  function derriereEnclume(att, cible) {
+    const e = S.enclume; if (!e) return false;
+    const dx = cible.x - att.x, dy = cible.y - att.y, l2 = dx * dx + dy * dy; if (l2 < 1e-6) return false;
+    const t = ((e.x - att.x) * dx + (e.y - att.y) * dy) / l2;
+    if (t <= 0.1 || t >= 1) return false;
+    return Math.hypot(att.x + dx * t - e.x, att.y + dy * t - e.y) < 0.7;
+  }
+  const enclumes = () => (S.enclume ? [S.enclume] : []);
+  const presDeLEnclume = (h) => !!S.enclume && dist(h, S.enclume) <= CONTACT + 0.15;
+  // L'attaque d'un héros qui porte une Lame ardente (la Forge de Baba) : +d6, et du feu.
+  const armer = (att, A) => (att.st.lame ? { ...A, el: 'feu', de2: 6, lame: att.st.lame.par } : A);
+
   // --- Les attaques ---------------------------------------------------------------------------------------------
   function calculer(att, cible, A) {
     let av = false, des = false, mult = 1, tenaille = false;
@@ -411,6 +452,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (att.camp === 'e' && S.ennemisAvantage) { av = true; notes.push('ordres du chef : avantage'); }
     if (surfaceA(att)?.t === 'glace') { des = true; notes.push('attaque depuis la glace : désavantage'); }
     if (att.st.gele) { des = true; notes.push('attaquant Gelé : désavantage'); }
+    if (!A.melee && derriereEnclume(att, cible)) { des = true; notes.push('la cible est derrière l’enclume : désavantage'); }
+    if (A.lame) notes.push('Lame ardente : +d6, et compte comme du feu');
     if (familierDe(att)?.ko) { des = true; notes.push('son limier est à terre : désavantage'); }
     if (A.el === 'foudre' && cible.st.trempe) { mult *= 2; notes.push('Trempé : foudre ×2'); aCombos.push([cible.st.trempe.par, 'Trempé puis foudre']); }
     const huile = A.el === 'feu' && !!cible.st.huile;
@@ -430,7 +473,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     return o;
   }
   function fourchette(A, c, g) {
-    const lo = A.base + 1 + A.dmod, hi = A.base + A.de + A.dmod;
+    const lo = A.base + 1 + A.dmod + (A.de2 ? 1 : 0), hi = A.base + A.de + A.dmod + (A.de2 ?? 0);
     const f = (v) => (g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult;
     return g === 'rate' ? '0' : `${f(lo)}–${f(hi)}`;
   }
@@ -447,6 +490,11 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     flotter(u, 'Raté !', 'info');
   }
   function attaquer(att, cible, A) {
+    A = armer(att, A);
+    if (A.lame) {                                      // la Lame ardente ne sert qu'une fois, touché ou raté
+      delete att.st.lame;
+      if (A.lame !== att.id) combo(A.lame, att.id, 'lame ardente');
+    }
     const c = calculer(att, cible, A);
     let k = 20, jets = [20];
     if (!A.auto) {
@@ -461,7 +509,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
     ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
     if (g === 'rate') { log(`${qui} · d20 ${label} : Raté !`, att.camp === 'e' ? 'ennemi' : 'mauvais'); rate(att); return g; }
-    const jet = d(A.de);
+    const jet = d(A.de) + (A.de2 ? d(A.de2) : 0);
     let n = A.base + jet + A.dmod;
     if (g === 'eraflure') n = Math.floor(n / 2);
     if (g === 'critique') n *= 2;
@@ -486,7 +534,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const estUnite = !!cible.camp, parHeros = estHeros(src.id) ? src.id : null;
     let longueur = o.longueur;
     if (estUnite && cible.st.gele) { longueur += 2; combo(cible.st.gele.par, parHeros, 'Gelé puis poussée'); }
-    const autres = [...S.unites.filter((u) => !u.mort && !u.ko && u !== cible), ...S.tonneaux.filter((b) => b !== cible)];
+    const autres = [...S.unites.filter((u) => !u.mort && !u.ko && u !== cible), ...S.tonneaux.filter((b) => b !== cible), ...enclumes()];
     const sim = simulerPoussee(trame, src, cible, longueur, { obstacles: autres, surGlace: (x, y) => S.surfaces[cle(x, y)]?.t === 'glace' });
     log(`${src.nom} ${o.attire ? 'attire' : o.proj ? 'projette' : 'pousse'} ${estUnite ? cible.nom : 'le tonneau'} de ${metres(sim.parcouru)} m.`, src.camp === 'e' ? 'ennemi' : '');
     ev({ type: 'poussee', id: cible.id, tonneau: !estUnite, chemin: sim.chemin.map((p) => ({ ...p })) });
@@ -516,7 +564,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         ev({ type: 'place', id: cible.id, x: p.x, y: p.y });
       }
     } else if (sim.arret && !(o.attire && sim.heurte === o.attire)) {      // attiré jusqu'au lanceur : il arrive, sans choc
-      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : 'un obstacle'} : +8.`);
+      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +8.`);
+      if (sim.heurte === S.enclume && S.enclume.par !== parHeros) combo(S.enclume.par, parHeros, 'poussé contre l’enclume');
       blesser(cible, 8, parHeros);
       if (o.proj && !cible.mort && !cible.ko) { cible.st.aTerre = { par: parHeros }; log(`${cible.nom} est À terre.`, 'muet'); }
     }
@@ -529,9 +578,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
 
   // --- Les déplacements -----------------------------------------------------------------------------------------
-  // Qui gêne ce marcheur : ses ennemis debout et les tonneaux (on traverse ses alliés et les KO).
-  const genantsDe = (m) => [...S.unites.filter((u) => !u.mort && !u.ko && u.camp !== m.camp), ...S.tonneaux];
-  const occupants = (m) => [...S.unites.filter((u) => !u.mort && !u.ko && u !== m), ...S.tonneaux];
+  // Qui gêne ce marcheur : ses ennemis debout, les tonneaux et l'enclume de Baba (on traverse ses alliés et les KO).
+  const genantsDe = (m) => [...S.unites.filter((u) => !u.mort && !u.ko && u.camp !== m.camp), ...S.tonneaux, ...enclumes()];
+  const occupants = (m) => [...S.unites.filter((u) => !u.mort && !u.ko && u !== m), ...S.tonneaux, ...enclumes()];
   const danger = (m) => (x, y) => {
     const s = S.surfaces[cle(x, y)]; if (!s) return 0;
     return m.camp === 'e' ? ({ feu: 1.5, glace: 0.5, huile: 0.1 }[s.t] || 0) : ({ feu: 0.02, glace: 0.01 }[s.t] || 0);
@@ -682,7 +731,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     let mv = u.vitesse;
     if (u.st.gele) mv = Math.max(0, mv - 2);
-    if (u.st.aTerre) { mv = Math.max(0, mv - u.vitesse / 2); delete u.st.aTerre; log(`${u.nom} se relève (la moitié de son déplacement).`, 'muet'); ev({ type: 'releve', id: u.id }); }
+    if (u.st.aTerre && u.type === BABA) { mv = 0; delete u.st.aTerre; log(`${u.nom} se relève, et ses vieux os lui prennent tout son déplacement.`, 'muet'); ev({ type: 'releve', id: u.id }); }
+    else if (u.st.aTerre) { mv = Math.max(0, mv - u.vitesse / 2); delete u.st.aTerre; log(`${u.nom} se relève (la moitié de son déplacement).`, 'muet'); ev({ type: 'releve', id: u.id }); }
     u.t = { mv, action: true, bonus: true, reaction: true };
     if (u.camp === 'h' && u.res.type === 'Mana') u.res.v = Math.min(u.res.max, u.res.v + 5);
     if (u.camp === 'h' && u.res.type === 'Énergie') u.res.v = u.res.max;          // 3 à chaque tour, le reste est perdu
@@ -690,7 +740,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   function finTour(u) {
     const f = familierDe(u); if (f) finTour(f);
     if (u.mort || u.ko) return;
-    if (u.camp === 'h' && u.res.type === 'Élan' && !(u.t.parcouru > 0) && u.res.v > 0) { u.res.v = 0; log(`${u.nom} est resté immobile : son Élan retombe à 0.`, 'muet'); }
+    if (u.camp === 'h' && u.res.type === 'Élan' && !(u.t.parcouru > 0) && !u.t.ombre && u.res.v > 0) { u.res.v = 0; log(`${u.nom} est resté immobile : son Élan retombe à 0.`, 'muet'); }
     const s = surfaceA(u);
     if (s && s.t === 'feu') { log(`${u.nom} finit son tour dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
     if (u.st.gele && !u.mort && !u.ko) { u.st.gele.n--; if (u.st.gele.n <= 0) delete u.st.gele; }
@@ -885,7 +935,29 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.type === 'potion' && (h.potion < 1 || h.pv >= h.pvMax)) return false;
     if (cap.type === 'desengager' && h.t.desengage) return false;
     if (cap.chien && (!familierDe(h) || familierDe(h).ko)) return false;
+    if (cap.type === 'enclume' && h.enclumeTombee) return false;
+    if (cap.type === 'forge' && !presDeLEnclume(h)) return false;
     return true;
+  }
+  // La Chute d'Enclume : elle se pose sur la case visée (l'ennemi visé, ou le sol), jamais sur Baba ni sur un tonneau ;
+  // ceux qui s'y tiennent en sont repoussés (degager). null si elle ne peut pas s'y poser.
+  function poseEnclume(h, cible) {
+    const p = { x: cible.x, y: cible.y };
+    if (!libre(trame, p.x, p.y) || dist(h, p) < ECART_MIN || S.tonneaux.some((b) => dist(b, p) < ECART_MIN)) return null;
+    return p;
+  }
+  // Ceux qui sont sur la case de l'enclume en sont repoussés d'une case (1,5 m), à l'opposé de Baba (ou du centre de la
+  // case) : une poussée ordinaire (surfaces, fossé, choc +8). Bloqué, on le pose sur le point libre le plus proche.
+  function degager(h, p) {
+    for (const u of S.unites.filter((o) => !o.mort && !o.ko && o !== h && dist(o, p) < ECART_MIN + 0.05)) {
+      const l = dist(u, p), d = l > 0.05 ? { x: (u.x - p.x) / l, y: (u.y - p.y) / l } : { x: (p.x - h.x) / (dist(h, p) || 1), y: (p.y - h.y) / (dist(h, p) || 1) };
+      log(`${u.nom} est repoussé de la case de l’enclume.`, u.camp === 'h' ? 'mauvais' : 'bon');
+      pousser({ id: h.id, nom: h.nom, camp: h.camp, x: u.x - d.x, y: u.y - d.y }, u, { longueur: 1 });
+      if (!u.mort && !u.ko && dist(u, p) < ECART_MIN) {
+        const q = pointLibreProche(trame, { x: p.x + d.x * ECART_MIN, y: p.y + d.y * ECART_MIN }, [...S.unites.filter((o) => o !== u && !o.mort && !o.ko), ...S.tonneaux, p]);
+        u.x = q.x; u.y = q.y; ev({ type: 'place', id: u.id, x: q.x, y: q.y });
+      }
+    }
   }
   const aPortee = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && (cap.portee <= CONTACT || vue(trame.salle, h, p));
   // Les cibles possibles d'une capacité : des créatures, des tonneaux, et (feu) des taches d'huile.
@@ -903,10 +975,17 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     else if (['etatCible', 'attraction', 'moquerie'].includes(cap.type)) ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'ombre') ennemisVivants().filter((u) => aPortee(h, cap, u) && sortieOmbre(h, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'inspiration') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+    else if (cap.type === 'enclume') ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
+    else if (cap.type === 'forge') herosVivants().filter((u) => !u.familier && (u === h || dist(h, u) <= CONTACT)).forEach((u) => out.push({ id: u.id }));
+    else if (cap.type === 'tenailles') {
+      S.unites.filter((u) => !u.mort && !u.ko && u !== h && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
+      if (S.enclume && aPortee(h, cap, S.enclume)) out.push({ id: 'enclume', enclume: true });
+    }
     return out;
   }
-  const zonePossible = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && libre(trame, p.x, p.y);
-  const huileVisable = (h, cap, p) => cap.el === 'feu' && surfaceA(p)?.t === 'huile' && aPortee(h, cap, p);
+  // une zone au sol (et la Chute d'Enclume sur le sol : là où elle peut se poser, en vue)
+  const zonePossible = (h, cap, p) => dist(h, p) <= cap.portee + 1e-6 && libre(trame, p.x, p.y) && (cap.type !== 'enclume' || (vue(trame.salle, h, p) && !!poseEnclume(h, p)));
+  const huileVisable = (h, cap, p) => cap.type === 'attaque' && (cap.el === 'feu' || !!h.st.lame) && surfaceA(p)?.t === 'huile' && aPortee(h, cap, p);
   function payer(h, cap) { if (cap.slot === 'action') h.t.action = false; else h.t.bonus = false; if (cap.cout) h.res.v -= cap.cout; }
   // Utiliser une capacité : cible = { id } (créature ou tonneau), ou { x, y } (une zone, une tache d'huile).
   function utiliser(h, capId, cible = {}) { const ok = utiliserSeul(h, capId, cible); if (ok) suivreFamiliers(); return ok; }
@@ -948,9 +1027,53 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       return true;
     }
     const u = cible.id ? U(cible.id) : null, b = cible.id ? S.tonneaux.find((o) => o.id === cible.id) : null;
+    if (cap.type === 'enclume') {                  // la Chute d'Enclume : sur un ennemi (un jet), ou sur le sol
+      const e = u && u.camp === 'e' && !u.mort && aPortee(h, cap, u) ? u : null;
+      if (!e && !(cible.x != null && zonePossible(h, cap, cible))) return false;
+      const p = poseEnclume(h, e ?? cible); if (!p) return false;
+      payer(h, cap); h.enclumeTombee = true;
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: p.x, y: p.y, vers: e?.id ?? null });
+      ev({ type: 'enclume', x: p.x, y: p.y, chute: true, sur: e?.id ?? null });
+      if (e) attaquer(h, e, { ...attaqueHeros(cap), id: capId });          // (avant qu'elle soit posée : elle ne couvre pas sa propre cible)
+      degager(h, p);
+      S.enclume = { id: 'enclume', x: p.x, y: p.y, par: h.id };
+      log(`L’enclume de ${h.nom} reste sur sa case, à ${metres(dist(h, p))} m de lui : elle bloque le passage et couvre des tirs.`);
+      const s = surfaceA(p); if (s?.t === 'huile' || s?.t === 'eau') log('Elle s’enfonce dans la flaque, et y reste.', 'muet');
+      return true;
+    }
+    if (cap.type === 'forge') {                    // la Forge : au contact de l'enclume, sur lui ou un allié au contact
+      if (!u || u.camp !== 'h' || u.ko || u.familier || (u !== h && dist(h, u) > CONTACT)) return false;
+      payer(h, cap);
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y, vers: u.id });
+      if (cap.forge === 'lame') { u.st.lame = { par: h.id }; ev({ type: 'texte', id: u.id, texte: 'Lame ardente !' }); log(`${h.nom} forge une Lame ardente pour ${u === h ? 'lui-même' : u.nom} : +d6 et du feu à sa prochaine attaque.`, 'bon'); }
+      else { u.st.bouclier = { v: 10, par: h.id }; ev({ type: 'texte', id: u.id, texte: 'Trempe : 10' }); log(`${h.nom} trempe l’armure de ${u === h ? 'lui-même' : u.nom} : un bouclier de 10.`, 'bon'); }
+      return true;
+    }
+    if (cap.type === 'tenailles') {                // les Tenailles : un ennemi, un allié ou l'enclume, tiré de 3 m vers lui
+      if (cible.id === 'enclume') {
+        if (!S.enclume || !aPortee(h, cap, S.enclume)) return false;
+        payer(h, cap);
+        ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: S.enclume.x, y: S.enclume.y, vers: 'enclume' });
+        const derriere = { x: S.enclume.x + (S.enclume.x - h.x), y: S.enclume.y + (S.enclume.y - h.y) };
+        const autres = [...S.unites.filter((o) => !o.mort && !o.ko), ...S.tonneaux];
+        const sim = simulerPoussee(trame, derriere, S.enclume, cap.longueur, { obstacles: autres });
+        const chemin = sim.arret === 'fosse' ? sim.chemin.slice(0, -1) : sim.chemin;      // (elle s'arrête au bord du fossé)
+        const dep = { x: S.enclume.x, y: S.enclume.y }, fin = chemin[chemin.length - 1] ?? dep;
+        S.enclume.x = fin.x; S.enclume.y = fin.y;
+        ev({ type: 'enclume', x: fin.x, y: fin.y, chemin: chemin.map((q) => ({ ...q })) });
+        log(`${h.nom} tire son enclume de ${metres(dist(dep, fin))} m vers lui.`);
+        return true;
+      }
+      if (!u || u === h || u.mort || u.ko || !aPortee(h, cap, u)) return false;
+      payer(h, cap);
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y, vers: u.id });
+      attirer(h, u, cap.longueur);
+      return true;
+    }
     if (cap.type === 'attaque') {
-      if (b && aPortee(h, cap, b)) { payer(h, cap); ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: b.x, y: b.y }); log(`${h.nom} · ${cap.nom} sur le tonneau.`); eclaterTonneau(b, h.id, cap.el === 'feu'); return true; }
-      if (!u && cible.x != null && huileVisable(h, cap, cible)) { payer(h, cap); ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: cible.x, y: cible.y }); log(`${h.nom} tire dans l’huile.`); enflammer(cible, h.id); return true; }
+      const feu = cap.el === 'feu' || !!h.st.lame;
+      if (b && aPortee(h, cap, b)) { payer(h, cap); delete h.st.lame; ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: b.x, y: b.y }); log(`${h.nom} · ${cap.nom} sur le tonneau.`); eclaterTonneau(b, h.id, feu); return true; }
+      if (!u && cible.x != null && huileVisable(h, cap, cible)) { payer(h, cap); delete h.st.lame; ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: cible.x, y: cible.y }); log(`${h.nom} ${cap.portee === CONTACT ? 'frappe' : 'tire dans'} l’huile.`); enflammer(cible, h.id); return true; }
       if (!u || u.camp === 'h' || u.mort || !aPortee(h, cap, u)) return false;
       payer(h, cap);
       if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, vers: u.id });
@@ -964,7 +1087,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       payer(h, cap);
       if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, vers: t.id });
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.chien ? 'repos' : 'attaque', x: t.x, y: t.y });
-      pousser(h, t, { longueur: cap.longueur, proj: cap.proj });
+      pousser(h, t, { longueur: cap.longueur + (h.type === BABA ? 1 : 0), proj: cap.proj });      // (le Marteau lourd de Baba : +1,5 m)
       if (cap.chien) ev({ type: 'limier', id: familierDe(h).id, retour: true });
       return true;
     }
@@ -1007,12 +1130,11 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.type === 'ombre' && ennemiVise) {             // le Pas dans l'ombre : ressortir derrière la cible
       const p = sortieOmbre(h, u); if (!p) return false;
       payer(h, cap);
-      const trajet = dist(h, p);
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'ombre', id: h.id, x: p.x, y: p.y, cible: u.id });
       h.x = p.x; h.y = p.y; u.st.tenaille = { par: h.id, tient: p.tient.id };
       log(`${h.nom} plonge dans son ombre et ressort derrière ${u.nom} : pris en Tenaille avec ${p.tient.nom}.`);
-      elan(h, trajet);
+      h.t.ombre = true;                    // il a bougé (son Élan ne retombe pas), mais le Pas ne donne pas d'Élan
       const s = surfaceA(h); if (s) entrerSurface(h, s, false);
       return true;
     }
@@ -1041,8 +1163,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // L'aperçu d'une attaque (le survol) : les chances de chaque résultat, les dégâts, ce qui joue.
   function apercu(h, capId, cibleId) {
     const cap = CAPACITES[capId], u = U(cibleId);
-    if (!cap || cap.type !== 'attaque' || !u) return null;
-    const A = attaqueHeros(cap), c = calculer(h, u, A), o = chances(A, c);
+    if (!cap || !['attaque', 'enclume'].includes(cap.type) || !u || u.camp !== 'e') return null;
+    const A = armer(h, attaqueHeros(cap)), c = calculer(h, u, A), o = chances(A, c);
     return { chances: o, degats: Object.fromEntries(Object.keys(o).map((g) => [g, fourchette(A, c, g)])), notes: c.notes, av: c.av };
   }
 
@@ -1066,7 +1188,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
 
   return {
-    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
+    S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, presDeLEnclume, poseEnclume, derriereEnclume, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
     portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }),

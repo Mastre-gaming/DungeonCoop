@@ -2,7 +2,7 @@
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour } from './regles.js';
 import { adresseEquipe } from './interface.js';
-import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
+import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
@@ -153,8 +153,8 @@ export async function selfTest(t, game) {
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
-  t.eq(CLASSES_ESSAI.length, 10, 'dix classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier et Shadow');
-  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.eq(CLASSES_ESSAI.length, 11, 'onze classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier, Shadow et Baba Brisenclume');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9, 6], 'une distance par tour selon la classe (6 m à 10,5 m)');
   t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
@@ -162,7 +162,7 @@ export async function selfTest(t, game) {
   // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
   t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
     'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
-  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 2 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 1, 'les classes du kit et d’essai, par tout le monde');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 3 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 2, 'les classes du kit et d’essai, par tout le monde');
   t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
   {
     const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
@@ -296,7 +296,7 @@ export async function selfTest(t, game) {
     t.ok(C.utiliser(tr, 'relever', { id: chien.id }) && !chien.ko && !arc().notes.some((n) => n.includes('limier')) && C.peutUtiliser(tr, CAPACITES.mordre),
       'il le relève (une action, au contact) : plus de désavantage, les ordres reviennent');
   }
-  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9], [['shadow', 'brute', 'mage', 'gardien'], 4]]) {
+  for (const [equipe, s] of [[['eclaireuse', 'chevalier', 'druide', 'barde'], 5], [['brute', 'druide', 'eclaireuse', 'gardien'], 9], [['shadow', 'brute', 'mage', 'gardien'], 4], [['baba-brisenclume', 'chevalier', 'druide', 'barde'], 6]]) {
     const C = essai(equipe, { alea: graine(s) });
     C.commencer();
     let tours = 0;
@@ -348,11 +348,11 @@ export async function selfTest(t, game) {
     const avant = { x: sh.x, y: sh.y };
     t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }), 'il plonge dans son ombre');
     t.ok(dist(sh, s) <= CONTACT && enTenaille(sh, s, [b]), `il ressort au contact, de l’autre côté de la Brute : Tenaille (${(dist(sh, s) * 1.5).toFixed(1)} m de la cible)`);
-    t.eq(sh.res.v, Math.floor(dist(avant, sh) + 1e-6), `le trajet compte pour l’Élan : ${sh.res.v} (${(dist(avant, sh) * 1.5).toFixed(1)} m)`);
+    t.eq(sh.res.v, 0, `le Pas ne donne pas d’Élan : ${(dist(avant, sh) * 1.5).toFixed(1)} m sous terre, 0 Élan (l’Élan vient de la course)`);
     t.ok(!sh.t.bonus && sh.t.action, 'c’est son action bonus ; il garde son action');
     const c = C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos));
     t.ok(c.mult === 2 && c.av === 1, 'Coup dans le dos sur la cible en Tenaille : ×2, et l’avantage de la Tenaille');
-    t.eq(C.apercu(sh, 'coupDos', s.id).degats.touche, '34–44', 'l’aperçu le montre : 34–44 sur un touché');
+    t.eq(C.apercu(sh, 'coupDos', s.id).degats.touche, '22–28', 'l’aperçu le montre : 22–28 sur un touché');
     const pv = s.pv;
     t.ok(C.utiliser(sh, 'coupDos', { id: s.id }) && (s.mort || s.pv < pv), 'le coup part');
     t.ok(C.S.stats.combos.some((k) => k.a === b.id && k.b === sh.id && k.quoi === 'Tenaille puis coup dans le dos') || C.S.journal.some((l) => l.t.includes('Raté')),
@@ -386,12 +386,14 @@ export async function selfTest(t, game) {
     t.ok(!C.cibles(sh, CAPACITES.pasOmbre).length, 'un allié à 5 m ne serre pas l’ennemi : pas de Pas');
   }
   {
-    const { C, sh } = scene();
+    const { C, sh, s } = scene();
     sh.res.v = 2;
     t.ok(!C.peutUtiliser(sh, CAPACITES.coupDos3), 'le Coup dans le dos critique coûte 3 Élan : pas avec 2');
     sh.res.v = 3;
     t.ok(C.peutUtiliser(sh, CAPACITES.coupDos3), 'avec 3, oui');
-    t.eq(resultats(CAPACITES.coupDos3).map((r) => r.degats), ['34–44'], 'un critique assuré, sans jet');
+    C.utiliser(sh, 'pasOmbre', { id: s.id }); C.finPhaseHeros();
+    t.eq(sh.res.v, 3, 'un tour avec seulement le Pas : il a bougé, son Élan ne retombe pas (et le Pas n’en donne pas)');
+    t.eq(resultats(CAPACITES.coupDos3).map((r) => r.degats), ['22–28'], 'un critique assuré, sans jet');
   }
   {
     const { C, sh } = scene();
@@ -419,8 +421,118 @@ export async function selfTest(t, game) {
     C._.enflammer({ x: sh.x, y: sh.y }, null);
     t.ok(C.surfaceA(sh)?.t === 'feu' && !C.peutUtiliser(sh, CAPACITES.pasOmbre) && !C.utiliser(sh, 'pasOmbre', { id: s.id }), 'debout dans le feu non plus');
   }
-  t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'Coup dans le dos : 14 + d6 + 2, comme sa description');
+  t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '5–7', '11–14', '22–28'], 'Coup dans le dos : 8 + d4 + 2, comme sa description');
   t.ok(icone('pasOmbre').endsWith('enseigne-pasOmbre.png') && icone('coupDos3').endsWith('enseigne-coupDos.png'), 'ses icônes : celles de sa fiche (design/classes/shadow/icones/)');
+
+  // --- Baba Brisenclume, la classe de DonBabaa ---------------------------------------------------------------------
+  t.group('Baba Brisenclume');
+  {
+    const H = HEROS['baba-brisenclume'];
+    t.ok(CLASSES_ESSAI.includes('baba-brisenclume') && peutJouer('baba-brisenclume', 'DonBabaa') && !peutJouer('baba-brisenclume', 'FrapsFTW') && !peutJouer('baba-brisenclume', null),
+      'Baba se choisit à l’entrée, et ne se joue que par DonBabaa, son auteur');
+    t.ok(H.pv === 130 && H.vitesse * 1.5 === 6 && H.dex === -1 && H.res.type === 'Rage' && H.res.max === 50, 'sa fiche : 130 PV, 6 m par tour, DEX −1, la Rage');
+    t.eq(resultats(CAPACITES.chuteEnclume).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'Chute d’Enclume : 14 + d6 + 2, comme sa description');
+    t.ok(['marteau', 'chuteEnclume', 'lameArdente', 'trempe', 'tenailles'].every((k) => icone(k).endsWith(`enseigne-${k === 'chuteEnclume' ? 'enclume' : k}.png`)), 'ses icônes');
+    t.eq(ordreBarre(H.capacites, CAPACITES).slice(0, 5), ['marteau', 'tenailles', 'chuteEnclume', 'lameArdente', 'trempe'], 'sa barre : Marteau, Tenailles (préparation), puis l’Enclume et la Forge (exploitation)');
+  }
+  // la scène : Baba au milieu du terrain (au nord du foin), la Brute à côté de lui, une Brute ennemie à 4,5 m ; les autres loin
+  const forge = (o = {}) => {
+    const C = essai(['baba-brisenclume', 'brute', 'mage', 'gardien'], { alea: des(Array(40).fill(15)), ...o });
+    C.commencer();
+    const ba = trouver(C, 'baba-brisenclume'), b = trouver(C, 'brute'), m = trouver(C, 'mage');
+    for (const u of C.S.unites) if (![ba, b, m].includes(u)) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    poser(C, ba.id, 6, 10); poser(C, b.id, 6, 10.9); poser(C, m.id, 3, 13); const s = poser(C, 'br', 9, 10);
+    return { C, ba, b, m, s };
+  };
+  {
+    const { C, ba, s } = forge();
+    t.ok(C.cibles(ba, CAPACITES.chuteEnclume).some((c) => c.id === s.id) && !C.peutUtiliser(ba, CAPACITES.lameArdente), 'la Chute d’Enclume vise la Brute ennemie ; sans enclume, pas de Forge');
+    const pv = s.pv, case0 = { x: s.x, y: s.y };
+    t.ok(C.utiliser(ba, 'chuteEnclume', { id: s.id }) && s.pv < pv && s.st.aTerre, `l’enclume l’écrase : ${pv - s.pv} dégâts, À terre`);
+    const e = C.S.enclume;
+    t.ok(e && dist(e, case0) < 0.01, 'elle se pose sur la case visée');
+    t.ok(dist(s, e) >= 0.72 && s.x > case0.x, `la cible en est repoussée, à l’opposé de Baba (${(dist(s, case0) * 1.5).toFixed(1)} m)`);
+    t.ok(C.S.evenements.some((v) => v.type === 'enclume' && v.chute), 'la vue la fait tomber (l’événement « enclume »)');
+    ba.t.action = true;
+    t.ok(!C.peutUtiliser(ba, CAPACITES.chuteEnclume), 'une fois par combat');
+    C.finPhaseHeros();
+    t.ok(!C.peutUtiliser(ba, CAPACITES.chuteEnclume), 'même au round suivant');
+  }
+  {
+    const { C, ba, b, m, s } = forge();
+    C.utiliser(ba, 'chuteEnclume', { x: 7.5, y: 10 });
+    const e = C.S.enclume;
+    t.ok(e && Math.abs(e.x - 7.5) < 0.01, 'sur le sol : elle tombe là où l’on vise');
+    {
+      const { C: C2, ba: ba2, m: m2 } = forge();
+      poser(C2, m2.id, 7.5, 8.5);
+      t.ok(C2.utiliser(ba2, 'chuteEnclume', { x: 7.5, y: 8.5 }) && dist(C2.S.enclume, { x: 7.5, y: 8.5 }) < 0.01 && dist(m2, C2.S.enclume) >= 0.72, 'sur une alliée : elle tombe quand même sur sa case, et la pousse hors de la case');
+    }
+    t.ok(!C.apercuMarche(m, e.x, e.y).ok, 'elle bloque le passage : on ne s’y arrête pas');
+    const P = C._.carteDe(s, 20), k = indiceDe(trame, e.x, e.y);
+    t.ok(!(P.longueur[k] < Infinity), 'les ennemis non plus ne la traversent pas');
+    poser(C, m.id, 4, 10);
+    t.ok(C._.calculer(m, s, C._.attaqueHeros(CAPACITES.etincelle)).notes.includes('la cible est derrière l’enclume : désavantage'), 'un tir qui passe derrière elle a le désavantage (le couvert)');
+    poser(C, m.id, 9, 13);
+    t.eq(C._.calculer(m, s, C._.attaqueHeros(CAPACITES.etincelle)).av, 0, 'tiré de côté : pas de couvert');
+    // une poussée contre elle : +8, et un combo pour Baba qui l'a posée
+    poser(C, b.id, 10.2, 10); poser(C, 'br', 9.2, 10); s.st = {};
+    const pv = s.pv;
+    t.ok(C.utiliser(b, 'projection', { id: s.id }) && C.S.journal.some((l) => l.t.includes('heurte l’enclume : +8')), 'la Brute projette la Brute ennemie contre l’enclume : +8');
+    t.ok(s.pv === pv - 8 && C.S.stats.combos.some((k2) => k2.a === ba.id && k2.b === b.id && k2.quoi === 'poussé contre l’enclume'), 'un combo entre Baba et la Brute');
+  }
+  {
+    const { C, ba, b, s } = forge();
+    C.utiliser(ba, 'chuteEnclume', { x: 6.9, y: 9.3 });
+    ba.res.v = 10;
+    t.ok(!C.peutUtiliser(ba, CAPACITES.lameArdente), 'la Forge coûte 20 Rage : pas avec 10');
+    ba.res.v = 40;
+    t.ok(C.cibles(ba, CAPACITES.lameArdente).map((c) => c.id).sort().join() === [ba.id, b.id].sort().join(), 'au contact de l’enclume : lui-même ou la Brute, à son contact');
+    t.ok(C.utiliser(ba, 'lameArdente', { id: b.id }) && b.st.lame && ba.res.v === 20 && !ba.t.bonus, 'Lame ardente pour la Brute (une action bonus, 20 Rage)');
+    poser(C, b.id, s.x - 0.95, s.y); s.st.huile = { ttl: 3, par: null };
+    const ap = C.apercu(b, 'fracas', s.id);
+    t.ok(ap.notes.includes('Lame ardente : +d6, et compte comme du feu') && ap.notes.some((n) => n.startsWith('Huilé : feu ×2')), 'l’aperçu le dit : +d6, du feu, ×2 sur la cible Huilée');
+    t.eq(ap.degats.touche, '24–40', 'Fracas 8 + d4 + d6 + 2, ×2 : 24–40 sur un touché');
+    C.utiliser(b, 'fracas', { id: s.id });
+    t.ok(!b.st.lame && C.S.stats.combos.some((k) => k.a === ba.id && k.b === b.id && k.quoi === 'lame ardente'), 'elle sert une fois, et compte comme un combo de Baba vers la Brute');
+    ba.t.bonus = true;
+    t.ok(C.utiliser(ba, 'trempe', { id: ba.id }) && ba.st.bouclier?.v === 10, 'Trempe sur lui-même : un bouclier de 10');
+    const pv = ba.pv;
+    C._.attaquer(poser(C, 's1', ba.x - 1, ba.y), ba, { nom: 'Coup', mod: 30, dmod: 0, base: 6, de: 1, melee: true });
+    t.ok(ba.pv === pv && ba.st.bouclier?.v === 3, 'un coup de 7 : le bouclier le prend (il en reste 3)');
+    C._.attaquer(C.U('s1'), ba, { nom: 'Coup', mod: 30, dmod: 0, base: 8, de: 1, melee: true });
+    t.ok(!ba.st.bouclier && ba.pv === pv - 6, 'un coup de 9 le brise, 6 passent');
+    poser(C, ba.id, 3, 3); ba.t.bonus = true;
+    t.ok(!C.peutUtiliser(ba, CAPACITES.trempe), 'loin de son enclume, il ne forge plus (sa faiblesse)');
+  }
+  {
+    const { C, ba, m, s } = forge();
+    poser(C, m.id, 8, 8.4);
+    const d0 = dist(m, ba);
+    t.ok(C.cibles(ba, CAPACITES.tenailles).some((c) => c.id === m.id) && C.utiliser(ba, 'tenailles', { id: m.id }) && dist(m, ba) < d0 - 1.5, `Tenailles : il tire la Mage vers lui (${((d0 - dist(m, ba)) * 1.5).toFixed(1)} m), pour la sauver`);
+    ba.t.action = true;
+    const x0 = s.x;
+    t.ok(C.utiliser(ba, 'tenailles', { id: s.id }) && s.x < x0 - 1.5, 'et un ennemi');
+    C.S.enclume = { id: 'enclume', x: 8.8, y: 10, par: ba.id };
+    ba.t.action = true; poser(C, 'br', 30, 3);
+    t.ok(C.cibles(ba, CAPACITES.tenailles).some((c) => c.id === 'enclume') && C.utiliser(ba, 'tenailles', { id: 'enclume' }) && C.S.enclume.x < 7.6, `et son enclume, pour la rapprocher (à ${(dist(C.S.enclume, ba) * 1.5).toFixed(1)} m de lui)`);
+  }
+  {
+    const { C, ba, s } = forge();
+    poser(C, 'br', 6.95, 10);
+    t.ok(C.utiliser(ba, 'pousser', { id: s.id }) && s.x > 6.95 + 2.8, `Marteau lourd : sa poussée va 1,5 m plus loin (${((s.x - 6.95) * 1.5).toFixed(1)} m)`);
+    ba.st.aTerre = { par: null }; poser(C, 'br', 30, 3); C.finPhaseHeros();
+    t.ok(!C.peutAgir(ba) || ba.t.mv === 0, 'Vieux Os : À terre, se relever lui prend tout son déplacement');
+  }
+  {
+    const { C, ba, m } = forge({ alea: des([12, 12, 12]) });
+    C._.poserZone(trouver(C, 'gardien'), CAPACITES.givre, { x: ba.x + 2, y: ba.y });
+    C.deplacer(ba, ba.x + 2, ba.y);
+    t.ok(ba.st.aTerre, 'Vieux Os : un 12 sur la glace le renverse (1 à 14)');
+    poser(C, m.id, ba.x - 0.5, ba.y + 1.6); m.t.mv = 4;
+    C.deplacer(m, ba.x + 1.2, ba.y + 0.8);
+    t.ok(!m.st.aTerre, 'les autres tiennent sur un 12');
+  }
 
   // --- Les attaques d'opportunité, et Se désengager (#231) ------------------------------------------------------------
   t.group('les attaques d’opportunité (#231)');
@@ -454,7 +566,7 @@ export async function selfTest(t, game) {
     C.deplacer(b, 9, 15.5);
     t.ok(!C.S.journal.some((l) => l.t.startsWith('Attaque d’opportunité')), 'désengagée, la Brute part sans prendre de coup');
     t.ok(!C.peutUtiliser(b, CAPACITES.desengager), 'une fois par tour');
-    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : une flèche qui s’éloigne de l’épée');
+    t.ok(icone('desengager').endsWith('enseigne-desengager.png'), 'son icône : un héros qui se replie (Paolitus, 20 oct)');
   }
   {
     const { C, b, s } = opp();
@@ -551,9 +663,22 @@ export async function selfTest(t, game) {
   t.ok(V.marques.cibles?.includes('s1') && V.marques.cercle?.r === 6, 'la portée (9 m) et la cible à portée sont montrées');
   t.ok(!ihm.dom.ficheCap.hidden && ihm.dom.ficheCap.dataset.capacite === 'etincelle' && ihm.dom.ficheCap.textContent.includes('11–14') && ihm.dom.ficheCap.textContent.includes('d20 8–19'),
     'la fiche d’Étincelle (#85) : les dégâts d’un touché et les d20 qui y mènent, avant de viser');
-  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite')];
+  const boutons = [...ihm.dom.capacites.querySelectorAll('.capacite:not(#desengager)')];   // (les sorts de la classe ; Se désengager est à part)
   t.ok(boutons.length === HEROS.mage.capacites.length && boutons.every((b) => b.querySelector('img')?.getAttribute('src').includes('icones/enseigne-')) && boutons[0].classList.contains('choisie'),
     'la barre : chaque capacité avec son icône LPC, Étincelle choisie');
+  {
+    // la barre des sorts (la barre du camp) : les capacités rangées par sorte, sous le nom de leur groupe ; A ou B, le coût, la touche
+    const groupes = [...ihm.dom.capacites.querySelectorAll('.groupe-sorts')].map((g) => g.querySelector('.groupe-nom').textContent);
+    t.eq(groupes, ['Attaque', 'Préparation', 'Exploitation', 'Commun', 'Mouvement'], 'la barre des sorts de la Mage : ses capacités rangées par sorte, le commun à part, le mouvement en dernier');
+    t.ok(ihm.dom.desengager.closest('.s-mouvement') && ihm.dom.desengager.querySelector('kbd').textContent === 'D' && ihm.dom.desengager.querySelector('img').src.endsWith('enseigne-desengager.png'), 'Se désengager, dans la barre : sa case, son icône, la touche D');
+    const foudre = ihm.dom.capacites.querySelector('[data-capacite="foudre"]');
+    t.ok(foudre.dataset.sorte === 'exploitation' && foudre.querySelector('.cap-slot').textContent === 'A' && foudre.querySelector('.cap-cout').textContent === '15' && foudre.querySelector('kbd').textContent === '3',
+      'Foudre : une exploitation, une action (A), 15 de Mana en coin, touche 3');
+    t.ok(document.querySelector('.socle-sorts .embout.gauche') && document.querySelector('.socle-sorts .loup.droite'), 'la barre entre ses embouts de laiton et ses loups, comme au camp');
+    const tr = ordreBarre(HEROS['traqueur-au-limier'].capacites, CAPACITES);
+    t.ok(tr.length === 10 && TOUCHES[tr.indexOf('relever')] === '0' && ['lecher', 'mordre', 'rabattre'].every((id) => sorteDe(id, CAPACITES[id]) === 'familier'),
+      'le Traqueur et ses 10 sorts : les ordres au limier en groupe à part, Relever sur la touche 0');
+  }
   boutons[2].dispatchEvent(new MouseEvent('mouseenter')); game.dbg.advance(0.05);
   t.ok(ihm.dom.ficheCap.dataset.capacite === 'foudre' && ihm.dom.ficheCap.textContent.includes('15 Mana') && ihm.dom.ficheCap.textContent.includes('Trempé'), 'survoler Foudre dans la barre montre sa fiche : son coût, ses effets');
   ihm.dom.capacites.querySelectorAll('.capacite')[2].dispatchEvent(new MouseEvent('mouseleave')); game.dbg.advance(0.05);
@@ -866,6 +991,31 @@ export async function selfTest(t, game) {
     touche('2');
     clic(9, 12 - 0.4); jouerFile();
     t.ok(dist(sh, C3.U('br')) <= CONTACT && enTenaille(sh, C3.U('br'), [C3.U('h2')]) && !sh.t.bonus, 'un clic sur la cible : Shadow ressort derrière elle, en Tenaille');
+    try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
+  t.group('Baba à l’écran');
+  {
+    // Baba : la Chute d'Enclume au clic sur le sol, l'enclume dessinée là ; sans elle, la Forge est grisée et dit pourquoi
+    let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
+    ihm.rejouer(); ihm.ui.choix = ['baba-brisenclume', 'brute', 'mage', 'gardien'];
+    document.querySelector('#commencer').click(); jouerFile();
+    const C4 = game.dbg.combat, ba = C4.U('h1');
+    t.eq(ba.type, 'baba-brisenclume', 'Baba entre au terrain');
+    ihm.choisirHeros('h1'); game.dbg.advance(0.05);
+    const bouton = (id) => document.querySelector(`.capacite[data-capacite="${id}"]`);
+    t.ok(bouton('lameArdente')?.classList.contains('indispo'), 'sans enclume, la Lame ardente est grisée');
+    ihm.ui.capSurvol = 'trempe'; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(ihm.dom.ficheCap.textContent.includes('la Chute d’Enclume d’abord'), 'sa fiche dit pourquoi');
+    ihm.ui.capSurvol = null;
+    const p = { x: ba.x + 2, y: ba.y };
+    ihm.choisirCapacite('chuteEnclume');
+    clic(p.x, p.y); jouerFile();
+    t.ok(V.films.actif('chute-enclume') && V.enclume.cache === false, 'elle tombe dans son animation validée (le film de la Chute d’Enclume), qui continue après le coup');
+    for (let k = 0; k < 60 && V.films.actifs; k++) game.dbg.advance(0.1);
+    const E = V.enclume;
+    t.ok(C4.S.enclume && Math.abs(C4.S.enclume.x - p.x) < 0.05 && E && !E.cache && Math.abs(E.x / 32 - p.x) < 0.05 && !V.films.actif('chute-enclume'),
+      'un clic sur le sol : l’enclume tombe là, et la vue la dessine posée');
+    t.eq(V.sous(C4.S.enclume.x, C4.S.enclume.y - 0.3), 'enclume', 'on peut la viser (les Tenailles)');
     try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
   }
   ihm.rejouer();

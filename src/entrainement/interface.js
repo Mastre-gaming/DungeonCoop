@@ -11,7 +11,7 @@
 import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour } from './regles.js';
 import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
-import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
+import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
 import { medaillon } from '../33_cadres.js';
@@ -72,13 +72,17 @@ function construire() {
   // en bas à droite : finir la phase (« Je suis prêt » à plusieurs), et annuler le dernier déplacement
   dom.coin = el('div', { class: 'coin-phase bois' },
     dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
-    // l'action commune de tous les héros (#231) : partir du contact sans attaque d'opportunité, pour son action bonus
-    dom.desengager = el('button', { type: 'button', class: 'bouton-jeu discret', id: 'desengager', onclick: () => desengager(), title: 'Action bonus : ce tour-ci, il s’éloigne sans attaque d’opportunité (touche D)' }, el('img', { class: 'bouton-icone', src: icone('desengager'), alt: '' }), 'Se désengager (D)'),
     dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
-  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
+  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des sorts
+  const loupSculpte = (cote) => el('div', { class: `loup ${cote}`, 'aria-hidden': 'true' }, el('div', { class: 'loup-bois' }), el('div', { class: 'socle' }));
   dom.bas = el('div', { class: 'bas-terrain' },
     dom.ficheCap = el('section', { class: 'fiche-capacite bois', hidden: true, 'aria-live': 'polite' }),
-    dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les capacités du héros choisi' }, dom.capacites = el('div', { class: 'capacites' })));
+    // la barre des sorts, comme celle du camp (BABA) : entre ses embouts de laiton et ses deux loups sculptés sur leur socle
+    el('div', { class: 'socle-sorts' }, loupSculpte('gauche'), el('span', { class: 'embout gauche', 'aria-hidden': 'true' }),
+      dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les sorts du héros choisi' },
+        ['hg', 'hd', 'bg', 'bd'].map((p) => el('span', { class: `rivet ${p}`, 'aria-hidden': 'true' })),
+        dom.capacites = el('div', { class: 'capacites' })),
+      el('span', { class: 'embout droite', 'aria-hidden': 'true' }), loupSculpte('droite')));
   dom.de = el('div', { class: 'de-grand', hidden: true, 'aria-live': 'polite' });
   dom.banniere = el('div', { class: 'banniere-terrain', hidden: true });
   dom.info = el('div', { class: 'carte-cible bois', hidden: true });
@@ -283,6 +287,7 @@ function cliquer(p) {
     const cap = CAPACITES[ui.cap];
     if (cap.type === 'zone') return void agir({ x: p.x, y: p.y });
     if (dessous && combat.cibles(h, cap).some((c) => c.id === dessous)) return void agir({ id: dessous });
+    if (cap.type === 'enclume') return void agir({ x: p.x, y: p.y });          // la Chute d'Enclume sur le sol
     if (cap.el === 'feu' && combat.huileVisable(h, cap, p)) return void agir({ x: p.x, y: p.y });
     return;
   }
@@ -313,9 +318,8 @@ function clavier(e) {
     if (ids.length) choisirHeros(ids[(ids.indexOf(ui.sel) + 1) % ids.length]);
     return;
   }
-  const n = Number(e.key);
-  const h = herosChoisi();
-  if (n >= 1 && n <= 9 && h) { const id = HEROS[h.type].capacites[n - 1]; if (id) choisirCapacite(id); }
+  const n = TOUCHES.indexOf(e.key), h = herosChoisi();
+  if (n >= 0 && h && !e.ctrlKey && !e.metaKey && !e.altKey) { const id = ordreBarre(HEROS[h.type].capacites, CAPACITES)[n]; if (id) choisirCapacite(id); }
 }
 function portee(h) { if (!ui.portee || ui.portee.id !== h.id || ui.portee.mv !== h.t.mv || ui.portee.x !== h.x || ui.portee.y !== h.y) ui.portee = { id: h.id, mv: h.t.mv, x: h.x, y: h.y, P: combat.portee(h) }; return ui.portee.P; }
 
@@ -345,6 +349,7 @@ export function update() {
       if (ui.survol) {
         if (cap.type === 'zone') m.zone = { x: ui.survol.x, y: ui.survol.y, r: cap.rayon, surf: cap.surf, ok: combat.zonePossible(h, cap, ui.survol) };
         const d = vue.sous(ui.survol.x, ui.survol.y);
+        if (cap.type === 'enclume' && !(d && m.cibles.includes(d))) m.zone = { x: ui.survol.x, y: ui.survol.y, r: 0.45, surf: 'enclume', ok: combat.zonePossible(h, cap, ui.survol) };
         if (d && m.cibles.includes(d)) { m.survolCible = d; info = combat.apercu(h, ui.cap, d); }
       }
     } else {
@@ -385,6 +390,8 @@ function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
   if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
+  if (cap.type === 'enclume' && h.enclumeTombee) return 'Son enclume est déjà tombée : une fois par combat.';
+  if (cap.type === 'forge' && !combat.presDeLEnclume(h)) return combat.S.enclume ? 'Loin de son enclume : il doit être à son contact pour forger.' : 'Pas d’enclume : la Chute d’Enclume d’abord.';
   if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
   if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m qu’un allié serre à 4,5 m.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
@@ -394,7 +401,7 @@ function pourquoiPas(h, cap) {
 const puces = (cap, ressource) => caracteristiques(cap, ressource).filter((t) => t !== 'Sans coût' && !/^(Pousse|Attire) de /.test(t));
 function effetsFiche(cap) {
   const liste = effets(cap).map((e) => (/^[\d,]+ m$/.test(e.texte) ? { ...e, texte: `Pousse de ${e.texte}` } : e));
-  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${cap.type === 'attraction' ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
+  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${['attraction', 'tenailles'].includes(cap.type) ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
   return liste;
 }
 function dessinerFiche(h) {
@@ -491,23 +498,39 @@ function dessinerTout() {
         el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
           etats.length ? el('span', { class: 'fh-etats' }, ` · ${etats.join(' · ')}`) : null)));
   }));
-  // la barre des capacités : l'icône, le nom, action ou bonus, les dégâts d'un touché (ou ce qu'elle fait), la touche
+  // la barre des sorts : une case par capacité (l'icône, A ou B, son coût, sa touche), rangées par sorte ; le nom et le reste
+  // sont dans la fiche au-dessus, au survol ou au choix
   const h = herosChoisi();
-  dom.capacites.replaceChildren(...(h && S.phase === 'heros' ? HEROS[h.type].capacites.map((id, k) => {
-    const c = CAPACITES[id], ok = utilisable(h, c);
-    const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
-    return el('button', { type: 'button', class: `capacite ${c.slot}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
-      dataset: { capacite: id }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
-    el('span', { class: 'cap-icone' }, el('img', { src: icone(id), alt: '' }), TAMPONS[id] ? el('span', { class: 'cap-tampon' }, TAMPONS[id]) : null),
-    el('span', { class: 'cap-texte' }, el('span', { class: 'cap-nom' }, c.nom),
-      el('span', { class: 'cap-slot' }, el('span', { class: `tampon ${c.slot}` }, c.slot === 'action' ? 'ACT' : 'BONUS'), el('span', { class: 'cap-resume' }, resume(c)))),
-    el('kbd', {}, String(k + 1)));
-  }) : [el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : '')]));
-  const n = dom.capacites.children.length;
-  dom.capacites.style.setProperty('--col', n <= 5 ? n : Math.ceil(n / 2));
+  if (h && S.phase === 'heros') {
+    const ordre = ordreBarre(HEROS[h.type].capacites, CAPACITES);
+    const caseSort = (id) => {
+      const c = CAPACITES[id], ok = utilisable(h, c), touche = TOUCHES[ordre.indexOf(id)] ?? '', s = sorteDe(id, c);
+      const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
+      return el('button', { type: 'button', class: `capacite ${c.slot} s-${s}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
+        'aria-label': `${c.nom}, ${c.slot === 'action' ? 'action' : 'action bonus'}${c.cout ? `, ${c.cout} ${h.res.type}` : ''}${touche ? `, touche ${touche}` : ''}`, title: c.nom,
+        dataset: { capacite: id, sorte: s }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
+      el('img', { class: 'cap-img', src: icone(id), alt: '' }),
+      el('span', { class: `cap-slot ${c.slot}`, 'aria-hidden': 'true' }, c.slot === 'action' ? 'A' : 'B'),
+      TAMPONS[id] ? el('span', { class: 'cap-tampon', 'aria-hidden': 'true' }, TAMPONS[id]) : null,
+      c.cout ? el('span', { class: 'cap-cout', dataset: { res: h.res.type }, 'aria-hidden': 'true' }, String(c.cout)) : null,
+      touche ? el('kbd', {}, touche) : null);
+    };
+    const groupes = SORTES.map((s) => ({ ...s, ids: ordre.filter((id) => sorteDe(id, CAPACITES[id]) === s.id) })).filter((g) => g.ids.length);
+    // la dernière catégorie : le mouvement, l'action commune de tous les héros (#231) : se désengager (partir du contact sans
+    // attaque d'opportunité, pour son action bonus), sur la touche D
+    const dg = CAPACITES.desengager, okD = !vue.occupe() && utilisable(h, dg);
+    const survolD = (oui) => () => { if (oui ? ui.capSurvol !== 'desengager' : ui.capSurvol === 'desengager') { ui.capSurvol = oui ? 'desengager' : null; ui.sale = true; } };
+    dom.desengager = el('button', { type: 'button', id: 'desengager', class: `capacite bonus s-mouvement${okD ? '' : ' indispo'}`, 'aria-disabled': okD ? null : 'true',
+      'aria-label': `${dg.nom}, action bonus, touche D`, title: dg.nom, dataset: { capacite: 'desengager', sorte: 'mouvement' },
+      onclick: () => desengager(), onmouseenter: survolD(true), onmouseleave: survolD(false), onfocus: survolD(true), onblur: survolD(false) },
+    el('img', { class: 'cap-img', src: icone('desengager'), alt: '' }), el('span', { class: 'cap-slot bonus', 'aria-hidden': 'true' }, 'B'), el('kbd', {}, 'D'));
+    dom.capacites.replaceChildren(...groupes.map((g) => el('div', { class: `groupe-sorts s-${g.id}`, role: 'group', 'aria-label': g.nom },
+      el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, g.nom), el('div', { class: 'cases-sorts' }, g.ids.map(caseSort)))),
+      el('div', { class: 'groupe-sorts s-mouvement', role: 'group', 'aria-label': 'Mouvement' },
+        el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, 'Mouvement'), el('div', { class: 'cases-sorts' }, dom.desengager)));
+  } else dom.capacites.replaceChildren(el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : ''));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
-  { const h = herosChoisi(); dom.desengager.disabled = !h || vue.occupe() || !utilisable(h, CAPACITES.desengager); }
   dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)
   dom.finPhase.classList.toggle('pret', !!reseau?.estPret());
   if (!reseau) dom.finPhase.textContent = 'Fin de la phase des héros';

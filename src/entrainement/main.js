@@ -16,6 +16,7 @@ import * as multiSkill from './multi.js';
 import * as tests from './tests.js';
 import PERSOS from './persos.json';
 import { PLANCHES as EFFETS } from './effets.js';
+import { PLANCHES as FILMS } from './films.js';
 import { habiller } from '../33_cadres.js';
 import '../panneau.css';
 import '../jeu.css';
@@ -34,6 +35,7 @@ async function demarrer() {
     limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
+    ...FILMS,                     // les animations validées de Baba Brisenclume (films.js)
   };
   const images = await chargerImages('./assets/lpc/', planches);
   const canvas = document.querySelector('#jeu');

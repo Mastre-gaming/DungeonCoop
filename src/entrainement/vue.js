@@ -12,6 +12,7 @@ import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
+import { creerFilms, traction, ENCLUME as ENCLUME_FILM } from './films.js';
 
 export const name = 'vue';
 export const always = true;
@@ -39,6 +40,12 @@ const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' 
 let game, rendu, images, combat, salle, canvas;
 const aff = new Map();                 // ce que la vue montre de chaque créature (ça suit la file, pas l'état final)
 const tonneaux = new Map();
+// l'enclume de Baba Brisenclume : { x, y, s, cache }, celle de sa Chute d'Enclume (films.js) ; ses animations validées
+// (les films) la cachent quand elles la dessinent elles-mêmes (sa chute, la Forge)
+let enclume = null;
+let films = null;
+const BABA = 'baba-brisenclume';
+const FILMS_ENCLUME = ['chute-enclume', 'lame-ardente', 'trempe'];
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
 let temps = 0, prochainFeu = 0;
@@ -122,6 +129,7 @@ export function init(g, options) {
   try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); if (lu) { plaques.e = !!lu.e; plaques.h = !!lu.h; } } catch {}
 
   fx = creerEffets(rendu, images);
+  films = creerFilms(rendu, images);
   peupler();
 
   // la caméra : molette (zoom fin et animé, sous la souris), clic droit glissé (déplacer la vue)
@@ -163,12 +171,15 @@ function peupler() {
     });
   }
   for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
+  const e = combat.S.enclume;
+  enclume = { x: (e?.x ?? 0) * T, y: (e?.y ?? 0) * T, s: rendu.sprite(images.film_enclume, 'film-enclume', ENCLUME_FILM.w, ENCLUME_FILM.h), cache: !e };
 }
 
 // Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
 export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
+  enclume?.s.retirer(); films.vider();
   aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
   peupler();
@@ -285,7 +296,7 @@ export function dessinerMarques(m = marques) {
     g.putImageData(img, 0, 0);
   }
   const anneau = (id, couleur, epais = 2) => {
-    const a = aff.get(id) ?? tonneaux.get(id); if (!a) return;
+    const a = aff.get(id) ?? tonneaux.get(id) ?? (id === 'enclume' && !enclume?.cache ? enclume : null); if (!a) return;
     g.strokeStyle = couleur; g.lineWidth = epais; g.beginPath(); g.ellipse(a.x, a.y - 1, 15, 7, 0, 0, Math.PI * 2); g.stroke();
   };
   for (const id of m.cibles ?? []) anneau(id, 'rgba(255, 214, 90, 0.9)');
@@ -343,6 +354,8 @@ function scene(e) {
     }
     case 'poussee': {
       const cible = e.tonneau ? tonneaux.get(e.id) : a, dep = { x: cible.x, y: cible.y };
+      const tiree = !e.tonneau && films.de(cible);                // tirée par les Tenailles de Baba : au rythme de ses à-coups
+      if (tiree) return tirer(tiree, cible, e.chemin, () => { a.anim = 'blesse'; }, () => { a.anim = 'repos'; });
       const pts = e.chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
       const duree = Math.min(0.6, 0.12 + Math.hypot(fin.x - dep.x, fin.y - dep.y) / (12 * T));
       fx.jouer('poussiere', { x: dep.x, y: dep.y }); fx.jouer('poussiere', { x: fin.x, y: fin.y, retard: duree });
@@ -351,6 +364,7 @@ function scene(e) {
       }, fin() { if (!e.tonneau) a.anim = 'repos'; } };
     }
     case 'attaque': case 'lance': {
+      if (aff.get(e.type === 'attaque' ? e.de : e.id)?.type === BABA) { const sb = sceneBaba(e); if (sb) return sb; }
       const att = aff.get(e.type === 'attaque' ? e.de : e.id), cible = e.type === 'attaque' ? aff.get(e.vers) : { x: e.x * T, y: e.y * T };
       tourner(att, cible);
       att.anim = e.anim ?? 'attaque'; att.t = 0;
@@ -416,6 +430,15 @@ function scene(e) {
         a.cache = false; a.plonge = Math.max(0, 1 - (t - arrive) / MONTE);
       }, fin() { a.x = p.x; a.y = p.y; a.plonge = 0; a.cache = false; tourner(a, c); } };
     }
+    // l'enclume de Baba : posée (sa chute est dans le film de la Chute d'Enclume), ou tirée par les Tenailles
+    case 'enclume': {
+      const p = { x: e.x * T, y: e.y * T };
+      if (e.chute) { Object.assign(enclume, { x: p.x, y: p.y, cache: false }); return { duree: 0 }; }
+      const tiree = films.de(enclume);
+      if (tiree) return tirer(tiree, enclume, e.chemin.length ? e.chemin : [{ x: e.x, y: e.y }]);
+      const dep = { x: enclume.x, y: enclume.y };
+      return { duree: 0.35, maj(t, k) { enclume.x = dep.x + (p.x - dep.x) * k; enclume.y = dep.y + (p.y - dep.y) * k; }, fin() { enclume.x = p.x; enclume.y = p.y; } };
+    }
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
     case 'piege': flottant(a, NOM_PIEGE[e.v] ?? 'Piège !', 'info'); fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-lourd', { x: a.x, y: a.y }); return { duree: 0.35 };
@@ -435,12 +458,53 @@ function scene(e) {
     case 'menace': marques.menace = { x: e.x, y: e.y, r: e.r }; dessinerMarques(); viser(e.x * T, e.y * T); return { duree: 0.85, fin() { marques.menace = null; dessinerMarques(); } };
     case 'eclair': pourEcouteurs(e); return { duree: 0.35 };
     case 'flottant': case 'texte': flottant(a, e.texte, e.genre ?? 'info'); return { duree: 0.2 };
-    case 'de': pourEcouteurs({ type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= 9 ? 'glisse' : 'tient', de: e.id, glace: true }); return { duree: 0.5 };
+    case 'de': pourEcouteurs({ type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= (e.seuil ?? 9) ? 'glisse' : 'tient', de: e.id, glace: true }); return { duree: 0.5 };
     case 'agit': marques.actif = e.id; dessinerMarques(); viser(a.x, a.y); return { duree: 0.25 };
     default: pourEcouteurs(e); return { duree: e.type === 'combo' ? 0.7 : 0 };
   }
 }
 function pourEcouteurs(e) { for (const f of ecouteurs) f(e); }
+
+// --- Baba Brisenclume : ses animations validées (films.js) -----------------------------------------------------------
+// Chaque capacité joue sa scène verrouillée ; la file reprend quand le coup porte (l'image « impact »), le film continue.
+function sceneBaba(e) {
+  const b = aff.get(e.type === 'attaque' ? e.de : e.id);
+  if (e.type === 'attaque' && e.cap === 'marteau') {
+    const c = aff.get(e.vers);
+    pourEcouteurs({ ...e, type: 'de' });
+    viser((b.x + c.x) / 2, (b.y + c.y) / 2);
+    return { duree: Math.max(0.5, films.jouer('marteau', { baba: b, cible: c }).impact + 0.05) };
+  }
+  if (e.type === 'attaque' && e.cap === 'chuteEnclume') { pourEcouteurs({ ...e, type: 'de' }); return { duree: 0.5 }; }   // (le film tourne déjà)
+  if (e.type !== 'lance') return null;
+  if (e.cap === 'chuteEnclume') {
+    const p = { x: e.x * T, y: e.y * T };
+    viser(p.x, p.y - 30);
+    return { duree: films.jouer('chute-enclume', { baba: b, cible: p }).impact };
+  }
+  if (e.cap === 'tenailles') {
+    const c = e.vers === 'enclume' ? enclume : aff.get(e.vers);
+    viser((b.x + c.x) / 2, (b.y + c.y) / 2);
+    return { duree: films.jouer(e.vers === 'enclume' ? 'tenailles-enclume' : 'tenailles', { baba: b, cible: c }).impact };
+  }
+  if (e.cap === 'lameArdente' || e.cap === 'trempe') {
+    // il se tourne vers son enclume (la scène la fait apparaître devant lui, là où elle est) ; l'allié, au contact, reçoit
+    // le feu ou le bouclier où qu'il soit (la traînée s'étire jusqu'à lui)
+    const c = aff.get(e.vers), soi = c === b;
+    viser(b.x, b.y);
+    return { duree: films.jouer(e.cap === 'lameArdente' ? 'lame-ardente' : 'trempe', { baba: b, cible: c, vers: enclume, sansMilieu: soi }).impact };
+  }
+  return null;
+}
+// une cible tirée par les Tenailles : elle avance de son chemin au rythme des à-coups du film (jusqu'au dernier)
+function tirer(film, cible, chemin, pendant = () => {}, apres = () => {}) {
+  const dep = { x: cible.x, y: cible.y }, pts = chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
+  const F = film.F, dernier = F.tire[F.tire.length - 1] + 2, reste = Math.max(0.05, (dernier - (films.image(film) ?? dernier)) / 12);
+  return { duree: reste, maj() {
+    const f = films.image(film), k = f == null ? 1 : traction(F, f);
+    cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k; pendant();
+  }, fin() { cible.x = fin.x; cible.y = fin.y; apres(); } };
+}
 
 // --- Les textes qui montent (dégâts, soins, « Raté ! ») ----------------------------------------------------------
 const flottants = [];
@@ -619,6 +683,11 @@ export function update(dtReel) {
     if (r) { a.x -= r.x; a.y -= r.y; }
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
+  if (enclume) {
+    const cachee = enclume.cache || FILMS_ENCLUME.some((id) => films.actif(id));
+    enclume.s.cacher(cachee);
+    if (!cachee) enclume.s.poser(enclume.x - ENCLUME_FILM.w / 2, enclume.y - ENCLUME_FILM.h, enclume.y);
+  }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
   for (const [id, liste] of etatsVus) {
@@ -626,6 +695,9 @@ export function update(dtReel) {
     for (const [k, brique, dy] of liste) if (!(a.ko && k !== 'aTerre')) fx.garder(`${id}:${k}`, brique, a.x, a.y + dy);
   }
   fx.update(dt);
+  // les films de Baba, et leur secousse de l'écran
+  const [sx, sy] = films.update(dt);
+  if (sx || sy) rendu.viser(cam.cx - rendu.vue.w / 2 + ox - sx, cam.cy - rendu.vue.h / 2 + oy - sy);   // (avec la secousse des coups)
   for (let k = flottants.length - 1; k >= 0; k--) {
     const f = flottants[k]; f.t += dtReel;
     const p = versEcran(f.x, f.y - f.t * 30);
@@ -639,7 +711,15 @@ function poserPerso(a) {
   if (a.cache) { a.s64.cacher(true); a.grand?.cacher(true); a.ombre.cacher(true); return; }
   const ligne = DIR[a.dir];
   let anim = a.anim, rang, col;
+  let decale = 0;
   if (a.ko || a.mort || anim === 'tombe') { rang = ANIM.blesse[0]; col = anim === 'tombe' ? Math.min(5, Math.floor(a.t * 11)) : 5; }
+  else if (anim === 'film' && a.film) {
+    // Baba dans une de ses scènes validées : sa pose image par image (au repos : l'image debout de la marche, comme les esquisses)
+    const p = a.film; decale = p.dx * (p.miroir ? -1 : 1);
+    if (p.anim === 'repos') { rang = ANIM.marche[0] + ligne; col = 0; }
+    else if (p.anim === 'blesse') { rang = ANIM.blesse[0]; col = Math.min(5, p.i); }
+    else { rang = (ANIM[p.anim] ?? ANIM.attaque)[0] + ligne; col = p.i; }
+  }
   else if (anim === 'marche') { rang = ANIM.marche[0] + ligne; col = 1 + (Math.floor(a.t * 10) % 8); }
   else if (anim === 'blesse') { rang = ANIM.blesse[0]; col = Math.min(2, Math.floor(a.t * 10)); }
   else if (anim === 'repos') { rang = ANIM.repos[0] + ligne; col = Math.floor(a.t * 1.6) % 2; }
@@ -661,7 +741,7 @@ function poserPerso(a) {
   teinter(a);
   // plonge (le Pas dans l'ombre de Shadow) : il descend sous ses pieds, coupé au ras du sol
   const sous = Math.round((a.plonge ?? 0) * 60);
-  a.s64.poser(a.x - 32, a.y - 60 + a.enfonce * 26 + sous, a.y, col * 64, rang * 64, 64 - sous);
+  a.s64.poser(a.x - 32 + decale, a.y - 60 + a.enfonce * 26 + sous, a.y, col * 64, rang * 64, 64 - sous);
   a.ombre.cacher(a.enfonce > 0.3 || (a.plonge ?? 0) > 0.2); a.ombre.poser(a.x, a.y - 1);
 }
 
@@ -688,6 +768,8 @@ function resynchroniser() {
     const t = combat.S.tonneaux.find((o) => o.id === id);
     if (!t) b.cache = true; else { b.x = t.x * T; b.y = t.y * T; b.cache = false; }
   }
+  const e = combat.S.enclume;
+  if (enclume) { if (!e) enclume.cache = true; else Object.assign(enclume, { x: e.x * T, y: e.y * T, cache: false }); }
 }
 
 // La planche LPC d'un personnage (pour le médaillon de sa fiche).
@@ -701,11 +783,11 @@ export function portrait(type, taille = 64) {
   return c;
 }
 
-export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); voile?.remove(); canvas.style.transform = ''; }
+export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); films?.retirer(); voile?.remove(); canvas.style.transform = ''; }
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
+  aff, tonneaux, get enclume() { return enclume; }, get films() { return films; }, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },
@@ -721,6 +803,7 @@ export const api = {
     }
     if (best) return best;
     for (const [id, b] of tonneaux) { if (!b.cache && Math.abs(b.x / T - x) < 0.5 && y > b.y / T - 1.2 && y < b.y / T + 0.2) return id; }
+    if (enclume && !enclume.cache && Math.abs(enclume.x / T - x) < 1 && y > enclume.y / T - 1.15 && y < enclume.y / T + 0.2) return 'enclume';
     return null;
   },
   zoomer, ajusterCamera, contact: CONTACT,
