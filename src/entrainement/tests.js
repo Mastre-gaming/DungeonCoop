@@ -599,6 +599,72 @@ export async function selfTest(t, game) {
   }
 
   // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------
+  // --- L'IA des ennemis : leurs habitudes, jouées avec bon sens (FIGHT_RULES, à l'essai) ---------------------------
+  t.group('l’IA des ennemis : les habitudes, avec bon sens');
+  // la scène : tout le monde loin, sauf ceux qu'on pose au milieu du terrain (autour de 12, 15.5, libre)
+  const ia = (o = {}) => {
+    const C = essai(['brute', 'mage', 'gardien', 'voleur'], { alea: des(Array(40).fill(12)), ...o });
+    C.commencer();
+    for (const u of C.S.unites) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    return C;
+  };
+  const opportunites = (C) => C.S.journal.filter((l) => l.t.startsWith('Attaque d’opportunité')).length;
+  { const pris = [[12, 15.5], [13, 15.5], [11, 15.5], [14.5, 15.5], [17.5, 15.5], [12, 13], [14.5, 13], [6, 15.5]].filter(([x, y]) => !libre(trame, x, y)); t.ok(!pris.length, `les points des scènes sont libres ${pris.map((p) => p.join(',')).join(' ')}`); }
+  {
+    // un archer collé à la Brute, qui peut encore réagir : il ne recule pas sous le coup, il tire sur place
+    const C = ia(), b = poser(C, 'brute', 12, 15.5), a = poser(C, 'a1', 13, 15.5);
+    C._.agirEnnemi(a);
+    t.ok(Math.abs(a.x - 13) < 0.01 && opportunites(C) === 0 && C.S.journal.some((l) => l.t.startsWith('Archer 1 → Brute')),
+      'un archer au contact de la Brute ne recule pas sous son coup : il tire sur place');
+    const C2 = ia(), b2 = poser(C2, 'brute', 12, 15.5), a2 = poser(C2, 'a1', 13, 15.5);
+    b2.t.reaction = false;
+    C2._.agirEnnemi(a2);
+    t.ok(dist(a2, b2) > 3 && opportunites(C2) === 0, `la Brute a déjà réagi ce round : il recule sans risque (${(dist(a2, b2) * 1.5).toFixed(1)} m), puis tire`);
+  }
+  {
+    // un archer loin de tout : il se place hors de portée des héros qui frappent au contact (leur marche + le contact)
+    const C = ia(), b = poser(C, 'brute', 6, 15.5), a = poser(C, 'a1', 12, 15.5);
+    C._.agirEnnemi(a);
+    t.ok(dist(a, b) > b.vitesse + CONTACT, `un archer se tient hors de portée de la Brute au prochain tour (${(dist(a, b) * 1.5).toFixed(1)} m)`);
+  }
+  {
+    // le sbire : le plus proche, sauf s'il peut achever un autre héros ce tour-ci
+    const C = ia(), s = poser(C, 's1', 14.5, 15.5), b = poser(C, 'brute', 12, 15.5), v = poser(C, 'voleur', 17.5, 15.5);
+    C._.agirEnnemi(s);
+    t.ok(C.S.journal.some((l) => l.t.startsWith('Sbire 1 → Brute')), 'le sbire frappe le héros le plus proche (son habitude)');
+    const C2 = ia(), s2 = poser(C2, 's1', 14.5, 15.5); poser(C2, 'brute', 12, 15.5); const v2 = poser(C2, 'voleur', 17.5, 15.5);
+    v2.pv = 5;
+    C2._.agirEnnemi(s2);
+    t.ok(C2.S.journal.some((l) => l.t.startsWith('Sbire 1 → Voleur')) && C2.S.journal.some((l) => l.t.includes('à achever ce tour-ci')),
+      'mais un Voleur à 5 PV qu’il peut achever passe devant (et le journal dit pourquoi)');
+  }
+  {
+    // encercler : au contact, il prend le côté opposé à un allié (la tenaille : l'avantage)
+    const C = ia(), b = poser(C, 'brute', 12, 15.5), s2 = poser(C, 's2', 11, 15.5), s1 = poser(C, 's1', 12, 13);
+    C._.agirEnnemi(s1);
+    t.ok(enTenaille(s1, b, [s2]), `le sbire vient de l’autre côté de la Brute, en face de son allié : la tenaille (${s1.x.toFixed(1)}, ${s1.y.toFixed(1)})`);
+  }
+  {
+    // la Brute ennemie au contact du Gardien : elle ne le lâche pas pour un héros à peine plus blessé (le coup en partant)
+    const C = ia(), g = poser(C, 'gardien', 12, 15.5), e = poser(C, 'br', 13, 15.5), b = poser(C, 'brute', 14.5, 13);
+    g.pv = Math.round(g.pvMax * 0.84); b.pv = Math.round(b.pvMax * 0.79);
+    C._.agirEnnemi(e);
+    t.ok(opportunites(C) === 0 && C.S.journal.some((l) => l.t.startsWith('Brute ennemie → Gardien')), 'la Brute ennemie reste sur le Gardien (84 % de PV) plutôt que de prendre un coup pour la Brute (79 %)');
+    const C2 = ia(), g2 = poser(C2, 'gardien', 12, 15.5), e2 = poser(C2, 'br', 13, 15.5), v2 = poser(C2, 'voleur', 14.5, 13);
+    v2.pv = 9;
+    C2._.agirEnnemi(e2);
+    t.ok(C2.S.journal.some((l) => l.t.startsWith('Brute ennemie → Voleur')), 'mais elle part achever un Voleur à 9 PV, quitte à prendre le coup du Gardien');
+  }
+  {
+    // les outils : la moyenne des dégâts et la chance d'achever
+    const C = ia(), s = poser(C, 's1', 13, 15.5), b = poser(C, 'brute', 12, 15.5);
+    const A = { nom: 'Coup', mod: 2, dmod: 0, base: 8, de: 4, melee: true }, c = C._.calculer(s, b, A);
+    const m = C._.degatsMoyens(A, c);
+    t.ok(m > 8 && m < 11, `un coup de sbire : ${m.toFixed(1)} dégâts en moyenne (10,5 sur un touché, moins les ratés et les éraflures, plus les critiques)`);
+    b.pv = 10; const p10 = C._.chanceAchever(A, c, b); b.pv = 30; const p30 = C._.chanceAchever(A, c, b);
+    t.ok(Math.abs(p10 - 0.5) < 0.01 && p30 === 0, `achever : ${Math.round(p10 * 100)} % à 10 PV (un touché de 10 ou plus, ou un critique), 0 % à 30 PV (même un critique fait 24 au plus)`);
+  }
+
   t.group('les fiches des capacités');
   t.eq(resultats(CAPACITES.etincelle).map((r) => `${r.degats} ${r.d20}`), ['0 d20 = 1', '5–7 d20 2–7', '11–14 d20 8–19', '22–28 d20 = 20'],
     'Étincelle : raté, éraflure, touché, critique, et les d20 qui y mènent (comme sa description : 5–7 / 11–14 / 22–28)');
