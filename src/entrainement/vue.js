@@ -359,6 +359,17 @@ function scene(e) {
       const pts = e.chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
       const duree = Math.min(0.6, 0.12 + Math.hypot(fin.x - dep.x, fin.y - dep.y) / (12 * T));
       fx.jouer('poussiere', { x: dep.x, y: dep.y }); fx.jouer('poussiere', { x: fin.x, y: fin.y, retard: duree });
+      // poussé du haut d'un plateau : un petit bond par-dessus le bord, puis la chute (plus longue)
+      if (e.chute) {
+        const d2 = duree + 0.15 * e.chute;
+        return { duree: d2, maj(t, k) {
+          cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k * k;
+          if (!e.tonneau) { a.anim = 'blesse'; a.enfonce = -0.6 * Math.sin(Math.PI * Math.min(1, k * 1.6)); }
+        }, fin() {
+          if (!e.tonneau) { a.anim = 'repos'; a.enfonce = 0; }
+          if (!calme) { secousse.a = Math.max(secousse.a, (2.5 * e.chute * ECRAN) / Math.max(0.5, canvas.clientWidth / rendu.vue.w)); secousse.t = 0; }
+        } };
+      }
       return { duree, maj(t, k) {
         cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k; if (!e.tonneau) a.anim = 'blesse';
       }, fin() { if (!e.tonneau) a.anim = 'repos'; } };

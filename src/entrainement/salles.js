@@ -9,14 +9,19 @@
 //   - des choses qui coupent la vue (bois, rochers, tentes) : les archers, des deux côtés, doivent se placer ;
 //   - deux ou trois chemins, dont un court et exposé : un vrai choix au premier tour ;
 //   - les combos du décor là où l'on se bat (FIGHT_RULES, #46 : « un combo possible dans chaque salle »), pas sur les bords.
+//
+// La butte et le col (?salle=butte|col) ajoutent la hauteur (FIGHT_RULES, à l'essai, comme dans Baldur's Gate 3) : des
+// plateaux d'un ou deux niveaux de 3 m, des falaises qu'on ne franchit que par une rampe ou une échelle, +2 au d20
+// d'en haut, la vue coupée par le rebord, et les chutes (geometrie.js). Le col est deux fois plus grand (34 × 26).
 import { T } from '../01_plan.js';
+import { FACE } from './geometrie.js';
 
-export const L = 24, H = 18;                          // le monde, en cases
-export const ZONE = { x0: 1, y0: 2, x1: 23, y1: 16 }; // la zone jouable : 22 × 14 cases (33 × 21 m)
+export const L = 24, H = 18;                          // le monde d'une salle ordinaire, en cases
+export const ZONE = { x0: 1, y0: 2, x1: 23, y1: 16 }; // sa zone jouable : 22 × 14 cases (33 × 21 m)
 
 const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;
 const BORD = { 8: [0, 2], 12: [1, 2], 4: [2, 2], 10: [0, 3], 5: [2, 3], 2: [0, 4], 3: [1, 4], 1: [2, 4], 7: [1, 0], 11: [2, 0], 13: [1, 1], 14: [2, 1] };
-function terrain(g, planche, estCoin, plein) {
+function terrain(g, planche, estCoin, plein, L, H) {
   for (let j = 0; j < H; j++) for (let i = 0; i < L; i++) {
     const m = (estCoin(i, j) ? 1 : 0) | (estCoin(i + 1, j) ? 2 : 0) | (estCoin(i, j + 1) ? 4 : 0) | (estCoin(i + 1, j + 1) ? 8 : 0);
     if (!m) continue;
@@ -110,6 +115,61 @@ const SALLES = {
       ennemis: { s1: [13.4, 7.2], s2: [14.6, 9.8], s3: [12.6, 12.6], a1: [17.6, 7.6], a2: [18.4, 9.8], br: [20.6, 11.0], chef: [20.8, 7.4] },
     },
   },
+  // La butte (taille classique, avec la hauteur) : les archers et le chef tiennent une butte de 3 m. On n'y monte que par
+  // le chemin (à l'est, gardé par la brute) ou par l'échelle (à l'ouest, étroite : un à la fois). D'en bas, on tire à −2
+  // et on ne voit que ceux qui se tiennent au bord ; d'en haut, +2. Le rocher des héros, au nord-ouest, rend la pareille :
+  // au même niveau, plus de malus. Un tonneau attend au bord de la butte, au-dessus de l'huile où les ennemis se massent.
+  butte: {
+    nom: 'La butte', sol: 'herbe',
+    idee: 'Monter par l’échelle, forcer le chemin, ou leur répondre depuis le rocher ?',
+    terre: [[0, 11, 9, 10], [10, 21, 11, 12], [19, 20, 9, 11], [6, 8, 7, 9]],
+    relief: [{ x0: 13.0, y0: 3.0, x1: 21.6, y1: 8.8, haut: 1 }, { x0: 3.6, y0: 3.0, x1: 8.4, y1: 5.6, haut: 1 }],
+    rampes: [{ plateau: 0, x0: 18.6, x1: 20.4 }, { plateau: 0, x0: 14.0, x1: 15.0, echelle: true }, { plateau: 1, x0: 6.4, x1: 8.0 }],
+    surfaces: [{ x: 17.2, y: 4.4, r: 0.55, t: 'feu' }, { x: 16.8, y: 11.7, r: 1.05, t: 'huile' }, { x: 10.8, y: 10.8, r: 1.1, t: 'eau' }],
+    feux: [[17.2, 4.4]],
+    tonneaux: [[16.2, 8.2], [13.8, 4.4], [10.4, 14.0]],
+    rochers: [[10.0, 4.4], [12.4, 15.0], [5.4, 10.6], [21.8, 11.2]],
+    arbres: [[1.6, 16.6], [22.2, 15.4], [8.6, 15.9]],
+    objets: [{ forme: { x0: 19.9, x1: 21.6, y0: 6.6, y1: 7.2 }, marche: true, dessin: [0, 47, 2, 1, 19.8, 6.2] }],   // un râtelier d'armes
+    departs: {
+      heros: [[2.6, 9.0], [2.6, 10.8], [2.6, 12.6], [4.0, 14.2]],
+      ennemis: { s1: [11.0, 7.6], s2: [11.8, 12.4], s3: [16.4, 13.4], a1: [14.8, 5.2], a2: [17.6, 7.9], br: [19.6, 12.8], chef: [19.8, 4.8] },
+    },
+  },
+  // Le col (deux fois plus grand : 34 × 26) : le terrain monte vers le nord-est en deux paliers. La vallée, en bas, où
+  // les sbires viennent au-devant ; la terrasse (3 m), tenue par la brute et deux archers, avec trois accès (le chemin de
+  // l'ouest, l'échelle du milieu, le chemin de l'est) ; le sommet (6 m), où le chef et un archer dominent tout, par un
+  // chemin et une échelle. Le bois de l'ouest cache la montée vers le premier chemin ; le rocher des héros, au sud-ouest,
+  // leur donne un premier poste de tir. Des tonneaux au bord de chaque palier : on les fait tomber sur ceux d'en bas.
+  col: {
+    nom: 'Le col', sol: 'herbe', l: 34, h: 26,
+    idee: 'Grimper palier par palier, ou les faire tomber un par un ?',
+    terre: [[0, 12, 19, 20], [11, 16, 13, 19], [15, 31, 13, 14], [29, 30, 11, 13], [22, 23, 11, 13], [25, 26, 7, 10]],
+    relief: [
+      { x0: 12.0, y0: -1, x1: 35, y1: 10.6, haut: 1 },       // la terrasse
+      { x0: 23.5, y0: -1, x1: 35, y1: 5.8, haut: 2 },        // le sommet, sur la terrasse
+      { x0: 7.4, y0: 14.6, x1: 11.8, y1: 16.8, haut: 1 },     // le rocher des héros
+    ],
+    rampes: [
+      { plateau: 0, x0: 14.4, x1: 16.2 }, { plateau: 0, x0: 22.0, x1: 23.0, echelle: true }, { plateau: 0, x0: 29.2, x1: 31.0 },
+      { plateau: 1, x0: 25.0, x1: 26.8 }, { plateau: 1, x0: 31.4, x1: 32.4, echelle: true },
+      { plateau: 2, x0: 8.0, x1: 9.6 },
+    ],
+    bois: [{ x0: 2.2, x1: 8.4, y0: 6.0, y1: 10.8 }],
+    surfaces: [{ x: 18.6, y: 5.2, r: 0.55, t: 'feu' }, { x: 28.4, y: 3.2, r: 0.5, t: 'feu' }, { x: 21.2, y: 13.9, r: 1.2, t: 'huile' },
+      { x: 19.0, y: 19.6, r: 1.3, t: 'eau' }],
+    feux: [[18.6, 5.2], [28.4, 3.2]],
+    tonneaux: [[20.2, 10.0], [27.6, 10.0], [28.6, 5.2], [13.4, 21.6]],
+    rochers: [[18.5, 15.6], [24.6, 18.0], [14.4, 20.4], [28.6, 21.4], [5.0, 13.2], [31.0, 15.4], [17.2, 7.6], [23.4, 8.2], [22.4, 3.6], [30.0, 8.4]],
+    arbres: [[31.8, 18.2], [21.0, 23.4], [26.4, 23.8], [10.8, 23.2], [14.0, 5.4]],
+    departs: { heros: [[3.2, 18.4], [3.2, 20.2], [4.8, 21.8], [4.8, 16.6]] },
+    ennemis: [
+      { id: 's1', type: 'sbire', x: 17.4, y: 15.6 }, { id: 's2', type: 'sbire', x: 21.6, y: 17.6 }, { id: 's3', type: 'sbire', x: 26.4, y: 15.4 },
+      { id: 's4', type: 'sbire', x: 13.4, y: 14.4 }, { id: 'br', type: 'brt', x: 15.6, y: 8.4 },
+      { id: 'a1', type: 'archer', x: 19.6, y: 9.4 }, { id: 'a2', type: 'archer', x: 27.4, y: 9.4 }, { id: 'a3', type: 'archer', x: 27.0, y: 4.8 },
+      { id: 'chef', type: 'chef', x: 30.6, y: 3.6 },
+    ],
+  },
 };
 export const NOMS = Object.keys(SALLES);
 
@@ -124,10 +184,25 @@ const formeArbre = ([x, y]) => ({ x0: x - 1.4, x1: x + 1.4, y0: y - CIME, y1: y 
 // La pièce d'une tente (planche des décorations : 5 × 5 cases) et ce qu'elle bloque (le pas et la vue).
 const formeTente = ({ x, y }) => ({ x0: x + 0.4, x1: x + 4.6, y0: y + 2.0, y1: y + 4.9 });
 
+// --- Le relief : les plateaux, leurs falaises, les rampes et les échelles -----------------------------------------
+// Une falaise, c'est la face de la planche des montagnes de LPC Base Assets (mountains.png : la butte isolée de ses
+// colonnes 5 à 7), en bandes de 32 px alternées en miroir (elles se raccordent sans couture), avec ses deux bords.
+const FACE_SRC = { x: 190, y: 74, w: 32, h: 64 }, FACE_G = { x: 176, w: 16 }, FACE_D = { x: 222, w: 16 };
+const ECHELLE = { x: 291, y: 134, w: 26, h: 83 };
+// Le niveau sous un plateau (celui d'un plateau plus bas qui le porte, ou le sol).
+const baseDe = (relief, p) => Math.max(0, ...relief.filter((q) => q !== p && q.haut < p.haut && p.x0 >= q.x0 && p.x1 <= q.x1 && p.y0 >= q.y0 && p.y1 <= q.y1).map((q) => q.haut));
+// Une rampe posée sur la falaise sud d'un plateau : du sol (en bas) au plateau (en haut), un peu au-delà des deux bouts.
+function rampeDe(relief, r) {
+  const p = relief[r.plateau], bas = baseDe(relief, p);
+  return { x0: r.x0, x1: r.x1, y0: p.y1 - 0.5, y1: p.y1 + FACE * (p.haut - bas) + 0.35, bas, haut: p.haut, vers: 'n', echelle: !!r.echelle, plateau: r.plateau };
+}
+
 // Construit une salle : la géométrie, les départs, et son dessin.
 export function construire(id) {
   const S = SALLES[id];
   if (!S) return null;
+  const L = S.l ?? 24, H = S.h ?? 18, ZONE = { x0: 1, y0: 2, x1: L - 1, y1: H - 2 };
+  const relief = S.relief ?? [], rampes = (S.rampes ?? []).map((r) => rampeDe(relief, r));
   const bord = [
     { x0: -1, y0: -1, x1: L + 1, y1: ZONE.y0, marche: true },
     { x0: -1, y0: ZONE.y1, x1: L + 1, y1: H + 1, marche: true },
@@ -144,26 +219,111 @@ export function construire(id) {
     ...(S.objets ?? []).map((o) => ({ ...o.forme, marche: !!o.marche, vue: !!o.vue })),
   ];
 
+  // Un plateau : son dessus (le sol de la salle, un peu plus clair à chaque niveau), son rebord, son ombre, et sa falaise.
+  function plateau(g, im, p, solDessus) {
+    const bas = baseDe(relief, p), hf = FACE * (p.haut - bas) * T;
+    const x0 = Math.max(0, p.x0 * T), x1 = Math.min(L * T, p.x1 * T), y0 = Math.max(0, p.y0 * T), y1 = p.y1 * T;
+    // l'ombre qu'il porte au pied de ses côtés et de sa falaise
+    g.fillStyle = 'rgba(20, 28, 12, 0.28)';
+    g.fillRect(x0 - 5, y0 - 3, x1 - x0 + 10, y1 - y0 + hf + 9);
+    // le dessus
+    g.save(); g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
+    solDessus(g);
+    g.fillStyle = `rgba(255, 238, 190, ${0.09 * p.haut})`; g.fillRect(x0, y0, x1 - x0, y1 - y0);
+    g.restore();
+    // la falaise : des bandes alternées en miroir, puis ses deux bords ; sa hauteur : 2 cases par niveau
+    const fx0 = p.x0 * T >= 0 ? x0 - 6 : x0, fx1 = p.x1 * T <= L * T ? x1 + 6 : x1;
+    for (let x = fx0, k = 0; x < fx1; x += FACE_SRC.w, k++) {
+      const w = Math.min(FACE_SRC.w, fx1 - x);
+      for (let y = 0; y < hf; y += 32) {
+        const sy = y + 32 >= hf ? FACE_SRC.y + 32 : FACE_SRC.y;                    // le bas (les éboulis) en dernier
+        if (k % 2) { g.save(); g.translate(x + w, y1 + y); g.scale(-1, 1); g.drawImage(im.montagnes, FACE_SRC.x, sy, w, 32, 0, 0, w, 32); g.restore(); }
+        else g.drawImage(im.montagnes, FACE_SRC.x, sy, w, 32, x, y1 + y, w, 32);
+      }
+    }
+    for (let y = 0; y < hf; y += 32) {
+      const sy = y + 32 >= hf ? FACE_SRC.y + 32 : FACE_SRC.y;
+      if (p.x0 * T >= 0) g.drawImage(im.montagnes, FACE_G.x, sy, FACE_G.w, 32, fx0 - 4, y1 + y, FACE_G.w, 32);
+      if (p.x1 * T <= L * T) g.drawImage(im.montagnes, FACE_D.x, sy, FACE_D.w, 32, fx1 - FACE_D.w + 4, y1 + y, FACE_D.w, 32);
+    }
+    // les flancs (ouest et est) : un liseré de roche, vu de 3/4 ; et le pied (on ne s'y tient pas) dans l'ombre
+    const flanc = (x, miroir) => {
+      for (let y = y0; y < y1; y += 32) {
+        const h = Math.min(32, y1 - y);
+        g.save(); g.translate(x, y); if (miroir) g.scale(-1, 1);
+        g.drawImage(im.montagnes, FACE_SRC.x + 3, FACE_SRC.y + 8, 6, h, 0, 0, 6, h); g.restore();
+      }
+    };
+    if (p.x0 * T >= 0) flanc(x0 - 6, false);
+    if (p.x1 * T <= L * T) flanc(x1 + 6, true);
+    const pied = 0.9 * T, ombre = (gx0, gy0, gx1, gy1, ax, ay, bx, by, fort = 0.2) => {
+      const d = g.createLinearGradient(ax, ay, bx, by); d.addColorStop(0, `rgba(18, 26, 10, ${fort})`); d.addColorStop(1, 'rgba(18, 26, 10, 0)');
+      g.fillStyle = d; g.fillRect(gx0, gy0, gx1 - gx0, gy1 - gy0);
+    };
+    ombre(x0 - 6 - pied, y0, x0 - 6, y1 + hf, x0 - 6, 0, x0 - 6 - pied, 0);
+    ombre(x1 + 6, y0, x1 + 6 + pied, y1 + hf, x1 + 6, 0, x1 + 6 + pied, 0);
+    if (p.y0 * T >= 0) ombre(x0 - 6, y0 - pied * 0.6, x1 + 6, y0, 0, y0, 0, y0 - pied * 0.6, 0.12);
+    // le rebord : un trait sombre, une lèvre claire, et l'herbe qui déborde un peu sur la falaise, en dents irrégulières
+    g.fillStyle = '#2e2216';
+    g.fillRect(x0 - 7, y0 - 2, x1 - x0 + 14, 2); g.fillRect(x0 - 7, y0, 1, y1 - y0); g.fillRect(x1 + 6, y0, 1, y1 - y0);
+    g.fillStyle = 'rgba(255, 244, 205, 0.4)';
+    g.fillRect(x0, y0, x1 - x0, 1); g.fillRect(x0, y0, 1, y1 - y0); g.fillRect(x1 - 1, y0, 1, y1 - y0);
+    for (let x = x0 - 6; x < x1 + 6; x += 2) {
+      const d = 1 + (hash(Math.round(x / 2), Math.round(y1)) % 4);
+      g.fillStyle = '#5d9e3a'; g.fillRect(x, y1, 2, d);
+      g.fillStyle = '#2e2216'; g.fillRect(x, y1 + d, 2, 1);
+    }
+  }
+  // Une rampe : un chemin de terre taillé dans la falaise, des marches, et ses deux bords ; une échelle : celle de LPC.
+  function rampe(g, im, r) {
+    const p = relief[r.plateau], hf = FACE * (r.haut - r.bas) * T;
+    const x0 = r.x0 * T, x1 = r.x1 * T, yh = p.y1 * T, yb = yh + hf;
+    if (r.echelle) {
+      const h = hf + 18, w = ECHELLE.w, cx = (x0 + x1) / 2;
+      g.fillStyle = 'rgba(20, 12, 6, 0.3)'; g.fillRect(cx - w / 2 + 3, yh - 8, w, h);
+      for (let y = 0; y < h; y += ECHELLE.h - 8) g.drawImage(im.montagnes, ECHELLE.x, ECHELLE.y, w, Math.min(ECHELLE.h, h - y), cx - w / 2, yh - 10 + y, w, Math.min(ECHELLE.h, h - y));
+      return;
+    }
+    g.save(); g.beginPath(); g.rect(x0, yh - 6, x1 - x0, yb - yh + 14); g.clip();
+    for (let y = yh - 6; y < yb + 8; y += T) for (let x = x0; x < x1; x += T) g.drawImage(im.terre, T, 3 * T, T, T, x, y, T, T);
+    // les marches : un trait d'ombre et un trait de lumière tous les 9 px, plus sombres vers le bas
+    for (let y = yh + 4, k = 0; y < yb; y += 9, k++) {
+      g.fillStyle = `rgba(60, 36, 18, ${0.28 + 0.2 * (k / (hf / 9))})`; g.fillRect(x0, y, x1 - x0, 2);
+      g.fillStyle = 'rgba(255, 230, 170, 0.25)'; g.fillRect(x0, y + 2, x1 - x0, 1);
+    }
+    g.restore();
+    g.fillStyle = '#3b2a1c'; g.fillRect(x0 - 2, yh, 3, yb - yh + 4); g.fillRect(x1 - 1, yh, 3, yb - yh + 4);
+    g.fillStyle = 'rgba(25, 15, 8, 0.25)'; g.fillRect(x1 + 2, yh + 2, 4, yb - yh);
+  }
+
   function composerSol(im) {
     const c = Object.assign(document.createElement('canvas'), { width: L * T, height: H * T });
     const g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
-    for (let j = 0; j < H; j++) for (let i = 0; i < L; i++) {
-      g.drawImage(im.herbe, T, 3 * T, T, T, i * T, j * T, T, T);
-      const h = hash(i, j);
-      if (h % 9 === 0) g.drawImage(im.herbe, (h >>> 4) % 3 * T, 5 * T, T, T, i * T, j * T, T, T);
-    }
+    const herbe = (gg, i0 = 0, j0 = 0, i1 = L, j1 = H) => {
+      for (let j = j0; j < j1; j++) for (let i = i0; i < i1; i++) {
+        gg.drawImage(im.herbe, T, 3 * T, T, T, i * T, j * T, T, T);
+        const h = hash(i, j);
+        if (h % 9 === 0) gg.drawImage(im.herbe, (h >>> 4) % 3 * T, 5 * T, T, T, i * T, j * T, T, T);
+      }
+    };
+    herbe(g);
     const dansZone = (i, j) => i >= ZONE.x0 && i <= ZONE.x1 && j >= ZONE.y0 && j <= ZONE.y1;
     const terre = coins(S.terre ?? []);
-    terrain(g, im.terre, (i, j) => (S.sol === 'terre' ? dansZone(i, j) : terre.has(`${i},${j}`)), (tuile, h) => (h % 5 === 0 ? tuile((h >>> 3) % 3, 5) : tuile(1, 3)));
+    terrain(g, im.terre, (i, j) => (S.sol === 'terre' ? dansZone(i, j) : terre.has(`${i},${j}`)), (tuile, h) => (h % 5 === 0 ? tuile((h >>> 3) % 3, 5) : tuile(1, 3)), L, H);
     const eau = coins((S.eau ?? []).map((e) => e.c));
-    terrain(g, im.eau, (i, j) => eau.has(`${i},${j}`), (tuile, h) => tuile((h >>> 3) % 3, 5));
+    terrain(g, im.eau, (i, j) => eau.has(`${i},${j}`), (tuile, h) => tuile((h >>> 3) % 3, 5), L, H);
     // le pont : les planches des douves du camp, tournées d'un quart (elles enjambent la rivière d'ouest en est)
     if (S.pont) {
       const p = S.pont, w = (p.x1 - p.x0) * T, h = (p.y1 - p.y0) * T;
       g.save(); g.translate((p.x0 + p.x1) / 2 * T, (p.y0 + p.y1) / 2 * T); g.rotate(Math.PI / 2);
       g.drawImage(im.douves, 448, 0, 64, 76, -h / 2, -w / 2, h, w);
       g.restore();
+    }
+    // les plateaux, du plus bas au plus haut (le sommet se pose sur la terrasse), puis les rampes par-dessus leurs falaises
+    for (const p of relief.slice().sort((a, b) => a.haut - b.haut)) {
+      plateau(g, im, p, (gg) => herbe(gg, Math.max(0, Math.floor(p.x0)), Math.max(0, Math.floor(p.y0)), Math.min(L, Math.ceil(p.x1)), Math.min(H, Math.ceil(p.y1))));
+      for (const r of rampes.filter((q) => relief[q.plateau] === p)) rampe(g, im, r);
     }
     return c;
   }
@@ -197,8 +357,8 @@ export function construire(id) {
 
   return {
     id, nom: S.nom, idee: S.idee, L, H, ZONE,
-    salle: () => ({ l: L, h: H, obstacles }),
-    DEPARTS: S.departs, TONNEAUX: S.tonneaux ?? [], FLAQUE: null, SURFACES: S.surfaces ?? [],
+    salle: () => ({ l: L, h: H, obstacles, relief, rampes }),
+    DEPARTS: S.departs, ENNEMIS: S.ennemis ?? null, TONNEAUX: S.tonneaux ?? [], FLAQUE: null, SURFACES: S.surfaces ?? [],
     composerSol, composerDecor,
   };
 }

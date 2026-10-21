@@ -561,7 +561,7 @@ function montrerDe(e) {
   dom.de.replaceChildren(
     el('span', { class: 'de-qui' }, qui?.nom ?? ''),
     el('span', { class: 'des' }, e.jets.map((j) => el('span', { class: `face${e.jets.length > 1 && j !== e.k ? ' ecarte' : ''}` }, String(j)))),
-    el('span', { class: 'calcul' }, e.mod != null ? `${e.k} + ${e.mod} = ${e.k + e.mod}` : e.glace ? `glace : d20 ${e.k}` : 'critique assuré'),
+    el('span', { class: 'calcul' }, e.mod != null ? `${e.k} ${e.mod < 0 ? '−' : '+'} ${Math.abs(e.mod)} = ${e.k + e.mod}` : e.glace ? `glace : d20 ${e.k}` : 'critique assuré'),
     el('strong', { class: 'resultat' }, res));
   dom.de.hidden = false;
   clearTimeout(minuterieDe); minuterieDe = setTimeout(() => { dom.de.hidden = true; }, 1500);
