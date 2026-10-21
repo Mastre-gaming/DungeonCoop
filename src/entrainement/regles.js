@@ -167,7 +167,7 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 // equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
 // ennemis : le groupe d'une salle du donjon, [{ id, type, x, y }] (type : une clé d'ENNEMIS) ; sans lui, les 7 du kit D1
 // placés par departs.ennemis. Victoire : le chef vaincu s'il y en a un (les autres s'enfuient), sinon tous les ennemis.
-export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now }) {
+export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -201,6 +201,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   tonneaux.forEach(([x, y], k) => S.tonneaux.push({ id: `t${k}`, x, y }));
   if (flaque) peindre(flaque.x, flaque.y, flaque.r, () => ({ t: 'eau', ttl: null, par: null }));
+  // les surfaces d'une salle (salles.js) : le gué, un feu de camp, une flaque d'huile… là dès le début, sans fin
+  for (const sf of surfaces) peindre(sf.x, sf.y, sf.r, () => ({ t: sf.t, ttl: null, par: null }));
 
   const U = (id) => S.unites.find((u) => u.id === id);
   const herosVivants = () => S.unites.filter((u) => u.camp === 'h' && !u.ko);
