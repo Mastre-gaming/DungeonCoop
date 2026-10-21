@@ -34,11 +34,8 @@ Les coups d'équipe | deux classes côte à côte dépensent leur action ensembl
 - Les classes d'essai à l'entrée #76
 - La première vraie classe jouable au terrain : Shadow, de Fraps #198
 - Les attaques d'opportunité, et Se désengager (à l'essai) #231
-<<<<<<< HEAD
-- L'IA des ennemis : leurs habitudes jouées avec bon sens (compter les attaques d'opportunité, achever, encercler, archers hors de portée), à l’essai #247
-=======
 - Le ressenti des coups : l’impact au moment où l’arme touche, arrêt sur image, secousse, éclair, recul, gros chiffres, dosés sur le d20 ; quatre styles à l’essai (?ressenti=) #245
->>>>>>> origin/main
+- L'IA des ennemis : leurs habitudes jouées avec bon sens (compter les attaques d'opportunité, achever, encercler, archers hors de portée), à l’essai #247
 - L'UI de combat des maquettes : la barre des capacités, leur fiche, la carte de la cible #126 #129 #139
 - Voir ce que fait chaque attaque : dégâts et effets #85
 - Les animations des capacités, en combat #134
