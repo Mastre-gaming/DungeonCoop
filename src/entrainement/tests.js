@@ -801,6 +801,43 @@ export async function selfTest(t, game) {
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
   }
 
+  // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres ------------------------
+  t.group('le ressenti des coups');
+  {
+    jouerFile();
+    const s1 = C2.U('s1'), h = C2.S.unites.find((u) => u.camp === 'h' && !u.ko), a1 = V.aff.get('s1');
+    const coup = (resultat, n) => V.jouer([
+      { type: 'attaque', de: h.id, vers: 's1', cap: 'fracas', anim: 'attaque', jets: [resultat === 'critique' ? 20 : 5], k: 5, mod: 2, resultat },
+      { type: 'degats', id: 's1', n, pv: s1.pv }]);
+    const chiffre = (g) => [...document.querySelectorAll(`.flottant.degats.${g}`)].pop();
+    const jusquA = (f) => { for (let k = 0; k < 60 && !f(); k++) game.dbg.advance(0.05); return f(); };
+    t.ok(V.ressenti.styles.join() === 'sobre,percutant,manga,cinema' && V.ressenti.style === 'percutant', 'quatre styles à essayer (?ressenti=…) ; Percutant par défaut');
+    coup('critique', 24);
+    let pas = 0;
+    t.ok(jusquA(() => (pas++, chiffre('critique'))), 'un critique : son chiffre éclate, en gros');
+    t.ok(pas * 0.05 < 0.45, `l’impact tombe quand la hache touche, avant la fin de l’animation (après ${(pas * 0.05).toFixed(2)} s ; l’animation dure 0,6 s)`);
+    const R = V.ressenti, gelCrit = R.gel;
+    t.ok(gelCrit > 0.1 && (R.calme || R.secousse > 4) && a1.eclair > 0.5 && (R.calme || a1.recul),
+      `l’impact : arrêt sur image (${Math.round(gelCrit * 1000)} ms), secousse, éclair blanc et recul de la cible`);
+    t.ok([...document.querySelectorAll('.flottant.critique-titre')].some((e) => e.textContent === 'Critique !'), '« Critique ! » au-dessus du chiffre');
+    const fx0 = a1.t; game.dbg.advance(0.05);
+    t.ok(a1.t === fx0 && V.ressenti.gel < gelCrit, 'pendant l’arrêt, les animations attendent');
+    jouerFile(); game.dbg.advance(0.3);
+    t.ok(V.ressenti.gel === 0 && V.ressenti.secousse === 0 && !(a1.eclair > 0) && !a1.recul, 'puis tout revient : plus d’arrêt, plus de secousse, ni éclair, ni recul');
+    // la même secousse à l'écran, que la vue soit loin ou zoomée (elle est comptée en px d'écran)
+    const ecranA = (() => { coup('touche', 12); jusquA(() => V.ressenti.secousse > 0); const v = V.ressenti.secousseEcran; jouerFile(); game.dbg.advance(0.4); return v; })();
+    V.zoomer(1); V.zoomer(1); V.zoomer(1); game.dbg.advance(1.5);
+    const ecranB = (() => { coup('touche', 12); jusquA(() => V.ressenti.secousse > 0); const v = V.ressenti.secousseEcran; jouerFile(); game.dbg.advance(0.4); return v; })();
+    V.zoomer(-1); V.zoomer(-1); V.zoomer(-1); game.dbg.advance(1.5);
+    t.ok(R.calme || (ecranA > 2 && Math.abs(ecranA - ecranB) < 0.5), `un touché secoue l’écran de ${ecranA.toFixed(1)} px de loin, ${ecranB.toFixed(1)} px zoomé : pareil`);
+    coup('eraflure', 5);
+    t.ok(jusquA(() => chiffre('eraflure')) && V.ressenti.gel > 0 && V.ressenti.gel < gelCrit / 3, 'une éraflure : un arrêt bien plus court, un chiffre plus petit');
+    jouerFile();
+    V.jouer([{ type: 'degats', id: 's1', n: 6, pv: s1.pv }]);
+    t.ok(jusquA(() => chiffre('autre')), 'des dégâts sans jet (le feu, un mur) : un impact léger');
+    jouerFile();
+  }
+
   // --- À plusieurs (#80) : les règles du lobby, puis cette page en hôte, puis chez un ami ------------------------
   t.group('à plusieurs : les règles du lobby');
   {
