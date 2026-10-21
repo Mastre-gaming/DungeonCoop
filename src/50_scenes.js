@@ -33,7 +33,7 @@ const COULEURS = { note: '#3c3ca0', coeur: '#c82832', '!': '#c87814', '?': '#3c6
 const BW = 17, BH = 19;
 
 let rendu, images, heros, collision, promeneurs, chantier, crieur, forgeron, jourNuit, visite, atlas;
-const S = { t: 0, attente: 30, auto: true, scene: null, aleat: Math.random };
+const S = { t: 0, attente: 30, auto: true, bloque: false, scene: null, aleat: Math.random };
 const bulles = [];
 const hasard = ([a, b]) => a + S.aleat() * (b - a);
 
@@ -207,7 +207,7 @@ export function update(dt) {
   bulles.forEach((b) => b.cacher(true));
   const sc = S.scene;
   if (!sc) {
-    if (S.auto && (S.attente -= dt) <= 0) { const cle = choisir(); if (!cle || !jouer(cle)) S.attente = hasard([5, 10]); }
+    if (S.auto && !S.bloque && (S.attente -= dt) <= 0) { const cle = choisir(); if (!cle || !jouer(cle)) S.attente = hasard([5, 10]); }
     return;
   }
   sc.t += dt;
@@ -297,5 +297,8 @@ export function selfTest(t) {
 
 export const api = {
   SCENES, jouer, finir,
+  // pendant la fête (52_fete.js), pas de nouvelle scène : les héros dansent la ronde
+  bloquer(oui) { S.bloque = !!oui; },
+  get bloque() { return S.bloque; },
   get scene() { return S.scene ? { cle: S.scene.cle, etat: S.scene.etat, gens: S.scene.gens.map((g) => g.p.h.id) } : null; },
 };

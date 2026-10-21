@@ -163,7 +163,7 @@ export function update(dt) {
   const dort = nom(S.min) === 'nuit';
   if (dort !== S.dort) { S.dort = dort; chantier?.dormir?.(dort); murs?.dormir?.(dort); }
   // les sources : les fixes, puis les torches
-  const liste = SOURCES.filter((s) => !s.mur || (murs?.avancement?.[s.mur] ?? 0) >= 100);
+  const liste = SOURCES.filter((s) => (!s.mur || (murs?.avancement?.[s.mur] ?? 0) >= 100) && (!s.quand || s.quand()));   // (quand : les lanternes de la fête)
   const h = heros?.heros;
   const mienne = h && torche('moi', { x: h.x, y: h.y, ligne: LIGNES[h.dir] ?? 2, rang: h.rang ?? 10, col: h.col ?? 0, feuille: heros.feuille }, !!heros.sprite?.mesh.visible, 0);
   if (mienne) liste.push(mienne);
