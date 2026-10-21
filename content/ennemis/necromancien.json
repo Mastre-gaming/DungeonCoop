@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "necromancien",
+  "nom": "Nécromancien",
+  "auteur": "",
+  "famille": "mort-vivant",
+  "rang": "elite",
+  "pv": 55,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "invocateur"
+  },
+  "capacites": [
+    {
+      "nom": "Lever les morts",
+      "slot": "action",
+      "portee": "soi",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "2 squelettes soldats ; s’il tombe, ils tombent",
+      "cree": [],
+      "utilise": [],
+      "recharge": 3
+    },
+    {
+      "nom": "Trait d’ombre",
+      "slot": "action",
+      "portee": "12 m",
+      "zone": "aucune",
+      "base": 10,
+      "de": 6,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      6,
+      12
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_Gaunt_light&clothes=Longsleeve_black&legs=Pants_black&weapon=Loop_staff_light",
+    "planche": ""
+  },
+  "valide": true
+}

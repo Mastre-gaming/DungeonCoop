@@ -1,0 +1,35 @@
+Character: Squelette soldat
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Skeleton_white&head=Skeleton_white&weapon=Arming_Sword_steel&shield=Round_Shield_brown
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/skeleton/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Napsio, JaidynReiman, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/skeleton/adult/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Napsio, JaidynReiman, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+weapon/sword/arming/universal/fg/walk/steel.png
+
+Licenses: OGA-BY 3.0
+
+Authors: ElizaWy; walk and down by JaidynReiman
+
+shield/round/walk/brown.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Johannes Sjölund (wulax), Michael Whitlock (bigbeargames), DarkwallLKE, Tuomo Untinen (reemax)
+
+Download TXT
+Download CSV

@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "id": "roi-des-marais",
+  "nom": "Roi des marais",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "boss",
+  "pv": 320,
+  "vitesse": 6,
+  "dex": 0,
+  "coriace": true,
+  "habitude": {
+    "type": "chef"
+  },
+  "capacites": [
+    {
+      "nom": "Écrasement",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 20,
+      "de": 8,
+      "effet": "À terre",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Onde de choc",
+      "slot": "action",
+      "portee": "zone 5 m",
+      "zone": "5 m",
+      "base": 18,
+      "de": 6,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [
+    "feu"
+  ],
+  "phases": [
+    "100 % : Écrasement contact 20+d8, À terre",
+    "60 % : inonde la salle (Eau partout sauf les bords), 3 gobelins entrent",
+    "30 % : Onde de choc zone 5 m 18+d6"
+  ],
+  "mecanique_combo": "Trempé par sa propre eau : la foudre fait ×2 ; il perd sa régénération sous le feu.",
+  "butin": {
+    "or": [
+      20,
+      40
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Troll_green&hat=Crown_crown_gold&clothes=Sleeveless_brown&legs=Pants_brown&weapon=Club_club",
+    "planche": ""
+  },
+  "valide": true
+}

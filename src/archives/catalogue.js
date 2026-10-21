@@ -17,6 +17,10 @@ import FORGERON from '../data/forgeron.json';
 const PLANCHES_ESQUISSES = import.meta.glob('../../design/animations/esquisses/*.png', { eager: true, query: '?url', import: 'default' });
 const planche = (id) => PLANCHES_ESQUISSES[`../../design/animations/esquisses/${id}.png`] ?? null;
 const FICHES = import.meta.glob('../../content/classes/*.json', { eager: true, import: 'default' });
+// Les ennemis et les boss (ENNEMIS.fr.md §1) : un fichier chacun, sa planche dans public/assets/lpc/ennemis/<id>/.
+export const MOBS = Object.values(import.meta.glob('../../content/ennemis/*.json', { eager: true, import: 'default' }));
+export const FAMILLES = { 'peau-verte': 'Peaux-vertes', 'mort-vivant': 'Morts-vivants', bete: 'Bêtes', humain: 'Humains', etrange: 'Créatures étranges', boss: 'Les boss' };
+export const RANGS = { sbire: 'Sbire', soldat: 'Soldat', elite: 'Élite', chef: 'Chef', boss: 'Boss' };
 
 const LPC = './assets/lpc/';
 // Les rangées des planches LPC (64 px) : [première rangée, nombre d'images, première image de la boucle].
@@ -58,6 +62,15 @@ function personnages() {
       anims: p.anims ?? ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse', ...(p.attaque ? ['grande'] : [])],
       texte: ennemi ? `${ennemi} · ${E ? `${E.pv} PV · ${E.habitude}` : ''}` : H ? `${H.role} · ${H.pv} PV` : fiche?.phrase ?? '',
       classe: H ? id : null, fiche: fiche ? `fiche-${fiche.id}` : null,
+    });
+  }
+  for (const m of MOBS) {
+    const dossier = `${LPC}ennemis/${m.id}/`;
+    liste.push({
+      id: m.id, nom: m.nom, groupe: `Les ennemis · ${FAMILLES[m.rang === 'boss' ? 'boss' : m.famille] ?? m.famille}`,
+      planche: m.look?.planche || `${dossier}planche.png`, format: 'lpc', lien: m.look?.lien || null, credits: `${dossier}credits.txt`,
+      anims: ['marche', 'sort', 'estoc', 'taille', 'tir', 'blesse'], ennemi: m,
+      texte: `${RANGS[m.rang] ?? m.rang} · ${m.pv} PV · ${m.habitude?.type ?? ''}`,
     });
   }
   // le camp

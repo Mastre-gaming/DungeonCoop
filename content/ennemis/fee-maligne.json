@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "fee-maligne",
+  "nom": "Fée maligne",
+  "auteur": "",
+  "famille": "etrange",
+  "rang": "sbire",
+  "pv": 15,
+  "vitesse": 10.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "lache"
+  },
+  "capacites": [
+    {
+      "nom": "Poussière",
+      "slot": "action",
+      "portee": "6 m",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "la cible Exposée",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Vol",
+      "slot": "passif",
+      "portee": "soi",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "vole",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      1,
+      4
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_light&head=Human_Female_Small_light&clothes=Blouse_green&wings=Pixie_Wings_white",
+    "planche": ""
+  },
+  "valide": true
+}

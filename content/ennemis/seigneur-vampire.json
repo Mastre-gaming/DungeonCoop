@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "id": "seigneur-vampire",
+  "nom": "Seigneur vampire",
+  "auteur": "",
+  "famille": "mort-vivant",
+  "rang": "boss",
+  "pv": 260,
+  "vitesse": 9,
+  "dex": 0,
+  "coriace": true,
+  "habitude": {
+    "type": "lache"
+  },
+  "capacites": [
+    {
+      "nom": "Drain",
+      "slot": "action",
+      "portee": "9 m",
+      "zone": "aucune",
+      "base": 14,
+      "de": 6,
+      "effet": "il récupère tout",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Nuée de sang",
+      "slot": "action",
+      "portee": "zone 5 m",
+      "zone": "5 m",
+      "base": 0,
+      "de": 0,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [
+    "feu"
+  ],
+  "phases": [
+    "100 % : Drain 9 m 14+d6, il récupère tout",
+    "60 % : s’envole hors de portée du contact, 4 chauves-souris",
+    "25 % : Nuée de sang zone 5 m"
+  ],
+  "mecanique_combo": "La Glace au sol le cloue quand il atterrit ; Huilé puis feu interrompt son vol.",
+  "butin": {
+    "or": [
+      20,
+      40
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Vampire_light&clothes=Longsleeve_black&legs=Pants_black&cape=Solid_red&wings=Bat_Wings_black",
+    "planche": ""
+  },
+  "valide": true
+}

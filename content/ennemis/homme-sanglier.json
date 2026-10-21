@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "id": "homme-sanglier",
+  "nom": "Homme-sanglier",
+  "auteur": "",
+  "famille": "bete",
+  "rang": "soldat",
+  "pv": 50,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "charge-faible"
+  },
+  "capacites": [
+    {
+      "nom": "Coup de défenses",
+      "slot": "action",
+      "portee": "charge en ligne",
+      "zone": "aucune",
+      "base": 12,
+      "de": 6,
+      "effet": "pousse 3 m",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [
+    "poussee"
+  ],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      3,
+      8
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_brown&head=Boarman_brown&clothes=Sleeveless_brown&legs=Pants_brown&weapon=Waraxe_waraxe",
+    "planche": ""
+  },
+  "valide": true
+}
