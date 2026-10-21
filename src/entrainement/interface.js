@@ -287,6 +287,7 @@ function cliquer(p) {
     const cap = CAPACITES[ui.cap];
     if (cap.type === 'zone') return void agir({ x: p.x, y: p.y });
     if (dessous && combat.cibles(h, cap).some((c) => c.id === dessous)) return void agir({ id: dessous });
+    if (cap.type === 'enclume') return void agir({ x: p.x, y: p.y });          // la Chute d'Enclume sur le sol
     if (cap.el === 'feu' && combat.huileVisable(h, cap, p)) return void agir({ x: p.x, y: p.y });
     return;
   }
@@ -348,6 +349,7 @@ export function update() {
       if (ui.survol) {
         if (cap.type === 'zone') m.zone = { x: ui.survol.x, y: ui.survol.y, r: cap.rayon, surf: cap.surf, ok: combat.zonePossible(h, cap, ui.survol) };
         const d = vue.sous(ui.survol.x, ui.survol.y);
+        if (cap.type === 'enclume' && !(d && m.cibles.includes(d))) m.zone = { x: ui.survol.x, y: ui.survol.y, r: 0.45, surf: 'enclume', ok: combat.zonePossible(h, cap, ui.survol) };
         if (d && m.cibles.includes(d)) { m.survolCible = d; info = combat.apercu(h, ui.cap, d); }
       }
     } else {
@@ -388,6 +390,8 @@ function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
   if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
+  if (cap.type === 'enclume' && h.enclumeTombee) return 'Son enclume est déjà tombée : une fois par combat.';
+  if (cap.type === 'forge' && !combat.presDeLEnclume(h)) return combat.S.enclume ? 'Loin de son enclume : il doit être à son contact pour forger.' : 'Pas d’enclume : la Chute d’Enclume d’abord.';
   if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
   if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m qu’un allié serre à 4,5 m.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
@@ -397,7 +401,7 @@ function pourquoiPas(h, cap) {
 const puces = (cap, ressource) => caracteristiques(cap, ressource).filter((t) => t !== 'Sans coût' && !/^(Pousse|Attire) de /.test(t));
 function effetsFiche(cap) {
   const liste = effets(cap).map((e) => (/^[\d,]+ m$/.test(e.texte) ? { ...e, texte: `Pousse de ${e.texte}` } : e));
-  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${cap.type === 'attraction' ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
+  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${['attraction', 'tenailles'].includes(cap.type) ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
   return liste;
 }
 function dessinerFiche(h) {
