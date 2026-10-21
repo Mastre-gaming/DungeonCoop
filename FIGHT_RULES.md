@@ -68,6 +68,12 @@ Each class picks one resource from the shared list in `CLASS_TEMPLATE.md` (Rage,
   - archer: keeps 4 squares away;
   - brute: charges the hero with the least health;
   - leader: helps the others for 2 turns, then makes a big attack.
+- **Enemies play their habit with common sense** (on trial, after the enemy playtest of 21 Oct): the habit picks the target, unless something clearly better is in reach this turn. Players can still read them:
+  - **they count opportunity attacks**: an enemy weighs the hits it would take on its way, like fire. An enemy in contact with a hero who can still react stays and fights; an archer in that spot shoots from where it stands instead of backing away;
+  - **they finish a hero off**: a hero they can knock out this turn comes first;
+  - **they surround**: in contact, a grunt or a brute picks the side opposite one of its allies (a flank: advantage);
+  - **they don't give up a fight for little**: a brute leaves the hero it is hitting only for one clearly weaker, worth the opportunity attack it will take;
+  - **archers keep out of reach**: 4 squares away, if possible where no melee hero can reach them next turn; they shoot the hero they can knock out, otherwise the nearest they see.
 - Enemies use statuses, surfaces and shoves too.
 
 ## Winning a fight

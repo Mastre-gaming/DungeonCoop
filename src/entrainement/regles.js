@@ -819,20 +819,53 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     return meilleur;
   }
-  // Choisit où finir son mouvement (le meilleur score), et y marche.
-  function allerVers(e, score) {
-    const R = carteDe(e);
-    let mk = -1, ms = score({ x: e.x, y: e.y }, 0);
+  // L'IA des ennemis (FIGHT_RULES, « Enemies play their habit with common sense », à l'essai) : ses outils.
+  // La moyenne des dégâts d'une attaque (raté, éraflure, touché, critique, chacun avec sa chance), et la chance d'achever.
+  function degatsMoyens(A, c) {
+    const ch = chances(A, c), m = A.base + (A.de + 1) / 2 + A.dmod;
+    return (ch.eraflure * Math.floor(m / 2) + ch.touche * m + ch.critique * m * 2) * c.mult;
+  }
+  function chanceAchever(A, c, cible) {
+    const ch = chances(A, c);
+    let p = 0;
+    for (const g of ['eraflure', 'touche', 'critique']) {
+      let n = 0;
+      for (let d = 1; d <= A.de; d++) { const v = A.base + d + A.dmod; if ((g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult >= cible.pv) n++; }
+      p += (ch[g] * n) / A.de;
+    }
+    return p;
+  }
+  // Ce que coûte un chemin en attaques d'opportunité : la moyenne des coups qu'il prendra en route.
+  function coutOpportunites(u, pts) {
+    let n = 0;
+    sortiesDeContact(u, pts, (o) => { const A = attaqueReflexe(o); n += degatsMoyens(A, calculer(o, u, A)); });
+    return n;
+  }
+  // Le calcul d'un coup comme s'il se tenait déjà en p (la tenaille dépend d'où il est).
+  function calculerDepuis(att, p, cible, A) {
+    const x = att.x, y = att.y;
+    att.x = p.x; att.y = p.y;
+    try { return calculer(att, cible, A); } finally { att.x = x; att.y = y; }
+  }
+  // Choisit où finir son mouvement (le meilleur score, le plus bas), et y marche. Les attaques d'opportunité du chemin
+  // comptent (× poids) ; elles ne sont vérifiées que sur les meilleurs points (un chemin coûte à calculer), et rester
+  // sur place est toujours essayé.
+  function allerVers(e, score, poids = 1) {
+    const R = carteDe(e), cands = [];
     for (let k = 0; k < R.longueur.length; k += 1) {
       if (R.longueur[k] > e.t.mv) continue;
       const p = pointDe(trame, k);
       if (!finPossible(e, p)) continue;
-      const s = score(p, R.cout[k]);
-      if (s < ms - 1e-9) { ms = s; mk = k; }
+      cands.push({ k, s: score(p, R.cout[k]) });
     }
-    if (mk < 0) return;
-    const pts = chemin(R, e, mk, genantsDe(e));
-    if (pts.length) marcher(e, pts);
+    cands.sort((a, b) => a.s - b.s);
+    let best = { s: score({ x: e.x, y: e.y }, 0), pts: [] };
+    for (const c of cands.slice(0, 16)) {
+      if (c.s >= best.s - 1e-9) break;
+      const pts = chemin(R, e, c.k, genantsDe(e)), v = c.s + (pts.length ? coutOpportunites(e, pts) * poids : 0);
+      if (v < best.s - 1e-9) best = { s: v, pts };
+    }
+    if (best.pts.length) marcher(e, best.pts);
   }
   function approcher(e, t) {
     if (!t || dist(e, t) <= CONTACT || e.t.mv <= 0) return;
@@ -853,26 +886,86 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   const entame = (h) => h.pv / h.pvMax;            // la part de PV qui reste : plus elle est basse, plus il est blessé
   const cibleBrute = (e, heros = herosVivants()) => heros.slice().sort((a, b) => entame(a) - entame(b) || dist(a, e) - dist(b, e))[0];
+  // Un plan contre le héros h : le meilleur point au contact de h où finir ce tour-ci (rester, s'il y est déjà), et ce
+  // qu'il vaut, en dégâts : les dégâts moyens (la tenaille compte : l'avantage), achever (×25), se placer en tenaille (+3),
+  // moins les coups pris en route, le feu et la glace. null s'il ne peut pas l'atteindre ce tour-ci.
+  function planContre(e, h, R, A) {
+    const dg = danger(e), cands = [];
+    const evaluer = (k, p) => {
+      const c = calculerDepuis(e, p, h, A), achever = chanceAchever(A, c, h);
+      cands.push({ k, p, c, achever, v: degatsMoyens(A, c) + achever * 25 + (c.tenaille ? 3 : 0) - dg(p.x, p.y) * 4 - (k < 0 ? 0 : R.cout[k] * 0.01) });
+    };
+    const reste = dist(e, h) <= CONTACT;
+    if (reste) evaluer(-1, { x: e.x, y: e.y });
+    for (let k = 0; k < R.longueur.length; k++) {
+      if (R.longueur[k] > e.t.mv) continue;
+      const p = pointDe(trame, k);
+      if (dist(p, h) > CONTACT - 0.05 || !finPossible(e, p)) continue;
+      evaluer(k, p);
+    }
+    if (!cands.length) return null;
+    const ici = reste ? cands[0] : null;
+    cands.sort((a, b) => b.v - a.v);
+    let best = null;
+    for (const c of [...cands.slice(0, 6), ...(ici ? [ici] : [])]) {
+      const pts = c.k < 0 ? [] : chemin(R, e, c.k, genantsDe(e));
+      const v = c.v - (pts.length ? coutOpportunites(e, pts) : 0);
+      if (!best || v > best.v + 1e-9) best = { ...c, v, pts };
+    }
+    return best;
+  }
+  // Le sbire et la Brute ennemie : l'habitude choisit (le plus proche ; le plus blessé, pour la Brute), sauf si un autre
+  // plan vaut clairement mieux ce tour-ci (achever, encercler, ne pas prendre un coup pour rien). Personne à portée : il
+  // marche vers la cible de son habitude.
   function agirMelee(e) {
     const heros = herosVivants(); if (!heros.length) return;
-    // la Brute : le plus blessé en part de ses PV (pas en PV bruts : sinon le limier, 30 PV, était toujours sa cible)
-    let t = e.type === 'brt' ? cibleBrute(e, heros) : plusProcheParChemin(e, heros);
-    approcher(e, t);
+    const A = attaqueEnnemi(e), R = carteDe(e);
+    const habitude = e.type === 'brt' ? cibleBrute(e, heros) : plusProcheParChemin(e, heros);
+    let choix = null, habitudeAPortee = false;
+    for (const h of heros) {
+      const p = planContre(e, h, R, A); if (!p) continue;
+      if (h === habitude) habitudeAPortee = true;
+      if (e.type === 'brt') p.v += 30 * (1 - entame(h));           // la Brute : plus il est blessé, mieux c'est
+      else if (h === habitude) p.v += 4;                            // le sbire : le plus proche, à valeur presque égale
+      if (!choix || p.v > choix.v) choix = { ...p, h };
+    }
+    if (!choix) {
+      approcher(e, habitude);
+      if (e.mort || S.resultat) return;
+      const t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => entame(a) - entame(b))[0];
+      if (t) attaqueEnnemie(e, t); else log(`${e.nom} avance.`, 'muet');
+      return;
+    }
+    if (choix.h !== habitude) {
+      const pourquoi = choix.achever >= 0.5 ? 'à achever ce tour-ci' : !habitudeAPortee ? `${habitude.nom} est hors de portée`
+        : choix.c.tenaille ? 'pris en tenaille' : !choix.pts.length ? 'reste au contact plutôt que de prendre un coup en partant' : 'un meilleur coup';
+      log(`${e.nom} s’en prend à ${choix.h.nom} : ${pourquoi}.`, 'muet');
+    }
+    if (choix.pts.length) marcher(e, choix.pts);
     if (e.mort || S.resultat) return;
-    if (!t || t.ko || dist(e, t) > CONTACT) t = herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => entame(a) - entame(b))[0];
+    const t = !choix.h.ko && dist(e, choix.h) <= CONTACT ? choix.h : herosVivants().filter((h) => dist(e, h) <= CONTACT).sort((a, b) => entame(a) - entame(b))[0];
     if (t) attaqueEnnemie(e, t); else log(`${e.nom} avance.`, 'muet');
   }
+  // L'archer : à 4 cases du plus proche, d'où il le voit ; si possible hors de portée des héros qui frappent au contact
+  // (leur marche et le contact, au prochain tour) ; les coups pris en partant comptent triple (25 PV : il ne s'y risque
+  // pas). Il tire sur le héros qu'il peut achever, sinon sur le plus proche qu'il voit.
   function agirArcher(e) {
     if (!herosVivants().length) return;
-    const dg = danger(e);
+    const dg = danger(e), frappeurs = herosVivants().filter((h) => attaqueReflexe(h));
     allerVers(e, (p, cout) => {
       let pres = Infinity, voit = false;
       for (const h of herosVivants()) { const dd = dist(p, h); pres = Math.min(pres, dd); if (!voit && dd <= 8 && vue(trame.salle, p, h)) voit = true; }
-      return (voit ? Math.abs(pres - 4) * 3 + (pres < 4 ? 6 : 0) : 100 + pres) + dg(p.x, p.y) * 4 + cout * 0.15;
-    });
+      const atteint = frappeurs.filter((h) => dist(p, h) <= h.vitesse + CONTACT).length;
+      return (voit ? Math.abs(pres - 4) * 3 + (pres < 4 ? 6 : 0) : 100 + pres) + atteint * 8 + dg(p.x, p.y) * 4 + cout * 0.15;
+    }, 3);
     if (e.mort || S.resultat) return;
-    const visibles = herosVivants().filter((h) => dist(e, h) <= 8 && vue(trame.salle, e, h)).sort((a, b) => dist(e, a) - dist(e, b));
-    if (visibles.length) attaqueEnnemie(e, visibles[0]); else log(`${e.nom} ne voit personne.`, 'muet');
+    const A = attaqueEnnemi(e);
+    const visibles = herosVivants().filter((h) => dist(e, h) <= 8 && vue(trame.salle, e, h))
+      .map((h) => ({ h, achever: chanceAchever(A, calculer(e, h, A), h) }))
+      .sort((a, b) => (b.achever >= 0.5) - (a.achever >= 0.5) || (a.achever >= 0.5 ? b.achever - a.achever : 0) || dist(e, a.h) - dist(e, b.h));
+    if (!visibles.length) { log(`${e.nom} ne voit personne.`, 'muet'); return; }
+    if (visibles[0].achever >= 0.5 && visibles.some((v) => dist(e, v.h) < dist(e, visibles[0].h))) log(`${e.nom} vise ${visibles[0].h.nom} : à achever ce tour-ci.`, 'muet');
+    attaqueEnnemie(e, visibles[0].h);
   }
   function agirChef(e) {
     if (S.chefTour < 3) {
@@ -1194,6 +1287,6 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe },
+    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
   };
 }
