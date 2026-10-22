@@ -104,6 +104,12 @@ export async function selfTest(t, game) {
   const loin = [...EMPLACEMENTS.map((e) => [`l’emplacement ${e.n}`, e.porte[0] * T, (e.porte[1] + 1) * T]), ...DEPARTS.map((d) => [`le départ ${d.lettre}`, ...d.points.at(-1).map((v) => v * T)])];
   const sansChemin = loin.filter(([, x, y]) => !collision.chemin(APPARITION[0] * T, APPARITION[1] * T, x, y, 400000)).map(([n]) => n);
   t.eq(sansChemin, [], `on va à pied jusqu'à chaque emplacement et au bout de chaque chemin de départ (${loin.length})`);
+  // les bâtiments dessinés pour le jeu : le coin des récits, la table des cartes, l'atelier grandissent du niveau 0 au niveau 4
+  if (game.dbg.lieux) {
+    const L = game.dbg.lieux, nb = {};
+    for (const id of ['histoire', 'level', 'art']) { L.forcer(id, 0); const p0 = L.pieces(id); L.forcer(id, 4); nb[id] = [p0, L.pieces(id)]; L.forcer(id, null); }
+    t.ok(Object.values(nb).every(([a, b]) => a >= 3 && b >= 8), `histoire, level et art : de la corde et la pancarte (niveau 0) au grand bâtiment (niveau 4) : ${JSON.stringify(nb)}`);
+  }
   // l'introduction du jeu, au sud, reste fermée : de la route du pont, on n'atteint aucune clairière sans passer par le camp
   const PAS = 16, vus = new Set(), file = [[Math.floor(15 * T / PAS), Math.floor(36 * T / PAS)]];
   vus.add(file[0].join());

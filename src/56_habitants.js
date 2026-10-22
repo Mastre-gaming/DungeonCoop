@@ -1,4 +1,4 @@
-// Du monde dans le camp et dehors : des villageois (des planches de héros teintées) qui flânent autour de leur poste (le chasseur à son
+// Du monde dans le camp et dehors : des villageois (des planches LPC : paysan, chasseur, pêcheur, marchand, badauds) qui flânent autour de leur poste (le chasseur à son
 // campement, la fermière à sa ferme, le pêcheur à l'étang, les badauds de la place des fêtes), et des bêtes (des poules à la ferme, un
 // chat au campement et près du feu du camp). Rien ne bloque personne ; tout est caché en visite et les villageois rentrent la nuit.
 import A from './data/animaux.json';
@@ -10,17 +10,17 @@ export const always = true;
 const DIRS = { haut: 0, gauche: 1, bas: 2, droite: 3 };
 const MARCHE = 8, REPOS = 22, VITESSE = 24;
 const [CW, CH] = A.case;
-// (la zone, le décalage en cases, le rayon de balade en cases, la teinte, ce qu'il fait : flâne ou reste planté)
+// (la zone, le décalage en cases, le rayon de balade en cases, la planche, ce qu'il fait : flâne ou reste planté)
 const GENS = [
-  { zone: 'chasseur', dx: -2.2, dy: 1.2, r: 3, teinte: 'rgba(70,110,50,.45)', flane: true },
-  { zone: 'ferme', dx: -3, dy: 2.5, r: 4, teinte: 'rgba(200,170,60,.45)', flane: true },
-  { zone: 'ferme', dx: 2, dy: 3.5, r: 3, teinte: 'rgba(170,90,60,.4)', flane: true },
-  { zone: 'etang', dx: -4.2, dy: 2.6, r: 0.6, teinte: 'rgba(60,110,170,.45)', flane: false, dir: 'droite' },
-  { zone: 'fetes', dx: -3, dy: 1.5, r: 4, teinte: 'rgba(190,60,90,.4)', flane: true },
-  { zone: 'fetes', dx: 3.5, dy: 2, r: 4, teinte: 'rgba(120,70,170,.4)', flane: true },
-  { zone: 'fetes', dx: 0.5, dy: 3.6, r: 3, teinte: 'rgba(220,150,50,.4)', flane: true },
-  { zone: 'fetes', dx: -5.5, dy: -0.5, r: 0.5, teinte: 'rgba(60,150,150,.4)', flane: false, dir: 'bas' },
-  { zone: 'fetes', dx: 6, dy: -0.5, r: 0.5, teinte: 'rgba(170,140,90,.4)', flane: false, dir: 'bas' },
+  { zone: 'chasseur', dx: -2.2, dy: 1.2, r: 3, planche: 'hab-chasseur', flane: true },
+  { zone: 'ferme', dx: -3, dy: 2.5, r: 4, planche: 'hab-paysan', flane: true },
+  { zone: 'ferme', dx: 2, dy: 3.5, r: 3, planche: 'hab-marchand', flane: true },
+  { zone: 'etang', dx: -4.2, dy: 2.6, r: 0.6, planche: 'hab-pecheur', flane: false, dir: 'droite' },
+  { zone: 'fetes', dx: -3, dy: 1.5, r: 4, planche: 'hab-badaud1', flane: true },
+  { zone: 'fetes', dx: 3.5, dy: 2, r: 4, planche: 'hab-badaud2', flane: true },
+  { zone: 'fetes', dx: 0.5, dy: 3.6, r: 3, planche: 'hab-marchand', flane: true },
+  { zone: 'fetes', dx: -5.5, dy: -0.5, r: 0.5, planche: 'hab-paysan', flane: false, dir: 'bas' },
+  { zone: 'fetes', dx: 6, dy: -0.5, r: 0.5, planche: 'hab-chasseur', flane: false, dir: 'bas' },
 ];
 const BETES = [
   { zone: 'ferme', dx: -1, dy: 1.4, r: 2.5, robe: 'poule' }, { zone: 'ferme', dx: 1.2, dy: 1.8, r: 2.5, robe: 'poule' },
@@ -28,16 +28,9 @@ const BETES = [
   { zone: 'chasseur', dx: 1.4, dy: 1.6, r: 1.2, robe: 'chat' }, { feu: true, dx: 2.6, dy: 1.2, r: 1.2, robe: 'chat' },
 ];
 const gens = [], betes = [];
-let heros, rendu, collision, jourNuit, visite, atlasTeinte = new Map();
+let heros, rendu, collision, jourNuit, visite;
 const S = { t: 0, aleat: Math.random };
 const hasard = (a, b) => a + S.aleat() * (b - a);
-
-function teinter(im, couleur) {
-  if (atlasTeinte.has(couleur)) return atlasTeinte.get(couleur);
-  const c = Object.assign(document.createElement('canvas'), { width: im.width, height: im.height }), g = c.getContext('2d');
-  g.drawImage(im, 0, 0); g.globalCompositeOperation = 'source-atop'; g.fillStyle = couleur; g.fillRect(0, 0, c.width, c.height);
-  atlasTeinte.set(couleur, c); return c;
-}
 
 export function init(game, options) {
   ({ heros, rendu, collision, jourNuit, visite } = options);
@@ -46,7 +39,7 @@ export function init(game, options) {
   for (const d of GENS) {
     const p = pos(d); if (!p) continue;
     gens.push({ ...d, x: p[0], y: p[1], ancre: [...p], dir: d.dir ?? 'bas', but: null, pause: hasard(0.5, 4), t: S.aleat() * 3, marche: false,
-      sprite: rendu.sprite(teinter(images.heros, d.teinte), `habitant-${d.teinte}`, 64, 64), ombre: rendu.ombre(18, 4) });
+      sprite: rendu.sprite(images[d.planche], `habitant-${d.planche}`, 64, 64), ombre: rendu.ombre(18, 4) });
   }
   for (const d of BETES) {
     const p = pos(d); if (!p) continue;

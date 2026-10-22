@@ -5,6 +5,7 @@
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
 import { T, LIEUX, emprise, terre } from './01_plan.js';
 import ARMURERIE from './data/armurerie.json';
+import BATIMENTS from './data/lieux_batiments.json';
 
 export const name = 'lieux';
 export const always = true;
@@ -124,6 +125,18 @@ function construire(lieu, niveau) {
     e.sprites.push({ sprite, p, x, y, pied });
     if (p.bloque) { const ob = { x: x + 6, y: y + h - 9, w: w - 12, h: 8 }; collision.ajouter(ob); e.obstacles.push(ob); }
   };
+  // les bâtiments dessinés pour le jeu (design/camp/outils/lieux_jeu.py) : le coin des récits, la table des cartes, l'atelier, du niveau 0
+  // (la corde et la pancarte) au niveau 4 ; le sol dessous, les bandes qui se trient avec le héros, la base de chaque objet qui bloque
+  const bat = BATIMENTS.lieux[lieu.id];
+  if (bat) {
+    const n = bat[Math.min(niveau, bat.length - 1)], [dx, dy] = BATIMENTS.decalage;
+    const ajouter = (r, x, y, pied, plus = {}) => { const sprite = rendu.sprite(images.lieuxBat, 'lieux-bat', r.w, r.h); e.sprites.push({ sprite, p: { px: [r.sx, r.sy], ...plus }, x: o.x + dx + x, y: o.y + dy + y, pied }); };
+    ajouter(n.sol, 0, 0, DALLES);
+    for (const r of n.pieces) ajouter(r, r.x, r.y, o.y + dy + r.pied);
+    for (const [bx, by, bw, bh] of n.bloque) { const ob = { x: o.x + dx + bx, y: o.y + dy + by, w: bw, h: bh }; collision.ajouter(ob); e.obstacles.push(ob); }
+    poser(e);
+    return;
+  }
   const complet = COMPLETS[lieu.id];
   if (complet) {
     const n = complet[Math.min(niveau, complet.length - 1)];
@@ -148,8 +161,8 @@ function construire(lieu, niveau) {
 
 function poser(e) {
   for (const s of e.sprites) {
-    const col = s.p.anim ? s.p.anim[Math.floor(temps / s.p.pas) % s.p.anim.length] : s.p.sx;
-    s.sprite.poser(s.x, s.y, s.pied, col * T, s.p.sy * T);
+    const col = s.p.px ? 0 : s.p.anim ? s.p.anim[Math.floor(temps / s.p.pas) % s.p.anim.length] : s.p.sx;
+    s.sprite.poser(s.x, s.y, s.pied, s.p.px ? s.p.px[0] : col * T, s.p.px ? s.p.px[1] : s.p.sy * T);
   }
 }
 
