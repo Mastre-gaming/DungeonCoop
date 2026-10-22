@@ -1026,6 +1026,20 @@ export async function selfTest(t, game) {
   t.ok(multi.L.proprio[1] === 'host' && multi.attendus().join() === 'host' && !document.querySelector('.curseur-ami:not([hidden])'), 'Ana part : l’hôte joue son Druide, son pointeur disparaît');
   ihm.montrerFin(true); ihm.dom.rejouer.click(); jouer(0.2);
   t.ok(multi.L.phase === 'lobby' && !ihm.dom.accueil.hidden && game.dbg.combat.S.phase === 'preparation', 'Rejouer (l’hôte) : retour au lobby, pour tout le groupe');
+  {
+    const bo = ami('Bo'); bo.party.join('KXQZB'); jouer(0.4);
+    document.querySelector('#mode-infini').click(); jouer(0.3);
+    t.ok(multi.L.infini === true && bo.dernier('salon')?.L.infini === true, 'mode infini à plusieurs : l’hôte coche la case, le lobby de l’invité le sait');
+    document.querySelector('#commencer').click(); jouer(0.3); jouerFile();
+    const M1 = game.dbg.combat, vu = (m) => JSON.parse(m.copie).infini;
+    t.ok(M1.S.infini?.manche === 1 && vu(bo.dernier('debut'))?.manche === 1, 'l’hôte lance : la manche 1 chez les deux');
+    for (const e of M1.S.unites.filter((u) => u.camp === 'e')) { e.mort = true; e.pv = 0; }
+    M1.S.resultat = 'victoire'; M1.S.phase = 'fini'; M1.S.fin = Date.now(); ihm.montrerFin(false);
+    bo.recus.length = 0; ihm.dom.suite.click(); jouer(0.3); jouerFile();
+    t.ok(game.dbg.combat.S.infini.manche === 2 && vu(bo.dernier('debut'))?.manche === 2 && multi.L.phase === 'combat', 'Manche suivante (l’hôte) : la manche 2 démarre chez l’hôte, et l’invité la reçoit');
+    bo.party.leave(); amis.splice(amis.indexOf(bo), 1); jouer(0.4);
+    ihm.dom.fin.hidden = true;
+  }
   document.querySelector('a.retour-camp').click(); jouer(0.1);
   t.eq(allees.pop(), './index.html?spot=combat&hote=KXQZB', '« Retour au camp » : l’hôte rouvre le groupe du camp avec le même code');
 
@@ -1263,6 +1277,58 @@ export async function selfTest(t, game) {
     const toujours = barres({}), cachees = barres({ 'feel.barres': 2 }), survol = barres({ 'feel.barres': 1 });
     t.ok(toujours > 0 && cachees === 0 && survol < toujours, `barres de vie : toujours (${toujours}), au survol (${survol}), cachées (${cachees})`);
     REG._raz();
+  }
+
+  // --- Le mode infini : manche après manche, de plus en plus dur -------------------------------------------------------------
+  t.group('le mode infini');
+  {
+    const R2 = (reglages, f) => { REG._raz(); for (const [k, v] of Object.entries(reglages)) REG.regler(k, v); try { return f(); } finally { REG._raz(); } };
+    const inf = (manche, o = {}) => neuf({ infini: { manche, xp: 0, niveau: 1, ...o } });
+    const ennemis = (C) => C.S.unites.filter((u) => u.camp === 'e');
+    t.ok(neuf().S.infini === null && ennemis(neuf()).every((u) => !u.boss), 'sans mode infini : rien ne change (aucune manche, aucun chef renforcé)');
+    t.eq(ennemis(inf(1)).map((u) => [u.id, u.pvMax]), ennemis(neuf()).map((u) => [u.id, u.pvMax]), 'la manche 1 est le combat de toujours');
+    t.ok(ennemis(inf(4)).find((u) => u.id === 's1').pvMax === 48 && ennemis(inf(4)).length === 8, 'manche 4 : PV +60 % (30 → 48) et un sbire de plus');
+    t.ok(ennemis(inf(7)).length === 9 && ennemis(inf(7)).filter((u) => u.type === 'archer').length === 3, 'manche 7 : deux ennemis de plus (un sbire et un archer)');
+    const patron = ennemis(inf(5)).find((u) => u.type === 'chef');
+    t.ok(patron.boss && patron.pvMax === Math.round(90 * 1.8 * 1.5) && !ennemis(inf(4)).find((u) => u.type === 'chef').boss, 'manche 5 : le chef est renforcé (PV ×1,5 en plus de la montée) ; pas à la manche 4');
+    const coup = (C) => { const e = C.U('s1'), A = C._.attaqueReflexe(e); return C._.fourchette(A, C._.calculer(e, C.U('h1'), A), 'touche'); };
+    const [lo, hi] = coup(neuf()).split('–').map(Number);
+    t.eq(coup(inf(3)).split('–').map(Number), [Math.round(lo * 1.4), Math.round(hi * 1.4)], 'manche 3 : leurs dégâts ×1,4 (le survol l’annonce)');
+    t.ok(inf(1, { niveau: 3 }).U('h1').pvMax === Math.round(HEROS.brute.pv * 1.2), 'niveau 3 : les héros ont 20 % de PV en plus');
+    const heros = (C) => C.apercu(C.U('h1'), 'fracas', 's1').degats.touche.split('–').map(Number);
+    t.eq(heros(inf(1, { niveau: 3 })), heros(neuf()).map((v) => Math.round(v * 1.2)), 'et 20 % de dégâts en plus');
+    t.ok(R2({ 'infini.montee': 50, 'infini.sbirePar': 1 }, () => ennemis(inf(3)).find((u) => u.id === 's1').pvMax === 60 && ennemis(inf(3)).length === 9), 'les réglages du mode : +50 % par manche, un ennemi de plus à chaque manche');
+    // la fin d'une manche : récap, soin, XP, niveaux
+    const finie = () => { const C = inf(1); C.commencer(); C.U('h1').pv = 50; C.U('h2').ko = true; C.U('h2').pv = 0; C.S.resultat = 'victoire'; return C; };
+    const C1 = finie(), rec = C1.recapInfini();
+    t.ok(rec.gain === 40 && rec.xp === 40 && rec.niveau === 1 && rec.monte === 0 && rec.soin === 30 && rec.reveil === 50, 'récap de la manche 1 : 40 XP, pas encore de niveau, soin 30 %, un KO revient à 50 %');
+    t.ok(R2({ 'infini.xp': 200 }, () => { const r = finie().recapInfini(); return r.niveau === 2 && r.xp === 100 && r.monte === 1; }), '200 XP : on passe niveau 2 (il en reste 100, le niveau 3 en demande 200)');
+    const suite = C1.suiteInfini(), C2 = neuf({ infini: suite });
+    t.ok(suite.manche === 2 && suite.xp === 40 && C2.S.infini.manche === 2, 'la manche suivante est la 2, avec l’XP gardée');
+    t.ok(C2.U('h1').pv === Math.round(Math.min(1, 50 / 145 + 0.3) * 145) && C2.U('h2').pv === Math.round(0.5 * C2.U('h2').pvMax) && C2.U('h3').pv === C2.U('h3').pvMax, 'les héros repartent soignés (+30 %), le KO relevé à 50 %, les PV pleins restent pleins');
+    t.ok(C2.U('h1').potion === 1 && ennemis(C2).every((u) => u.pv === u.pvMax && u.pvMax > 30 * 0.9), 'potions rendues, et des ennemis en pleine forme, plus costauds');
+    t.ok(neuf().recapInfini() === null && neuf().suiteInfini() === null, 'hors mode infini : pas de récap ni de suite');
+    // l'interface : la case, le récap, « Manche suivante », la défaite
+    ihm.rejouer();
+    const case_ = document.querySelector('#mode-infini');
+    t.ok(case_ && !case_.checked, 'l’accueil a sa case « Mode infini », décochée par défaut');
+    case_.checked = true; document.querySelector('#commencer').click(); jouerFile();
+    let CI = game.dbg.combat;
+    t.ok(CI.S.infini?.manche === 1 && document.querySelector('.etat-terrain').textContent.startsWith('Manche 1 · niv. 1'), 'Commencer avec la case : manche 1, écrite dans le bandeau');
+    for (const e of CI.S.unites.filter((u) => u.camp === 'e')) { e.mort = true; e.pv = 0; }
+    CI.U('h1').pv = 60; CI.S.resultat = 'victoire'; CI.S.phase = 'fini'; CI.S.fin = Date.now();
+    ihm.montrerFin(false);
+    t.ok(document.querySelector('#fin h1').textContent === 'Manche 1 gagnée !' && !document.querySelector('#suite').hidden && document.querySelector('#infini-recap').textContent.includes('+40 XP') && document.querySelector('#infini-recap').textContent.includes('30 %'),
+      'la manche gagnée : un récap (soin, XP), le bilan, et le bouton « Manche suivante »');
+    document.querySelector('#suite').click(); jouerFile();
+    CI = game.dbg.combat;
+    t.ok(CI.S.infini.manche === 2 && CI.S.infini.xp === 40 && document.querySelector('#fin').hidden && CI.S.phase === 'heros' && CI.U('s1').pvMax === 36 && CI.U('h1').pv === Math.round(Math.min(1, 60 / 145 + 0.3) * 145),
+      'Manche suivante : la manche 2 démarre, ennemis +20 %, les héros soignés gardent leurs PV');
+    t.ok(document.querySelector('.etat-terrain').textContent.startsWith('Manche 2'), 'le bandeau dit « Manche 2 »');
+    for (const h of CI.S.unites.filter((u) => u.camp === 'h')) { h.ko = true; h.pv = 0; }
+    CI.S.resultat = 'defaite'; CI.S.phase = 'fini'; ihm.montrerFin(false);
+    t.ok(document.querySelector('#fin h1').textContent.startsWith('Défaite') && document.querySelector('#suite').hidden && document.querySelector('#infini-recap').textContent.includes('manche 2'), 'la défaite : « tombée à la manche 2 », pas de suite');
+    ihm.dom.fin.hidden = true; ihm.rejouer(); ihm.dom.infiniCase.checked = false;
   }
 
   t.group('Shadow à l’écran (#198)');
