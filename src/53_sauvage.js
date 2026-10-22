@@ -458,7 +458,7 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
     const portes = [[0, 5], [42, 9], [21, -25]];
     // (ce qui est déjà là, à des places fixes : la sentinelle sur le grand sentier, le barde et son enceinte, la boîte aux lettres,
     // le chef de chantier et son panneau, la base du chantier : on laisse de la place autour)
-    for (const r of [[10.5, 18.5, 19.5, 31.5], [15, 12.5, 19.5, 16.5], [23, 14.5, 26.5, 17.5], [5.5, 17.5, 11, 22.5], [3, 22, 8, 27.5], [2.6, 6.2, 4.6, 8.2], [37.4, 10.2, 39.4, 12.2], [17.4, -22.6, 19.4, -20.6]]) occupe.push(r);   // (les trois gardes des portes : 55_gardes.js)
+    for (const r of [[10.5, 18.5, 19.5, 31.5], [15, 12.5, 19.5, 16.5], [23, 14.5, 26.5, 17.5], [5.5, 17.5, 11, 22.5], [3, 22, 8, 27.5], [2.6, 6.2, 4.6, 8.2], [37.4, 10.2, 39.4, 12.2], [17.4, -22.6, 19.4, -20.6], [31.8, 21.4, 41, 29.8]]) occupe.push(r);   // (les trois gardes des portes : 55_gardes.js)
     // des lanternes le long des allées, un côté puis l'autre, avec leur halo la nuit
     let cote = 1;
     CHEMINS.forEach((ch, k) => {
@@ -475,7 +475,7 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
       }
     });
     // une haie le long des murs, ouverte aux portes et devant les lieux
-    const haie = (x, y) => { if (!dansCamp(x, y, -0.2) || proche(x, y, -0.8) || portes.some(([px, py]) => Math.hypot(px - x, py - y) < 4.2) || !loinDesChemins(x, y, 1.1)) return; S('buisson' + ((Math.floor(x * 3 + y * 5)) & 3), x, y); base(x, y, 18, 6); };
+    const haie = (x, y) => { if (!dansCamp(x, y, -0.2) || occupe.some((r) => x > r[0] && x < r[2] && y > r[1] && y < r[3]) || proche(x, y, -0.8) || portes.some(([px, py]) => Math.hypot(px - x, py - y) < 4.2) || !loinDesChemins(x, y, 1.1)) return; S('buisson' + ((Math.floor(x * 3 + y * 5)) & 3), x, y); base(x, y, 18, 6); };
     for (let y = -21.2; y < 29.5; y += 1.45) { haie(3.4, y); haie(39.2, y); }
     for (let x = 3.4; x < 39.5; x += 1.45) haie(x, -21.5);
     // des massifs de fleurs qui bordent les allées

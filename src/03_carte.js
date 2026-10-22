@@ -154,7 +154,7 @@ export function composerCamp(images = {}) {
     lieux[l.id].centre = [(px + 1) * T, (py + 1) * T];     // le devant du lieu : là où le sentier arrive
   }
   // les emplacements libres, pour les prochains bâtiments : des piquets et une pancarte, comme un lieu au niveau 0
-  for (const e of EMPLACEMENTS) emplacement(objets, obstacles, [e.porte[0] - 1, e.porte[1] - 1]);
+  for (const e of EMPLACEMENTS) if (e.n !== 3) emplacement(objets, obstacles, [e.porte[0] - 1, e.porte[1] - 1]);   // (le n° 3 : l'infirmerie, 14_lieux.js)
 
   // le dehors, sauvage : les buissons, les fougères, les rochers, le campement, la ferme, la place des fêtes (53_sauvage.js)
   const sauvage = decorSauvage({ objets, obstacles, bloquees, images });

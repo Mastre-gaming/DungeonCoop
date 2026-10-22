@@ -3,7 +3,7 @@
 // Un niveau montre ses pièces et celles des niveaux d'avant. Une pièce peut s'animer (lanternes, torches) et bloquer
 // le passage (sa base). Quand un lieu monte de niveau en direct, il s'illumine un instant.
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
-import { T, LIEUX, ARCHIVES, emprise, terre } from './01_plan.js';
+import { T, LIEUX, ARCHIVES, EMPLACEMENTS, emprise, terre } from './01_plan.js';
 import ESQUISSES from '../design/animations/esquisses/esquisses.json';
 import BRIQUES from './entrainement/effets.json';
 import ARMURERIE from './data/armurerie.json';
@@ -103,7 +103,10 @@ export const PLAFONDS = { interface: 2 };
 export const SEUILS_ARCHIVES = [0, 10, 30, 60, 100];
 export const animationsRentrees = () => ESQUISSES.effets.length + Object.keys(BRIQUES).length;
 const niveauArchives = () => SEUILS_ARCHIVES.reduce((n, s, i) => (animationsRentrees() >= s ? i : n), 0);
-const LIEUX_JEU = [...LIEUX, { id: 'archives', ...ARCHIVES }];
+// L'infirmerie (maquette de la session « Overnight prompt », design/camp/infirmerie/) : dans l'enceinte, à l'emplacement n° 3 du camp (à l'est, sous le tableau d'affichage : le n° 1 est pris par le chantier). Elle n'a
+// pas encore d'axe : en attendant le choix du propriétaire, elle suit l'axe Combat (le plus proche, INFIRMERIE.md).
+export const AXE_INFIRMERIE = 'combat';
+const LIEUX_JEU = [...LIEUX, { id: 'archives', ...ARCHIVES }, { id: 'infirmerie', emprise: EMPLACEMENTS.find((e) => e.n === 3).emprise }];
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
@@ -137,7 +140,7 @@ function construire(lieu, niveau) {
   // (la corde et la pancarte) au niveau 4 ; le sol dessous, les bandes qui se trient avec le héros, la base de chaque objet qui bloque
   const bat = BATIMENTS.lieux[lieu.id];
   if (bat) {
-    const n = bat[Math.min(niveau, bat.length - 1)], [dx, dy] = BATIMENTS.decalage;
+    const n = bat[Math.min(niveau, bat.length - 1)], [dx, dy] = BATIMENTS.decalages?.[lieu.id] ?? BATIMENTS.decalage;
     const ajouter = (r, x, y, pied, plus = {}) => { const sprite = rendu.sprite(images.lieuxBat, 'lieux-bat', r.w, r.h); e.sprites.push({ sprite, p: { px: [r.sx, r.sy], ...plus }, x: o.x + dx + x, y: o.y + dy + y, pied }); };
     ajouter(n.sol, 0, 0, DALLES);
     for (const r of n.pieces) ajouter(r, r.x, r.y, o.y + dy + r.pied);
@@ -176,6 +179,7 @@ function poser(e) {
 
 function niveauxVoulus() {
   const n = { ...(missions?.resume().niveaux ?? {}), archives: niveauArchives() };
+  n.infirmerie = n[AXE_INFIRMERIE] ?? 0;
   for (const [id, v] of Object.entries(PLANCHERS)) n[id] = Math.max(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(PLAFONDS)) n[id] = Math.min(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(forces)) n[id] = v;

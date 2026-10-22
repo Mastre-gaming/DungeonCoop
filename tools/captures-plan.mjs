@@ -16,7 +16,7 @@ const VUES = {
   est: [53, 8, 0], etang: ['etang', 3, 0], ferme: ['ferme', 1.5, 0],
   porteN: [21, -27, 0], porteO: [4, 7, 0], porteE: [38, 11, 0],
   murO: [4, -10, 0], murE: [38, -10, 0], murN: [10, -22, 0], coinNO: [4, -22, -2], coinSO: [4, 28, -1],
-  archives: [34.5, -12, -1], estrade: [6, -36, -1], recits: [21, -41, -2], cartes: [7.5, -17.5, -1], atelier: [7.5, -5.5, -1],
+  archives: [34.5, -12, -1], estrade: [6, -36, -1], infirmerie: [36.5, 26, -2], recits: [21, -41, -2], cartes: [7.5, -17.5, -1], atelier: [7.5, -5.5, -1],
   carte: null,
 };
 const args = process.argv.slice(2), noms = args.filter((a) => !a.startsWith('--'));
@@ -26,7 +26,7 @@ try {
   for (const nom of noms.length ? noms : Object.keys(VUES)) {
     const v = VUES[nom];
     const page = await ouvrir(srv.url, nom === 'carte' ? 'visite&heure=12:00&meteo=beau&saison=' + (process.env.SAISON ?? 'ete') : 'spot=apparition&freeze&murs=100&heure=12:00&meteo=beau&saison=' + (process.env.SAISON ?? 'ete'));
-    if (process.env.NIV && nom !== 'xx') await page.eval(`(['histoire', 'level', 'art', 'archives', 'son'].forEach((id) => dbg.lieux.forcer(id, ${Number(process.env.NIV)})), 1)`);
+    if (process.env.NIV && nom !== 'xx') await page.eval(`(['histoire', 'level', 'art', 'archives', 'son', 'infirmerie'].forEach((id) => dbg.lieux.forcer(id, ${Number(process.env.NIV)})), 1)`);
     if (nom !== 'carte') {
       const cible = typeof v[0] === 'string'
         ? await page.eval(`(() => { const z = dbg.camp.vivants.zones[${JSON.stringify(v[0])}]; return z ? [z.x / 32, z.y / 32 + ${v[1]}] : null; })()`)

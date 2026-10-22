@@ -75,7 +75,33 @@ def son(n):
     return t
 ns['son'] = son
 
-LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes'], 2), ('atelier', 'art', ns['atelier'], 3), ('archives', 'archives', ns['archives'], 4), ('son', 'son', son, 5)]
+# ------------------------------------------------------------------ l'infirmerie (maquette de l'autre session, design/camp/infirmerie/infirmerie_lpc_v4.png, doublée x2)
+# Les maquettes ont l'herbe et un carré de terre pleins : on garde seulement les objets (ni l'herbe, ni la terre, ni leurs ombres) et
+# on refait le sol avec le nôtre (terre à bord irrégulier). Toile de 9 x 8 cases ; la porte vers le bas.
+_PLAN = Image.open(os.path.join(RACINE, 'design', 'camp', 'infirmerie', 'infirmerie_lpc_v4.png')).convert('RGB')
+_CASES = [(14, 14), (604, 14), (14, 542), (604, 542), (14, 1070)]
+_HERBE, _TERRE = (59, 148, 51), [(195, 151, 83), (184, 135, 81)]
+def infirmerie(n):
+    Tl = lieux_dessin.Toile; t = Tl(9, 8); cx = 144; ns['herbe'](t, 6); D_ = (cx, 214, cx, 256, 22)
+    ch = ('bande',) + D_
+    if n == 0: ns['sentier'](t, cx)
+    elif n < 3: ns['terre'](t, [('ellipse', cx, 190, 104, 46), ch])
+    else: ns['terre'](t, [('ellipse', cx, 192, 124, 50), ch])
+    if MODE[0] != 'plein': return t
+    x0, y0 = _CASES[n]
+    pan = _PLAN.crop((x0, y0, x0 + 576, y0 + 480)).resize((288, 240), Image.NEAREST)
+    for y in range(240):
+        for x in range(288):
+            p = pan.getpixel((x, y))
+            if p == _HERBE or p in _TERRE: continue
+            ombre = False
+            for ref in [_HERBE] + _TERRE:
+                k = [p[i] / ref[i] for i in range(3)]
+                if 0.5 < k[0] < 0.97 and max(k) - min(k) < 0.03: ombre = True; g = t.img[y][x]; t.img[y][x] = (int(g[0] * k[0]), int(g[1] * k[0]), int(g[2] * k[0]), 255); break
+            if not ombre: t.img[y][x] = p + (255,)
+    return t
+
+LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes'], 2), ('atelier', 'art', ns['atelier'], 3), ('archives', 'archives', ns['archives'], 4), ('son', 'son', son, 5), ('infirmerie', 'infirmerie', infirmerie, 6)]
 # le sol plat : sous cette ligne (en px de la toile), ce qui n'est pas du sol de pavés mais plat (les gradins du théâtre)
 PLAT = {('recits', 3): 150, ('recits', 4): 150}
 BANDE = 16
@@ -167,7 +193,8 @@ planche = Image.new('RGBA', (LARGEUR, hauteur), (0, 0, 0, 0))
 for (px_, py_), im in toutes: planche.paste(Image.fromarray(im, 'RGBA'), (px_, py_))
 sortie = os.path.join(RACINE, 'public', 'assets', 'lpc', 'lieux_batiments.png'); planche.save(sortie, optimize=True)
 print(sortie, planche.size)
-JSON = {'_lisez_moi': "Fabriqué par design/camp/outils/lieux_jeu.py : ne pas modifier à la main.", 'decalage': [-32, -32], 'lieux': {}}
+DECALAGES = {'infirmerie': [-61, -45]}
+JSON = {'_lisez_moi': "Fabriqué par design/camp/outils/lieux_jeu.py : ne pas modifier à la main.", 'decalage': [-32, -32], 'decalages': DECALAGES, 'lieux': {}}
 for idj, niveaux in donnees.items():
     JSON['lieux'][idj] = [{'sol': {'sx': d['sol_pos'][0], 'sy': d['sol_pos'][1], 'w': d['w'], 'h': d['h']},
                            'pieces': [{'sx': p['pos'][0], 'sy': p['pos'][1], 'w': int(p['im'].shape[1]), 'h': int(p['im'].shape[0]), 'x': p['x'], 'y': p['y'], 'pied': p['pied']} for p in d['pieces']],
