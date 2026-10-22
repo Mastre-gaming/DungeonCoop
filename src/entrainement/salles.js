@@ -14,8 +14,7 @@
 // plateaux d'un ou deux niveaux de 3 m, des falaises qu'on ne franchit que par une rampe ou une échelle, +2 au d20
 // d'en haut, la vue coupée par le rebord, et les chutes (geometrie.js). Le col est deux fois plus grand (34 × 26).
 //
-// Dans ces salles, on gagne quand tous les ennemis sont vaincus, chef compris (VICTOIRE) : le chef n'y fait pas fuir les
-// autres. On les choisit à l'accueil du terrain (LISTE), ou par l'adresse.
+// On les choisit à l'accueil du terrain (LISTE), ou par l'adresse.
 import { T } from '../01_plan.js';
 import { FACE } from './geometrie.js';
 
@@ -361,7 +360,7 @@ export function construire(id) {
   }
 
   return {
-    id, nom: S.nom, idee: S.idee, L, H, ZONE, VICTOIRE: 'tous',
+    id, nom: S.nom, idee: S.idee, L, H, ZONE,
     salle: () => ({ l: L, h: H, obstacles, relief, rampes }),
     DEPARTS: S.departs, ENNEMIS: S.ennemis ?? null, TONNEAUX: S.tonneaux ?? [], FLAQUE: null, SURFACES: S.surfaces ?? [],
     composerSol, composerDecor,

@@ -201,25 +201,13 @@ export async function selfTest(t, game) {
 
   t.eq(empreintes(), ['c2103c7f', 'a0437e3a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
 
-  // La victoire : dans la salle d'essai, le chef vaincu suffit (les autres s'enfuient) ; dans les salles de salles.js, il
-  // faut les vaincre tous, chef compris.
-  t.group('la victoire : le chef, ou tous les ennemis');
-  {
-    const C = neuf(); C.commencer();
-    C._.blesser(C.U('chef'), 999, null);
-    t.eq(C.S.resultat, 'victoire', 'salle d’essai : le chef vaincu, c’est gagné');
-    const T = neuf({ victoire: 'tous' }); T.commencer();
-    T._.blesser(T.U('chef'), 999, null);
-    t.ok(!T.S.resultat && T.ennemisVivants().length === 6, 'tous les ennemis : le chef vaincu, le combat continue (6 ennemis debout)');
-    for (const u of T.ennemisVivants()) T._.blesser(u, 999, null);
-    t.eq(T.S.resultat, 'victoire', 'et il se gagne quand le dernier tombe');
-  }
+  // Chaque salle de salles.js se joue jusqu'au bout (on la choisit à l'accueil du terrain).
+  t.group('les salles : des combats entiers');
   for (const [k, id] of NOMS.entries()) {
     const S = construire(id), sa = S.salle(), tr = creerTrame(sa);
-    const C = creerCombat({ trame: tr, salle: sa, departs: S.DEPARTS, tonneaux: S.TONNEAUX, surfaces: S.SURFACES, ennemis: S.ENNEMIS, victoire: S.VICTOIRE, alea: graine(5 + k), horloge: () => 0 });
+    const C = creerCombat({ trame: tr, salle: sa, departs: S.DEPARTS, tonneaux: S.TONNEAUX, surfaces: S.SURFACES, ennemis: S.ENNEMIS, alea: graine(5 + k), horloge: () => 0 });
     jouerJusquAuBout(C);
-    const fin = C.S.resultat === 'defaite' || (C.S.resultat === 'victoire' && C.ennemisVivants().length === 0);
-    t.ok(S.VICTOIRE === 'tous' && fin, `${S.nom} : jouée jusqu’au bout (${C.S.resultat} au round ${C.S.round}${C.S.resultat === 'victoire' ? ', plus un ennemi debout' : ''})`);
+    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${S.nom} : jouée jusqu’au bout (${C.S.resultat} au round ${C.S.round})`);
   }
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
