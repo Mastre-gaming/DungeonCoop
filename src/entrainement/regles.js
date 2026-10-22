@@ -9,6 +9,7 @@ import {
   CONTACT, ECART_MIN, dist, metres, vue, enTenaille, carteDistances, chemin, longueurChemin, indiceDe, pointDe,
   libre, simulerPoussee, pointLibreProche, trajetLibre,
 } from './geometrie.js';
+import { lire } from './reglages-combat.js';   // les nombres qu'on règle à la main (panneau) ; leurs défauts sont les valeurs d'avant
 
 // --- Les classes d'essai (niveau 1, « uniquement pour ce test ») et les ennemis du kit ------------------------------
 // Les 4 premières sont les héros du kit D1 ; les 4 suivantes, des classes d'essai faites au budget de
@@ -96,10 +97,10 @@ export const CAPACITES = {
   projection: { nom: 'Projection', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 3, proj: true, ds: 'Pousse de 4,5 m ; s’il heurte quelque chose : +8 et À terre' },
   projection20: { nom: 'Projection furieuse', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 5, proj: true, cout: 20, ds: '20 Rage · pousse de 7,5 m' },
   pousser: { nom: 'Pousser', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 2, ds: '3 m ; +8 contre un obstacle ; fossé : sbire éliminé, sinon 20' },
-  potion: { nom: 'Potion', slot: 'bonus', type: 'potion', ds: '+20 PV · une seule par héros' },
+  potion: { nom: 'Potion', slot: 'bonus', type: 'potion', get ds() { return `+${lire('potion.soin')} PV · une seule par héros`; } },
   // l'action commune de tous les héros (#231), hors de la barre : un bouton et la touche D
   desengager: { nom: 'Se désengager', slot: 'bonus', type: 'desengager', ds: 'Ce tour-ci, il s’éloigne sans attaque d’opportunité' },
-  relever: { nom: 'Relever', slot: 'action', type: 'relever', portee: CONTACT, ds: 'Un allié KO au contact revient à 25 PV' },
+  relever: { nom: 'Relever', slot: 'action', type: 'relever', portee: CONTACT, get ds() { return `Un allié KO au contact revient à ${lire('releve.pv')} PV`; } },
   etincelle: { nom: 'Étincelle', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 8, de: 4, anim: 'sort', ds: 'Portée 9 m · 5–7 / 11–14 / 22–28' },
   eclaboussure: { nom: 'Éclaboussure', slot: 'action', type: 'zone', surf: 'eau', rayon: R2, portee: 5, cout: 10, anim: 'sort', ds: '10 Mana · une flaque de 1,7 m à 7,5 m ; ceux dedans sont Trempés' },
   foudre: { nom: 'Foudre', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 14, de: 6, el: 'foudre', cout: 15, anim: 'sort', ds: '15 Mana · 8–11 / 17–22 / 34–44 ; ×2 sur Trempé ; électrise l’eau' },
@@ -176,13 +177,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], enclume: null, surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
     heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
-    stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [] },
+    stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [], reles: {}, potions: {} },
   };
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
   PLACES.forEach((id, k) => {
-    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k];
+    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv')));
     const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
-    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: h.pv, pvMax: h.pv, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: 1 }));
+    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvH, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: lire('potion.nb') }));
   });
   for (const [type, f] of Object.entries(FAMILIERS)) {
     for (const m of S.unites.filter((u) => u.camp === 'h' && u.type === f.maitre)) {
@@ -192,12 +193,29 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
   }
   const TYPE = { s: 'sbire', a: 'archer', br: 'brt', chef: 'chef' };
-  const groupe = ennemis ?? ORDRE_ENNEMIS.map((id) => ({ id, type: TYPE[id] ?? TYPE[id[0]], x: departs.ennemis[id][0], y: departs.ennemis[id][1] }));
+  // Les ennemis du kit D1 : 3 sbires, 2 archers, la Brute, le chef (réglable : « Difficulté »). Les premiers gardent leur place ;
+  // ceux en plus se mettent près du premier de leur sorte.
+  function groupeDuKit() {
+    const kit = { sbire: ['s1', 's2', 's3'], archer: ['a1', 'a2'], brt: ['br'], chef: ['chef'] };
+    const nb = { sbire: lire('ennemis.sbire'), archer: lire('ennemis.archer'), brt: lire('ennemis.brute'), chef: lire('ennemis.chef') };
+    const pos = (id) => ({ x: departs.ennemis[id][0], y: departs.ennemis[id][1] });
+    const out = [];
+    for (const id of ORDRE_ENNEMIS) { const type = TYPE[id] ?? TYPE[id[0]]; if (kit[type].indexOf(id) < nb[type]) out.push({ id, type, ...pos(id) }); }
+    for (const type of ['sbire', 'archer', 'brt']) {
+      for (let k = kit[type].length; k < nb[type]; k++) {
+        const id = `${type === 'sbire' ? 's' : type === 'archer' ? 'a' : 'br'}${k + 1}`, b = pos(kit[type][0]);
+        const p = pointLibreProche(trame, { x: b.x + 1.1 * (k - kit[type].length + 1), y: b.y + 0.9 }, [...S.unites, ...out]);
+        out.push({ id, type, x: p.x, y: p.y });
+      }
+    }
+    return out.length ? out : [{ id: 's1', type: 'sbire', ...pos('s1') }];          // (aucun ennemi : un sbire, pour qu'il y ait un combat)
+  }
+  const groupe = ennemis ?? groupeDuKit();
   for (const { id, type, x, y } of groupe) {
-    const df = ENNEMIS[type];
+    const df = ENNEMIS[type], pvE = Math.max(1, Math.round(df.pv * lire('ennemis.pv')));
     const n = id.match(/\d$/)?.[0];
     S.ennemis.push(id);
-    S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: df.pv, pvMax: df.pv, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace }));
+    S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: pvE, pvMax: pvE, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace }));
   }
   tonneaux.forEach(([x, y], k) => S.tonneaux.push({ id: `t${k}`, x, y }));
   if (flaque) peindre(flaque.x, flaque.y, flaque.r, () => ({ t: 'eau', ttl: null, par: null }));
@@ -269,11 +287,16 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     log(`Combo ! ${nomHeros(a)} prépare, ${nomHeros(b)} exploite : ${quoi}.`, 'combo');
     ev({ type: 'combo', a, b, quoi });
     const v = U(a);
-    if (['voleur', 'traqueur-au-limier'].includes(v.type) && v.res.v < v.res.max) { v.res.v++; log(`${v.nom} gagne 1 Concentration.`, 'muet'); }
+    if (['voleur', 'traqueur-au-limier'].includes(v.type) && v.res.v < v.res.max) { v.res.v = Math.min(v.res.max, v.res.v + lire('concentration.gain')); log(`${v.nom} gagne ${lire('concentration.gain')} Concentration.`, 'muet'); }
   }
+  // Les multiplicateurs d'essai (panneau de réglages) : ceux des héros ou des ennemis, et celui de la classe du héros qui frappe.
+  const campMult = (u) => (!u ? 1 : u.camp === 'h' ? lire('degats.heros') * (lire(`classe.${u.type}`) ?? 1) : lire('degats.ennemis'));
+  const finalDeg = (n, m) => (m === 1 || n <= 0 ? n : Math.max(1, Math.round(n * m)));
+  const degatsDe = (g, v, c) => finalDeg(Math.round((g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? Math.round(v * lire('des.critMult')) : v) * c.mult), c.dm);
   const rage = (u, n) => { if (u && u.camp === 'h' && u.res?.type === 'Rage') u.res.v = Math.min(u.res.max, u.res.v + n); };
   function blesser(u, n, par, o = {}) {
     if (!u || u.mort || u.ko || n <= 0) return 0;
+    if (!o.sansMult) n = finalDeg(n, campMult(U(par)));
     if (!o.sansFaiblesse && u.type === 'mage' && surfaceA(u)?.t === 'eau') { n *= 2; log('La Mage est dans l’eau : dégâts ×2.', 'muet'); }
     if (o.melee && u.type === 'barde') { n += 3; log(`${u.nom} est fragile au contact : +3.`, 'muet'); }
     if (u.st.bouclier) {                             // la Trempe de Baba : le bouclier prend les coups d'abord
@@ -313,19 +336,19 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function toucheFeu(u, n, par) {
     let m = 1;
-    if (u.st.huile) { m *= 2; combo(u.st.huile.par, par, 'Huilé puis feu'); delete u.st.huile; }
+    if (u.st.huile) { m *= lire('mult.feuHuile'); combo(u.st.huile.par, par, 'Huilé puis feu'); delete u.st.huile; }
     if (u.type === 'voleur') m *= 2;
-    blesser(u, n * m, par);
+    blesser(u, Math.round(n * m), par);
     if (u.mort || u.ko) return;
-    if (u.st.trempe) { delete u.st.trempe; log(`${u.nom} était Trempé : pas de Brûlure.`, 'muet'); } else u.st.brulure = { n: 2, par };
+    if (u.st.trempe) { delete u.st.trempe; log(`${u.nom} était Trempé : pas de Brûlure.`, 'muet'); } else u.st.brulure = { n: lire('etat.brulure.duree'), par };
   }
   // Entrer dans une tache de surface (en marchant, ou poussé). Renvoie true si l'élan s'arrête (glissé, À terre).
   function entrerSurface(u, s, enMarchant) {
     if (!s || u.mort || u.ko) return false;
     if (s.t === 'piege') return u.camp === 'e' ? declencher(u, s) : false;
-    if (s.t === 'eau') { u.st.trempe = { ttl: 3, par: s.par }; if (u.st.brulure) { delete u.st.brulure; log(`L’eau éteint ${u.nom}.`, 'muet'); } }
-    else if (s.t === 'huile') u.st.huile = { ttl: 3, par: s.par };
-    else if (s.t === 'feu') { log(`${u.nom} entre dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
+    if (s.t === 'eau') { u.st.trempe = { ttl: lire('etat.trempe.duree'), par: s.par }; if (u.st.brulure) { delete u.st.brulure; log(`L’eau éteint ${u.nom}.`, 'muet'); } }
+    else if (s.t === 'huile') u.st.huile = { ttl: lire('etat.huile.duree'), par: s.par };
+    else if (s.t === 'feu') { log(`${u.nom} entre dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, lire('feu.degats'), s.par); }
     else if (s.t === 'glace' && enMarchant && u.type === 'chevalier') {
       u.st.aTerre = { par: s.par }; log(`${u.nom} pose son armure sur la glace : À terre, sans jet.`, 'mauvais'); return true;
     } else if (s.t === 'glace' && enMarchant) {
@@ -356,7 +379,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     ev({ type: 'surfaces' });
     ev({ type: 'piege', id: u.id, v: s.v });
     if (s.v === 'machoires') { u.st.aTerre = { par: s.par }; log(`${u.nom} marche dans les mâchoires : À terre.`, 'bon'); return true; }
-    if (s.v === 'glu') { u.st.gele = { n: 1, par: s.par }; log(`${u.nom} est pris dans la glu : Gelé.`, 'bon'); return true; }
+    if (s.v === 'glu') { u.st.gele = { n: lire('etat.gele.duree'), par: s.par }; log(`${u.nom} est pris dans la glu : Gelé.`, 'bon'); return true; }
     const t = U(s.par);
     log(`${u.nom} se prend dans le collet.`, 'bon');
     if (t && !t.ko) apres.push(() => attirer(t, u, 2));
@@ -366,24 +389,24 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   function enflammer(p, par) {
     const mailles = inonder(p, 'huile'); if (!mailles.length) return false;
     new Set(mailles.map((k) => S.surfaces[k].par)).forEach((a) => combo(a, par, 'huile enflammée'));
-    for (const k of mailles) S.surfaces[k] = { t: 'feu', ttl: 3, par };
+    for (const k of mailles) S.surfaces[k] = { t: 'feu', ttl: lire('surface.duree'), par };
     log(`L’huile s’enflamme : ${Math.round(mailles.length * (MAILLE * 1.5) ** 2)} m² en feu.`);
     ev({ type: 'surfaces' });
-    for (const k of mailles) for (const u of dedans(k)) toucheFeu(u, 6, par);
+    for (const k of mailles) for (const u of dedans(k)) toucheFeu(u, lire('feu.degats'), par);
     return true;
   }
   function electrifier(p, par) {
     const mailles = inonder(p, 'eau'); if (!mailles.length) return;
     new Set(mailles.map((k) => S.surfaces[k].par)).forEach((a) => combo(a, par, 'eau électrisée'));
-    log('La foudre électrise l’eau : 8 dégâts à tous ceux qui sont dedans.');
+    log(`La foudre électrise l’eau : ${lire('eau.degats')} dégâts à tous ceux qui sont dedans.`);
     ev({ type: 'eclair', mailles: mailles.length });
     const touches = new Set();
-    for (const k of mailles) for (const u of dedans(k)) if (!touches.has(u)) { touches.add(u); blesser(u, u.type === 'druide' ? 16 : 8, par); }
+    for (const k of mailles) for (const u of dedans(k)) if (!touches.has(u)) { touches.add(u); blesser(u, lire('eau.degats') * (u.type === 'druide' ? 2 : 1), par); }
   }
   function eclaterTonneau(b, par, feu) {
     S.tonneaux = S.tonneaux.filter((o) => o !== b);
-    const n = peindre(b.x, b.y, R3, (vieux) => (vieux?.t === 'feu' ? undefined : { t: 'huile', ttl: 3, par }));
-    for (const u of S.unites) if (!u.mort && !u.ko && dist(u, b) <= R3) u.st.huile = { ttl: 3, par };
+    const n = peindre(b.x, b.y, R3, (vieux) => (vieux?.t === 'feu' ? undefined : { t: 'huile', ttl: lire('surface.duree'), par }));
+    for (const u of S.unites) if (!u.mort && !u.ko && dist(u, b) <= R3) u.st.huile = { ttl: lire('etat.huile.duree'), par };
     log(`Le tonneau éclate : de l’huile tout autour (${n.length ? metres(R3) : 0} m).`);
     ev({ type: 'tonneau', id: b.id, x: b.x, y: b.y });
     ev({ type: 'surfaces' });
@@ -393,17 +416,17 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (cap.surf === 'piege') { poserPiege(h, cap, centre); return; }
     const par = h.id;
     peindre(centre.x, centre.y, cap.rayon, (vieux) => {
-      if (cap.surf === 'eau') return { t: 'eau', ttl: 3, par };
-      if (cap.surf === 'huile') return vieux?.t === 'feu' ? undefined : { t: 'huile', ttl: 3, par };
+      if (cap.surf === 'eau') return { t: 'eau', ttl: lire('surface.duree'), par };
+      if (cap.surf === 'huile') return vieux?.t === 'feu' ? undefined : { t: 'huile', ttl: lire('surface.duree'), par };
       if (vieux?.t === 'eau') combo(vieux.par, par, 'eau gelée');
-      if (vieux?.t === 'feu') return { t: 'eau', ttl: 3, par };
-      return { t: 'glace', ttl: 3, par };
+      if (vieux?.t === 'feu') return { t: 'eau', ttl: lire('surface.duree'), par };
+      return { t: 'glace', ttl: lire('surface.duree'), par };
     });
     for (const u of S.unites) {
       if (u.mort || u.ko || dist(u, centre) > cap.rayon) continue;
-      if (cap.surf === 'eau') { u.st.trempe = { ttl: 3, par }; delete u.st.brulure; }
-      else if (cap.surf === 'huile') u.st.huile = { ttl: 3, par };
-      else if (u.camp === 'e') { u.st.gele = { n: 1, par }; log(`${u.nom} est Gelé.`, 'muet'); }
+      if (cap.surf === 'eau') { u.st.trempe = { ttl: lire('etat.trempe.duree'), par }; delete u.st.brulure; }
+      else if (cap.surf === 'huile') u.st.huile = { ttl: lire('etat.huile.duree'), par };
+      else if (u.camp === 'e') { u.st.gele = { n: lire('etat.gele.duree'), par }; log(`${u.nom} est Gelé.`, 'muet'); }
     }
     ev({ type: 'zone', x: centre.x, y: centre.y, r: cap.rayon, surf: cap.surf });
     ev({ type: 'surfaces' });
@@ -440,9 +463,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (A.contreGele && cible.st.gele) { mult *= 2; notes.push('cible Gelée : tir lesté ×2'); aCombos.push([cible.st.gele.par, 'Gelé puis tir lesté']); }
     if (A.el === 'foudre' && cible.type === 'druide') { mult *= 2; notes.push('faiblesse du Druide : foudre ×2'); }
     const allies = S.unites.filter((o) => o.camp === att.camp && !o.ko && !o.mort);
-    if (A.melee && enTenaille(att, cible, allies)) { av = true; tenaille = true; notes.push('prise en tenaille : avantage'); }
+    if (lire('des.tenaille') >= 0.5 && A.melee && enTenaille(att, cible, allies)) { av = true; tenaille = true; notes.push('prise en tenaille : avantage'); }
     // la Tenaille posée par le Pas dans l'ombre : elle compte pour celui qui l'a posée, au contact, jusqu'à la fin du round
-    const ombre = A.melee && cible.st.tenaille?.par === att.id ? cible.st.tenaille : null;
+    const ombre = lire('des.tenaille') >= 0.5 && A.melee && cible.st.tenaille?.par === att.id ? cible.st.tenaille : null;
     if (ombre && !tenaille) { av = true; tenaille = true; notes.push('prise en tenaille (Pas dans l’ombre) : avantage'); }
     if (A.dansLeDos && (tenaille || cible.expose)) {             // le Coup dans le dos de Shadow
       mult *= 2; notes.push(`${tenaille ? 'en Tenaille' : 'Exposée'} : coup dans le dos ×2`);
@@ -455,17 +478,17 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (!A.melee && derriereEnclume(att, cible)) { des = true; notes.push('la cible est derrière l’enclume : désavantage'); }
     if (A.lame) notes.push('Lame ardente : +d6, et compte comme du feu');
     if (familierDe(att)?.ko) { des = true; notes.push('son limier est à terre : désavantage'); }
-    if (A.el === 'foudre' && cible.st.trempe) { mult *= 2; notes.push('Trempé : foudre ×2'); aCombos.push([cible.st.trempe.par, 'Trempé puis foudre']); }
+    if (A.el === 'foudre' && cible.st.trempe) { mult *= lire('mult.foudreTrempe'); notes.push(`Trempé : foudre ×${lire('mult.foudreTrempe')}`); aCombos.push([cible.st.trempe.par, 'Trempé puis foudre']); }
     const huile = A.el === 'feu' && !!cible.st.huile;
-    if (huile) { mult *= 2; notes.push('Huilé : feu ×2, et Brûlure'); aCombos.push([cible.st.huile.par, 'Huilé puis feu']); }
+    if (huile) { mult *= lire('mult.feuHuile'); notes.push(`Huilé : feu ×${lire('mult.feuHuile')}, et Brûlure`); aCombos.push([cible.st.huile.par, 'Huilé puis feu']); }
     if (A.el === 'feu' && cible.type === 'voleur') { mult *= 2; notes.push('faiblesse du Voleur : feu ×2'); }
     if (cible.type === 'mage' && surfaceA(cible)?.t === 'eau') { mult *= 2; notes.push('la Mage est dans l’eau : ×2'); }
     if (A.el === 'foudre' && surfaceA(cible)?.t === 'eau') notes.push('la cible est dans l’eau : électrise toute la flaque (8 à chacun)');
     if (A.el === 'feu' && surfaceA(cible)?.t === 'huile') notes.push('la cible est dans l’huile : tout s’enflamme');
     if (A.aTerre) notes.push('la cible sera À terre');
-    return { av: av && !des ? 1 : des && !av ? -1 : 0, mult, notes, aCombos, tenaille, huile, coriace: !!cible.coriace };
+    return { av: av && !des ? 1 : des && !av ? -1 : 0, mult, dm: campMult(att), notes, aCombos, tenaille, huile, coriace: !!cible.coriace };
   }
-  const noter = (k, A, c) => (A.auto ? 'critique' : k === 1 ? 'rate' : k === 20 ? 'critique' : k + A.mod <= (c.coriace ? 12 : 9) ? 'eraflure' : 'touche');
+  const noter = (k, A, c) => (A.auto ? 'critique' : k <= lire('des.rate') ? 'rate' : k >= lire('des.critique') ? 'critique' : k + A.mod <= (c.coriace ? lire('des.eraflureCoriace') : lire('des.eraflure')) ? 'eraflure' : 'touche');
   function chances(A, c) {
     const o = { rate: 0, eraflure: 0, touche: 0, critique: 0 };
     if (A.auto) { o.critique = 1; return o; }
@@ -474,18 +497,18 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function fourchette(A, c, g) {
     const lo = A.base + 1 + A.dmod + (A.de2 ? 1 : 0), hi = A.base + A.de + A.dmod + (A.de2 ?? 0);
-    const f = (v) => (g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult;
+    const f = (v) => degatsDe(g, v, c);
     return g === 'rate' ? '0' : `${f(lo)}–${f(hi)}`;
   }
   const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, expose: !!cap.expose, dansLeDos: !!cap.dansLeDos, anim: cap.anim });
-  const attaqueEnnemi = (e) => { const a = ENNEMIS[e.type].atk; return { nom: a.nom, mod: 2, dmod: 0, base: a.base, de: a.de, melee: a.portee === CONTACT, anim: a.anim }; };
+  const attaqueEnnemi = (e) => { const a = ENNEMIS[e.type].atk; return { nom: a.nom, mod: lire('des.bonusEnnemis'), dmod: 0, base: a.base, de: a.de, melee: a.portee === CONTACT, anim: a.anim }; };
   function rate(u) {
     const r = d(6);
     const T = { 1: 'lâche son arme', 2: 'glisse : À terre', 3: 'pousse un cri de guerre épique… rien ne se passe, l’ennemi le plus proche se moque', 4: 'renverse de l’huile à ses pieds', 5: 'trébuche sur un allié', 6: 'prend la pose : la prochaine attaque contre lui a l’avantage' };
     log(`Raté comique (d6 : ${r}) : ${u.nom} ${T[r]}.`, 'muet');
     if (r === 1 && u.t) u.t.bonus = false;
     if (r === 2) u.st.aTerre = { par: null };
-    if (r === 4) { peindre(u.x, u.y, 0.6, () => ({ t: 'huile', ttl: 3, par: null })); u.st.huile = { ttl: 3, par: null }; ev({ type: 'surfaces' }); }
+    if (r === 4) { peindre(u.x, u.y, 0.6, () => ({ t: 'huile', ttl: lire('surface.duree'), par: null })); u.st.huile = { ttl: lire('etat.huile.duree'), par: null }; ev({ type: 'surfaces' }); }
     if (r === 6) u.expose = true;
     flotter(u, 'Raté !', 'info');
   }
@@ -508,21 +531,21 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const qui = `${att.nom} → ${cible.nom} · ${A.nom}`;
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
     ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
-    if (g === 'rate') { log(`${qui} · d20 ${label} : Raté !`, att.camp === 'e' ? 'ennemi' : 'mauvais'); rate(att); return g; }
+    if (g === 'rate') { log(`${qui} · d20 ${label} : Raté !`, att.camp === 'e' ? 'ennemi' : 'mauvais'); if (lire('des.ratesComiques') >= 0.5) rate(att); else flotter(att, 'Raté !', 'info'); return g; }
     const jet = d(A.de) + (A.de2 ? d(A.de2) : 0);
     let n = A.base + jet + A.dmod;
     if (g === 'eraflure') n = Math.floor(n / 2);
-    if (g === 'critique') n *= 2;
-    n *= c.mult;
+    if (g === 'critique') n = Math.round(n * lire('des.critMult'));
+    n = finalDeg(Math.round(n * c.mult), c.dm);
     c.aCombos.forEach(([a, w]) => combo(a, att.id, w));
     if (c.tenaille && att.camp === 'h') S.stats.tenailles++;
     log(`${qui} · d20 ${label}${A.auto ? '' : ` + ${A.mod} = ${k + A.mod}`} : ${NOM_RESULTAT[g]} · ${n} dégâts${c.mult > 1 ? ` (×${c.mult})` : ''}`, att.camp === 'e' ? 'ennemi' : '');
-    blesser(cible, n, att.id, { sansFaiblesse: true, melee: A.melee });
-    rage(att, 10); rage(cible, 10);
+    blesser(cible, n, att.id, { sansFaiblesse: true, melee: A.melee, sansMult: true });
+    rage(att, lire('rage.gain')); rage(cible, lire('rage.gain'));
     if (!cible.mort && !cible.ko) {
       if (A.aTerre) cible.st.aTerre = { par: att.id };
       if (A.expose) cible.expose = { par: att.id };
-      if (c.huile) { delete cible.st.huile; if (cible.st.trempe) delete cible.st.trempe; else cible.st.brulure = { n: 2, par: att.id }; }
+      if (c.huile) { delete cible.st.huile; if (cible.st.trempe) delete cible.st.trempe; else cible.st.brulure = { n: lire('etat.brulure.duree'), par: att.id }; }
     }
     if (A.el === 'feu') enflammer(cible, att.id);
     if (A.el === 'foudre' && surfaceA(cible)?.t === 'eau') electrifier(cible, att.id);
@@ -532,7 +555,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // --- Les poussées ---------------------------------------------------------------------------------------------
   function pousser(src, cible, o) {
     const estUnite = !!cible.camp, parHeros = estHeros(src.id) ? src.id : null;
-    let longueur = o.longueur;
+    let longueur = o.longueur * lire('poussee.distance');
     if (estUnite && cible.st.gele) { longueur += 2; combo(cible.st.gele.par, parHeros, 'Gelé puis poussée'); }
     const autres = [...S.unites.filter((u) => !u.mort && !u.ko && u !== cible), ...S.tonneaux.filter((b) => b !== cible), ...enclumes()];
     const sim = simulerPoussee(trame, src, cible, longueur, { obstacles: autres, surGlace: (x, y) => S.surfaces[cle(x, y)]?.t === 'glace' });
@@ -556,17 +579,17 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (sim.arret === 'fosse') {
       if (cible.type === 'sbire') { log(`${cible.nom} tombe dans le fossé : éliminé !`, 'bon'); if (parHeros) S.stats.degats[parHeros] += cible.pv; ev({ type: 'chute', id: cible.id }); tomber(cible); }
       else {
-        log(`${cible.nom} tombe dans le fossé et remonte : 20 dégâts.`);
+        log(`${cible.nom} tombe dans le fossé et remonte : ${lire('poussee.degatsFosse')} dégâts.`);
         ev({ type: 'chute', id: cible.id });
-        blesser(cible, 20, parHeros);
+        blesser(cible, lire('poussee.degatsFosse'), src.id);
         const p = pointLibreProche(trame, { x: cible.x, y: trame.salle.obstacles.find((x) => x.fosse).y0 - 0.5 }, S.unites.filter((u) => u !== cible && !u.mort && !u.ko));
         cible.x = p.x; cible.y = p.y;
         ev({ type: 'place', id: cible.id, x: p.x, y: p.y });
       }
     } else if (sim.arret && !(o.attire && sim.heurte === o.attire)) {      // attiré jusqu'au lanceur : il arrive, sans choc
-      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +8.`);
+      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +${lire('poussee.degatsMur')}.`);
       if (sim.heurte === S.enclume && S.enclume.par !== parHeros) combo(S.enclume.par, parHeros, 'poussé contre l’enclume');
-      blesser(cible, 8, parHeros);
+      blesser(cible, lire('poussee.degatsMur'), src.id);
       if (o.proj && !cible.mort && !cible.ko) { cible.st.aTerre = { par: parHeros }; log(`${cible.nom} est À terre.`, 'muet'); }
     }
   }
@@ -694,7 +717,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const avant = Math.floor((h.t.parcouru ?? 0) + 1e-6);
     h.t.parcouru = (h.t.parcouru ?? 0) + cases;
     const n = Math.floor(h.t.parcouru + 1e-6) - avant;
-    if (n > 0 && h.res.v < h.res.max) { h.res.v = Math.min(h.res.max, h.res.v + n); flotter(h, `+${n} Élan`, 'info'); }
+    if (n > 0 && h.res.v < h.res.max) { const g = n * lire('elan.gain'); h.res.v = Math.min(h.res.max, h.res.v + g); flotter(h, `+${g} Élan`, 'info'); }
   }
   // Un héros va en (x, y) : le chemin le plus court, s'il tient dans son déplacement.
   function deplacer(h, x, y, P) {
@@ -719,11 +742,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   const groupeCourant = () => groupes()[S.gi];
   function peutAgir(h) { return !!h && h.camp === 'h' && !h.ko && S.phase === 'heros' && !S.resultat && (groupeCourant()?.ids || []).includes(h.id); }
+  // Plus personne n'a rien à faire : ni déplacement, ni action, ni action bonus (la fin de phase automatique du panneau).
+  const rienAFaire = () => S.phase === 'heros' && !S.resultat && groupeCourant().ids.every((id) => { const u = U(id); return !u || u.ko || u.familier || (!u.t.action && !u.t.bonus && u.t.mv < 0.05); });
   function debutTour(u) {
     const f = familierDe(u); if (f) debutTour(f);
     if (u.mort || u.ko) return;
     if (u.st.brulure) {
-      const par = u.st.brulure.par, n = u.type === 'voleur' ? 10 : 5;
+      const par = u.st.brulure.par, n = lire('etat.brulure.degats') * (u.type === 'voleur' ? 2 : 1);
       u.st.brulure.n--; if (u.st.brulure.n <= 0) delete u.st.brulure;
       log(`${u.nom} brûle : ${n} dégâts.`, u.camp === 'h' ? 'mauvais' : '');
       blesser(u, n, par);
@@ -734,15 +759,15 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (u.st.aTerre && u.type === BABA) { mv = 0; delete u.st.aTerre; log(`${u.nom} se relève, et ses vieux os lui prennent tout son déplacement.`, 'muet'); ev({ type: 'releve', id: u.id }); }
     else if (u.st.aTerre) { mv = Math.max(0, mv - u.vitesse / 2); delete u.st.aTerre; log(`${u.nom} se relève (la moitié de son déplacement).`, 'muet'); ev({ type: 'releve', id: u.id }); }
     u.t = { mv, action: true, bonus: true, reaction: true };
-    if (u.camp === 'h' && u.res.type === 'Mana') u.res.v = Math.min(u.res.max, u.res.v + 5);
-    if (u.camp === 'h' && u.res.type === 'Énergie') u.res.v = u.res.max;          // 3 à chaque tour, le reste est perdu
+    if (u.camp === 'h' && u.res.type === 'Mana') u.res.v = Math.min(u.res.max, u.res.v + lire('mana.gain'));
+    if (u.camp === 'h' && u.res.type === 'Énergie') u.res.v = Math.min(u.res.max, lire('energie.gain'));          // 3 à chaque tour, le reste est perdu
   }
   function finTour(u) {
     const f = familierDe(u); if (f) finTour(f);
     if (u.mort || u.ko) return;
     if (u.camp === 'h' && u.res.type === 'Élan' && !(u.t.parcouru > 0) && !u.t.ombre && u.res.v > 0) { u.res.v = 0; log(`${u.nom} est resté immobile : son Élan retombe à 0.`, 'muet'); }
     const s = surfaceA(u);
-    if (s && s.t === 'feu') { log(`${u.nom} finit son tour dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, 6, s.par); }
+    if (s && s.t === 'feu') { log(`${u.nom} finit son tour dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, lire('feu.degats'), s.par); }
     if (u.st.gele && !u.mort && !u.ko) { u.st.gele.n--; if (u.st.gele.n <= 0) delete u.st.gele; }
   }
   function finRound() {
@@ -823,14 +848,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // La moyenne des dégâts d'une attaque (raté, éraflure, touché, critique, chacun avec sa chance), et la chance d'achever.
   function degatsMoyens(A, c) {
     const ch = chances(A, c), m = A.base + (A.de + 1) / 2 + A.dmod;
-    return (ch.eraflure * Math.floor(m / 2) + ch.touche * m + ch.critique * m * 2) * c.mult;
+    return (ch.eraflure * Math.floor(m / 2) + ch.touche * m + ch.critique * m * lire('des.critMult')) * c.mult * c.dm;
   }
   function chanceAchever(A, c, cible) {
     const ch = chances(A, c);
     let p = 0;
     for (const g of ['eraflure', 'touche', 'critique']) {
       let n = 0;
-      for (let d = 1; d <= A.de; d++) { const v = A.base + d + A.dmod; if ((g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? v * 2 : v) * c.mult >= cible.pv) n++; }
+      for (let d = 1; d <= A.de; d++) { const v = A.base + d + A.dmod; if (degatsDe(g, v, c) >= cible.pv) n++; }
       p += (ch[g] * n) / A.de;
     }
     return p;
@@ -884,6 +909,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const g = attaquer(e, t, attaqueEnnemi(e));
     if (e.type === 'brt' && g !== 'rate' && !t.ko && !t.mort) pousser(e, t, { longueur: 2 });
   }
+  const estSoigneur = (h) => !!HEROS[h.type]?.capacites.some((c) => ['soin', 'ralliement', 'chant'].includes(c));
   const entame = (h) => h.pv / h.pvMax;            // la part de PV qui reste : plus elle est basse, plus il est blessé
   const cibleBrute = (e, heros = herosVivants()) => heros.slice().sort((a, b) => entame(a) - entame(b) || dist(a, e) - dist(b, e))[0];
   // Un plan contre le héros h : le meilleur point au contact de h où finir ce tour-ci (rester, s'il y est déjà), et ce
@@ -925,8 +951,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     for (const h of heros) {
       const p = planContre(e, h, R, A); if (!p) continue;
       if (h === habitude) habitudeAPortee = true;
-      if (e.type === 'brt') p.v += 30 * (1 - entame(h));           // la Brute : plus il est blessé, mieux c'est
-      else if (h === habitude) p.v += 4;                            // le sbire : le plus proche, à valeur presque égale
+      if (e.type === 'brt') p.v += lire('ia.blesse') * (1 - entame(h));           // la Brute : plus il est blessé, mieux c'est
+      else if (h === habitude) p.v += lire('ia.proche');                            // le sbire : le plus proche, à valeur presque égale
+      if (estSoigneur(h)) p.v += lire('ia.soigneur');          // (0 par défaut : le soigneur n'attire personne)
       if (!choix || p.v > choix.v) choix = { ...p, h };
     }
     if (!choix) {
@@ -1103,7 +1130,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         const a = Math.min(cap.soin, u.pvMax - u.pv); if (a <= 0) continue;
         u.pv += a; ev({ type: 'soin', id: u.id, n: a, pv: u.pv });
       }
-      h.res.v = Math.min(h.res.max, h.res.v + 1);
+      h.res.v = Math.min(h.res.max, h.res.v + lire('foi.gain'));
       return true;
     }
     if (cap.type === 'desengager') {          // Se désengager : plus d'attaque d'opportunité pour ce tour
@@ -1113,8 +1140,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       return true;
     }
     if (cap.type === 'potion') {
-      payer(h, cap); h.potion--;
-      const a = Math.min(20, h.pvMax - h.pv); h.pv += a;
+      payer(h, cap); h.potion--; S.stats.potions[h.id] = (S.stats.potions[h.id] ?? 0) + 1;
+      const a = Math.min(lire('potion.soin'), h.pvMax - h.pv); h.pv += a;
       ev({ type: 'soin', id: h.id, n: a, pv: h.pv, potion: true });
       log(`${h.nom} boit sa potion : +${a} PV.`, 'bon');
       return true;
@@ -1196,19 +1223,20 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         const k = ['brulure', 'gele', 'huile'].find((e) => u.st[e]);
         if (k) { delete u.st[k]; ev({ type: 'texte', id: u.id, texte: `${NOM_ETAT[k]} : retiré` }); log(`${u.nom} n’est plus ${NOM_ETAT[k]}.`, 'muet'); }
         ev({ type: 'limier', id: familierDe(h).id, retour: true });
-      } else h.res.v = Math.min(h.res.max, h.res.v + 1);
+      } else h.res.v = Math.min(h.res.max, h.res.v + lire('foi.gain'));
       return true;
     }
     if (cap.type === 'relever' && u && u.camp === 'h' && u.ko && dist(h, u) <= CONTACT) {
       payer(h, cap);
-      u.ko = false; u.pv = 25; u.t = { mv: 0, action: false, bonus: false, reaction: false }; S.stats.releves++;
-      ev({ type: 'ranime', id: u.id, pv: 25 });
-      log(`${h.nom} relève ${u.nom} (25 PV). Il rejouera au prochain tour.`, 'bon');
+      const pvRelve = lire('releve.pv');
+      u.ko = false; u.pv = pvRelve; u.t = { mv: 0, action: false, bonus: false, reaction: false }; S.stats.releves++; S.stats.reles[h.id] = (S.stats.reles[h.id] ?? 0) + 1;
+      ev({ type: 'ranime', id: u.id, pv: pvRelve });
+      log(`${h.nom} relève ${u.nom} (${pvRelve} PV). Il rejouera au prochain tour.`, 'bon');
       return true;
     }
     const ennemiVise = u && u.camp === 'e' && !u.mort && aPortee(h, cap, u);
     if (cap.type === 'etatCible' && ennemiVise) {          // le Filet : Gelé
-      payer(h, cap); u.st[cap.etat] = { n: 1, par: h.id };
+      payer(h, cap); u.st[cap.etat] = { n: lire('etat.gele.duree'), par: h.id };
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'texte', id: u.id, texte: NOM_ETAT[cap.etat] });
       log(`${h.nom} · ${cap.nom} : ${u.nom} est ${NOM_ETAT[cap.etat]}.`);
@@ -1246,7 +1274,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       return true;
     }
     if (cap.type === 'huileCible' && u && !u.mort && !u.ko && u !== h && aPortee(h, cap, u)) {
-      payer(h, cap); u.st.huile = { ttl: 3, par: h.id };
+      payer(h, cap); u.st.huile = { ttl: lire('etat.huile.duree'), par: h.id };
       ev({ type: 'lance', id: h.id, cap: capId, anim: 'tir', x: u.x, y: u.y });
       log(`${h.nom} lance une fiole : ${u.nom} est Huilé.`);
       return true;
@@ -1282,7 +1310,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
 
   return {
     S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, presDeLEnclume, poseEnclume, derriereEnclume, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
-    portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
+    portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, rienAFaire, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
