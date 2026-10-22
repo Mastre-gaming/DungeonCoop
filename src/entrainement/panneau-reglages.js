@@ -18,7 +18,8 @@ const el = (tag, attrs = {}, ...enfants) => {
   for (const e of enfants.flat()) if (e != null && e !== false) n.append(e instanceof Node ? e : String(e));
   return n;
 };
-const lectureSeule = () => REG.estExterne();
+// Lecture seule : un invité dont l'hôte a fermé la porte. Un invité qui peut régler demande à l'hôte, qui applique (les préréglages restent à l'hôte).
+const lectureSeule = () => REG.estExterne() && !REG.peutRegler();
 const decimales = (d) => (String(d.step).split('.')[1] ?? '').length;
 const affiche = (d, v) => v.toFixed(decimales(d));
 
@@ -35,13 +36,13 @@ export function init(g, options) {
   rafraichir();
   return api;
 }
-export function update() { if (dom.panneau && dom.panneau.dataset.seul !== String(lectureSeule())) rafraichir(); }
+export function update() { if (dom.panneau && dom.panneau.dataset.seul !== String(lectureSeule())) rafraichir(); }   // (la porte de l'hôte s'ouvre ou se ferme)
 export function dispose() { window.removeEventListener('keydown', touches); dom.panneau?.remove(); dom.bouton?.remove(); }
 
 function construire() {
   dom.panneau = el('section', { class: 'plaque panneau-reglages', id: 'reglages', hidden: true, 'aria-label': 'Réglages du combat' });
   dom.titre = el('header', {}, el('h2', {}, 'Réglages du combat'), el('button', { type: 'button', class: 'bouton-jeu discret petit', onclick: () => basculer(false), 'aria-label': 'Fermer' }, '✕'));
-  dom.hote = el('p', { class: 'reglages-hote', hidden: true }, 'réglé par l’hôte');
+  dom.hote = el('p', { class: 'reglages-hote', hidden: true });
   dom.presets = el('div', { class: 'reglages-presets' }, el('span', { class: 'muet' }, 'Préréglage'),
     ...['A', 'B'].map((n) => el('button', { type: 'button', class: 'bouton-jeu discret petit', 'data-preset': n, onclick: () => REG.choisirPreset(n) }, n)),
     el('span', { class: 'muet' }, el('kbd', {}, 'B'), ' pour passer de l’un à l’autre'));
@@ -99,20 +100,21 @@ function rafraichir() {
   if (!dom.panneau) return;
   const seul = lectureSeule();
   dom.panneau.dataset.seul = String(seul);
-  dom.hote.hidden = !seul;
+  dom.hote.hidden = !REG.estExterne();
+  dom.hote.textContent = seul ? 'réglé par l’hôte' : 'les changements passent par l’hôte, qui les applique';
   for (const { d, controles, montrer, point, r } of ligne.values()) {
     montrer(REG.lire(d.id));
-    for (const c of controles) c.disabled = seul;
+    for (const c of controles) c.disabled = seul || (REG.estExterne() && d.id === 'multi.invites');
     point.style.visibility = REG.estChange(d.id) ? 'visible' : 'hidden';
     r.classList.toggle('change', REG.estChange(d.id));
   }
-  for (const b of dom.panneau.querySelectorAll('[data-preset]')) { b.classList.toggle('actif', b.dataset.preset === REG.presetActif() && !seul); b.disabled = seul; }
+  for (const b of dom.panneau.querySelectorAll('[data-preset]')) { b.classList.toggle('actif', b.dataset.preset === REG.presetActif() && !REG.estExterne()); b.disabled = REG.estExterne(); }
   for (const b of dom.panneau.querySelectorAll('[data-reinit], #reinit-tout, #coller-config, #appliquer-config')) b.disabled = seul;
 }
 
 export function basculer(ouvert = dom.panneau.hidden) { dom.panneau.hidden = !ouvert; if (ouvert) rafraichir(); }
 function permuter() {
-  if (lectureSeule()) return void ihm.banniere('Réglé par l’hôte');
+  if (REG.estExterne()) return void ihm.banniere('Les préréglages sont ceux de l’hôte');
   REG.basculerPreset();
   ihm.banniere(`Préréglage ${REG.presetActif()}`);
 }

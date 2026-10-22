@@ -113,7 +113,7 @@ function monNom() { try { return JSON.parse(localStorage.getItem(CLE_NOM))?.nom 
 function brancher(transport) {
   const vieux = party; party = null;
   vieux?.dispose?.();
-  if (!hote) REG.imposer({}); else REG.liberer();     // un invité ne règle rien : il subit les valeurs de l'hôte (les défauts, avant qu'elles arrivent)
+  if (!hote) { REG.imposer({}); REG.surDemande((ops) => party?.toHost({ t: 'reglage', ops })); } else REG.liberer();     // un invité ne règle rien : il subit les valeurs de l'hôte (les défauts, avant qu'elles arrivent)
   relie = false; essais = 0; statut = hote ? 'Ouverture du terrain…' : 'Connexion au groupe…';
   L = nouveauLobby(combat.S.equipe);
   const ce = party = partyNet.createParty({
@@ -169,6 +169,13 @@ function surMessage(de, m) {
     if (['prendre', 'rendre', 'classe', 'mode'].includes(m.t)) { if (regler(L, de, m)) envoyerSalon(); }
     else if (m.t === 'commencer' && de === HOTE) lancer();
     else if (m.t === 'rejouer' && de === HOTE) rejouer();
+    else if (m.t === 'reglage') {                       // un invité règle le combat : l'hôte applique (sauf s'il a fermé la porte) et renvoie à tous
+      if (!REG.oui('multi.invites')) party.to(de, { t: 'reglages-refus', R: REG.instantane() });
+      else {
+        const faits = REG.appliquerDemande(m.ops);
+        if (faits.length) ihm.banniere(`${api.nomDe(de)} règle : ${faits[0].label}${faits.length > 1 ? ` (+${faits.length - 1})` : ''}`);
+      }
+    }
     else if (m.t === 'action' && L.phase === 'combat') { if (arbitrer(combat, L, de, m.a)) { L.pret = L.pret.filter((p) => p !== de); diffuser(); } else party.to(de, { t: 'refus' }); }
     else if (m.t === 'pret' && L.phase === 'combat' && combat.S.phase === 'heros') {
       L.pret = L.pret.filter((p) => p !== de);
@@ -180,6 +187,7 @@ function surMessage(de, m) {
   if (de !== HOTE) return;
   if (m.R) REG.imposer(m.R);       // les valeurs de l'hôte d'abord : le combat qui suit se crée avec elles
   if (m.t === 'reglages') { /* (déjà imposé) */ }
+  else if (m.t === 'reglages-refus') ihm.banniere('L’hôte a fermé les réglages : lui seul les change');
   else if (m.t === 'salon') {
     Object.assign(L, m.L);
     if (L.phase === 'lobby' && combat.S.phase !== 'preparation') { combat = nouveauCombat(L.equipe); ihm.accueil(); }

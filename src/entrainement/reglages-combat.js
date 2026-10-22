@@ -14,6 +14,7 @@ export const GROUPES = [
   { id: 'equilibre', titre: 'Équilibre (ressources et ennemis)' },
   { id: 'classes', titre: 'Dégâts par classe (pour tester)' },
   { id: 'ressenti', titre: 'Ressenti et lisibilité' },
+  { id: 'multi', titre: 'À plusieurs' },
 ];
 // etape : la mission qui ouvre le réglage au panneau (1 : rythme et santé des ennemis ; 2 : les règles ; 3 : le ressenti)
 export const ETAPE_OUVERTE = 3;
@@ -82,7 +83,8 @@ export const DEFS = [
   N('feel.zoom', 'ressenti', 3, 'Zoom au départ (crans)', '', 0, -4, 8, 1),
   N('feel.zoomDouceur', 'ressenti', 3, 'Douceur du zoom (plus grand : plus sec)', '', 12, 2, 40, 1),
   N('feel.barres', 'ressenti', 3, 'Barres de vie', '', 0, 0, 2, 1, { type: 'choix', choix: ['Toujours', 'Au survol', 'Cachées'] }),
-  // (les soins : les deux de l'étape 1, déjà là)
+  // --- À plusieurs : seul l'hôte le change ---
+  OUI('multi.invites', 'multi', 2, 'Les invités peuvent régler (l’hôte applique leurs changements)', 1),
 ];
 const PAR_ID = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 export const def = (id) => PAR_ID[id];
@@ -133,19 +135,27 @@ export const surChangement = (f) => { ecouteurs.push(f); return () => { const k 
 export const estChange = (id) => valeurs[id] !== PAR_ID[id].def;
 export const changees = () => Object.fromEntries(DEFS.filter((d) => valeurs[d.id] !== d.def).map((d) => [d.id, valeurs[d.id]]));
 export const estExterne = () => externes !== null;
+// À plusieurs, un invité ne change rien chez lui : il demande à l'hôte (surDemande : multi.js envoie), qui applique et renvoie
+// les valeurs à tous. L'hôte peut fermer la porte (« Les invités peuvent régler »).
+let demande = null;
+export const surDemande = (f) => { demande = f; };
+export const peutRegler = () => externes === null || (valeurs['multi.invites'] >= 0.5 && !!demande);
+const reglable = (d) => d && d.id !== 'multi.invites';
+const proposer = (ops) => { if (!ops.length) return false; demande(ops); return true; };
 export const presetActif = () => actif;
 
 // --- Régler (jamais quand les valeurs viennent de l'hôte) ---------------------------------------------------------------
 export function regler(id, v) {
   const d = PAR_ID[id];
-  if (!d || externes) return false;
+  if (externes) return !!d && reglable(d) && peutRegler() && proposer([{ id, v: caler(d, v) }]);
+  if (!d) return false;
   const k = caler(d, v);
   if (k === d.def) delete slots[actif][id]; else slots[actif][id] = k;
   sauver(); prevenir();
   return true;
 }
 export function reinitialiser(groupe = null) {
-  if (externes) return false;
+  if (externes) return peutRegler() && proposer(DEFS.filter((d) => reglable(d) && (!groupe || d.groupe === groupe)).map((d) => ({ id: d.id, v: d.def })));
   for (const d of DEFS) if (!groupe || d.groupe === groupe) delete slots[actif][d.id];
   sauver(); prevenir();
   return true;
@@ -161,11 +171,12 @@ export const basculerPreset = () => choisirPreset(actif === 'A' ? 'B' : 'A');
 export const exporter = () => JSON.stringify(changees(), null, 2);
 // Une config collée remplace celle du préréglage en cours. Rend { ok, n } ou { ok: false, erreur }.
 export function importer(texte) {
-  if (externes) return { ok: false, erreur: 'Les valeurs sont celles de l’hôte.' };
+  if (externes && !peutRegler()) return { ok: false, erreur: 'Les valeurs sont celles de l’hôte.' };
   let o;
   try { o = JSON.parse(texte); } catch { return { ok: false, erreur: 'Ce texte n’est pas une config (JSON attendu).' }; }
   if (!o || typeof o !== 'object' || Array.isArray(o)) return { ok: false, erreur: 'Une config est un objet { "réglage": valeur }.' };
   const connus = Object.keys(o).filter((id) => PAR_ID[id]);
+  if (externes) { proposer(DEFS.filter(reglable).map((d) => ({ id: d.id, v: d.id in o ? caler(d, o[d.id]) : d.def }))); return { ok: true, n: connus.length, ignores: Object.keys(o).length - connus.length }; }
   slots[actif] = nettoyer(o);
   sauver(); prevenir();
   return { ok: true, n: connus.length, ignores: Object.keys(o).length - connus.length };
@@ -173,8 +184,23 @@ export function importer(texte) {
 
 // --- À plusieurs : l'hôte envoie ses valeurs, l'invité les subit (le panneau en lecture seule) ----------------------------
 export const instantane = () => changees();
+// L'hôte applique la demande d'un invité, d'un seul coup (un seul envoi aux autres). Rend les réglages qui ont vraiment changé.
+export function appliquerDemande(ops) {
+  if (externes || !Array.isArray(ops)) return [];
+  const faits = [];
+  for (const o of ops.slice(0, 200)) {
+    const d = o && PAR_ID[o.id];
+    if (!reglable(d) || !Number.isFinite(Number(o.v))) continue;
+    const k = caler(d, o.v);
+    if (k === valeurs[d.id]) continue;
+    if (k === d.def) delete slots[actif][d.id]; else slots[actif][d.id] = k;
+    valeurs[d.id] = k; faits.push(d);
+  }
+  if (faits.length) { sauver(); prevenir(); }
+  return faits;
+}
 export function imposer(table) { externes = nettoyer(table); prevenir(); }
-export function liberer() { if (externes) { externes = null; prevenir(); } }
+export function liberer() { demande = null; if (externes) { externes = null; prevenir(); } }
 
 // pour les tests : repartir de zéro, sans toucher au navigateur
 export function _raz() { slots = { A: {}, B: {} }; actif = 'A'; externes = null; prevenir(); }

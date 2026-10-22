@@ -972,6 +972,13 @@ export async function selfTest(t, game) {
   t.ok(ana.dernier('reglages')?.R?.['ennemis.pv'] === 0.5, 'réglages : l’hôte règle les PV ennemis, Ana reçoit ses valeurs aussitôt');
   REG._raz(); jouer(0.3);
   t.ok(Object.keys(ana.dernier('reglages')?.R ?? { x: 1 }).length === 0, 'réglages : l’hôte remet les défauts, Ana aussi');
+  ana.recus.length = 0; ana.party.toHost({ t: 'reglage', ops: [{ id: 'ennemis.pv', v: 0.5 }, { id: 'feel.recul', v: 2 }, { id: 'multi.invites', v: 0 }, { id: 'inconnu', v: 1 }, { id: 'anim.vitesse', v: 'x' }] }); jouer(0.3);
+  t.ok(REG.lire('ennemis.pv') === 0.5 && REG.lire('feel.recul') === 2 && REG.oui('multi.invites') && REG.lire('anim.vitesse') === 1, 'réglages : Ana règle (PV ennemis, recul) : l’hôte applique ; la porte, un réglage inconnu et un texte sont ignorés');
+  t.ok(ana.dernier('reglages')?.R?.['ennemis.pv'] === 0.5 && ana.dernier('reglages')?.R?.['feel.recul'] === 2 && neuf().U('chef').pvMax === 45, 'réglages : tous reçoivent les valeurs, et le combat de l’hôte les prend');
+  t.ok(document.querySelector('.banniere-terrain')?.textContent.includes('règle'), 'réglages : l’hôte voit qui a réglé quoi (une bannière)');
+  REG.regler('multi.invites', 0); ana.recus.length = 0; ana.party.toHost({ t: 'reglage', ops: [{ id: 'ennemis.pv', v: 3 }] }); jouer(0.3);
+  t.ok(REG.lire('ennemis.pv') === 0.5 && ana.dernier('reglages-refus'), 'réglages : l’hôte ferme la porte : la demande d’Ana est refusée, rien ne change');
+  REG._raz(); jouer(0.3);
   t.ok(ihm.dom.groupe.textContent.includes('Ana') && ihm.dom.groupe.textContent.includes('KXQZB'), 'le lobby montre le groupe et son code');
   t.ok(place(1).textContent.includes('Ana') && place(1).querySelector('.fleche').disabled && !place(0).querySelector('.fleche').disabled,
     'la place d’Ana porte son nom ; chez l’hôte ses flèches sont grisées, pas les siennes');
@@ -1028,10 +1035,20 @@ export async function selfTest(t, game) {
   const p2 = multi.brancherTest(hub, { comme: 'invite', avec: 'QWERT', aller: (u) => allees.push(u) }); jouer(0.4);
   t.ok(p2.active && !p2.hosting && cy.party.others.size === 1, 'cette page rejoint le terrain de Cy');
   const moi = p2.id, L2 = { phase: 'lobby', equipe: ['brute', 'mage', 'voleur', 'gardien'], proprio: ['host', moi, null, null], mode: 'equipe', pret: [], absents: {} };
-  cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5 } }); jouer(0.2);
-  t.ok(REG.estExterne() && REG.lire('ennemis.pv') === 0.5 && !REG.regler('ennemis.pv', 3) && REG.lire('ennemis.pv') === 0.5, 'réglages : l’invité subit les valeurs de l’hôte et ne peut pas les changer');
-  t.ok(!document.querySelector('#reglages .reglages-hote').hidden && document.querySelector('#reglages input[type=range]').disabled, 'réglages : le panneau de l’invité est en lecture seule, « réglé par l’hôte »');
+  cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5, 'multi.invites': 0 } }); jouer(0.2);
+  cy.recus.length = 0;
+  t.ok(REG.estExterne() && REG.lire('ennemis.pv') === 0.5 && !REG.regler('ennemis.pv', 3) && REG.lire('ennemis.pv') === 0.5 && !cy.dernier('reglage'), 'réglages : porte fermée : l’invité subit les valeurs de l’hôte, sa demande ne part même pas');
+  t.ok(document.querySelector('#reglages .reglages-hote').textContent.includes('réglé par l’hôte') && document.querySelector('#reglages input[type=range]').disabled, 'réglages : le panneau de l’invité est en lecture seule, « réglé par l’hôte »');
   t.ok(neuf().U('chef').pvMax === 45, 'réglages : un combat créé chez l’invité prend les PV de l’hôte');
+  cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5 } }); jouer(0.2);
+  t.ok(!document.querySelector('#reglages input[type=range]').disabled && document.querySelector('#reglages .reglages-hote').textContent.includes('passent par l’hôte') && document.querySelector('#reglages [data-id="multi.invites"] input').disabled, 'réglages : porte ouverte : le panneau de l’invité se débloque (sauf la porte) ; il demande à l’hôte');
+  const demandeOk = REG.regler('ennemis.pv', 3); jouer(0.2);
+  t.ok(demandeOk && cy.dernier('reglage')?.ops[0].id === 'ennemis.pv' && cy.dernier('reglage')?.ops[0].v === 3 && REG.lire('ennemis.pv') === 0.5, 'réglages : l’invité règle : la demande part chez l’hôte, sa valeur ne change qu’au retour de l’hôte');
+  cy.recus.length = 0; const porteOk = !REG.regler('multi.invites', 0), reinitOk = REG.reinitialiser('ressenti'); jouer(0.2);
+  t.ok(porteOk && reinitOk && cy.dernier('reglage')?.ops.length === 6 && cy.dernier('reglage').ops.every((o) => o.id.startsWith('feel.')), 'réglages : un invité ne touche pas à la porte ; « Réinitialiser » d’une section part chez l’hôte, avec ses six réglages');
+  cy.party.toAll({ t: 'reglages', R: { 'ennemis.pv': 3 } }); jouer(0.2);
+  t.ok(REG.lire('ennemis.pv') === 3, 'réglages : l’hôte renvoie ses valeurs : elles arrivent chez l’invité');
+  cy.party.toAll({ t: 'reglages', R: { 'ennemis.pv': 0.5 } }); jouer(0.2);
   t.ok(place(1).classList.contains('mienne') && !place(1).querySelector('.fleche').disabled && place(0).querySelector('.fleche').disabled && document.querySelector('#commencer').hidden,
     'sa place est à lui (la Mage), celle de Cy non ; c’est Cy qui commence');
   place(1).querySelector('.fleche:last-child').click(); jouer(0.2);
