@@ -119,7 +119,7 @@ function construire() {
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'initiative' }), ' Ordre d’initiative : d20 + DEX, deux héros qui se suivent jouent ensemble')),
     el('label', { class: 'mode-infini' }, dom.infiniCase = el('input', { type: 'checkbox', id: 'mode-infini', onchange: (e) => reseau?.infini(e.target.checked) }),
       ' Mode infini : manche après manche, avec un soin et de l’XP entre deux, et des ennemis de plus en plus durs'),
-    el('p', { class: 'objectif' }, 'Objectif : vaincre le chef (les autres s’enfuient).'),
+    el('p', { class: 'objectif' }, 'Objectif : vaincre tous les ennemis, le chef compris.'),
     dom.attente = el('p', { class: 'attente-lobby', hidden: true }),
     el('div', { class: 'boutons' }, dom.commencer = el('button', { type: 'button', class: 'bouton-jeu', id: 'commencer', onclick: commencer }, 'Commencer le combat'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
