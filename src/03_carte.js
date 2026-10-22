@@ -2,7 +2,7 @@
 // Ce module ne dessine pas à l'écran : il compose le sol dans un canevas et fait la liste des objets et des obstacles.
 //   objet    { img, sx, sy, sw, sh, x, y, pied }   une image découpée dans une planche, posée en (x, y) ; `pied` sert au tri
 //   obstacle { x, y, w, h }                        un rectangle où un pied ne peut pas entrer (pixels du monde)
-import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, MURS, terre } from './01_plan.js';
+import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, MURS, terreUsee, usureCase } from './01_plan.js';
 import POS from './data/carte_zones.json';
 import ENTREE from './data/muraille.json';
 
@@ -14,12 +14,12 @@ const BORD = {   // masque des coins en terre (haut-gauche 1, haut-droite 2, bas
   8: [0, 2], 12: [1, 2], 4: [2, 2], 10: [0, 3], 5: [2, 3], 2: [0, 4], 3: [1, 4], 1: [2, 4],
   7: [1, 0], 11: [2, 0], 13: [1, 1], 14: [2, 1],
 };
-export function composerSol(im) {
-  const c = Object.assign(document.createElement('canvas'), { width: W * T, height: H * T });
+// usure(n, k) : l'usure des sentiers (53_traces.js) ; c : le canevas du sol à redessiner (quand l'usure change), sinon un neuf.
+export function composerSol(im, usure = () => 1, c = Object.assign(document.createElement('canvas'), { width: W * T, height: H * T })) {
   const g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
   const coin = [];
-  for (let j = 0; j <= H; j++) { coin[j] = []; for (let i = 0; i <= W; i++) coin[j][i] = terre(i, j); }
+  for (let j = 0; j <= H; j++) { coin[j] = []; for (let i = 0; i <= W; i++) coin[j][i] = terreUsee(i, j, usure); }
   for (let j = 0; j < H; j++) {
     for (let i = 0; i < W; i++) {
       const x = i * T, y = j * T, h = hash(i, j);
@@ -27,7 +27,10 @@ export function composerSol(im) {
       if (h % 9 === 0) g.drawImage(im.herbe, (h >>> 4) % 3 * T, 5 * T, T, T, x, y, T, T);   // des touffes, ici et là
       const m = (coin[j][i] ? 1 : 0) | (coin[j][i + 1] ? 2 : 0) | (coin[j + 1][i] ? 4 : 0) | (coin[j + 1][i + 1] ? 8 : 0);
       const tuile = (cx, cy) => g.drawImage(im.terre, cx * T, cy * T, T, T, x, y, T, T);
-      if (m === 15) { if (h % 5 === 0) tuile((h >>> 3) % 3, 5); else tuile(1, 3); }
+      if (m === 15) {
+        const u = usureCase(i, j, usure);   // usé : des plaques de terre piétinée (la tuile foncée de la planche), plus sur un sentier très usé
+        if (u >= 2 && h % (u === 3 ? 2 : 3) === 0) tuile(0, 5); else if (h % 5 === 0) tuile((h >>> 3) % 3, 5); else tuile(1, 3);
+      }
       else if (m === 9) { tuile(...BORD[1]); tuile(...BORD[8]); }
       else if (m === 6) { tuile(...BORD[2]); tuile(...BORD[4]); }
       else if (m) tuile(...BORD[m]);
