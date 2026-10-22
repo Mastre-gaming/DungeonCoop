@@ -13,6 +13,7 @@ import { monGithub } from './joueur.js';
 import * as vueSkill from './vue.js';
 import * as interfaceSkill from './interface.js';
 import * as multiSkill from './multi.js';
+import * as reglagesSkill from './panneau-reglages.js';
 import * as tests from './tests.js';
 import PERSOS from './persos.json';
 import { PLANCHES as EFFETS } from './effets.js';
@@ -63,8 +64,9 @@ async function demarrer() {
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
   const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode') });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
+  const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();
-  Object.assign(game.dbg, { combat, vue, ihm, multi, trame, salle, rendu, nouveauCombat });
+  Object.assign(game.dbg, { combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat });
   game.use(tests, { combat, vue, ihm, multi, trame, salle, game, images, SALLE });
 
   document.querySelector('#chargement').hidden = true;

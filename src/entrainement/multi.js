@@ -13,6 +13,7 @@ import { fr } from '../13_reseau.js';
 import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer } from './regles.js';
 import { monGithub } from './joueur.js';
 import { arme } from './armes.js';
+import * as REG from './reglages-combat.js';   // les réglages du combat : seules les valeurs de l'hôte comptent, il les envoie à tous
 
 export const name = 'multi';
 export const always = true;
@@ -97,6 +98,7 @@ export function init(g, options) {
   game = g;
   ({ combat, vue, ihm, nouveauCombat } = options);
   L = nouveauLobby(combat.S.equipe);
+  REG.surChangement(() => { if (hote && party) party.toAll({ t: 'reglages', R: REG.instantane() }); });   // l'hôte règle en plein combat : tous suivent
   const q = new URLSearchParams(location.search);
   code = (q.get('groupe') ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (code.length === 5 && !q.has('test')) {
@@ -111,6 +113,7 @@ function monNom() { try { return JSON.parse(localStorage.getItem(CLE_NOM))?.nom 
 function brancher(transport) {
   const vieux = party; party = null;
   vieux?.dispose?.();
+  if (!hote) REG.imposer({}); else REG.liberer();     // un invité ne règle rien : il subit les valeurs de l'hôte (les défauts, avant qu'elles arrivent)
   relie = false; essais = 0; statut = hote ? 'Ouverture du terrain…' : 'Connexion au groupe…';
   L = nouveauLobby(combat.S.equipe);
   const ce = party = partyNet.createParty({
@@ -121,7 +124,7 @@ function brancher(transport) {
       if (party !== ce) return;          // (un ancien groupe qui se ferme : plus rien à faire)
       if (type === 'status') surStatut(d);
       else if (type === 'game') surMessage(d.from, d.m);
-      else if (type === 'join' && hote) { arrivee(L, d.id); envoyerSalon(); if (L.phase === 'combat') party.to(d.id, { t: 'debut', L, copie: combat.instantane(), evs: [] }); }
+      else if (type === 'join' && hote) { arrivee(L, d.id); envoyerSalon(); if (L.phase === 'combat') party.to(d.id, { t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs: [] }); }
       else if (type === 'leave' && hote) { depart(L, d.id); verifierPrets(); envoyerSalon(); }
       else if (type === 'welcome') relie = true;
       ihm.redessiner();
@@ -151,6 +154,7 @@ function seul(texte) {
   const p = party; party = null;
   p?.dispose?.();
   statut = texte;
+  REG.liberer();           // (mes réglages à moi, de nouveau)
   for (const c of curseurs.values()) c.remove();
   curseurs.clear();
   ihm.debrancher(texte);
@@ -174,7 +178,9 @@ function surMessage(de, m) {
     return;
   }
   if (de !== HOTE) return;
-  if (m.t === 'salon') {
+  if (m.R) REG.imposer(m.R);       // les valeurs de l'hôte d'abord : le combat qui suit se crée avec elles
+  if (m.t === 'reglages') { /* (déjà imposé) */ }
+  else if (m.t === 'salon') {
     Object.assign(L, m.L);
     if (L.phase === 'lobby' && combat.S.phase !== 'preparation') { combat = nouveauCombat(L.equipe); ihm.accueil(); }
   } else if (m.t === 'debut' || (m.t === 'etat' && combat.S.phase === 'preparation')) {
@@ -191,13 +197,13 @@ function surMessage(de, m) {
   else if (m.t === 'camp') naviguer(adresseCamp());
   ihm.redessiner();
 }
-function envoyerSalon() { party?.toAll({ t: 'salon', L }); ihm.redessiner(); }
+function envoyerSalon() { party?.toAll({ t: 'salon', L, R: REG.instantane() }); ihm.redessiner(); }
 // L'hôte : les événements du combat à montrer ici, et à tous avec l'état.
 function diffuser() {
   const evs = combat.S.evenements.splice(0);
   vue.jouer(evs);
   ihm.etatRecu();
-  party?.toAll({ t: 'etat', L, copie: combat.instantane(), evs });
+  party?.toAll({ t: 'etat', L, R: REG.instantane(), copie: combat.instantane(), evs });
 }
 // L'hôte : tous ceux qu'on attend sont prêts ? la phase des héros finit (les ennemis jouent).
 function verifierPrets() {
@@ -218,7 +224,7 @@ function lancer() {
   ihm.lance();
   const evs = combat.S.evenements.splice(0);
   vue.jouer(evs);
-  party.toAll({ t: 'debut', L, copie: combat.instantane(), evs });
+  party.toAll({ t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs });
 }
 function rejouer() {
   L.phase = 'lobby'; L.pret = []; L.absents = {};

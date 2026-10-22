@@ -7,6 +7,8 @@ import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './mul
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
 import { testsHabillage } from '../34_tests_hud.js';
+import * as REG from './reglages-combat.js';
+import { calculerBilan } from './bilan.js';
 
 export const name = 'terrain';
 let ctx;
@@ -126,8 +128,8 @@ export async function selfTest(t, game) {
 
   // --- Des combats entiers -------------------------------------------------------------------------------------
   t.group('sans cases : des combats entiers');
-  for (const [mode, s] of [['equipe', 4], ['initiative', 8]]) {
-    const C = neuf({ mode, alea: graine(s) }), debut = performance.now();
+  // Le même joueur automatique pour tous les combats entiers (et pour l'empreinte des réglages).
+  const jouerJusquAuBout = (C) => {
     C.commencer();
     while (!C.S.resultat && C.S.round < 40) {
       for (const id of C.groupeCourant().ids) {
@@ -148,8 +150,21 @@ export async function selfTest(t, game) {
       }
       if (!C.S.resultat) C.finPhaseHeros();
     }
+  };
+  // L'empreinte d'un combat : tout ce qu'un joueur voit (le journal, les PV, la place de chacun, le round, le résultat).
+  const empreinte = (C) => {
+    const texte = JSON.stringify([C.S.journal, C.S.unites.map((u) => [u.id, u.pv, Math.round(u.x * 100), Math.round(u.y * 100)]), C.S.round, C.S.resultat, C.S.stats.degats]);
+    let h = 2166136261; for (let i = 0; i < texte.length; i++) { h ^= texte.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h.toString(16);
+  };
+  const empreintes = () => [['equipe', 4], ['initiative', 8]].map(([m, g]) => { const C = neuf({ mode: m, alea: graine(g) }); jouerJusquAuBout(C); return empreinte(C); });
+  for (const [mode, s] of [['equipe', 4], ['initiative', 8]]) {
+    const C = neuf({ mode, alea: graine(s) }), debut = performance.now();
+    jouerJusquAuBout(C);
     t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} : le combat va jusqu’au bout (${C.S.resultat} au round ${C.S.round}, ${Math.round(performance.now() - debut)} ms)`);
   }
+
+  t.eq(empreintes(), ['c2103c7f', 'a0437e3a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
@@ -952,6 +967,11 @@ export async function selfTest(t, game) {
   const ana = ami('Ana'); ana.party.join('KXQZB'); jouer(0.4);
   t.eq(multi.L.proprio[1], ana.party.id, 'Ana arrive : la place 2 est à elle');
   t.ok(ana.dernier('salon')?.L.proprio[1] === ana.party.id, 'elle reçoit le lobby');
+  REG._raz();
+  ana.recus.length = 0; REG.regler('ennemis.pv', 0.5); jouer(0.3);
+  t.ok(ana.dernier('reglages')?.R?.['ennemis.pv'] === 0.5, 'réglages : l’hôte règle les PV ennemis, Ana reçoit ses valeurs aussitôt');
+  REG._raz(); jouer(0.3);
+  t.ok(Object.keys(ana.dernier('reglages')?.R ?? { x: 1 }).length === 0, 'réglages : l’hôte remet les défauts, Ana aussi');
   t.ok(ihm.dom.groupe.textContent.includes('Ana') && ihm.dom.groupe.textContent.includes('KXQZB'), 'le lobby montre le groupe et son code');
   t.ok(place(1).textContent.includes('Ana') && place(1).querySelector('.fleche').disabled && !place(0).querySelector('.fleche').disabled,
     'la place d’Ana porte son nom ; chez l’hôte ses flèches sont grisées, pas les siennes');
@@ -1008,7 +1028,10 @@ export async function selfTest(t, game) {
   const p2 = multi.brancherTest(hub, { comme: 'invite', avec: 'QWERT', aller: (u) => allees.push(u) }); jouer(0.4);
   t.ok(p2.active && !p2.hosting && cy.party.others.size === 1, 'cette page rejoint le terrain de Cy');
   const moi = p2.id, L2 = { phase: 'lobby', equipe: ['brute', 'mage', 'voleur', 'gardien'], proprio: ['host', moi, null, null], mode: 'equipe', pret: [], absents: {} };
-  cy.party.toAll({ t: 'salon', L: L2 }); jouer(0.2);
+  cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5 } }); jouer(0.2);
+  t.ok(REG.estExterne() && REG.lire('ennemis.pv') === 0.5 && !REG.regler('ennemis.pv', 3) && REG.lire('ennemis.pv') === 0.5, 'réglages : l’invité subit les valeurs de l’hôte et ne peut pas les changer');
+  t.ok(!document.querySelector('#reglages .reglages-hote').hidden && document.querySelector('#reglages input[type=range]').disabled, 'réglages : le panneau de l’invité est en lecture seule, « réglé par l’hôte »');
+  t.ok(neuf().U('chef').pvMax === 45, 'réglages : un combat créé chez l’invité prend les PV de l’hôte');
   t.ok(place(1).classList.contains('mienne') && !place(1).querySelector('.fleche').disabled && place(0).querySelector('.fleche').disabled && document.querySelector('#commencer').hidden,
     'sa place est à lui (la Mage), celle de Cy non ; c’est Cy qui commence');
   place(1).querySelector('.fleche:last-child').click(); jouer(0.2);
@@ -1030,10 +1053,95 @@ export async function selfTest(t, game) {
   cy.party.toAll({ t: 'camp' }); jouer(0.2);
   t.eq(allees.pop(), './index.html?spot=combat&code=QWERT', 'Cy retourne au camp : on le suit, dans le même groupe');
   cy.party.leave(); jouer(0.4);
+  t.ok(!REG.estExterne() && REG.lire('ennemis.pv') === 1, 'réglages : l’hôte parti, les réglages de l’invité sont de nouveau les siens');
   t.ok(!multi.actif && !ihm.reseau && ihm.choisirHeros('h1'), 'Cy s’en va : on continue seul, tous les héros sont à nous');
   ihm.dom.finPhase.click(); jouerFile();
   t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
   multi.debrancherTest();
+
+  // --- Les réglages du combat : le panneau (R), les trois premiers boutons, le bilan -------------------------------------------
+  t.group('les réglages du combat');
+  REG._raz();
+  {
+    const touche = (code) => window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+    const panneau = document.querySelector('#reglages'), rang = (id) => panneau.querySelector(`.reglage[data-id="${id}"]`);
+    t.ok(panneau.hidden && document.querySelector('#ouvrir-reglages') && document.querySelector('.aide-terrain').textContent.includes('réglages'), 'le panneau est fermé ; un bouton et la touche R (écrite dans l’aide) l’ouvrent');
+    touche('KeyR');
+    t.ok(!panneau.hidden && panneau.querySelectorAll('.reglage').length === 3 && panneau.querySelectorAll('details').length === 2, 'R ouvre le panneau : trois réglages en deux sections repliables');
+    t.ok(REG.DEFS.every((d) => REG.lire(d.id) === d.def) && !panneau.querySelector('.reglage.change'), 'sans y toucher : les défauts, aucun point de changement');
+    t.eq([REG.lire('ennemis.vitesse'), REG.lire('anim.vitesse'), REG.lire('ennemis.pv'), REG.lire('releve.pv'), REG.lire('potion.soin')], [1, 1, 1, 25, 20], 'les défauts : ×1, ×1, ×1, relève 25 PV, potion 20 PV (comme avant)');
+    // chaque réglage change ce qu'il doit changer
+    const pvAvant = neuf().S.unites.filter((u) => u.camp === 'e').map((u) => u.pvMax);
+    const curseur = rang('ennemis.pv').querySelector('input[type=range]');
+    curseur.value = '0.5'; curseur.dispatchEvent(new Event('input', { bubbles: true }));
+    t.eq(neuf().S.unites.filter((u) => u.camp === 'e').map((u) => u.pvMax), pvAvant.map((p) => Math.round(p * 0.5)), 'santé des ennemis ×0,5 : leurs PV sont divisés par deux (le curseur du panneau)');
+    t.ok(rang('ennemis.pv').classList.contains('change') && getComputedStyle(rang('ennemis.pv').querySelector('.point-change')).visibility === 'visible' && rang('ennemis.pv').querySelector('input[type=number]').value === '0.50',
+      'un point sur la valeur changée, et son champ à jour');
+    t.ok(!rang('anim.vitesse').classList.contains('change'), 'les autres restent au défaut');
+    REG.regler('ennemis.pv', 2);
+    t.eq(neuf().U('chef').pvMax, 180, 'santé des ennemis ×2 : le chef a 180 PV');
+    REG.regler('ennemis.pv', 99);
+    t.eq(REG.lire('ennemis.pv'), 5, 'une valeur trop grande est ramenée au maximum du réglage');
+    REG._raz();
+    // les vitesses : la file des événements joue plus vite
+    const pas = (reglages) => {
+      for (const [id, v] of Object.entries(reglages)) REG.regler(id, v);
+      V.jouer([{ type: 'phase', phase: 'ennemis' }, { type: 'menace', x: 10, y: 8, r: 1 }]);
+      let n = 0; while (V.occupe() && n < 400) { game.dbg.advance(0.05); n++; }
+      V.jouer([{ type: 'phase', phase: 'heros', ids: [] }]); game.dbg.advance(0.05);
+      REG._raz(); return n;
+    };
+    const base = pas({}), ennemis2 = pas({ 'ennemis.vitesse': 2 }), anim2 = pas({ 'anim.vitesse': 2 });
+    t.ok(base >= 12 && ennemis2 <= base * 0.6 && anim2 <= base * 0.6, `les vitesses : tour des ennemis ×2 et animations ×2 jouent la même scène en moitié moins de temps (${base} → ${ennemis2} et ${anim2} images)`);
+    REG.regler('ennemis.vitesse', 2);
+    V.jouer([{ type: 'phase', phase: 'heros', ids: [] }, { type: 'menace', x: 10, y: 8, r: 1 }]);
+    let m = 0; while (V.occupe() && m < 400) { game.dbg.advance(0.05); m++; }
+    t.ok(m >= base * 0.9, 'la vitesse des tours ennemis ne touche pas la phase des héros'); REG._raz();
+    // soigner : la relève et la potion lisent les réglages
+    {
+      const C = neuf(); C.commencer(); const h = C.U('h1'), a = C.U('h2'); a.ko = true; a.pv = 0; a.x = h.x + 1; a.y = h.y; h.t.action = true;
+      REG.regler('releve.pv', 40); C.utiliser(h, 'relever', { id: 'h2' });
+      t.ok(C.U('h2').pv === 40 && C.S.stats.reles.h1 === 1, 'relever : le réglage (40 PV) ; la relève est comptée pour celui qui relève'); REG._raz();
+    }
+    {
+      const C = neuf(); C.commencer(); const h = C.U('h1'); h.pv = 10; h.t.bonus = true; REG.regler('potion.soin', 35); C.utiliser(h, 'potion', {});
+      t.ok(h.pv === 45 && C.S.stats.potions.h1 === 1, 'potion : le réglage (35 PV) ; la potion est comptée'); REG._raz();
+    }
+    // copier, coller
+    REG.regler('ennemis.pv', 0.5); REG.regler('anim.vitesse', 1.5);
+    const json = REG.exporter(), copie = { ...REG.changees() };
+    t.eq(JSON.parse(json), { 'anim.vitesse': 1.5, 'ennemis.pv': 0.5 }, 'copier : seulement les valeurs changées, en JSON');
+    REG._raz(); t.ok(REG.importer(json).ok && JSON.stringify(REG.changees()) === JSON.stringify(copie), 'coller le texte copié redonne la même config');
+    t.ok(!REG.importer('pas du json').ok && !REG.importer('[1,2]').ok && JSON.stringify(REG.changees()) === JSON.stringify(copie), 'un texte qui n’est pas une config est refusé, rien ne change');
+    t.ok(REG.importer('{"ennemis.pv": 3, "inconnu": 1}').ignores === 1 && REG.lire('ennemis.pv') === 3 && REG.lire('anim.vitesse') === 1, 'une config collée remplace l’ancienne ; un réglage inconnu est ignoré');
+    // préréglages A et B
+    REG._raz(); REG.regler('ennemis.pv', 0.5); REG.choisirPreset('B'); REG.regler('ennemis.pv', 2);
+    t.ok(REG.presetActif() === 'B' && REG.lire('ennemis.pv') === 2, 'préréglage B : ses propres valeurs');
+    touche('KeyB');
+    t.ok(REG.presetActif() === 'A' && REG.lire('ennemis.pv') === 0.5 && neuf().U('chef').pvMax === 45, 'la touche B repasse à A, en plein combat : les valeurs de A');
+    touche('KeyB');
+    t.ok(REG.presetActif() === 'B' && REG.lire('ennemis.pv') === 2, 'et revient à B');
+    REG.reinitialiser('ennemis');
+    t.ok(REG.lire('ennemis.pv') === 1 && REG.presetActif() === 'B', 'Réinitialiser une section : ses valeurs reviennent au défaut');
+    REG.regler('anim.vitesse', 1.25);
+    t.ok(JSON.parse(localStorage.getItem('dungeoncoop:reglages-combat')).slots.B['anim.vitesse'] === 1.25, 'les réglages sont gardés dans ce navigateur (localStorage)');
+    touche('KeyR'); t.ok(panneau.hidden, 'R referme le panneau');
+    REG._raz();
+  }
+  {
+    // le bilan de fin : les parts font 100 %, les combos et les relèves sont comptés par héros
+    const C = neuf({ alea: graine(4) }); jouerJusquAuBout(C);
+    const b = calculerBilan(C.S, 0), somme = b.heros.reduce((a, h) => a + h.part, 0);
+    t.ok(b.total > 0 && Math.abs(somme - 1) < 1e-9 && b.heros.reduce((a, h) => a + h.pourcent, 0) === 100, `le bilan : les parts de dégâts font 100 % (${b.heros.map((h) => `${h.nom} ${h.pourcent} %`).join(', ')})`);
+    t.ok(b.heros.every((h) => h.ecrase === (h.part > 0.4)) && b.heros.reduce((a, h) => a + h.degats, 0) === b.total, 'un héros au-dessus de 40 % est signalé ; ses dégâts s’ajoutent au total');
+    const C2 = neuf(); C2.S.stats.combos.push({ r: 1, a: 'h2', b: 'h1', quoi: 'x' }, { r: 2, a: 'h2', b: 'h3', quoi: 'y' });
+    const b2 = calculerBilan(C2.S, 0);
+    t.ok(b2.heros.map((h) => h.combos).join() === '1,0,1,0' && b2.heros[1].prepares === 2 && b2.heros.every((h) => h.pourcent === 0), 'les combos sont comptés pour celui qui exploite (et ceux préparés à part) ; sans dégâts, aucune part');
+    ihm.montrerFin(true);
+    const lignes = [...document.querySelectorAll('#bilan tbody tr')];
+    t.ok(lignes.length === 4 && document.querySelector('#bilan .bilan-chiffres').textContent.includes('Durée') && document.querySelector('#bilan thead').textContent.includes('Potions'), 'la fin de combat montre le bilan : durée, rounds, un tableau de quatre héros');
+    ihm.dom.fin.hidden = true;
+  }
 
   t.group('Shadow à l’écran (#198)');
   {

@@ -9,6 +9,7 @@ import {
   CONTACT, ECART_MIN, dist, metres, vue, enTenaille, carteDistances, chemin, longueurChemin, indiceDe, pointDe,
   libre, simulerPoussee, pointLibreProche, trajetLibre,
 } from './geometrie.js';
+import { lire } from './reglages-combat.js';   // les nombres qu'on règle à la main (panneau) ; leurs défauts sont les valeurs d'avant
 
 // --- Les classes d'essai (niveau 1, « uniquement pour ce test ») et les ennemis du kit ------------------------------
 // Les 4 premières sont les héros du kit D1 ; les 4 suivantes, des classes d'essai faites au budget de
@@ -96,10 +97,10 @@ export const CAPACITES = {
   projection: { nom: 'Projection', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 3, proj: true, ds: 'Pousse de 4,5 m ; s’il heurte quelque chose : +8 et À terre' },
   projection20: { nom: 'Projection furieuse', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 5, proj: true, cout: 20, ds: '20 Rage · pousse de 7,5 m' },
   pousser: { nom: 'Pousser', slot: 'bonus', type: 'poussee', portee: CONTACT, longueur: 2, ds: '3 m ; +8 contre un obstacle ; fossé : sbire éliminé, sinon 20' },
-  potion: { nom: 'Potion', slot: 'bonus', type: 'potion', ds: '+20 PV · une seule par héros' },
+  potion: { nom: 'Potion', slot: 'bonus', type: 'potion', get ds() { return `+${lire('potion.soin')} PV · une seule par héros`; } },
   // l'action commune de tous les héros (#231), hors de la barre : un bouton et la touche D
   desengager: { nom: 'Se désengager', slot: 'bonus', type: 'desengager', ds: 'Ce tour-ci, il s’éloigne sans attaque d’opportunité' },
-  relever: { nom: 'Relever', slot: 'action', type: 'relever', portee: CONTACT, ds: 'Un allié KO au contact revient à 25 PV' },
+  relever: { nom: 'Relever', slot: 'action', type: 'relever', portee: CONTACT, get ds() { return `Un allié KO au contact revient à ${lire('releve.pv')} PV`; } },
   etincelle: { nom: 'Étincelle', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 8, de: 4, anim: 'sort', ds: 'Portée 9 m · 5–7 / 11–14 / 22–28' },
   eclaboussure: { nom: 'Éclaboussure', slot: 'action', type: 'zone', surf: 'eau', rayon: R2, portee: 5, cout: 10, anim: 'sort', ds: '10 Mana · une flaque de 1,7 m à 7,5 m ; ceux dedans sont Trempés' },
   foudre: { nom: 'Foudre', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 14, de: 6, el: 'foudre', cout: 15, anim: 'sort', ds: '15 Mana · 8–11 / 17–22 / 34–44 ; ×2 sur Trempé ; électrise l’eau' },
@@ -176,7 +177,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], enclume: null, surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
     heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
-    stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [] },
+    stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [], reles: {}, potions: {} },
   };
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
   PLACES.forEach((id, k) => {
@@ -194,10 +195,10 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const TYPE = { s: 'sbire', a: 'archer', br: 'brt', chef: 'chef' };
   const groupe = ennemis ?? ORDRE_ENNEMIS.map((id) => ({ id, type: TYPE[id] ?? TYPE[id[0]], x: departs.ennemis[id][0], y: departs.ennemis[id][1] }));
   for (const { id, type, x, y } of groupe) {
-    const df = ENNEMIS[type];
+    const df = ENNEMIS[type], pvE = Math.max(1, Math.round(df.pv * lire('ennemis.pv')));
     const n = id.match(/\d$/)?.[0];
     S.ennemis.push(id);
-    S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: df.pv, pvMax: df.pv, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace }));
+    S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: pvE, pvMax: pvE, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace }));
   }
   tonneaux.forEach(([x, y], k) => S.tonneaux.push({ id: `t${k}`, x, y }));
   if (flaque) peindre(flaque.x, flaque.y, flaque.r, () => ({ t: 'eau', ttl: null, par: null }));
@@ -1113,8 +1114,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       return true;
     }
     if (cap.type === 'potion') {
-      payer(h, cap); h.potion--;
-      const a = Math.min(20, h.pvMax - h.pv); h.pv += a;
+      payer(h, cap); h.potion--; S.stats.potions[h.id] = (S.stats.potions[h.id] ?? 0) + 1;
+      const a = Math.min(lire('potion.soin'), h.pvMax - h.pv); h.pv += a;
       ev({ type: 'soin', id: h.id, n: a, pv: h.pv, potion: true });
       log(`${h.nom} boit sa potion : +${a} PV.`, 'bon');
       return true;
@@ -1201,9 +1202,10 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     if (cap.type === 'relever' && u && u.camp === 'h' && u.ko && dist(h, u) <= CONTACT) {
       payer(h, cap);
-      u.ko = false; u.pv = 25; u.t = { mv: 0, action: false, bonus: false, reaction: false }; S.stats.releves++;
-      ev({ type: 'ranime', id: u.id, pv: 25 });
-      log(`${h.nom} relève ${u.nom} (25 PV). Il rejouera au prochain tour.`, 'bon');
+      const pvRelve = lire('releve.pv');
+      u.ko = false; u.pv = pvRelve; u.t = { mv: 0, action: false, bonus: false, reaction: false }; S.stats.releves++; S.stats.reles[h.id] = (S.stats.reles[h.id] ?? 0) + 1;
+      ev({ type: 'ranime', id: u.id, pv: pvRelve });
+      log(`${h.nom} relève ${u.nom} (${pvRelve} PV). Il rejouera au prochain tour.`, 'bon');
       return true;
     }
     const ennemiVise = u && u.camp === 'e' && !u.mort && aPortee(h, cap, u);

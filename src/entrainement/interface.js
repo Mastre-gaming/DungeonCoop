@@ -11,6 +11,7 @@
 import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour } from './regles.js';
 import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
+import { calculerBilan } from './bilan.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
@@ -110,6 +111,7 @@ function construire() {
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   dom.fin = el('div', { class: 'fond-terrain', id: 'fin', hidden: true }, el('section', { class: 'cadre-terrain' },
     dom.finTitre = el('h1', {}),
+    dom.bilan = el('div', { class: 'bilan-fin', id: 'bilan' }),
     el('div', { class: 'notes-fin' },
       ...[['fun', 'Fun, sur 10'], ['lent', 'Ce qui a semblé lent'], ['cases', 'Sans cases : mieux ou moins bien qu’avec, et pourquoi'], ['regle', 'Une règle à changer']]
         .map(([k, t]) => el('label', {}, t, el('input', { type: 'text', name: k, oninput: () => { dom.fiche.textContent = combat.fiche(notes()); } })))),
@@ -577,7 +579,21 @@ function montrerFin(enCours) {
   dom.finTitre.textContent = S.resultat === 'victoire' ? `Victoire au round ${S.round} !` : S.resultat === 'defaite' ? `Défaite au round ${S.round}` : 'La fiche de mesure (combat en cours)';
   dom.continuer.hidden = !enCours || !!S.resultat;
   dom.fiche.textContent = combat.fiche(notes());
+  dom.bilan.replaceChildren(...bilanDom(calculerBilan(S, ui.horloge())));
   dom.fin.hidden = false;
+}
+// Le bilan : la durée, les rounds, et pour chaque héros sa part des dégâts (signalée au-dessus de 40 %), ses combos, ses relèves, ses potions.
+function bilanDom(b) {
+  const ligne = (h) => el('tr', { class: h.ecrase ? 'ecrase' : '', dataset: { heros: h.id } },
+    el('th', { scope: 'row' }, h.nom), el('td', {}, String(h.degats)),
+    el('td', { class: 'part' }, el('span', { class: 'jauge-part' }, el('span', { style: `width:${h.pourcent}%` })), ` ${h.pourcent} %`, h.ecrase ? el('span', { class: 'tampon', title: 'Plus de 40 % des dégâts à lui seul (GAME_SPEC)' }, '> 40 %') : null),
+    el('td', {}, `${h.combos}`, h.prepares ? el('span', { class: 'muet' }, ` (+${h.prepares} préparé${h.prepares > 1 ? 's' : ''})`) : null), el('td', {}, String(h.releves)), el('td', {}, String(h.potions)));
+  return [
+    el('p', { class: 'bilan-chiffres' }, el('span', {}, 'Durée ', el('strong', {}, duree(b.duree))), el('span', {}, 'Rounds ', el('strong', {}, String(b.rounds))), el('span', {}, 'Dégâts aux ennemis ', el('strong', {}, String(b.total)))),
+    el('table', { class: 'bilan-table' },
+      el('thead', {}, el('tr', {}, ...['Héros', 'Dégâts', 'Part des dégâts', 'Combos', 'Relèves', 'Potions'].map((t) => el('th', { scope: 'col' }, t)))),
+      el('tbody', {}, b.heros.map(ligne))),
+  ];
 }
 async function copier() {
   const texte = combat.fiche(notes());

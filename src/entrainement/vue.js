@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import { T } from '../01_plan.js';
 import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
+import { lire } from './reglages-combat.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
 import { creerFilms, traction, ENCLUME as ENCLUME_FILM } from './films.js';
@@ -48,6 +49,7 @@ const BABA = 'baba-brisenclume';
 const FILMS_ENCLUME = ['chute-enclume', 'lame-ardente', 'trempe'];
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
+let phaseVue = null;                  // la phase que la file montre en ce moment (les ennemis jouent : leurs tours se règlent à part)
 let temps = 0, prochainFeu = 0;
 let fx = null, etatsVus = new Map();   // les effets joués, et les états montrés (relus quand la file est vide)
 let etatsPlaques = new Map();         // id → les états sous sa barre (etats.js), relus aussi quand la file est vide
@@ -180,7 +182,7 @@ export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
   enclume?.s.retirer(); films.vider();
-  aff.clear(); tonneaux.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
+  aff.clear(); tonneaux.clear(); file = []; courant = null; phaseVue = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
   peupler();
   redessinerSurfaces();
@@ -405,7 +407,7 @@ function scene(e) {
       return { duree: 0.3 };
     case 'ko': a.anim = 'tombe'; a.t = 0; if (a.camp === 'h') a.ko = true; else a.mort = true; return { duree: 0.55 };
     case 'ranime':
-      a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, '+25', 'soin');
+      a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, `+${e.pv}`, 'soin');
       fx.jouer('colonne-doree', { x: a.x, y: a.y }); fx.jouer('croix-soin', { x: a.x, y: a.y, retard: 0.2 });
       return { duree: 0.5 };
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
@@ -639,17 +641,18 @@ export function basculerPlaques(camp, oui = !plaques[camp]) {
 
 // --- Chaque image ----------------------------------------------------------------------------------------------
 export function update(dtReel) {
-  const dt = gel > 0 ? 0 : ralenti.reste > 0 ? dtReel * ralenti.k : dtReel;
+  const dt = (gel > 0 ? 0 : ralenti.reste > 0 ? dtReel * ralenti.k : dtReel) * lire('anim.vitesse');   // (le réglage « vitesse des animations » : ×1 par défaut)
   if (gel > 0) gel = Math.max(0, gel - dtReel); else ralenti.reste = Math.max(0, ralenti.reste - dtReel);
   temps += dt;
   // la file
   if (!courant && file.length) {
     const e = file.shift(), s = scene(e) ?? { duree: 0 };
+    if (e.type === 'phase') phaseVue = e.phase;
     courant = { e, s, t: 0 };
     if (!s.duree) { s.maj?.(0, 1); s.fin?.(); courant = null; }
   }
   if (courant) {
-    courant.t += dt;
+    courant.t += dt * (phaseVue === 'ennemis' ? lire('ennemis.vitesse') : 1);   // la marche et les pauses des ennemis, plus vives ou plus lentes
     const k = Math.min(1, courant.t / courant.s.duree);
     courant.s.maj?.(courant.t, k);
     if (k >= 1) { courant.s.fin?.(); courant = null; if (!file.length && marques.actif) { marques.actif = null; dessinerMarques(); } }

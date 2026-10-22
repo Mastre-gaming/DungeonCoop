@@ -2,6 +2,7 @@
 // chaque résultat et les d20 qui y mènent, ses caractéristiques (portée, zone, coût, bonus au jet), ses effets, et
 // le résumé court de la barre. Les icônes sont celles des maquettes (design/ui-combat/icones/).
 import { CONTACT, metres } from './geometrie.js';
+import { lire } from './reglages-combat.js';
 
 // l'icône de chaque capacité ; les variantes gardent l'icône de base avec un tampon doré
 const ICONES = {
@@ -98,8 +99,8 @@ export function resume(cap) {
     case 'soin': return cap.soin ? `+${cap.soin.base + 1 + cap.soin.mod}–${cap.soin.base + cap.soin.de + cap.soin.mod} PV` : '+18–23 PV';
     case 'soinZone': return `+${cap.soin} PV autour`;
     case 'poussee': return `${metres(cap.longueur)} m · +8`;
-    case 'potion': return '+20 PV';
-    case 'relever': return 'KO → 25 PV';
+    case 'potion': return `+${lire('potion.soin')} PV`;
+    case 'relever': return `KO → ${lire('releve.pv')} PV`;
     case 'etatCible': return 'Gelé';
     case 'huileCible': return 'Huilé';
     case 'attraction': return `attire ${metres(cap.longueur)} m`;
