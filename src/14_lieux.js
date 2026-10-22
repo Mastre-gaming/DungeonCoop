@@ -106,7 +106,8 @@ const niveauArchives = () => SEUILS_ARCHIVES.reduce((n, s, i) => (animationsRent
 // L'infirmerie (maquette de la session « Overnight prompt », design/camp/infirmerie/) : dans l'enceinte, à l'emplacement n° 3 du camp (à l'est, sous le tableau d'affichage : le n° 1 est pris par le chantier). Elle n'a
 // pas encore d'axe : en attendant le choix du propriétaire, elle suit l'axe Combat (le plus proche, INFIRMERIE.md).
 export const AXE_INFIRMERIE = 'combat';
-const LIEUX_JEU = [...LIEUX, { id: 'archives', ...ARCHIVES }, { id: 'infirmerie', emprise: EMPLACEMENTS.find((e) => e.n === 3).emprise }];
+const LIEUX_JEU = [...LIEUX, { id: 'archives', ...ARCHIVES }, { id: 'infirmerie', emprise: EMPLACEMENTS.find((e) => e.n === 3).emprise },
+  { id: 'centre', emprise: [8, 7, 32, 22] }];   // le centre-ville : le parvis du feu, l'estrade du barde, la guirlande (design/camp/outils/lieux_jeu.py, centre)
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;

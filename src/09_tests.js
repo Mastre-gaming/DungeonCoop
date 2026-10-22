@@ -658,7 +658,7 @@ function testsReseau(t, game) {
   prendre('depart');
   // Paul marche : Ana le voit bouger
   const vu = () => [...ana.party.others.values()].find((o) => o.name === 'Paul')?.shown.x ?? 0;
-  heros.placer(18 * T, 17 * T, 'droite'); jouer(0.5);
+  heros.placer(APPARITION[0] * T, APPARITION[1] * T, 'droite'); jouer(0.5);
   const avant = vu();
   window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ArrowRight' })); jouer(1); window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ArrowRight' })); jouer(0.5);
   t.ok(vu() - avant > 50, `Paul marche : Ana le voit avancer (${Math.round(vu() - avant)} px)`);

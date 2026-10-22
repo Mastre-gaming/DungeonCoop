@@ -30,12 +30,11 @@ function retirer() {
 function construire(n) {
   retirer();
   niveau = n;
-  const d = PLACE.niveaux[n], [ox, oy] = PLACE.origine, [w, h] = PLACE.taille;
-  sol = rendu.sprite(images.placeSols, 'placeSols', w, h);
-  sol.poser(ox, oy, PIED_SOL, n * w, 0);
-  for (const o of d.objets) objets.push({ sprite: rendu.sprite(images.placeObjets, 'placeObjets', o.w, o.h), o });
-  for (const [x, y, sw, sh] of d.socles) { const ob = { x, y, w: sw, h: sh }; collision.ajouter(ob); obstacles.push(ob); }
-  decor?.cacherFeu?.(true);   // le feu, c'est maintenant la place qui le dessine (et ses braseros, à partir du niveau 2)
+  // Le centre-ville a été refait (22 oct) : le sol, le foyer, les bancs, la guirlande et l'estrade sont dessinés par 14_lieux.js
+  // (le lieu « centre »). Ici ne reste que ce qui bouge : le grand feu, ses cinq images.
+  const d = PLACE.niveaux[n];
+  for (const o of d.objets) if (o.images >= 3 && o.h >= 60) objets.push({ sprite: rendu.sprite(images.placeObjets, 'placeObjets', o.w, o.h), o });
+  decor?.cacherFeu?.(true);   // le feu, c'est maintenant la place qui le dessine
   poser();
 }
 

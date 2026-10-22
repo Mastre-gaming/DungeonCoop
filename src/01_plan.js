@@ -48,7 +48,7 @@ const [ex, ey] = (({ emprise: e }) => [e[0] - 24, e[1] - 2])(PLAN.lieux.find((l)
 export const ENCLOS = { ouest: 24.5 + ex, est: 31.5 + ex, nord: 3.3 + ey, sud: 9.3 + ey, entree: [27 + ex, 29 + ex], sol: [25 + ex, 3 + ey, 31 + ex, 9 + ey] };
 
 export const FEU = PLAN.feu;             // le centre du feu (un coin de case)
-export const APPARITION = [18, 17];      // où les héros arrivent (un coin de case)
+export const APPARITION = [19.6, 18.2];      // où les héros arrivent (un coin de case)
 
 // Les places : le feu, le savoir, les fêtes (centre et rayon). Les cours : la terre battue devant chaque porte.
 export const PLACES = PLAN.places.map(([x, y, r, nom]) => ({ x, y, r, nom }));

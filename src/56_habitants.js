@@ -29,6 +29,16 @@ const BETES = [
   { zone: 'ferme', dx: 0.2, dy: 2.8, r: 2.5, robe: 'rousse' }, { zone: 'ferme', dx: 2.2, dy: 1.2, r: 2.5, robe: 'rousse' },
   { zone: 'chasseur', dx: 1.4, dy: 1.6, r: 1.2, robe: 'chat' }, { feu: true, dx: 2.6, dy: 1.2, r: 1.2, robe: 'chat' },
 ];
+// La troupe du barde, sur son estrade (design/camp/outils/lieux_jeu.py, centre : l'estrade est à la case (8, 7) + (46..214, 150..202) px) :
+// un tambour, une chanteuse, un flûtiste et une danseuse, qui jouent en boucle (les gestes de leur planche LPC). Le barde et son enceinte,
+// eux, sont posés par 24_radio.js.
+const SCENE = [256, 224];
+const GESTES = { estoc: [4, 8, 8], sort: [0, 7, 5] };
+const TROUPE = [
+  { planche: 'hab-paysan', x: 98, y: 168, geste: 'estoc' }, { planche: 'hab-lectrice', x: 124, y: 160, geste: null },
+  { planche: 'hab-badaud1', x: 182, y: 168, geste: 'sort', dec: 0.4 }, { planche: 'hab-fermiere', x: 206, y: 160, geste: 'sort', dec: 1.1 },
+];
+const troupe = [];
 const gens = [], betes = [];
 let heros, rendu, collision, jourNuit, visite;
 const S = { t: 0, aleat: Math.random };
@@ -51,6 +61,7 @@ export function init(game, options) {
     betes.push({ ...d, x: p[0], y: p[1], ancre: [...p], sens: S.aleat() < 0.5 ? 'g' : 'd', but: null, pause: hasard(0.5, 4), t: S.aleat() * 5,
       sprite: rendu.sprite(images.animaux, 'animaux', CW, CH), ombre: rendu.ombre(10, 3) });
   }
+  for (const d of TROUPE) troupe.push({ ...d, t: d.dec ?? 0, sprite: rendu.sprite(images[d.planche], `troupe-${d.planche}`, 64, 64), ombre: rendu.ombre(18, 4) });
   update(0);
   return api;
 }
@@ -83,8 +94,16 @@ export function update(dt) {
     o.marche = false;
     if (o.but) { const dx = o.but[0] - o.x, dy = o.but[1] - o.y; o.dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? 'gauche' : 'droite') : (dy < 0 ? 'haut' : 'bas'); o.marche = marcher(o, VITESSE, dt); }
     else if (o.flane && (o.pause -= dt) <= 0) o.but = choisir(o);
-    const rang = (o.marche ? MARCHE : REPOS) + DIRS[o.dir], col = o.marche ? 1 + (Math.floor(o.t * 8) % 8) : Math.floor(o.t * 1.4) % 2;
+    const rang = MARCHE + DIRS[o.dir], col = o.marche ? 1 + (Math.floor(o.t * 8) % 8) : 0;   // (à l'arrêt : la première image de la marche ; les rangées de repos n'ont pas tous les vêtements)
     o.sprite.poser(o.x - 32, o.y - 60, o.y, col * 64, rang * 64); o.ombre.poser(o.x, o.y - 1);
+  }
+  for (const o of troupe) {
+    o.t += dt;
+    o.sprite.cacher(cache); o.ombre.cacher(cache);
+    if (cache) continue;
+    const g = o.geste && GESTES[o.geste];
+    const rang = g ? g[0] + DIRS.bas : MARCHE + DIRS.bas, col = g ? Math.floor(o.t * g[2]) % g[1] : 0;
+    o.sprite.poser(SCENE[0] + o.x - 32, SCENE[1] + o.y - 60, SCENE[1] + o.y, col * 64, rang * 64); o.ombre.poser(SCENE[0] + o.x, SCENE[1] + o.y - 1);
   }
   for (const o of betes) {
     o.t += dt;
@@ -103,6 +122,7 @@ export function update(dt) {
 }
 
 export function selfTest(t) {
+  t.ok(troupe.length === 4, 'la troupe du barde : quatre sur son estrade');
   t.ok(gens.length >= 6 && betes.length >= 4, `des villageois (${gens.length}) et des bêtes (${betes.length}) dans le camp et dehors`);
   const h0 = gens.find((o) => o.flane); const x0 = h0.x, y0 = h0.y;
   for (let k = 0; k < 600; k++) update(0.1);

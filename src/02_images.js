@@ -30,10 +30,27 @@ function eclaircir(im) {
   return c;
 }
 
+// La retouche de la terre battue du camp : plus claire, pour que les chemins se lisent bien sur l'herbe (demande du propriétaire, 22 oct).
+function eclaircirTerre(im) {
+  const c = Object.assign(document.createElement('canvas'), { width: im.width, height: im.height });
+  const g = c.getContext('2d');
+  g.drawImage(im, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let k = 0; k < p.length; k += 4) {
+    if (!p[k + 3]) continue;
+    p[k] = Math.min(214, Math.floor(p[k] * 1.04 + 12));
+    p[k + 1] = Math.min(255, Math.floor(p[k + 1] * 1.07 + 14));
+    p[k + 2] = Math.min(255, Math.floor(p[k + 2] * 1.1 + 14));
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
 // `liste` : d'autres planches que celles du camp (le terrain d'entraînement charge les siennes).
 export async function chargerImages(base = './assets/lpc/', liste = FICHIERS) {
   const im = {};
   await Promise.all(Object.entries(liste).map(async ([nom, f]) => { im[nom] = await charger(base + f); }));
   if (im.herbe) im.herbe = eclaircir(im.herbe);
+  if (im.terre && liste === FICHIERS) im.terre = eclaircirTerre(im.terre);
   return im;
 }

@@ -9,7 +9,7 @@ import { servir, ouvrir } from './captures.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VUES = {
-  sud: [15, 40, -1], porte: [15, 28, 0], feu: [20, 17, 0],
+  sud: [15, 40, -1], porte: [15, 28, 0], feu: [20, 17, -1], centre: [20, 14, -2], scene: [13, 14, 0],
   savoir: [21, -17, 0], artisans: [8, -3, 0], heros: [34, -3, 0], coeur: [20, 6, 0],
   nord: [21, -32, 0], fetes: ['fetes', 1.5, 0], theatre: [21, -40, -2],
   ouest: [-16, 4, 0], campement: ['chasseur', 1.5, 0], ruisseau: [-24, -4, 0],
