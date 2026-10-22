@@ -47,7 +47,7 @@ export function arrets() {
   const [px, py] = LIEUX.find((l) => l.id === id).porte;
   const terrain = { sentinelle: [(px - 0.3) * T, (py + 1.5) * T], heros: [(px + 1.3) * T, (py + 1.8) * T], vue: [(px + 1) * T, (py + 0.2) * T] };
   return [
-    { id: 'feu', sentinelle: [19 * T, 16.2 * T], heros: [17.8 * T, 16.9 * T], vue: [FEU[0] * T, FEU[1] * T - 0.2 * T], texte: TEXTE.feu },
+    { id: 'feu', sentinelle: [20.4 * T, 17.7 * T], heros: [19.2 * T, 17.9 * T], vue: [FEU[0] * T, FEU[1] * T - 0.2 * T], texte: TEXTE.feu },
     { id: 'tableau', sentinelle: [pan.x - 0.4 * T, pan.pied + 1.3 * T], heros: [pan.x + 1.6 * T, pan.pied + 1.7 * T], vue: [pan.x + pan.w / 2, pan.y + pan.h / 2], etoiles: true, texte: TEXTE.tableau },
     { id: 'terrain', lieu: id, ...terrain, texte: TEXTE.terrain },
     { id: 'rat', ...terrain, rat: true, texte: TEXTE.rat },

@@ -110,7 +110,7 @@ async function lire() {
 
 // Trouver une place libre près de (x, y), dans le camp.
 function libre(x, y) {
-  const bx = (v) => Math.max(T, Math.min(collision.largeur - T, v)), by = (v) => Math.max(T * 1.5, Math.min(collision.hauteur - T, v));
+  const bx = (v) => Math.max(collision.x0 + T, Math.min(collision.x0 + collision.largeur - T, v)), by = (v) => Math.max(collision.y0 + T * 1.5, Math.min(collision.y0 + collision.hauteur - T, v));
   for (let r = 0; r <= 4 * T; r += 8)
     for (let k = 0; k < (r ? 12 : 1); k++) {
       const a = (k / 12) * Math.PI * 2, px = bx(x + Math.cos(a) * r), py = by(y + Math.sin(a) * r);
@@ -193,7 +193,7 @@ function majRat(r, dt) {
     // tout droit s'il le peut ; sinon il contourne (le feu, un panneau, un bois) par le chemin le plus court
     r.reroute = (r.reroute ?? 0) - dt;
     if (!collision.droit(r.x, r.y, cx, cy)) {
-      if (r.reroute <= 0 || !r.route?.length) { r.route = collision.chemin(r.x, r.y, cx, cy) ?? []; r.reroute = 0.4; }
+      if (r.reroute <= 0 || !r.route?.length) { r.route = collision.chemin(r.x, r.y, cx, cy, 20000) ?? []; r.reroute = 0.4; }
       while (r.route.length && Math.hypot(r.route[0][0] - r.x, r.route[0][1] - r.y) < 4) r.route.shift();
       if (r.route.length) [cx, cy] = r.route[0];
     } else r.route = null;
@@ -285,7 +285,7 @@ export function update(dt) {
   for (const r of rats) majRat(r, dt);
   for (let i = rats.length - 1; i >= 0; i--) {
     const r = rats[i];
-    if (r.phase === 'fuite' && (r.t > 2.5 || r.x < -T || r.y < -T || r.x > collision.largeur + T || r.y > collision.hauteur + T)) retirerRat(i);
+    if (r.phase === 'fuite' && (r.t > 2.5 || r.x < collision.x0 - T || r.y < collision.y0 - T || r.x > collision.x0 + collision.largeur + T || r.y > collision.y0 + collision.hauteur + T)) retirerRat(i);
   }
   for (const r of rats) poser(r);
   for (const d of degats) {

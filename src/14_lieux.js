@@ -3,8 +3,11 @@
 // Un niveau montre ses pièces et celles des niveaux d'avant. Une pièce peut s'animer (lanternes, torches) et bloquer
 // le passage (sa base). Quand un lieu monte de niveau en direct, il s'illumine un instant.
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
-import { T, LIEUX, emprise, terre } from './01_plan.js';
+import { T, LIEUX, ARCHIVES, EMPLACEMENTS, emprise, terre } from './01_plan.js';
+import ESQUISSES from '../design/animations/esquisses/esquisses.json';
+import BRIQUES from './entrainement/effets.json';
 import ARMURERIE from './data/armurerie.json';
+import BATIMENTS from './data/lieux_batiments.json';
 
 export const name = 'lieux';
 export const always = true;
@@ -95,6 +98,16 @@ export const PLANCHERS = { classes: 2, interface: 2 };
 // Le plafond (demande du propriétaire, 19 oct) : le tableau d'affichage ne dépasse pas le niveau 2 pour l'instant, même
 // avec des missions rentrées (elles comptent toujours ; le niveau monte quand on lève le plafond). dbg.lieux.forcer passe outre.
 export const PLAFONDS = { interface: 2 };
+// Les archives (pas un des huit lieux : 27_archives.js) : de la corde et la pancarte à la grande bibliothèque. Ce qui les fait grandir
+// (demande du propriétaire, 22 oct) : les animations et les infos rentrées dans l'Archive (les scènes de Fraps et les briques de combat).
+export const SEUILS_ARCHIVES = [0, 10, 30, 60, 100];
+export const animationsRentrees = () => ESQUISSES.effets.length + Object.keys(BRIQUES).length;
+const niveauArchives = () => SEUILS_ARCHIVES.reduce((n, s, i) => (animationsRentrees() >= s ? i : n), 0);
+// L'infirmerie (maquette de la session « Overnight prompt », design/camp/infirmerie/) : dans l'enceinte, à l'emplacement n° 3 du camp (à l'est, sous le tableau d'affichage : le n° 1 est pris par le chantier). Elle n'a
+// pas encore d'axe : en attendant le choix du propriétaire, elle suit l'axe Combat (le plus proche, INFIRMERIE.md).
+export const AXE_INFIRMERIE = 'combat';
+const LIEUX_JEU = [...LIEUX, { id: 'archives', ...ARCHIVES }, { id: 'infirmerie', emprise: EMPLACEMENTS.find((e) => e.n === 3).emprise },
+  { id: 'centre', emprise: [5, 7, 32, 22] }];   // le centre-ville : le parvis du feu, l'estrade du barde, la guirlande (design/camp/outils/lieux_jeu.py, centre)
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
@@ -124,21 +137,30 @@ function construire(lieu, niveau) {
     e.sprites.push({ sprite, p, x, y, pied });
     if (p.bloque) { const ob = { x: x + 6, y: y + h - 9, w: w - 12, h: 8 }; collision.ajouter(ob); e.obstacles.push(ob); }
   };
+  // les bâtiments dessinés pour le jeu (design/camp/outils/lieux_jeu.py) : le coin des récits, la table des cartes, l'atelier, du niveau 0
+  // (la corde et la pancarte) au niveau 4 ; le sol dessous, les bandes qui se trient avec le héros, la base de chaque objet qui bloque
+  const bat = BATIMENTS.lieux[lieu.id];
+  if (bat) {
+    const n = bat[Math.min(niveau, bat.length - 1)], [dx, dy] = BATIMENTS.decalages?.[lieu.id] ?? BATIMENTS.decalage;
+    const ajouter = (r, x, y, pied, plus = {}) => { const sprite = rendu.sprite(images.lieuxBat, 'lieux-bat', r.w, r.h); e.sprites.push({ sprite, p: { px: [r.sx, r.sy], ...plus }, x: o.x + dx + x, y: o.y + dy + y, pied }); };
+    ajouter(n.sol, 0, 0, DALLES);
+    for (const r of n.pieces) ajouter(r, r.x, r.y, o.y + dy + r.pied);
+    for (const [bx, by, bw, bh] of n.bloque) { const ob = { x: o.x + dx + bx, y: o.y + dy + by, w: bw, h: bh }; collision.ajouter(ob); e.obstacles.push(ob); }
+    poser(e);
+    return;
+  }
   const complet = COMPLETS[lieu.id];
   if (complet) {
     const n = complet[Math.min(niveau, complet.length - 1)];
-    for (const [i, j] of n.dalles) {   // une variante de dalle par case, toujours la même
-      const v = ((i + 3) * 7 + (j + 3) * 13) % 8;
-      const sprite = rendu.sprite(images.armurerie, 'armurerie', T, T);
-      e.sprites.push({ sprite, p: { sx: v, sy: 6 }, x: o.x + i * T, y: o.y + j * T, pied: DALLES });
-    }
+    // (plus de dalles de pierre : le sol de l'armurerie est de la terre battue, dessinée avec le reste du sol, 01_plan.js)
     n.pieces.forEach(poserPiece);
     poser(e);
     return;
   }
   const liste = NIVEAUX[lieu.id];
   if (!liste) return;
-  for (const [i, j] of pavesDe(lieu, niveau)) {   // une variante de dalle par case, toujours la même
+  // (le terrain d'entraînement n'est pas pavé : son sol est de la terre battue, demande du propriétaire du 22 oct)
+  for (const [i, j] of lieu.id === 'combat' ? [] : pavesDe(lieu, niveau)) {   // une variante de dalle par case, toujours la même
     const sprite = rendu.sprite(images.tableau, 'tableau', T, T);
     e.sprites.push({ sprite, p: { sx: ((i + 5) * 7 + (j + 5) * 13) % 8, sy: 0 }, x: o.x + i * T, y: o.y + j * T, pied: DALLES });
   }
@@ -148,13 +170,14 @@ function construire(lieu, niveau) {
 
 function poser(e) {
   for (const s of e.sprites) {
-    const col = s.p.anim ? s.p.anim[Math.floor(temps / s.p.pas) % s.p.anim.length] : s.p.sx;
-    s.sprite.poser(s.x, s.y, s.pied, col * T, s.p.sy * T);
+    const col = s.p.px ? 0 : s.p.anim ? s.p.anim[Math.floor(temps / s.p.pas) % s.p.anim.length] : s.p.sx;
+    s.sprite.poser(s.x, s.y, s.pied, s.p.px ? s.p.px[0] : col * T, s.p.px ? s.p.px[1] : s.p.sy * T);
   }
 }
 
 function niveauxVoulus() {
-  const n = { ...(missions?.resume().niveaux ?? {}) };
+  const n = { ...(missions?.resume().niveaux ?? {}), archives: niveauArchives() };
+  n.infirmerie = n[AXE_INFIRMERIE] ?? 0;
   for (const [id, v] of Object.entries(PLANCHERS)) n[id] = Math.max(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(PLAFONDS)) n[id] = Math.min(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(forces)) n[id] = v;
@@ -164,7 +187,7 @@ function niveauxVoulus() {
 export function init(g, options) {
   game = g;
   ({ rendu, images, collision, missions, decor } = options);
-  for (const l of LIEUX) construire(l, PLANCHERS[l.id] ?? 0);
+  for (const l of LIEUX_JEU) construire(l, PLANCHERS[l.id] ?? 0);
   return api;
 }
 
@@ -172,7 +195,7 @@ export function update(dt) {
   temps += dt;
   const voulus = niveauxVoulus();
   decor?.niveaux(voulus);
-  for (const l of LIEUX) {
+  for (const l of LIEUX_JEU) {
     const e = etat[l.id], n = voulus[l.id] ?? 0;
     if (e.niveau !== n) {
       const monte = n > e.niveau;
