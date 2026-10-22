@@ -10,7 +10,7 @@
 import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
 import { fr } from '../13_reseau.js';
-import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer } from './regles.js';
+import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer, DEBUT_INFINI } from './regles.js';
 import { monGithub } from './joueur.js';
 import { arme } from './armes.js';
 import * as REG from './reglages-combat.js';   // les réglages du combat : seules les valeurs de l'hôte comptent, il les envoie à tous
@@ -26,11 +26,12 @@ const ESSAIS = { hote: 8, invite: 45 };           // toutes les 2 s : un code en
 // --- Le lobby (des données seulement : l'hôte le tient et l'envoie à tous) -----------------------------------------
 // proprio : le joueur de chaque place (null : libre) · pret : ceux qui ont fini leur phase · absents : les places de
 // ceux qui sont partis pendant le combat (l'hôte les joue ; elles leur reviennent s'ils reviennent).
-export const nouveauLobby = (equipe) => ({ phase: 'lobby', equipe: equipe.slice(), proprio: [null, null, null, null], mode: 'equipe', pret: [], absents: {} });
+export const nouveauLobby = (equipe) => ({ phase: 'lobby', equipe: equipe.slice(), proprio: [null, null, null, null], mode: 'equipe', infini: false, pret: [], absents: {} });
 
 // Une demande de lobby, d'un joueur : prendre une place libre, la laisser, changer sa classe ; le mode (l'hôte).
 export function regler(L, qui, m) {
   if (L.phase !== 'lobby' || !m) return false;
+  if (m.t === 'infini') { if (qui !== HOTE) return false; L.infini = !!m.oui; return true; }
   if (m.t === 'mode') { if (qui !== HOTE || !['equipe', 'initiative'].includes(m.mode)) return false; L.mode = m.mode; return true; }
   const k = Number(m.k);
   if (!(k >= 0 && k < PLACES.length)) return false;
@@ -166,9 +167,10 @@ function seul(texte) {
 function surMessage(de, m) {
   if (!m || typeof m !== 'object') return;
   if (hote) {
-    if (['prendre', 'rendre', 'classe', 'mode'].includes(m.t)) { if (regler(L, de, m)) envoyerSalon(); }
+    if (['prendre', 'rendre', 'classe', 'mode', 'infini'].includes(m.t)) { if (regler(L, de, m)) envoyerSalon(); }
     else if (m.t === 'commencer' && de === HOTE) lancer();
     else if (m.t === 'rejouer' && de === HOTE) rejouer();
+    else if (m.t === 'suite' && de === HOTE) suivante();
     else if (m.t === 'reglage') {                       // un invité règle le combat : l'hôte applique (sauf s'il a fermé la porte) et renvoie à tous
       if (!REG.oui('multi.invites')) party.to(de, { t: 'reglages-refus', R: REG.instantane() });
       else {
@@ -228,8 +230,22 @@ function verifierPrets() {
 function lancer() {
   L.proprio = L.proprio.map((p) => p ?? HOTE);   // les héros sans joueur : l'hôte les joue
   L.phase = 'combat'; L.pret = []; L.absents = {};
-  combat = nouveauCombat(L.equipe);
+  combat = nouveauCombat(L.equipe, null, L.infini ? DEBUT_INFINI : null);
   combat.S.mode = L.mode;
+  combat.commencer();
+  ihm.lance();
+  const evs = combat.S.evenements.splice(0);
+  vue.jouer(evs);
+  party.toAll({ t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs });
+}
+// Mode infini : la manche gagnée, la suivante (plus dure) : l'hôte la crée et l'envoie à tous, comme le début du combat.
+function suivante() {
+  if (L.phase !== 'combat' || combat.S.resultat !== 'victoire') return;
+  const suite = combat.suiteInfini(); if (!suite) return;
+  const mode = combat.S.mode;
+  L.pret = [];
+  combat = nouveauCombat(L.equipe, null, suite);
+  combat.S.mode = mode;
   combat.commencer();
   ihm.lance();
   const evs = combat.S.evenements.splice(0);
@@ -316,6 +332,8 @@ export const api = {
   rendre: (k) => party?.toHost({ t: 'rendre', k }),
   classe: (k, type) => party?.toHost({ t: 'classe', k, type, github: monGithub() }),
   mode: (m) => party?.toHost({ t: 'mode', mode: m }),
+  infini: (oui) => party?.toHost({ t: 'infini', oui: !!oui }),
+  suite: () => party?.toHost({ t: 'suite' }),
   commencer: () => party?.toHost({ t: 'commencer' }),
   rejouer: () => party?.toHost({ t: 'rejouer' }),
   agir: (a) => party?.toHost({ t: 'action', a }),

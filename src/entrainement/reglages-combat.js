@@ -14,10 +14,11 @@ export const GROUPES = [
   { id: 'equilibre', titre: 'Équilibre (ressources et ennemis)' },
   { id: 'classes', titre: 'Dégâts par classe (pour tester)' },
   { id: 'ressenti', titre: 'Ressenti et lisibilité' },
+  { id: 'infini', titre: 'Mode infini (manche après manche)' },
   { id: 'multi', titre: 'À plusieurs' },
 ];
 // etape : la mission qui ouvre le réglage au panneau (1 : rythme et santé des ennemis ; 2 : les règles ; 3 : le ressenti)
-export const ETAPE_OUVERTE = 3;
+export const ETAPE_OUVERTE = 4;
 // type : 'bool' (case à cocher, 0 ou 1) ou 'choix' (une liste : `choix`) ; sinon un nombre (curseur et champ)
 const N = (id, groupe, etape, label, unite, def, min, max, step, plus = {}) => ({ id, groupe, etape, label, unite, def, min, max, step, ...plus });
 const OUI = (id, groupe, etape, label, def) => ({ id, groupe, etape, label, unite: '', def, min: 0, max: 1, step: 1, type: 'bool' });
@@ -83,6 +84,16 @@ export const DEFS = [
   N('feel.zoom', 'ressenti', 3, 'Zoom au départ (crans)', '', 0, -4, 8, 1),
   N('feel.zoomDouceur', 'ressenti', 3, 'Douceur du zoom (plus grand : plus sec)', '', 12, 2, 40, 1),
   N('feel.barres', 'ressenti', 3, 'Barres de vie', '', 0, 0, 2, 1, { type: 'choix', choix: ['Toujours', 'Au survol', 'Cachées'] }),
+  // --- Mode infini : entre deux manches, un soin et de l'XP ; la suivante est plus dure (l'aventure, en petit) ---
+  N('infini.montee', 'infini', 4, 'Ennemis : PV et dégâts en plus à chaque manche', '%', 20, 0, 100, 5),
+  N('infini.soin', 'infini', 4, 'Soin entre deux manches (part des PV max)', '%', 30, 0, 100, 5),
+  N('infini.reveil', 'infini', 4, 'Un héros KO revient avec (part des PV max)', '%', 50, 10, 100, 5),
+  N('infini.xp', 'infini', 4, 'XP gagnée par manche (× le numéro de la manche)', 'XP', 40, 0, 200, 10),
+  N('infini.seuil', 'infini', 4, 'XP pour passer niveau 2 (×2 pour le suivant, ×3…)', 'XP', 100, 20, 500, 10),
+  N('infini.bonusNiveau', 'infini', 4, 'Bonus par niveau : PV et dégâts des héros', '%', 10, 0, 50, 1),
+  N('infini.sbirePar', 'infini', 4, 'Un ennemi de plus toutes les … manches', '', 3, 1, 10, 1),
+  N('infini.chefTous', 'infini', 4, 'Manche du chef renforcé : toutes les …', '', 5, 2, 10, 1),
+  N('infini.chefForce', 'infini', 4, 'Chef renforcé : PV et dégâts en plus', '×', 1.5, 1, 3, 0.1),
   // --- À plusieurs : seul l'hôte le change ---
   OUI('multi.invites', 'multi', 2, 'Les invités peuvent régler (l’hôte applique leurs changements)', 1),
 ];
