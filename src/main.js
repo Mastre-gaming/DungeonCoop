@@ -3,6 +3,7 @@
 // D'abord l'écran titre (src/45_titre.js) : Jouer, Rejoindre, Réglages, Retour au dashboard. (Héberger se fait au camp.)
 //   ?code=ABCDE rejoindre ce groupe (l'écran titre s'ouvre sur Rejoindre, le code déjà tapé)
 //   ?visite   pas de héros, tout le camp dans le cadre (la carte du dashboard)
+//   ?run      une run d'essai (le bandeau de la run : Victoire / Défaite / Abandon, le vote aux embranchements)
 //   ?test     les vérifications, résultat « réussies/total » en bas à droite
 //   ?spot=feu aller à un point nommé (apparition, feu, visite, porte, entree, chantier, sentinelle, tour, rats, et chaque lieu : interface, histoire, level, combat…)
 //   ?heure=22:30 forcer l'heure du camp (le jour et la nuit suivent sinon l'heure de Paris)
@@ -62,6 +63,10 @@ import * as habitantsSkill from './56_habitants.js';
 import * as scenesSkill from './50_scenes.js';
 import * as saisonsSkill from './51_saisons.js';
 import * as feteSkill from './52_fete.js';
+import * as runSkill from './57_run.js';
+import * as voteSkill from './58_vote.js';
+import * as synchroSkill from './59_synchro.js';
+import * as sauvegardeSkill from './60_sauvegarde.js';
 import { ecranTitre, sauterTitre, retourAuDashboard } from './45_titre.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
@@ -170,6 +175,13 @@ async function demarrer(sortieTitre) {
   const radio = game.use(radioSkill, { rendu, heros, collision, visite, reseau, muet: query.has('test') });   // la radio Deadlock : le barde près du feu (#94)
   const reglages = game.use(reglagesSkill, { visite });   // le menu Réglages (O) : la musique et les effets (#95)
   hud.brancher('reglages', reglages);
+  // le moteur de la run (#261) : la suite des salles, le vote de la salle suivante, la run chez les amis, la sauvegarde
+  const run = game.use(runSkill, { visite, joueurs: () => synchro.joueurs(), moi: () => reseau.party?.id });
+  const nomDuVote = (id) => (id === reseau.party?.id || id === 'me' ? sentinelle.qui?.nom || 'Moi' : reseau.party?.others.get(id)?.name ?? id);
+  const vote = game.use(voteSkill, { party: () => reseau.party, run: () => run.courante, nom: nomDuVote, visite });
+  const synchro = game.use(synchroSkill, { party: () => reseau.party, run: () => run, nom: nomDuVote });
+  const sauvegarde = game.use(sauvegardeSkill, { party: () => reseau.party, run: () => run, joueurs: () => synchro.joueurs(), visite, horsLigne: query.has('test') });
+  if (query.has('run') && !query.has('test')) run.nouvelle({ heros: ['Aldric', 'Brune', 'Cendre', 'Dune'] }).partir();   // ?run : une run d'essai, avec son bandeau
   // les héros qu'on peut incarner se promènent dans le camp et parlent (E) ; un héros pris par un joueur s'en va.
   // (après tous les autres : E sert d'abord aux lieux et aux personnages du camp, puis aux promeneurs)
   const promeneurs = game.use(promeneursSkill, { rendu, heros, collision, images, reseau, forgeron, apparitions, visite });
@@ -204,7 +216,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, patchNotes, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, patchNotes, run, vote, synchro, sauvegarde, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
