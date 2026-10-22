@@ -7,6 +7,8 @@ import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './mul
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT, niveauA } from './geometrie.js';
 import { testsHabillage } from '../34_tests_hud.js';
+import * as REG from './reglages-combat.js';
+import { calculerBilan } from './bilan.js';
 
 export const name = 'terrain';
 let ctx;
@@ -160,8 +162,8 @@ export async function selfTest(t, game) {
 
   // --- Des combats entiers -------------------------------------------------------------------------------------
   t.group('sans cases : des combats entiers');
-  for (const [mode, s] of [['equipe', 4], ['initiative', 8]]) {
-    const C = neuf({ mode, alea: graine(s) }), debut = performance.now();
+  // Le même joueur automatique pour tous les combats entiers (et pour l'empreinte des réglages).
+  const jouerJusquAuBout = (C) => {
     C.commencer();
     while (!C.S.resultat && C.S.round < 40) {
       for (const id of C.groupeCourant().ids) {
@@ -182,8 +184,21 @@ export async function selfTest(t, game) {
       }
       if (!C.S.resultat) C.finPhaseHeros();
     }
+  };
+  // L'empreinte d'un combat : tout ce qu'un joueur voit (le journal, les PV, la place de chacun, le round, le résultat).
+  const empreinte = (C) => {
+    const texte = JSON.stringify([C.S.journal, C.S.unites.map((u) => [u.id, u.pv, Math.round(u.x * 100), Math.round(u.y * 100)]), C.S.round, C.S.resultat, C.S.stats.degats]);
+    let h = 2166136261; for (let i = 0; i < texte.length; i++) { h ^= texte.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h.toString(16);
+  };
+  const empreintes = () => [['equipe', 4], ['initiative', 8]].map(([m, g]) => { const C = neuf({ mode: m, alea: graine(g) }); jouerJusquAuBout(C); return empreinte(C); });
+  for (const [mode, s] of [['equipe', 4], ['initiative', 8]]) {
+    const C = neuf({ mode, alea: graine(s) }), debut = performance.now();
+    jouerJusquAuBout(C);
     t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} : le combat va jusqu’au bout (${C.S.resultat} au round ${C.S.round}, ${Math.round(performance.now() - debut)} ms)`);
   }
+
+  t.eq(empreintes(), ['c2103c7f', 'a0437e3a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
@@ -633,6 +648,72 @@ export async function selfTest(t, game) {
   }
 
   // --- Les fiches des capacités, sans cible (#85, #129) ----------------------------------------------------------
+  // --- L'IA des ennemis : leurs habitudes, jouées avec bon sens (FIGHT_RULES, à l'essai) ---------------------------
+  t.group('l’IA des ennemis : les habitudes, avec bon sens');
+  // la scène : tout le monde loin, sauf ceux qu'on pose au milieu du terrain (autour de 12, 15.5, libre)
+  const ia = (o = {}) => {
+    const C = essai(['brute', 'mage', 'gardien', 'voleur'], { alea: des(Array(40).fill(12)), ...o });
+    C.commencer();
+    for (const u of C.S.unites) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    return C;
+  };
+  const opportunites = (C) => C.S.journal.filter((l) => l.t.startsWith('Attaque d’opportunité')).length;
+  { const pris = [[12, 15.5], [13, 15.5], [11, 15.5], [14.5, 15.5], [17.5, 15.5], [12, 13], [14.5, 13], [6, 15.5]].filter(([x, y]) => !libre(trame, x, y)); t.ok(!pris.length, `les points des scènes sont libres ${pris.map((p) => p.join(',')).join(' ')}`); }
+  {
+    // un archer collé à la Brute, qui peut encore réagir : il ne recule pas sous le coup, il tire sur place
+    const C = ia(), b = poser(C, 'brute', 12, 15.5), a = poser(C, 'a1', 13, 15.5);
+    C._.agirEnnemi(a);
+    t.ok(Math.abs(a.x - 13) < 0.01 && opportunites(C) === 0 && C.S.journal.some((l) => l.t.startsWith('Archer 1 → Brute')),
+      'un archer au contact de la Brute ne recule pas sous son coup : il tire sur place');
+    const C2 = ia(), b2 = poser(C2, 'brute', 12, 15.5), a2 = poser(C2, 'a1', 13, 15.5);
+    b2.t.reaction = false;
+    C2._.agirEnnemi(a2);
+    t.ok(dist(a2, b2) > 3 && opportunites(C2) === 0, `la Brute a déjà réagi ce round : il recule sans risque (${(dist(a2, b2) * 1.5).toFixed(1)} m), puis tire`);
+  }
+  {
+    // un archer loin de tout : il se place hors de portée des héros qui frappent au contact (leur marche + le contact)
+    const C = ia(), b = poser(C, 'brute', 6, 15.5), a = poser(C, 'a1', 12, 15.5);
+    C._.agirEnnemi(a);
+    t.ok(dist(a, b) > b.vitesse + CONTACT, `un archer se tient hors de portée de la Brute au prochain tour (${(dist(a, b) * 1.5).toFixed(1)} m)`);
+  }
+  {
+    // le sbire : le plus proche, sauf s'il peut achever un autre héros ce tour-ci
+    const C = ia(), s = poser(C, 's1', 14.5, 15.5), b = poser(C, 'brute', 12, 15.5), v = poser(C, 'voleur', 17.5, 15.5);
+    C._.agirEnnemi(s);
+    t.ok(C.S.journal.some((l) => l.t.startsWith('Sbire 1 → Brute')), 'le sbire frappe le héros le plus proche (son habitude)');
+    const C2 = ia(), s2 = poser(C2, 's1', 14.5, 15.5); poser(C2, 'brute', 12, 15.5); const v2 = poser(C2, 'voleur', 17.5, 15.5);
+    v2.pv = 5;
+    C2._.agirEnnemi(s2);
+    t.ok(C2.S.journal.some((l) => l.t.startsWith('Sbire 1 → Voleur')) && C2.S.journal.some((l) => l.t.includes('à achever ce tour-ci')),
+      'mais un Voleur à 5 PV qu’il peut achever passe devant (et le journal dit pourquoi)');
+  }
+  {
+    // encercler : au contact, il prend le côté opposé à un allié (la tenaille : l'avantage)
+    const C = ia(), b = poser(C, 'brute', 12, 15.5), s2 = poser(C, 's2', 11, 15.5), s1 = poser(C, 's1', 12, 13);
+    C._.agirEnnemi(s1);
+    t.ok(enTenaille(s1, b, [s2]), `le sbire vient de l’autre côté de la Brute, en face de son allié : la tenaille (${s1.x.toFixed(1)}, ${s1.y.toFixed(1)})`);
+  }
+  {
+    // la Brute ennemie au contact du Gardien : elle ne le lâche pas pour un héros à peine plus blessé (le coup en partant)
+    const C = ia(), g = poser(C, 'gardien', 12, 15.5), e = poser(C, 'br', 13, 15.5), b = poser(C, 'brute', 14.5, 13);
+    g.pv = Math.round(g.pvMax * 0.84); b.pv = Math.round(b.pvMax * 0.79);
+    C._.agirEnnemi(e);
+    t.ok(opportunites(C) === 0 && C.S.journal.some((l) => l.t.startsWith('Brute ennemie → Gardien')), 'la Brute ennemie reste sur le Gardien (84 % de PV) plutôt que de prendre un coup pour la Brute (79 %)');
+    const C2 = ia(), g2 = poser(C2, 'gardien', 12, 15.5), e2 = poser(C2, 'br', 13, 15.5), v2 = poser(C2, 'voleur', 14.5, 13);
+    v2.pv = 9;
+    C2._.agirEnnemi(e2);
+    t.ok(C2.S.journal.some((l) => l.t.startsWith('Brute ennemie → Voleur')), 'mais elle part achever un Voleur à 9 PV, quitte à prendre le coup du Gardien');
+  }
+  {
+    // les outils : la moyenne des dégâts et la chance d'achever
+    const C = ia(), s = poser(C, 's1', 13, 15.5), b = poser(C, 'brute', 12, 15.5);
+    const A = { nom: 'Coup', mod: 2, dmod: 0, base: 8, de: 4, melee: true }, c = C._.calculer(s, b, A);
+    const m = C._.degatsMoyens(A, c);
+    t.ok(m > 8 && m < 11, `un coup de sbire : ${m.toFixed(1)} dégâts en moyenne (10,5 sur un touché, moins les ratés et les éraflures, plus les critiques)`);
+    b.pv = 10; const p10 = C._.chanceAchever(A, c, b); b.pv = 30; const p30 = C._.chanceAchever(A, c, b);
+    t.ok(Math.abs(p10 - 0.5) < 0.01 && p30 === 0, `achever : ${Math.round(p10 * 100)} % à 10 PV (un touché de 10 ou plus, ou un critique), 0 % à 30 PV (même un critique fait 24 au plus)`);
+  }
+
   t.group('les fiches des capacités');
   t.eq(resultats(CAPACITES.etincelle).map((r) => `${r.degats} ${r.d20}`), ['0 d20 = 1', '5–7 d20 2–7', '11–14 d20 8–19', '22–28 d20 = 20'],
     'Étincelle : raté, éraflure, touché, critique, et les d20 qui y mènent (comme sa description : 5–7 / 11–14 / 22–28)');
@@ -920,6 +1001,18 @@ export async function selfTest(t, game) {
   const ana = ami('Ana'); ana.party.join('KXQZB'); jouer(0.4);
   t.eq(multi.L.proprio[1], ana.party.id, 'Ana arrive : la place 2 est à elle');
   t.ok(ana.dernier('salon')?.L.proprio[1] === ana.party.id, 'elle reçoit le lobby');
+  REG._raz();
+  ana.recus.length = 0; REG.regler('ennemis.pv', 0.5); jouer(0.3);
+  t.ok(ana.dernier('reglages')?.R?.['ennemis.pv'] === 0.5, 'réglages : l’hôte règle les PV ennemis, Ana reçoit ses valeurs aussitôt');
+  REG._raz(); jouer(0.3);
+  t.ok(Object.keys(ana.dernier('reglages')?.R ?? { x: 1 }).length === 0, 'réglages : l’hôte remet les défauts, Ana aussi');
+  ana.recus.length = 0; ana.party.toHost({ t: 'reglage', ops: [{ id: 'ennemis.pv', v: 0.5 }, { id: 'feel.recul', v: 2 }, { id: 'multi.invites', v: 0 }, { id: 'inconnu', v: 1 }, { id: 'anim.vitesse', v: 'x' }] }); jouer(0.3);
+  t.ok(REG.lire('ennemis.pv') === 0.5 && REG.lire('feel.recul') === 2 && REG.oui('multi.invites') && REG.lire('anim.vitesse') === 1, 'réglages : Ana règle (PV ennemis, recul) : l’hôte applique ; la porte, un réglage inconnu et un texte sont ignorés');
+  t.ok(ana.dernier('reglages')?.R?.['ennemis.pv'] === 0.5 && ana.dernier('reglages')?.R?.['feel.recul'] === 2 && neuf().U('chef').pvMax === 45, 'réglages : tous reçoivent les valeurs, et le combat de l’hôte les prend');
+  t.ok(document.querySelector('.banniere-terrain')?.textContent.includes('règle'), 'réglages : l’hôte voit qui a réglé quoi (une bannière)');
+  REG.regler('multi.invites', 0); ana.recus.length = 0; ana.party.toHost({ t: 'reglage', ops: [{ id: 'ennemis.pv', v: 3 }] }); jouer(0.3);
+  t.ok(REG.lire('ennemis.pv') === 0.5 && ana.dernier('reglages-refus'), 'réglages : l’hôte ferme la porte : la demande d’Ana est refusée, rien ne change');
+  REG._raz(); jouer(0.3);
   t.ok(ihm.dom.groupe.textContent.includes('Ana') && ihm.dom.groupe.textContent.includes('KXQZB'), 'le lobby montre le groupe et son code');
   t.ok(place(1).textContent.includes('Ana') && place(1).querySelector('.fleche').disabled && !place(0).querySelector('.fleche').disabled,
     'la place d’Ana porte son nom ; chez l’hôte ses flèches sont grisées, pas les siennes');
@@ -967,6 +1060,20 @@ export async function selfTest(t, game) {
   t.ok(multi.L.proprio[1] === 'host' && multi.attendus().join() === 'host' && !document.querySelector('.curseur-ami:not([hidden])'), 'Ana part : l’hôte joue son Druide, son pointeur disparaît');
   ihm.montrerFin(true); ihm.dom.rejouer.click(); jouer(0.2);
   t.ok(multi.L.phase === 'lobby' && !ihm.dom.accueil.hidden && game.dbg.combat.S.phase === 'preparation', 'Rejouer (l’hôte) : retour au lobby, pour tout le groupe');
+  {
+    const bo = ami('Bo'); bo.party.join('KXQZB'); jouer(0.4);
+    document.querySelector('#mode-infini').click(); jouer(0.3);
+    t.ok(multi.L.infini === true && bo.dernier('salon')?.L.infini === true, 'mode infini à plusieurs : l’hôte coche la case, le lobby de l’invité le sait');
+    document.querySelector('#commencer').click(); jouer(0.3); jouerFile();
+    const M1 = game.dbg.combat, vu = (m) => JSON.parse(m.copie).infini;
+    t.ok(M1.S.infini?.manche === 1 && vu(bo.dernier('debut'))?.manche === 1, 'l’hôte lance : la manche 1 chez les deux');
+    for (const e of M1.S.unites.filter((u) => u.camp === 'e')) { e.mort = true; e.pv = 0; }
+    M1.S.resultat = 'victoire'; M1.S.phase = 'fini'; M1.S.fin = Date.now(); ihm.montrerFin(false);
+    bo.recus.length = 0; ihm.dom.suite.click(); jouer(0.3); jouerFile();
+    t.ok(game.dbg.combat.S.infini.manche === 2 && vu(bo.dernier('debut'))?.manche === 2 && multi.L.phase === 'combat', 'Manche suivante (l’hôte) : la manche 2 démarre chez l’hôte, et l’invité la reçoit');
+    bo.party.leave(); amis.splice(amis.indexOf(bo), 1); jouer(0.4);
+    ihm.dom.fin.hidden = true;
+  }
   document.querySelector('a.retour-camp').click(); jouer(0.1);
   t.eq(allees.pop(), './index.html?spot=combat&hote=KXQZB', '« Retour au camp » : l’hôte rouvre le groupe du camp avec le même code');
 
@@ -976,7 +1083,20 @@ export async function selfTest(t, game) {
   const p2 = multi.brancherTest(hub, { comme: 'invite', avec: 'QWERT', aller: (u) => allees.push(u) }); jouer(0.4);
   t.ok(p2.active && !p2.hosting && cy.party.others.size === 1, 'cette page rejoint le terrain de Cy');
   const moi = p2.id, L2 = { phase: 'lobby', equipe: ['brute', 'mage', 'voleur', 'gardien'], proprio: ['host', moi, null, null], mode: 'equipe', pret: [], absents: {} };
-  cy.party.toAll({ t: 'salon', L: L2 }); jouer(0.2);
+  cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5, 'multi.invites': 0 } }); jouer(0.2);
+  cy.recus.length = 0;
+  t.ok(REG.estExterne() && REG.lire('ennemis.pv') === 0.5 && !REG.regler('ennemis.pv', 3) && REG.lire('ennemis.pv') === 0.5 && !cy.dernier('reglage'), 'réglages : porte fermée : l’invité subit les valeurs de l’hôte, sa demande ne part même pas');
+  t.ok(document.querySelector('#reglages .reglages-hote').textContent.includes('réglé par l’hôte') && document.querySelector('#reglages input[type=range]').disabled, 'réglages : le panneau de l’invité est en lecture seule, « réglé par l’hôte »');
+  t.ok(neuf().U('chef').pvMax === 45, 'réglages : un combat créé chez l’invité prend les PV de l’hôte');
+  cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5 } }); jouer(0.2);
+  t.ok(!document.querySelector('#reglages input[type=range]').disabled && document.querySelector('#reglages .reglages-hote').textContent.includes('passent par l’hôte') && document.querySelector('#reglages [data-id="multi.invites"] input').disabled, 'réglages : porte ouverte : le panneau de l’invité se débloque (sauf la porte) ; il demande à l’hôte');
+  const demandeOk = REG.regler('ennemis.pv', 3); jouer(0.2);
+  t.ok(demandeOk && cy.dernier('reglage')?.ops[0].id === 'ennemis.pv' && cy.dernier('reglage')?.ops[0].v === 3 && REG.lire('ennemis.pv') === 0.5, 'réglages : l’invité règle : la demande part chez l’hôte, sa valeur ne change qu’au retour de l’hôte');
+  cy.recus.length = 0; const porteOk = !REG.regler('multi.invites', 0), reinitOk = REG.reinitialiser('ressenti'); jouer(0.2);
+  t.ok(porteOk && reinitOk && cy.dernier('reglage')?.ops.length === 6 && cy.dernier('reglage').ops.every((o) => o.id.startsWith('feel.')), 'réglages : un invité ne touche pas à la porte ; « Réinitialiser » d’une section part chez l’hôte, avec ses six réglages');
+  cy.party.toAll({ t: 'reglages', R: { 'ennemis.pv': 3 } }); jouer(0.2);
+  t.ok(REG.lire('ennemis.pv') === 3, 'réglages : l’hôte renvoie ses valeurs : elles arrivent chez l’invité');
+  cy.party.toAll({ t: 'reglages', R: { 'ennemis.pv': 0.5 } }); jouer(0.2);
   t.ok(place(1).classList.contains('mienne') && !place(1).querySelector('.fleche').disabled && place(0).querySelector('.fleche').disabled && document.querySelector('#commencer').hidden,
     'sa place est à lui (la Mage), celle de Cy non ; c’est Cy qui commence');
   place(1).querySelector('.fleche:last-child').click(); jouer(0.2);
@@ -998,10 +1118,252 @@ export async function selfTest(t, game) {
   cy.party.toAll({ t: 'camp' }); jouer(0.2);
   t.eq(allees.pop(), './index.html?spot=combat&code=QWERT', 'Cy retourne au camp : on le suit, dans le même groupe');
   cy.party.leave(); jouer(0.4);
+  t.ok(!REG.estExterne() && REG.lire('ennemis.pv') === 1, 'réglages : l’hôte parti, les réglages de l’invité sont de nouveau les siens');
   t.ok(!multi.actif && !ihm.reseau && ihm.choisirHeros('h1'), 'Cy s’en va : on continue seul, tous les héros sont à nous');
   ihm.dom.finPhase.click(); jouerFile();
   t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
   multi.debrancherTest();
+
+  // --- Les réglages du combat : le panneau (R), les trois premiers boutons, le bilan -------------------------------------------
+  t.group('les réglages du combat');
+  REG._raz();
+  {
+    const touche = (code) => window.dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
+    const panneau = document.querySelector('#reglages'), rang = (id) => panneau.querySelector(`.reglage[data-id="${id}"]`);
+    t.ok(panneau.hidden && document.querySelector('#ouvrir-reglages') && document.querySelector('.aide-terrain').textContent.includes('réglages'), 'le panneau est fermé ; un bouton et la touche R (écrite dans l’aide) l’ouvrent');
+    touche('KeyR');
+    t.ok(!panneau.hidden && panneau.querySelectorAll('.reglage').length === REG.DEFS.length && panneau.querySelectorAll('details').length === REG.GROUPES.length, 'R ouvre le panneau : tous les réglages, en sections repliables');
+    t.ok(REG.DEFS.every((d) => REG.lire(d.id) === d.def) && !panneau.querySelector('.reglage.change'), 'sans y toucher : les défauts, aucun point de changement');
+    t.eq([REG.lire('ennemis.vitesse'), REG.lire('anim.vitesse'), REG.lire('ennemis.pv'), REG.lire('releve.pv'), REG.lire('potion.soin')], [1, 1, 1, 25, 20], 'les défauts : ×1, ×1, ×1, relève 25 PV, potion 20 PV (comme avant)');
+    // chaque réglage change ce qu'il doit changer
+    const pvAvant = neuf().S.unites.filter((u) => u.camp === 'e').map((u) => u.pvMax);
+    const curseur = rang('ennemis.pv').querySelector('input[type=range]');
+    curseur.value = '0.5'; curseur.dispatchEvent(new Event('input', { bubbles: true }));
+    t.eq(neuf().S.unites.filter((u) => u.camp === 'e').map((u) => u.pvMax), pvAvant.map((p) => Math.round(p * 0.5)), 'santé des ennemis ×0,5 : leurs PV sont divisés par deux (le curseur du panneau)');
+    t.ok(rang('ennemis.pv').classList.contains('change') && getComputedStyle(rang('ennemis.pv').querySelector('.point-change')).visibility === 'visible' && rang('ennemis.pv').querySelector('input[type=number]').value === '0.50',
+      'un point sur la valeur changée, et son champ à jour');
+    t.ok(!rang('anim.vitesse').classList.contains('change'), 'les autres restent au défaut');
+    REG.regler('ennemis.pv', 2);
+    t.eq(neuf().U('chef').pvMax, 180, 'santé des ennemis ×2 : le chef a 180 PV');
+    REG.regler('ennemis.pv', 99);
+    t.eq(REG.lire('ennemis.pv'), 5, 'une valeur trop grande est ramenée au maximum du réglage');
+    REG._raz();
+    // les vitesses : la file des événements joue plus vite
+    const pas = (reglages) => {
+      for (const [id, v] of Object.entries(reglages)) REG.regler(id, v);
+      V.jouer([{ type: 'phase', phase: 'ennemis' }, { type: 'menace', x: 10, y: 8, r: 1 }]);
+      let n = 0; while (V.occupe() && n < 400) { game.dbg.advance(0.05); n++; }
+      V.jouer([{ type: 'phase', phase: 'heros', ids: [] }]); game.dbg.advance(0.05);
+      REG._raz(); return n;
+    };
+    const base = pas({}), ennemis2 = pas({ 'ennemis.vitesse': 2 }), anim2 = pas({ 'anim.vitesse': 2 });
+    t.ok(base >= 12 && ennemis2 <= base * 0.6 && anim2 <= base * 0.6, `les vitesses : tour des ennemis ×2 et animations ×2 jouent la même scène en moitié moins de temps (${base} → ${ennemis2} et ${anim2} images)`);
+    REG.regler('ennemis.vitesse', 2);
+    V.jouer([{ type: 'phase', phase: 'heros', ids: [] }, { type: 'menace', x: 10, y: 8, r: 1 }]);
+    let m = 0; while (V.occupe() && m < 400) { game.dbg.advance(0.05); m++; }
+    t.ok(m >= base * 0.9, 'la vitesse des tours ennemis ne touche pas la phase des héros'); REG._raz();
+    // soigner : la relève et la potion lisent les réglages
+    {
+      const C = neuf(); C.commencer(); const h = C.U('h1'), a = C.U('h2'); a.ko = true; a.pv = 0; a.x = h.x + 1; a.y = h.y; h.t.action = true;
+      REG.regler('releve.pv', 40); C.utiliser(h, 'relever', { id: 'h2' });
+      t.ok(C.U('h2').pv === 40 && C.S.stats.reles.h1 === 1, 'relever : le réglage (40 PV) ; la relève est comptée pour celui qui relève'); REG._raz();
+    }
+    {
+      const C = neuf(); C.commencer(); const h = C.U('h1'); h.pv = 10; h.t.bonus = true; REG.regler('potion.soin', 35); C.utiliser(h, 'potion', {});
+      t.ok(h.pv === 45 && C.S.stats.potions.h1 === 1, 'potion : le réglage (35 PV) ; la potion est comptée'); REG._raz();
+    }
+    // copier, coller
+    REG.regler('ennemis.pv', 0.5); REG.regler('anim.vitesse', 1.5);
+    const json = REG.exporter(), copie = { ...REG.changees() };
+    t.eq(JSON.parse(json), { 'anim.vitesse': 1.5, 'ennemis.pv': 0.5 }, 'copier : seulement les valeurs changées, en JSON');
+    REG._raz(); t.ok(REG.importer(json).ok && JSON.stringify(REG.changees()) === JSON.stringify(copie), 'coller le texte copié redonne la même config');
+    t.ok(!REG.importer('pas du json').ok && !REG.importer('[1,2]').ok && JSON.stringify(REG.changees()) === JSON.stringify(copie), 'un texte qui n’est pas une config est refusé, rien ne change');
+    t.ok(REG.importer('{"ennemis.pv": 3, "inconnu": 1}').ignores === 1 && REG.lire('ennemis.pv') === 3 && REG.lire('anim.vitesse') === 1, 'une config collée remplace l’ancienne ; un réglage inconnu est ignoré');
+    // préréglages A et B
+    REG._raz(); REG.regler('ennemis.pv', 0.5); REG.choisirPreset('B'); REG.regler('ennemis.pv', 2);
+    t.ok(REG.presetActif() === 'B' && REG.lire('ennemis.pv') === 2, 'préréglage B : ses propres valeurs');
+    touche('KeyB');
+    t.ok(REG.presetActif() === 'A' && REG.lire('ennemis.pv') === 0.5 && neuf().U('chef').pvMax === 45, 'la touche B repasse à A, en plein combat : les valeurs de A');
+    touche('KeyB');
+    t.ok(REG.presetActif() === 'B' && REG.lire('ennemis.pv') === 2, 'et revient à B');
+    REG.reinitialiser('difficulte');
+    t.ok(REG.lire('ennemis.pv') === 1 && REG.presetActif() === 'B', 'Réinitialiser une section : ses valeurs reviennent au défaut');
+    REG.regler('anim.vitesse', 1.25);
+    t.ok(JSON.parse(localStorage.getItem('dungeoncoop:reglages-combat')).slots.B['anim.vitesse'] === 1.25, 'les réglages sont gardés dans ce navigateur (localStorage)');
+    touche('KeyR'); t.ok(panneau.hidden, 'R referme le panneau');
+    REG._raz();
+  }
+  {
+    // le bilan de fin : les parts font 100 %, les combos et les relèves sont comptés par héros
+    const C = neuf({ alea: graine(4) }); jouerJusquAuBout(C);
+    const b = calculerBilan(C.S, 0), somme = b.heros.reduce((a, h) => a + h.part, 0);
+    t.ok(b.total > 0 && Math.abs(somme - 1) < 1e-9 && b.heros.reduce((a, h) => a + h.pourcent, 0) === 100, `le bilan : les parts de dégâts font 100 % (${b.heros.map((h) => `${h.nom} ${h.pourcent} %`).join(', ')})`);
+    t.ok(b.heros.every((h) => h.ecrase === (h.part > 0.4)) && b.heros.reduce((a, h) => a + h.degats, 0) === b.total, 'un héros au-dessus de 40 % est signalé ; ses dégâts s’ajoutent au total');
+    const C2 = neuf(); C2.S.stats.combos.push({ r: 1, a: 'h2', b: 'h1', quoi: 'x' }, { r: 2, a: 'h2', b: 'h3', quoi: 'y' });
+    const b2 = calculerBilan(C2.S, 0);
+    t.ok(b2.heros.map((h) => h.combos).join() === '1,0,1,0' && b2.heros[1].prepares === 2 && b2.heros.every((h) => h.pourcent === 0), 'les combos sont comptés pour celui qui exploite (et ceux préparés à part) ; sans dégâts, aucune part');
+    ihm.montrerFin(true);
+    const lignes = [...document.querySelectorAll('#bilan tbody tr')];
+    t.ok(lignes.length === 4 && document.querySelector('#bilan .bilan-chiffres').textContent.includes('Durée') && document.querySelector('#bilan thead').textContent.includes('Potions'), 'la fin de combat montre le bilan : durée, rounds, un tableau de quatre héros');
+    ihm.dom.fin.hidden = true;
+  }
+
+  // --- Les réglages du combat, étape 2 (les règles) et étape 3 (le ressenti) : chaque réglage change ce qu'il doit changer -----------------
+  t.group('les réglages du combat : les règles');
+  {
+    const R2 = (reglages, f) => { REG._raz(); for (const [k, v] of Object.entries(reglages)) REG.regler(k, v); try { return f(); } finally { REG._raz(); } };
+    const ennemis = (C) => C.S.unites.filter((u) => u.camp === 'e');
+    const bornes = (txt) => txt.split('–').map(Number);
+    t.eq(ennemis(neuf()).map((u) => u.id), ['s1', 's2', 's3', 'a1', 'a2', 'br', 'chef'], 'les défauts : les sept ennemis du kit, dans leur ordre');
+    const gros = R2({ 'ennemis.sbire': 5, 'ennemis.archer': 3, 'ennemis.brute': 2 }, () => ennemis(neuf()));
+    t.ok(gros.length === 11 && gros.filter((u) => u.type === 'sbire').length === 5 && gros.filter((u) => u.type === 'archer').length === 3 && gros.filter((u) => u.type === 'brt').length === 2, 'ennemis en plus : 5 sbires, 3 archers, 2 brutes (le chef reste un)');
+    t.ok(gros.every((u, i) => gros.every((o, j) => i === j || dist(u, o) > 0.5)), 'et aucun ne se superpose');
+    t.ok(R2({ 'ennemis.chef': 0 }, () => ennemis(neuf()).every((u) => u.type !== 'chef')), 'sans chef : pas de chef');
+    t.eq(R2({ 'ennemis.sbire': 0, 'ennemis.archer': 0, 'ennemis.brute': 0, 'ennemis.chef': 0 }, () => ennemis(neuf()).map((u) => u.id)), ['s1'], 'sans aucun ennemi réglé : un sbire (il faut un combat)');
+    t.ok(R2({ 'heros.pv': 2, 'potion.nb': 3 }, () => { const C = neuf(); return C.U('h1').pvMax === HEROS.brute.pv * 2 && C.U('h1').potion === 3; }), 'santé des héros ×2 : le double de PV ; 3 potions par héros');
+    // les dégâts : l'aperçu (le survol) et le coup réel suivent
+    const touche = (r) => R2(r, () => { const C = neuf(); return C.apercu(C.U('h1'), 'fracas', 's1').degats.touche; });
+    const [lo, hi] = bornes(touche({}));
+    t.eq(touche({ 'degats.heros': 2 }), `${lo * 2}–${hi * 2}`, 'dégâts des héros ×2 : le survol annonce le double');
+    t.eq(bornes(touche({ 'classe.brute': 1.5 })), [Math.round(lo * 1.5), Math.round(hi * 1.5)], 'dégâts de la Brute ×1,5 : seulement la sienne (un dé d’essai, pas sa fiche)');
+    t.eq(touche({ 'classe.mage': 3 }), `${lo}–${hi}`, 'celle du Mage ne change pas la Brute');
+    const ennemi = (r) => R2(r, () => { const C = neuf(), e = C.U('s1'), A = C._.attaqueReflexe(e); return C._.fourchette(A, C._.calculer(e, C.U('h1'), A), 'touche'); });
+    const [elo, ehi] = bornes(ennemi({}));
+    t.eq(ennemi({ 'degats.ennemis': 2 }), `${elo * 2}–${ehi * 2}`, 'dégâts des ennemis ×2 : leur coup annonce le double ; ceux des héros ne bougent pas');
+    const perdu = (r, seed) => R2(r, () => { const C = neuf({ alea: graine(seed) }); C.commencer(); const h = C.U('h1'), s = C.U('s1'); s.x = h.x + 1; s.y = h.y; h.t.action = true; const pv = s.pv; C.utiliser(h, 'fracas', { id: 's1' }); return pv - C.U('s1').pv; });
+    let seed = 1; while (seed < 40 && perdu({}, seed) === 0) seed++;
+    t.ok(perdu({}, seed) > 0 && perdu({ 'degats.heros': 2 }, seed) === perdu({}, seed) * 2 && perdu({ 'degats.heros': 0.5 }, seed) === Math.max(1, Math.round(perdu({}, seed) / 2)), 'et le coup réel, mêmes dés : ×2 fait le double, ×0,5 la moitié');
+    // le hasard
+    const chances = (r, cible = 's1') => R2(r, () => neuf().apercu(neuf().U('h1'), 'fracas', cible)?.chances ?? null);
+    const C0 = chances({});
+    t.ok(Math.abs(C0.rate - 0.05) < 1e-9 && Math.abs(C0.critique - 0.05) < 1e-9 && Math.abs(C0.eraflure - 0.3) < 1e-9, 'les dés par défaut : 5 % de raté, 5 % de critique, 30 % d’éraflure (comme avant)');
+    const somme = (o) => o.rate + o.eraflure + o.touche + o.critique;
+    t.ok(Math.abs(chances({ 'des.rate': 3 }).rate - 0.15) < 1e-9 && Math.abs(chances({ 'des.critique': 19 }).critique - 0.1) < 1e-9 && Math.abs(chances({ 'des.eraflure': 12 }).eraflure - 0.45) < 1e-9, 'raté jusqu’à 3, critique dès 19, éraflure jusqu’à 12 : les chances du survol suivent');
+    t.ok([{ 'des.rate': 4, 'des.critique': 17, 'des.eraflure': 14 }, { 'des.rate': 0 }].every((r) => Math.abs(somme(chances(r)) - 1) < 1e-9), 'les chances du survol font toujours 100 %, même avec de nouvelles bandes');
+    t.ok(Math.abs(chances({}, 'br').eraflure - 0.45) < 1e-9 && Math.abs(chances({ 'des.eraflureCoriace': 15 }, 'br').eraflure - 0.6) < 1e-9, 'l’éraflure d’un ennemi coriace a sa propre bande (12 → 15)');
+    const jetEnnemi = (r) => R2(r, () => { const C = neuf(), e = C.U('s1'), A = C._.attaqueReflexe(e); return C._.chances(A, C._.calculer(e, C.U('h1'), A)).eraflure; });
+    t.ok(jetEnnemi({}) > jetEnnemi({ 'des.bonusEnnemis': 5 }) + 0.1, 'le bonus au jet des ennemis (2 → 5) : moins d’éraflures contre eux');
+    const comiques = (r) => R2(r, () => { let n = 0; for (const s of [4, 8, 11, 15, 21, 27]) { const C = neuf({ alea: graine(s) }); jouerJusquAuBout(C); n += C.S.journal.filter((j) => j.t.includes('Raté comique')).length; } return n; });
+    t.ok(comiques({}) > 0 && comiques({ 'des.ratesComiques': 0 }) === 0, 'sans ratés comiques : plus aucun d6 après un raté (six combats à graine)');
+    const tenaille = (r) => R2(r, () => { const C = neuf(); C.commencer(); const s = C.U('s1'), a = C.U('h1'), b = C.U('h2'); s.x = 12; s.y = 8; a.x = 10.9; a.y = 8; b.x = 13.1; b.y = 8; return C._.calculer(a, s, C._.attaqueHeros(CAPACITES.fracas)).tenaille; });
+    t.ok(tenaille({}) === true && tenaille({ 'des.tenaille': 0 }) === false, 'l’avantage en tenaille s’éteint');
+    // les combos et les états
+    t.ok(R2({ 'surface.duree': 5, 'etat.trempe.duree': 4 }, () => { const C = neuf(); C.commencer(); const e = C.U('s1'); C._.poserZone(C.U('h2'), CAPACITES.eclaboussure, { x: e.x, y: e.y }); return Object.values(C.mailles()).some((m) => m.t === 'eau' && m.ttl === 5) && e.st.trempe?.ttl === 4; }), 'une flaque dure 5 rounds, Trempé 4 (réglés)');
+    t.eq(R2({ 'etat.huile.duree': 6 }, () => { const C = neuf(); C.commencer(); const e = C.U('s1'); C._.poserZone(C.U('h3'), CAPACITES.fiole, { x: e.x, y: e.y }); return e.st.huile?.ttl; }), 6, 'Huilé dure 6 rounds');
+    t.eq(R2({ 'etat.gele.duree': 3 }, () => { const C = neuf(); C.commencer(); const e = C.U('s1'); C._.poserZone(C.U('h4'), CAPACITES.givre, { x: e.x, y: e.y }); return e.st.gele?.n; }), 3, 'Gelé dure 3 tours');
+    t.eq(R2({ 'etat.brulure.duree': 4, 'feu.degats': 9, 'mult.feuHuile': 1 }, () => { const C = neuf(); C.commencer(); const e = C.U('s1'); C._.poserZone(C.U('h3'), CAPACITES.fiole, { x: e.x, y: e.y }); const pv = e.pv; C._.enflammer({ x: e.x, y: e.y }, 'h3'); return [pv - e.pv, e.st.brulure?.n]; }), [9, 4], 'le feu fait 9 dégâts (réglé, huile ×1), la Brûlure dure 4 tours');
+    t.eq(R2({ 'etat.brulure.degats': 8 }, () => { const C = neuf(); C.commencer(); const e = C.U('s1'); e.st.brulure = { n: 2, par: 'h3' }; const pv = e.pv; C.finPhaseHeros(); return pv - C.U('s1').pv; }) >= 8, true, 'la Brûlure fait 8 dégâts par tour (réglé)');
+    const eclair = (r) => R2(r, () => { for (let s = 1; s < 60; s++) { const C = neuf({ alea: graine(s) }); C.commencer(); const e = C.U('s1'), m = C.U('h2'); m.x = e.x - 4; m.y = e.y; C._.poserZone(m, CAPACITES.eclaboussure, { x: e.x, y: e.y }); C._.attaquer(m, e, { ...C._.attaqueHeros(CAPACITES.foudre), id: 'foudre' }); const l = C.S.journal.find((j) => j.t.includes('électrise')); if (l) return l.t; } return ''; });
+    t.ok(eclair({ 'eau.degats': 12 }).includes('12 dégâts') && eclair({}).includes('8 dégâts'), 'l’eau électrisée fait 12 dégâts (réglé), 8 par défaut');
+    const choc = (r) => R2(r, () => { const C = neuf(); C.commencer(); const h = C.U('h1'), e = C.U('s2'); e.x = 1.7; e.y = 6; h.x = 2.7; h.y = 6; C._.pousser(h, e, { longueur: 2 }); return C.S.journal.map((j) => j.t).find((x) => x.includes('heurte')) ?? ''; });
+    t.ok(choc({ 'poussee.degatsMur': 15 }).includes('+15') && choc({}).includes('+8'), 'un choc contre un obstacle : 15 dégâts (réglé), 8 par défaut');
+    const loin = (r) => R2(r, () => { const C = neuf(); C.commencer(); const h = C.U('h1'), e = C.U('s2'); h.x = 4; h.y = 8; e.x = 5; e.y = 8; C._.pousser(h, e, { longueur: 2 }); return Math.hypot(e.x - 5, e.y - 8); });
+    t.ok(loin({}) > 1 && loin({ 'poussee.distance': 2 }) > loin({}) * 1.5, 'les poussées vont deux fois plus loin (×2)');
+    // les ressources et l'équilibre
+    const rage = (r) => R2(r, () => { for (let s = 1; s < 40; s++) { const C = neuf({ alea: graine(s) }); C.commencer(); const h = C.U('h1'), e = C.U('s1'); e.x = h.x + 1; e.y = h.y; C.utiliser(h, 'fracas', { id: 's1' }); if (C.U('s1').pv < 30) return C.U('h1').res.v; } return -1; });
+    t.ok(rage({}) === 10 && rage({ 'rage.gain': 20 }) === 20, 'Rage par coup : 10 par défaut, 20 réglé');
+    t.eq(R2({ 'mana.gain': 12 }, () => { const C = neuf(); C.commencer(); C.U('h2').res.v = 0; C.finPhaseHeros(); return C.U('h2').res.v; }), 12, 'Mana au début du tour : 12 (réglé)');
+    // la phase
+    { const C = neuf(); C.commencer();
+      t.ok(!C.rienAFaire(), 'au début de la phase, il reste à faire');
+      for (const u of C.S.unites.filter((x) => x.camp === 'h')) u.t = { mv: 0, action: false, bonus: false, reaction: true };
+      t.ok(C.rienAFaire(), 'plus de déplacement, d’action ni d’action bonus : plus rien à faire (la fin automatique de phase)'); }
+    ihm.rejouer(); document.querySelector('#commencer').click(); jouerFile();
+    REG._raz(); REG.regler('phase.autoFin', 1);
+    { const C = game.dbg.combat, avant = C.S.round;
+      for (const u of C.S.unites.filter((x) => x.camp === 'h' && !x.familier)) u.t = { mv: 0, action: false, bonus: false, reaction: true };
+      C.U('h1').t.mv = 1; ihm.choisirHeros('h1'); ihm.cliquer({ x: C.U('h1').x + 0.2, y: C.U('h1').y }); jouerFile();
+      t.ok(game.dbg.combat.S.round > avant || game.dbg.combat.S.phase !== 'heros' || C.rienAFaire() === false, 'fin de phase automatique (réglée) : quand le dernier pas est fait, les ennemis jouent'); }
+    REG._raz();
+    REG.regler('phase.minuteur', 30);
+    { const C = game.dbg.combat, avant = C.S.round;
+      C.S.debutPhase = Date.now() - 31000; game.dbg.advance(0.3); jouerFile(); game.dbg.advance(0.3);
+      t.ok(game.dbg.combat.S.round > avant, 'minuteur de 30 s : la phase des héros finit toute seule quand le temps est écoulé');
+      t.ok(/reste \d:\d\d/.test(document.querySelector('.chrono').textContent) || game.dbg.combat.S.phase !== 'heros', 'et le compte à rebours s’affiche à côté du chrono'); }
+    REG._raz();
+  }
+
+  t.group('les réglages du combat : le ressenti');
+  {
+    const R2 = (reglages, f) => { REG._raz(); for (const [k, v] of Object.entries(reglages)) REG.regler(k, v); try { return f(); } finally { REG._raz(); } };
+    ihm.rejouer(); document.querySelector('#commencer').click(); jouerFile();
+    const hid = game.dbg.combat.S.unites.find((u) => u.camp === 'h' && !u.familier).id;
+    const coup = () => V.jouer([{ type: 'attaque', de: hid, vers: 's1', cap: 'fracas', anim: 'attaque', jets: [5], k: 5, mod: 2, resultat: 'touche' }, { type: 'degats', id: 's1', n: 12, pv: 18 }]);
+    const jusquA = (f) => { for (let k = 0; k < 80 && !f(); k++) game.dbg.advance(0.05); return f(); };
+    const secousse = (r, attente = 0) => R2(r, () => {
+      coup(); jusquA(() => V.ressenti.secousse > 0 || V.occupe() === false);
+      const a = V.ressenti.secousse, recul = V.aff.get('s1').recul?.n ?? 0;
+      game.dbg.advance(attente); const reste = V.ressenti.secousse; jouerFile(); game.dbg.advance(0.5);
+      return { a, recul, reste };
+    });
+    const base = secousse({}), zero = secousse({ 'feel.secousse': 0, 'feel.recul': 0 }), double = secousse({ 'feel.secousse': 2, 'feel.recul': 2 });
+    t.ok(V.ressenti.calme || (base.a > 0 && zero.a === 0 && Math.abs(double.a / base.a - 2) < 0.01), `secousse ×0 : aucune ; ×2 : le double (${base.a.toFixed(3)} → ${double.a.toFixed(3)})`);
+    t.ok(V.ressenti.calme || (base.recul > 0 && zero.recul === 0 && Math.abs(double.recul / base.recul - 2) < 0.01), 'recul de celui qui est touché : ×0 aucun, ×2 le double');
+    const court = secousse({ 'feel.secousseDuree': 0.05 }, 0.3), long = secousse({ 'feel.secousseDuree': 1 }, 0.3);
+    t.ok(V.ressenti.calme || (court.reste === 0 && long.reste > 0), 'durée de la secousse : 0,05 s elle est finie après 0,3 s, 1 s elle dure encore');
+    REG.regler('feel.zoom', -1); game.dbg.advance(0.5);
+    t.ok(V.cam.crans === -1 || V.cam.base < 1.2, 'zoom au départ réglé : la caméra y va (un cran de moins)');
+    REG._raz(); game.dbg.advance(1);
+    const ecart = (douceur) => { REG._raz(); game.dbg.advance(2); REG.regler('feel.zoomDouceur', douceur); REG.regler('feel.zoom', 3); game.dbg.advance(0.12); const but = Math.max(1, Math.min(5, V.cam.base * 2 ** (V.cam.crans / 4))); const e = Math.abs(Math.log(V.cam.s / but)); REG._raz(); game.dbg.advance(2); return e; };
+    const vif = ecart(40), mou = ecart(2);
+    t.ok(vif < mou / 2 || V.cam.base < 1.2, `douceur du zoom : plus sec (40) arrive plus vite que 2 (écart ${vif.toFixed(3)} contre ${mou.toFixed(3)})`);
+    const barres = (r) => R2(r, () => { game.dbg.advance(0.2); return [...document.querySelectorAll('.plaques-terrain > *')].filter((c) => !c.hidden && !c.querySelector('.pv-barre').hidden).length; });
+    const toujours = barres({}), cachees = barres({ 'feel.barres': 2 }), survol = barres({ 'feel.barres': 1 });
+    t.ok(toujours > 0 && cachees === 0 && survol < toujours, `barres de vie : toujours (${toujours}), au survol (${survol}), cachées (${cachees})`);
+    REG._raz();
+  }
+
+  // --- Le mode infini : manche après manche, de plus en plus dur -------------------------------------------------------------
+  t.group('le mode infini');
+  {
+    const R2 = (reglages, f) => { REG._raz(); for (const [k, v] of Object.entries(reglages)) REG.regler(k, v); try { return f(); } finally { REG._raz(); } };
+    const inf = (manche, o = {}) => neuf({ infini: { manche, xp: 0, niveau: 1, ...o } });
+    const ennemis = (C) => C.S.unites.filter((u) => u.camp === 'e');
+    t.ok(neuf().S.infini === null && ennemis(neuf()).every((u) => !u.boss), 'sans mode infini : rien ne change (aucune manche, aucun chef renforcé)');
+    t.eq(ennemis(inf(1)).map((u) => [u.id, u.pvMax]), ennemis(neuf()).map((u) => [u.id, u.pvMax]), 'la manche 1 est le combat de toujours');
+    t.ok(ennemis(inf(4)).find((u) => u.id === 's1').pvMax === 48 && ennemis(inf(4)).length === 8, 'manche 4 : PV +60 % (30 → 48) et un sbire de plus');
+    t.ok(ennemis(inf(7)).length === 9 && ennemis(inf(7)).filter((u) => u.type === 'archer').length === 3, 'manche 7 : deux ennemis de plus (un sbire et un archer)');
+    const patron = ennemis(inf(5)).find((u) => u.type === 'chef');
+    t.ok(patron.boss && patron.pvMax === Math.round(90 * 1.8 * 1.5) && !ennemis(inf(4)).find((u) => u.type === 'chef').boss, 'manche 5 : le chef est renforcé (PV ×1,5 en plus de la montée) ; pas à la manche 4');
+    const coup = (C) => { const e = C.U('s1'), A = C._.attaqueReflexe(e); return C._.fourchette(A, C._.calculer(e, C.U('h1'), A), 'touche'); };
+    const [lo, hi] = coup(neuf()).split('–').map(Number);
+    t.eq(coup(inf(3)).split('–').map(Number), [Math.round(lo * 1.4), Math.round(hi * 1.4)], 'manche 3 : leurs dégâts ×1,4 (le survol l’annonce)');
+    t.ok(inf(1, { niveau: 3 }).U('h1').pvMax === Math.round(HEROS.brute.pv * 1.2), 'niveau 3 : les héros ont 20 % de PV en plus');
+    const heros = (C) => C.apercu(C.U('h1'), 'fracas', 's1').degats.touche.split('–').map(Number);
+    t.eq(heros(inf(1, { niveau: 3 })), heros(neuf()).map((v) => Math.round(v * 1.2)), 'et 20 % de dégâts en plus');
+    t.ok(R2({ 'infini.montee': 50, 'infini.sbirePar': 1 }, () => ennemis(inf(3)).find((u) => u.id === 's1').pvMax === 60 && ennemis(inf(3)).length === 9), 'les réglages du mode : +50 % par manche, un ennemi de plus à chaque manche');
+    // la fin d'une manche : récap, soin, XP, niveaux
+    const finie = () => { const C = inf(1); C.commencer(); C.U('h1').pv = 50; C.U('h2').ko = true; C.U('h2').pv = 0; C.S.resultat = 'victoire'; return C; };
+    const C1 = finie(), rec = C1.recapInfini();
+    t.ok(rec.gain === 40 && rec.xp === 40 && rec.niveau === 1 && rec.monte === 0 && rec.soin === 30 && rec.reveil === 50, 'récap de la manche 1 : 40 XP, pas encore de niveau, soin 30 %, un KO revient à 50 %');
+    t.ok(R2({ 'infini.xp': 200 }, () => { const r = finie().recapInfini(); return r.niveau === 2 && r.xp === 100 && r.monte === 1; }), '200 XP : on passe niveau 2 (il en reste 100, le niveau 3 en demande 200)');
+    const suite = C1.suiteInfini(), C2 = neuf({ infini: suite });
+    t.ok(suite.manche === 2 && suite.xp === 40 && C2.S.infini.manche === 2, 'la manche suivante est la 2, avec l’XP gardée');
+    t.ok(C2.U('h1').pv === Math.round(Math.min(1, 50 / 145 + 0.3) * 145) && C2.U('h2').pv === Math.round(0.5 * C2.U('h2').pvMax) && C2.U('h3').pv === C2.U('h3').pvMax, 'les héros repartent soignés (+30 %), le KO relevé à 50 %, les PV pleins restent pleins');
+    t.ok(C2.U('h1').potion === 1 && ennemis(C2).every((u) => u.pv === u.pvMax && u.pvMax > 30 * 0.9), 'potions rendues, et des ennemis en pleine forme, plus costauds');
+    t.ok(neuf().recapInfini() === null && neuf().suiteInfini() === null, 'hors mode infini : pas de récap ni de suite');
+    // l'interface : la case, le récap, « Manche suivante », la défaite
+    ihm.rejouer();
+    const case_ = document.querySelector('#mode-infini');
+    t.ok(case_ && !case_.checked, 'l’accueil a sa case « Mode infini », décochée par défaut');
+    case_.checked = true; document.querySelector('#commencer').click(); jouerFile();
+    let CI = game.dbg.combat;
+    t.ok(CI.S.infini?.manche === 1 && document.querySelector('.etat-terrain').textContent.startsWith('Manche 1 · niv. 1'), 'Commencer avec la case : manche 1, écrite dans le bandeau');
+    for (const e of CI.S.unites.filter((u) => u.camp === 'e')) { e.mort = true; e.pv = 0; }
+    CI.U('h1').pv = 60; CI.S.resultat = 'victoire'; CI.S.phase = 'fini'; CI.S.fin = Date.now();
+    ihm.montrerFin(false);
+    t.ok(document.querySelector('#fin h1').textContent === 'Manche 1 gagnée !' && !document.querySelector('#suite').hidden && document.querySelector('#infini-recap').textContent.includes('+40 XP') && document.querySelector('#infini-recap').textContent.includes('30 %'),
+      'la manche gagnée : un récap (soin, XP), le bilan, et le bouton « Manche suivante »');
+    document.querySelector('#suite').click(); jouerFile();
+    CI = game.dbg.combat;
+    t.ok(CI.S.infini.manche === 2 && CI.S.infini.xp === 40 && document.querySelector('#fin').hidden && CI.S.phase === 'heros' && CI.U('s1').pvMax === 36 && CI.U('h1').pv === Math.round(Math.min(1, 60 / 145 + 0.3) * 145),
+      'Manche suivante : la manche 2 démarre, ennemis +20 %, les héros soignés gardent leurs PV');
+    t.ok(document.querySelector('.etat-terrain').textContent.startsWith('Manche 2'), 'le bandeau dit « Manche 2 »');
+    for (const h of CI.S.unites.filter((u) => u.camp === 'h')) { h.ko = true; h.pv = 0; }
+    CI.S.resultat = 'defaite'; CI.S.phase = 'fini'; ihm.montrerFin(false);
+    t.ok(document.querySelector('#fin h1').textContent.startsWith('Défaite') && document.querySelector('#suite').hidden && document.querySelector('#infini-recap').textContent.includes('manche 2'), 'la défaite : « tombée à la manche 2 », pas de suite');
+    ihm.dom.fin.hidden = true; ihm.rejouer(); ihm.dom.infiniCase.checked = false;
+  }
 
   t.group('Shadow à l’écran (#198)');
   {

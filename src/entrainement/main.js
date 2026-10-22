@@ -14,6 +14,7 @@ import { monGithub } from './joueur.js';
 import * as vueSkill from './vue.js';
 import * as interfaceSkill from './interface.js';
 import * as multiSkill from './multi.js';
+import * as reglagesSkill from './panneau-reglages.js';
 import * as tests from './tests.js';
 import PERSOS from './persos.json';
 import { PLANCHES as EFFETS } from './effets.js';
@@ -52,11 +53,12 @@ async function demarrer() {
   const alea = query.has('graine') || query.has('test') ? graine(Number(query.get('graine')) || 20261018) : Math.random;
   // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
   const equipe = equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (la classe d'un autre joueur : pas pour moi)
-  const creer = (eq) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null, equipe: eq, alea });
+  const creer = (eq, infini = null) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null, equipe: eq, alea, infini });
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.
-  const nouveauCombat = (eq, copie = null) => {
-    combat = creer(eq);
+  // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)
+  const nouveauCombat = (eq, copie = null, infini = null) => {
+    combat = creer(eq, infini);
     if (copie) combat.restaurer(copie);
     vueSkill.remplacer(combat); interfaceSkill.remplacer(combat); multiSkill.api.remplacer(combat);
     game.dbg.combat = combat;
@@ -65,10 +67,11 @@ async function demarrer() {
 
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode') });
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini') });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
+  const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();
-  Object.assign(game.dbg, { combat, vue, ihm, multi, trame, salle, rendu, nouveauCombat });
+  Object.assign(game.dbg, { combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat });
   game.use(tests, { combat, vue, ihm, multi, trame, salle, game, images, SALLE });
 
   document.querySelector('#chargement').hidden = true;

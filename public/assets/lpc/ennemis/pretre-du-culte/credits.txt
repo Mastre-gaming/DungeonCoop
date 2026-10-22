@@ -1,0 +1,49 @@
+Character: Prêtre du culte
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_Elderly_light&clothes=Longsleeve_black&legs=Pants_black&weapon=Simple_staff_simple
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/male/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases; 'Thick' Male Revised Run/Climb by JaidynReiman (based on ElizaWy's LPC Revised)
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/human/male_elderly/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY 3.0
+
+Authors: Benjamin K. Smith (BenCreating), Eliza Wyatt (ElizaWy), Stephen Challener (Redshrike)
+
+torso/clothes/longsleeve/longsleeve/male/walk.png
+
+original by wulax; tweaks and further recolors by bluecarrot16; cleanup and climb/jump/run/sit/emote/revised combat adapted from LPC Revised by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: JaidynReiman, Johannes Sjölund (wulax)
+
+legs/pants/male/walk.png
+
+original male pants by wulax, recolors and edits to v3 base by bluecarrot16, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+weapon/magic/simple/foreground/walk/simple.png
+
+original by DrJamgo, hands switched and split into to layers by bluecarrot16
+
+Licenses: CC0
+
+Authors: bluecarrot16, Dr. Jamgo
+
+Download TXT
+Download CSV

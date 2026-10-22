@@ -11,6 +11,9 @@
 import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour } from './regles.js';
 import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
+import { calculerBilan } from './bilan.js';
+import { DEBUT_INFINI } from './regles.js';
+import * as REG from './reglages-combat.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
@@ -44,6 +47,7 @@ export function init(g, options) {
   ui.choix = equipePour(new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe, monGithub());
   construire();
   if (options.mode === 'initiative') dom.accueil.querySelector('input[value=initiative]').checked = true;
+  if (options.infini) dom.infiniCase.checked = true;
   if (options.demarrer) commencer();
   vue.surEvenement(surEvenement);
   canvas.addEventListener('pointermove', (e) => { ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.capSurvol = null; ui.sale = true; });
@@ -104,12 +108,16 @@ function construire() {
     dom.mode = el('fieldset', { class: 'mode-tour', onchange: (e) => reseau?.mode(e.target.value) }, el('legend', {}, 'Le mode de tour'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'equipe', checked: true }), ' Tour d’équipe : tous les héros, puis tous les ennemis'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'initiative' }), ' Ordre d’initiative : d20 + DEX, deux héros qui se suivent jouent ensemble')),
+    el('label', { class: 'mode-infini' }, dom.infiniCase = el('input', { type: 'checkbox', id: 'mode-infini', onchange: (e) => reseau?.infini(e.target.checked) }),
+      ' Mode infini : manche après manche, avec un soin et de l’XP entre deux, et des ennemis de plus en plus durs'),
     el('p', { class: 'objectif' }, 'Objectif : vaincre le chef (les autres s’enfuient).'),
     dom.attente = el('p', { class: 'attente-lobby', hidden: true }),
     el('div', { class: 'boutons' }, dom.commencer = el('button', { type: 'button', class: 'bouton-jeu', id: 'commencer', onclick: commencer }, 'Commencer le combat'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   dom.fin = el('div', { class: 'fond-terrain', id: 'fin', hidden: true }, el('section', { class: 'cadre-terrain' },
     dom.finTitre = el('h1', {}),
+    dom.infiniRecap = el('p', { class: 'infini-recap', id: 'infini-recap', hidden: true }),
+    dom.bilan = el('div', { class: 'bilan-fin', id: 'bilan' }),
     el('div', { class: 'notes-fin' },
       ...[['fun', 'Fun, sur 10'], ['lent', 'Ce qui a semblé lent'], ['cases', 'Sans cases : mieux ou moins bien qu’avec, et pourquoi'], ['regle', 'Une règle à changer']]
         .map(([k, t]) => el('label', {}, t, el('input', { type: 'text', name: k, oninput: () => { dom.fiche.textContent = combat.fiche(notes()); } })))),
@@ -117,6 +125,7 @@ function construire() {
     el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu', id: 'copier-fiche', onclick: copier }, 'Copier la fiche'),
       dom.continuer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { dom.fin.hidden = true; } }, 'Revenir au combat'),
+      dom.suite = el('button', { type: 'button', class: 'bouton-jeu', id: 'suite', hidden: true, onclick: mancheSuivante }, 'Manche suivante'),
       dom.rejouer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: rejouer }, 'Rejouer'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   document.body.append(dom.haut, dom.equipe, dom.droite, dom.bas, dom.coin, dom.de, dom.banniere, dom.info, dom.distance, dom.aide, dom.accueil, dom.fin);
@@ -176,12 +185,13 @@ function dessinerLobby() {
   dom.groupe.hidden = !reseau;
   dom.boutonsEquipe.hidden = !!reseau;
   dom.titreEquipe.textContent = reseau ? 'Le lobby : chacun prend ses héros et choisit leur classe' : 'Ton équipe : choisis la classe de chacun';
-  for (const i of dom.mode.querySelectorAll('input')) i.disabled = !!reseau && !reseau.hote;
+  for (const i of [...dom.mode.querySelectorAll('input'), dom.infiniCase]) i.disabled = !!reseau && !reseau.hote;
   dom.commencer.hidden = !!reseau && !reseau.hote;
   dom.attente.hidden = !reseau;
   if (!reseau) return;
   const L = reseau.L, joueurs = reseau.joueurs(), hote = joueurs.find((j) => j.id === 'host');
   const radio = dom.mode.querySelector(`input[value=${L.mode}]`); if (radio && !radio.checked) radio.checked = true;
+  dom.infiniCase.checked = !!L.infini;
   dom.groupe.replaceChildren(el('span', {}, `Le groupe${reseau.code ? ` (code ${reseau.code})` : ''} : `),
     ...joueurs.map((j) => el('span', { class: 'joueur', style: `--couleur:${reseau.couleurDe(j.id)}` }, j.nom, j.moi ? ' (toi)' : '', j.id === 'host' ? ' · hôte' : '')),
     ...(reseau.statut ? [el('span', { class: 'statut' }, reseau.statut)] : []));
@@ -194,13 +204,23 @@ export const adresseEquipe = (equipe, mode) => `?equipe=${equipe.join(',')}&mode
 const notes = () => Object.fromEntries([...dom.fin.querySelectorAll('input')].map((i) => [{ fun: 'Fun sur 10', lent: 'Ce qui a semblé lent', cases: 'Sans cases', regle: 'Une règle à changer' }[i.name], i.value.trim()]));
 
 // --- Le déroulé -------------------------------------------------------------------------------------------------
-function vider() { const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true; }
+function vider() {
+  const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true;
+  // le réglage « finir la phase quand plus personne n'a rien à faire » (seul ; à plusieurs, c'est l'hôte : multi.js)
+  if (!reseau && REG.oui('phase.autoFin') && combat.rienAFaire()) {
+    banniere('Plus rien à faire : fin de la phase');
+    ui.sel = null; ui.cap = null; ui.annuler = []; ui.portee = null;
+    combat.finPhaseHeros();
+    vider();
+  }
+}
 function commencer() {
   if (reseau) return void (reseau.hote && reseau.commencer());
   const mode = dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe';
   try { localStorage.setItem(CLE_CHOIX, ui.choix.join(',')); } catch {}
   // une autre équipe que celle du combat préparé : un nouveau combat avec elle, sans recharger
-  if (ui.choix.join(',') !== combat.S.equipe.join(',') || combat.S.phase !== 'preparation') nouveauCombat(ui.choix);
+  const infini = dom.infiniCase.checked;
+  if (infini || combat.S.infini || ui.choix.join(',') !== combat.S.equipe.join(',') || combat.S.phase !== 'preparation') nouveauCombat(ui.choix, null, infini ? DEBUT_INFINI : null);
   combat.S.mode = mode;
   lance();
   combat.commencer();
@@ -208,6 +228,17 @@ function commencer() {
 }
 function lance() { dom.accueil.hidden = true; dom.fin.hidden = true; ui.fini = false; ui.finMontree = false; ui.sale = true; }
 function accueil() { dom.fin.hidden = true; dom.accueil.hidden = false; ui.fini = false; ui.finMontree = false; dessinerPlaces(); ui.sale = true; }
+// Mode infini : la manche gagnée est suivie d'une autre, plus dure (le récap est dans la fiche de fin) ; à plusieurs, l'hôte la lance.
+function mancheSuivante() {
+  if (reseau) return void (reseau.hote && reseau.suite());
+  const suite = combat.suiteInfini(); if (!suite) return;
+  const mode = combat.S.mode, equipe = combat.S.equipe.slice();
+  nouveauCombat(equipe, null, suite);
+  combat.S.mode = mode;
+  lance();
+  combat.commencer();
+  vider();
+}
 function rejouer() {
   if (reseau) return void (reseau.hote && reseau.rejouer());
   ui.choix = combat.S.equipe.slice();
@@ -329,7 +360,12 @@ export function update() {
   const libre = !vue.occupe();
   if (libre && ui.etaitOccupe) ui.sale = true;          // la file vient de finir : on redessine (boutons, zone de marche)
   ui.etaitOccupe = !libre;
-  if (combat.S.phase === 'heros' && combat.S.debutPhase) dom.chrono.textContent = `phase des héros ${duree(ui.horloge() - combat.S.debutPhase)}`;
+  if (combat.S.phase === 'heros' && combat.S.debutPhase) {
+    const ecoule = ui.horloge() - combat.S.debutPhase, limite = REG.lire('phase.minuteur') * 1000;
+    dom.chrono.textContent = limite > 0 ? `phase des héros · reste ${duree(Math.max(0, limite - ecoule))}` : `phase des héros ${duree(ecoule)}`;
+    // le minuteur de la phase des héros (réglage) : seul, la phase finit toute seule ; à plusieurs, c'est l'hôte (multi.js)
+    if (limite > 0 && ecoule >= limite && !reseau && !vue.occupe() && !ui.fini) { banniere('Temps écoulé : fin de la phase'); finPhase(); }
+  }
   if (ui.fini && libre && dom.fin.hidden && !ui.finMontree) { ui.finMontree = true; montrerFin(false); }
   if (!ui.sale) return;
   if (!libre) {
@@ -474,8 +510,8 @@ function medaillonDe(type) {
 
 function dessinerTout() {
   const S = combat.S, groupe = S.phase === 'heros' ? combat.groupeCourant()?.ids ?? [] : [];
-  dom.etat.textContent = S.phase === 'preparation' ? 'Prêt' : S.phase === 'fini' ? (S.resultat === 'victoire' ? `Victoire au round ${S.round}` : `Défaite au round ${S.round}`)
-    : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`;
+  dom.etat.textContent = (S.infini ? `Manche ${S.infini.manche} · niv. ${S.infini.niveau} · ` : '') + (S.phase === 'preparation' ? 'Prêt' : S.phase === 'fini' ? (S.resultat === 'victoire' ? `Victoire au round ${S.round}` : `Défaite au round ${S.round}`)
+    : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`);
   if (S.phase !== 'heros') dom.chrono.textContent = '';
   // les fiches des héros : le médaillon du héros du camp, en petit, et son bandeau de bois (DESIGN.fr.md §5)
   dom.equipe.replaceChildren(...S.heros.map((id) => {
@@ -574,10 +610,30 @@ function montrerFin(enCours) {
   const S = combat.S;
   dom.rejouer.disabled = !!reseau && !reseau.hote;
   dom.rejouer.title = dom.rejouer.disabled ? 'L’hôte relance le combat pour tout le groupe' : '';
-  dom.finTitre.textContent = S.resultat === 'victoire' ? `Victoire au round ${S.round} !` : S.resultat === 'defaite' ? `Défaite au round ${S.round}` : 'La fiche de mesure (combat en cours)';
+  const I = S.infini, r = I && S.resultat === 'victoire' ? combat.recapInfini() : null;
+  dom.finTitre.textContent = I && S.resultat === 'victoire' ? `Manche ${I.manche} gagnée !` : S.resultat === 'victoire' ? `Victoire au round ${S.round} !` : S.resultat === 'defaite' ? `Défaite au round ${S.round}` : 'La fiche de mesure (combat en cours)';
   dom.continuer.hidden = !enCours || !!S.resultat;
+  // le récap du mode infini : avant la manche suivante, le soin, l'XP gagnée et le niveau
+  dom.infiniRecap.hidden = !I;
+  dom.suite.hidden = !r; dom.suite.disabled = !!reseau && !reseau.hote;
+  dom.infiniRecap.textContent = !I ? '' : r ? `Avant la manche ${I.manche + 1} : les héros reprennent ${r.soin} % de leurs PV (un KO revient à ${r.reveil} %), +${r.gain} XP${r.monte ? ` · niveau ${r.niveau} !` : ` · niveau ${r.niveau}`}. Les ennemis seront plus durs.`
+    : S.resultat === 'defaite' ? `L’équipe est tombée à la manche ${I.manche}, au niveau ${I.niveau}.` : `Manche ${I.manche} · niveau ${I.niveau}`;
   dom.fiche.textContent = combat.fiche(notes());
+  dom.bilan.replaceChildren(...bilanDom(calculerBilan(S, ui.horloge())));
   dom.fin.hidden = false;
+}
+// Le bilan : la durée, les rounds, et pour chaque héros sa part des dégâts (signalée au-dessus de 40 %), ses combos, ses relèves, ses potions.
+function bilanDom(b) {
+  const ligne = (h) => el('tr', { class: h.ecrase ? 'ecrase' : '', dataset: { heros: h.id } },
+    el('th', { scope: 'row' }, h.nom), el('td', {}, String(h.degats)),
+    el('td', { class: 'part' }, el('span', { class: 'jauge-part' }, el('span', { style: `width:${h.pourcent}%` })), ` ${h.pourcent} %`, h.ecrase ? el('span', { class: 'tampon', title: 'Plus de 40 % des dégâts à lui seul (GAME_SPEC)' }, '> 40 %') : null),
+    el('td', {}, `${h.combos}`, h.prepares ? el('span', { class: 'muet' }, ` (+${h.prepares} préparé${h.prepares > 1 ? 's' : ''})`) : null), el('td', {}, String(h.releves)), el('td', {}, String(h.potions)));
+  return [
+    el('p', { class: 'bilan-chiffres' }, el('span', {}, 'Durée ', el('strong', {}, duree(b.duree))), el('span', {}, 'Rounds ', el('strong', {}, String(b.rounds))), el('span', {}, 'Dégâts aux ennemis ', el('strong', {}, String(b.total)))),
+    el('table', { class: 'bilan-table' },
+      el('thead', {}, el('tr', {}, ...['Héros', 'Dégâts', 'Part des dégâts', 'Combos', 'Relèves', 'Potions'].map((t) => el('th', { scope: 'col' }, t)))),
+      el('tbody', {}, b.heros.map(ligne))),
+  ];
 }
 async function copier() {
   const texte = combat.fiche(notes());
@@ -599,7 +655,7 @@ function pointeur() {
 }
 
 export const api = {
-  ui, dom, majCurseur, commencer, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
+  ui, dom, majCurseur, commencer, mancheSuivante, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
   get selection() { return ui.sel; },
   get reseau() { return reseau; },
   // multi.js : à plusieurs, puis de nouveau seul (l'hôte est parti : tous les héros sont à moi)

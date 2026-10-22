@@ -10,7 +10,8 @@
 //   ?saison=hiver forcer la saison du camp (printemps, ete, automne, hiver ; sinon le calendrier de Paris)
 //   ?fete     la fête du niveau 4 (sinon, le jour où un lieu atteint le niveau 4)
 import { createGame } from './skills/core/module/06_game.js';
-import { T, W, H, LIEUX, APPARITION } from './01_plan.js';
+import { T, MONDE, VISITE, LIEUX, APPARITION } from './01_plan.js';
+import { fabriquerSauvage } from './53_sauvage.js';
 import { chargerImages } from './02_images.js';
 import { composerSol, composerCamp } from './03_carte.js';
 import { creerRendu } from './04_rendu.js';
@@ -55,6 +56,9 @@ import * as mursSkill from './45_murs.js';
 import * as jourNuitSkill from './46_jour_nuit.js';
 import * as meteoSkill from './48_meteo.js';
 import * as animauxSkill from './49_animaux.js';
+import * as vivantSkill from './54_vivant.js';
+import * as gardesSkill from './55_gardes.js';
+import * as habitantsSkill from './56_habitants.js';
 import * as scenesSkill from './50_scenes.js';
 import * as saisonsSkill from './51_saisons.js';
 import * as feteSkill from './52_fete.js';
@@ -85,16 +89,17 @@ imagesCamp.catch(() => {});   // (une erreur ici est dite par demarrer)
 async function demarrer(sortieTitre) {
   const [imagesBase, imagesHeros] = await imagesCamp;
   const images = { ...imagesBase, ...imagesHeros };   // (et les planches des héros à incarner)
-  const camp = composerCamp();
+  images.sauvage = fabriquerSauvage();               // les buissons, roseaux, fleurs… dessinés pour le dehors sauvage
+  const camp = composerCamp(images);
   const canvas = document.querySelector('#jeu');
   const rendu = creerRendu(canvas);
   // les saisons : les planches du décor et le sol, repeints avant que le camp ne se dessine (?saison=hiver pour en forcer
   // une ; en ?test, l'été : le camp tel qu'il est dessiné, comme midi et le beau temps)
   const saisonForcee = saisonsSkill.SAISONS.includes(query.get('saison')) ? query.get('saison') : query.has('test') ? 'ete' : null;
   const saison = saisonForcee ?? saisonsSkill.saisonDe();
-  const sol = composerSol(images);
+  const sol = composerSol(images, camp.solPlat);
   saisonsSkill.teindreCamp({ images, camp, sol, saison });
-  rendu.sol(sol);
+  rendu.sol(sol, MONDE.x0, MONDE.y0);
   rendu.statiques(camp.objets, images);
   const collision = creerCollision(camp);
 
@@ -104,7 +109,7 @@ async function demarrer(sortieTitre) {
   const decor = game.use(decorSkill, { rendu, camp, images });
   const apparitions = game.use(apparitionsSkill, { rendu, images });   // la colonne dorée : qui arrive, qui s'en va
   const muraille = game.use(murailleSkill, { rendu, camp, images, heros, visite });   // l'entrée : fantôme une fois dedans (#123)
-  const camera = game.use(cameraSkill, { rendu, visite, monde: { w: W * T, h: H * T }, cible: visite ? null : () => heros.heros });
+  const camera = game.use(cameraSkill, { rendu, visite, monde: visite ? VISITE : MONDE, cible: visite ? null : () => heros.heros });
   // les missions (les tâches du tableau de travail) ; en ?test, rien ne part sur le réseau
   const missions = game.use(missionsSkill, { horsLigne: query.has('test') });
   const lieux = game.use(lieuxSkill, { rendu, images, collision, missions, decor });
@@ -136,7 +141,7 @@ async function demarrer(sortieTitre) {
   // le jour et la nuit : le camp suit l'heure de Paris (?heure=22:30 pour en forcer une) ; en visite, plein jour
   // (en ?test, midi : la nuit coûte cher en rendu logiciel, et les tests de GitHub dépassaient leur quart d'heure ; le
   // test du jour et de la nuit passe lui-même par 23 h)
-  const jourNuit = game.use(jourNuitSkill, { rendu, heros, reseau, chantier, murs, muraille, visite, heure: query.get('heure') ?? (query.has('test') ? '12:00' : null) });
+  const jourNuit = game.use(jourNuitSkill, { rendu, heros, reseau, chantier, murs, muraille, camp, visite, heure: query.get('heure') ?? (query.has('test') ? '12:00' : null) });
   // la météo : la pluie, l'orage, le brouillard du matin, toutes les trois heures (?meteo=pluie pour en forcer un) ;
   // en visite, beau temps (en ?test aussi, comme midi pour le jour et la nuit)
   const saisons = game.use(saisonsSkill, { saison, forcee: !!saisonForcee });
@@ -170,6 +175,11 @@ async function demarrer(sortieTitre) {
   const promeneurs = game.use(promeneursSkill, { rendu, heros, collision, images, reseau, forgeron, apparitions, visite });
   // les animaux du camp : les poules, le chat, les lapins, les canards, les papillons (ils suivent la nuit et la météo)
   const animaux = game.use(animauxSkill, { rendu, images, heros, collision, reseau, promeneurs, jourNuit, meteo, saison, visite });
+  // le dehors qui vit : le feu de camp et sa fumée, l'étang et ses canards, les lapins, les papillons, les lucioles (54_vivant.js)
+  // une sentinelle à chaque porte secondaire
+  const gardes = game.use(gardesSkill, { rendu, images, heros, collision, visite });
+  const habitants = game.use(habitantsSkill, { rendu, images, heros, collision, camp, jourNuit, visite });
+  const vivant = game.use(vivantSkill, { rendu, images, heros, collision, camp, jourNuit, meteo, visite, saison });
   // les scènes entre habitants : la veillée au feu, le crieur et son public, le chef à la forge, un duel à l'enclos
   const scenes = game.use(scenesSkill, { rendu, images, heros, collision, promeneurs, chantier, crieur, forgeron, jourNuit, visite, auto: !visite && !query.has('test') });
   // la fête du niveau 4 : le jour où un lieu y arrive, des mâts, des guirlandes et une ronde de héros sur la place du feu
@@ -194,7 +204,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, scenes, saisons, fete, patchNotes, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, patchNotes, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

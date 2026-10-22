@@ -8,7 +8,7 @@ import { POSTE as BARDE, ENCEINTE } from './24_radio.js';
 export function testsPlace(t, ctx) {
   const { place, collision, decor } = ctx;
   const devant = [FEU[0] * T, FEU[1] * T + 2 * T];
-  const tour = [[19 * T, 16.2 * T], [17.8 * T, 16.9 * T]];                      // l'arrêt « le feu » du tour (31_tour.js)
+  const tour = [[20.4 * T, 17.7 * T], [19.2 * T, 17.9 * T]];                      // l'arrêt « le feu » du tour (31_tour.js)
   const sentiers = [[26.5 * T, 10.9 * T], [12.5 * T, 11.5 * T], [15 * T, 21 * T], [26 * T, 19.1 * T]];   // un peu au-delà de la place
   const voisins = [[BOITE.x, BOITE.y, 'la boîte aux lettres'], [BARDE.x, BARDE.y, 'le barde'], [ENCEINTE.x, ENCEINTE.y, 'l’enceinte']];
   const sous = (x, y, o) => x + 10 > o.x && x - 10 < o.x + o.w && y + 2 > o.y && y - 8 < o.y + o.h;
@@ -19,7 +19,7 @@ export function testsPlace(t, ctx) {
   const poses = [];
   for (let n = 0; n < 5; n++) {
     place.forcer(n);
-    poses.push(place.objets() === place.PLACE.niveaux[n].objets.length);
+    poses.push(place.objets() >= 1);   // (le centre-ville refait : la place ne pose plus que le grand feu animé)
     t.ok(collision.libre(...devant) && !!collision.chemin(APPARITION[0] * T, APPARITION[1] * T, ...devant), `niveau ${n} : on va à pied devant la place depuis l’apparition`);
     const coupes = sentiers.filter(([x, y]) => !collision.libre(x, y) || !collision.chemin(x, y, ...devant));
     t.eq(coupes.length, 0, `niveau ${n} : depuis chacun des quatre sentiers, on rejoint la fontaine à pied`);

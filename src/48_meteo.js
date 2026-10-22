@@ -11,7 +11,7 @@
 //     dans les douves, et le brouillard (plus épais vers les douves et dans la forêt, plus léger au milieu du camp) ;
 //   - l'éclair : un court instant, tout le camp devient blanc.
 import * as THREE from 'three';
-import { T, W, H, MURAILLE } from './01_plan.js';
+import { T, MONDE, MURAILLE } from './01_plan.js';
 
 export const name = 'meteo';
 export const always = true;
@@ -77,12 +77,12 @@ float tache(vec2 p, float c, float v, float temps, float vitesse, bool rond) {
   if (d.y == 0.0 && abs(d.x) == 1.0) return 0.4; if (d.y == -1.0 && d.x == 0.0) return 0.4; return 0.0;
 }`;
 // au sol : la couleur du sol, mouillée (la terre fonce, les flaques), et les éclaboussures
-const SOL = `varying vec2 vMonde; uniform sampler2D sol, place; uniform vec2 taille, placeTaille; uniform vec4 placeCadre; uniform float placeX, mouille, pluie, temps; ${HASARD}
+const SOL = `varying vec2 vMonde; uniform sampler2D sol, place; uniform vec2 taille, placeTaille, origine; uniform vec4 placeCadre; uniform float placeX, mouille, pluie, temps; ${HASARD}
 // le sol du camp, ou celui de la place du feu par-dessus (sa terre se mouille aussi)
 vec3 lire(vec2 p) {
   p = floor(p); vec2 q = p - placeCadre.xy;
   if (q.x >= 0.0 && q.y >= 0.0 && q.x < placeCadre.z && q.y < placeCadre.w) { vec4 c = texture2D(place, (vec2(placeX + q.x, q.y) + 0.5) / placeTaille); if (c.a > 0.5) return c.rgb; }
-  return texture2D(sol, (p + 0.5) / taille).rgb;
+  return texture2D(sol, (p - origine + 0.5) / taille).rgb;
 }
 bool terre(vec3 c) { return c.r > c.g && c.g > c.b && c.r - c.b > 0.27 && c.r > 0.55 && c.r < 0.85 && c.g > 0.39; }
 bool herbe(vec3 c) { return c.g > c.r + 0.15 && c.g > c.b + 0.15; }
@@ -109,7 +109,7 @@ void main() {
   gl_FragColor = vec4(o, 1.0);
 }`;
 // par-dessus tout : la pluie, les ronds dans les douves, le brouillard
-const DESSUS = `varying vec2 vMonde; uniform float pluie, goutte, clair, brume, neige, temps, lumiere; uniform vec4 eau; uniform vec2 pont, monde; ${HASARD}
+const DESSUS = `varying vec2 vMonde; uniform float pluie, goutte, clair, brume, neige, temps, lumiere; uniform vec4 eau; uniform vec2 pont, monde, origine; ${HASARD}
 void main() {
   vec2 p = floor(vMonde); vec4 o = vec4(0.0);
   if (pluie > 0.0) {
@@ -134,7 +134,7 @@ void main() {
   }
   if (brume > 0.0) {
     vec2 d = vec2(temps * 4.0, temps * 1.5);
-    float bas = clamp((p.y - 780.0) / 300.0, 0.0, 1.0) * 0.35, bords = clamp(1.0 - min(p.x, monde.x - p.x) / 160.0, 0.0, 1.0) * 0.3;
+    float bas = clamp((p.y - 780.0) / 300.0, 0.0, 1.0) * 0.35, bords = clamp(1.0 - min(p.x - origine.x, monde.x - (p.x - origine.x)) / 160.0, 0.0, 1.0) * 0.3;
     float nappes = bruit((p + d) / 90.0) * 0.6 + bruit((p - d * 0.7) / 40.0 + 3.0) * 0.4;
     float f = clamp(0.18 + bas + bords + (nappes - 0.5) * 0.45, 0.0, 0.78) * brume;
     vec3 c = vec3(0.86, 0.88, 0.9) * lumiere;
@@ -148,8 +148,8 @@ let rendu, jourNuit, place, visite, voiles, temps = 0, saison = null;
 const S = { force: null, temps: 'beau', fort: 1, eclair: 0, prochain: 8, flash: 0 };
 
 function plaque(materiau, z, ordre) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(W * T, H * T), materiau);
-  m.position.set(W * T / 2, -H * T / 2, z); m.renderOrder = ordre; m.frustumCulled = false;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(MONDE.w, MONDE.h), materiau);
+  m.position.set(MONDE.x0 + MONDE.w / 2, -(MONDE.y0 + MONDE.h / 2), z); m.renderOrder = ordre; m.frustumCulled = false;
   rendu.scene.add(m);
   return m;
 }
@@ -165,12 +165,12 @@ export function init(game, options) {
   const dessus = { transparent: true, depthTest: false, depthWrite: false };
   voiles = {
     sol: plaque(new THREE.ShaderMaterial({ vertexShader: VERTEX, fragmentShader: SOL, transparent: true, depthWrite: false,
-      uniforms: { sol: { value: sol }, taille: { value: new THREE.Vector2(options.sol.width, options.sol.height) }, mouille: { value: 0 }, pluie: { value: 0 }, temps: { value: 0 },
+      uniforms: { sol: { value: sol }, taille: { value: new THREE.Vector2(options.sol.width, options.sol.height) }, origine: { value: new THREE.Vector2(MONDE.x0, MONDE.y0) }, mouille: { value: 0 }, pluie: { value: 0 }, temps: { value: 0 },
         place: { value: placeTex }, placeTaille: { value: new THREE.Vector2(planche?.width ?? 1, planche?.height ?? 1) }, placeCadre: { value: new THREE.Vector4(0, 0, 0, 0) }, placeX: { value: 0 } } }), -94, 0),   // (juste au-dessus du sol de la place, à -95)
     ciel: plaque(new THREE.MeshBasicMaterial({ ...dessus, color: 0xffffff, blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: THREE.ZeroFactor, blendDst: THREE.SrcColorFactor }), 100, 998),
     dessus: plaque(new THREE.ShaderMaterial({ vertexShader: VERTEX, fragmentShader: DESSUS, ...dessus,
       uniforms: { pluie: { value: 0 }, goutte: { value: 9 }, clair: { value: 0 }, brume: { value: 0 }, neige: { value: 0 }, temps: { value: 0 }, lumiere: { value: 1 },
-        eau: { value: new THREE.Vector4(EAU.x0, EAU.x1, EAU.y0, EAU.y1) }, pont: { value: new THREE.Vector2(...EAU.pont) }, monde: { value: new THREE.Vector2(W * T, H * T) } } }), 100, 1002),
+        eau: { value: new THREE.Vector4(EAU.x0, EAU.x1, EAU.y0, EAU.y1) }, pont: { value: new THREE.Vector2(...EAU.pont) }, monde: { value: new THREE.Vector2(MONDE.w, MONDE.h) }, origine: { value: new THREE.Vector2(MONDE.x0, MONDE.y0) } } }), 100, 1002),
     eclair: plaque(new THREE.MeshBasicMaterial({ ...dessus, color: 0x000000, blending: THREE.AdditiveBlending }), 100, 1003),
   };
   update(0);

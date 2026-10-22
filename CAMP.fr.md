@@ -94,6 +94,9 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Technique (`axe: technique`) | la forge | les outils de l'équipe |
 | Le camp (`axe: camp`, ajouté le 18 oct) | **le camp tout entier** (pas de bâtiment) | à chaque niveau, le camp se modernise : son design graphique, sa vie (les niveaux sont à proposer, puis à choisir) |
 
+### Le plan d'agrandissement : la muraille carrée, des quartiers, trois clairières sauvages (v4, validé le 22 oct, codé en local)
+La première muraille et la grande porte du sud ne bougent pas ; le sud reste l'introduction du jeu (on n'en atteint ni l'ouest, ni l'est, ni le nord sans traverser le camp). Le camp monte vers le nord, **muraille carrée**, en quartiers (le cœur, le savoir, les artisans, les héros), avec quatre portes. **Dehors**, trois clairières sauvages et séparées (l'ouest et son ruisseau, l'est et son étang, le nord et le faubourg des fêtes), trois emplacements chacune pour les prochains bâtiments, et des sentiers qui s'enfoncent dans la forêt pour les départs des missions. Le détail, les captures et le contrôle : `design/camp/plans/PLAN_AGRANDI.fr.md` et `plan_agrandi.py`. **Il remplace le plan des clairières ci-dessous** (que le code n'utilise plus).
+
 ### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
 - **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
 - **Trois clairières de deux lieux, séparées par des bois,** chacune regroupant des axes qui vont ensemble :
@@ -258,7 +261,7 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 3 · l'atelier du peintre | une maison à colombage blanc, toit de chaume doré, deux grandes fenêtres à meneaux ; l'enseigne à la palette, l'étendoir, un chevalet dehors |
   | 4 · la halle des peintres | une halle blanche à poteaux de bois, son grand toit de verre, deux hautes fenêtres cintrées, une porte double vitrée ; à gauche l'échafaudage, son échelle et une statue en cours de taille ; à droite le grand chevalet et sa toile (le camp au couchant) ; l'étendoir, les pots |
 
-  **Les archives** : de la simple tente d'aujourd'hui (`src/27_archives.js`) à **la grande bibliothèque** (demande du propriétaire, 19 oct). On la reconnaît à ses hautes fenêtres où l'on voit les rayonnages pleins de livres, et à sa coupole. Ce n'est pas un des 8 lieux : ce qui la fait grandir reste à choisir (proposé : le nombre de cartes des archives, puisque chaque nouvel asset y a la sienne).
+  **Les archives** : de la simple tente d'aujourd'hui (`src/27_archives.js`) à **la grande bibliothèque** (demande du propriétaire, 19 oct). On la reconnaît à ses hautes fenêtres où l'on voit les rayonnages pleins de livres, et à sa coupole. Ce n'est pas un des 8 lieux : ce qui la fait grandir reste à choisir (**décidé le 22 oct par le propriétaire : les animations et les infos rentrées dans l'Archive** ; dans le jeu, le nombre de scènes de Fraps et de briques de combat du catalogue, aux seuils 0, 10, 30, 60 et 100 — `src/14_lieux.js`).
 
   | Niveau | Ce qu'on voit |
   |---|---|
@@ -522,6 +525,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 19 oct | Les lieux n'ont pas de bannières ; chacun a sa propre silhouette ; les archives, une simple tente aujourd'hui, deviennent une bibliothèque | le propriétaire |
 | 19 oct | Le coin des récits devient, au dernier niveau, un théâtre gréco-romain où des personnages raconteront des histoires, le livre au milieu de la scène ; les derniers niveaux sont imposants ; les pavés débordent et s'effilochent dans l'herbe ; les emprises et le plan du camp peuvent grandir | le propriétaire |
 | 19 oct | Les niveaux v3 du coin des récits, de la table des cartes, de l'atelier et des archives sont validés ; le coin des récits est noté 8/10 | le propriétaire |
+| 22 oct | Le plan d'agrandissement v4 : muraille carrée et première muraille inchangée, le sud est l'introduction (fermé), quartiers, trois clairières sauvages séparées, environ trois emplacements chacune, chemins de départ dans la forêt ; le décor doit avoir l'air vivant | le propriétaire |
 
 | Question | Qui répond |
 |---|---|
@@ -531,3 +535,9 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | Ce qui fait grandir les archives ; la place des quatre lieux agrandis sur le plan du camp | le propriétaire |
 | Les noms définitifs des lieux et le texte de la bulle d'arrivée | le responsable de l'axe Histoire, quand il y en aura un |
 | Les crédits : un écran de crédits dans le jeu, à partir de `CREDITS.md` et des fichiers de crédits des packs | le propriétaire |
+
+
+## Les bâtiments des lieux dans le jeu (22 oct)
+Le coin des récits (histoire), la table des cartes (level), l'atelier (art), l'estrade (son, « Son, c'est l'estrade ») et les archives sont dessinés du niveau 0 au niveau 4 : `design/camp/outils/lieux_jeu.py` sépare chaque maquette en sol et en bandes triées avec le héros (`public/assets/lpc/lieux_batiments.png`, `src/data/lieux_batiments.json`), et `src/14_lieux.js` les pose au niveau que donnent les missions de l'axe (les archives : ce qu'on rentre dans l'Archive). L'estrade n'avait pas de maquette : ses cinq niveaux sont ceux de `lieux_jeu.py` (corde et pancarte, estrade de bois, rideau rouge et bancs, kiosque de pierre, grande scène à fronton), à faire valider.
+
+**L'infirmerie (22 oct, essai demandé par le propriétaire) :** dans l'enceinte, à l'emplacement n° 3 du camp (à l'est, sous le tableau d'affichage, porte vers (37, 28)) ; le n° 1 est pris par le chantier de la muraille. Maquette de la session « Overnight prompt » (`design/camp/infirmerie/`, pièces LPC), ses cinq niveaux : pancarte, tente, échoppe, bâtiment à toit de chaume, bâtiment décoré. **Sans axe pour l'instant** : provisoirement, elle suit l'axe Combat (`AXE_INFIRMERIE` dans `src/14_lieux.js`) ; le propriétaire doit choisir un label d'axe, ou la ranger sous Combat. Le soin au camp n'est pas dans le jeu.

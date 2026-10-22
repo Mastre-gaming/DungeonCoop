@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "id": "minotaure",
+  "nom": "Minotaure",
+  "auteur": "",
+  "famille": "bete",
+  "rang": "boss",
+  "pv": 280,
+  "vitesse": 9,
+  "dex": 0,
+  "coriace": true,
+  "habitude": {
+    "type": "charge-faible"
+  },
+  "capacites": [
+    {
+      "nom": "Charge",
+      "slot": "action",
+      "portee": "ligne à travers la salle",
+      "zone": "aucune",
+      "base": 22,
+      "de": 8,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [
+    "100 % : Charge en ligne à travers la salle, 22+d8",
+    "50 % : Furie, deux attaques par tour"
+  ],
+  "mecanique_combo": "Esquiver sa charge pour qu’il percute un rocher ou un tonneau : Étourdi (nouvel état) 1 tour, puis tout le monde avec avantage.",
+  "butin": {
+    "or": [
+      20,
+      40
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_brown&head=Minotaur_brown&armour=Leather_brown&legs=Pants_brown&weapon=Waraxe_waraxe",
+    "planche": ""
+  },
+  "valide": true
+}

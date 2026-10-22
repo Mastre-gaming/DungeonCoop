@@ -30,19 +30,19 @@ function retirer() {
 function construire(n) {
   retirer();
   niveau = n;
-  const d = PLACE.niveaux[n], [ox, oy] = PLACE.origine, [w, h] = PLACE.taille;
-  sol = rendu.sprite(images.placeSols, 'placeSols', w, h);
-  sol.poser(ox, oy, PIED_SOL, n * w, 0);
-  for (const o of d.objets) objets.push({ sprite: rendu.sprite(images.placeObjets, 'placeObjets', o.w, o.h), o });
-  for (const [x, y, sw, sh] of d.socles) { const ob = { x, y, w: sw, h: sh }; collision.ajouter(ob); obstacles.push(ob); }
-  decor?.cacherFeu?.(true);   // le feu, c'est maintenant la place qui le dessine (et ses braseros, à partir du niveau 2)
+  // Le centre-ville a été refait (22 oct) : le sol, le foyer, les bancs, la guirlande et l'estrade sont dessinés par 14_lieux.js
+  // (le lieu « centre »). Ici ne reste que ce qui bouge : le feu de joie, quatre flammes du grand feu (ses cinq images), décalées et
+  // déphasées, sur les bûches dressées du foyer (demande du propriétaire, 22 oct : un feu plus grand).
+  const o = PLACE.niveaux[1].objets.find((q) => q.images === 5);
+  for (const [dx, dy, ph, dp] of [[0, -12, 1, -2], [-21, 4, 2, 2], [21, 4, 3, 2], [0, 0, 0, 3]]) objets.push({ sprite: rendu.sprite(images.placeObjets, 'placeObjets', o.w, o.h), o, dx, dy, ph, dp });
+  decor?.cacherFeu?.(true);   // le feu, c'est maintenant la place qui le dessine
   poser();
 }
 
 function poser() {
-  for (const { sprite, o } of objets) {
-    const k = o.images > 1 ? Math.floor(temps / o.pas) % o.images : 0;
-    sprite.poser(o.x, o.y, o.pied, o.sx + k * o.w, o.sy);
+  for (const { sprite, o, dx = 0, dy = 0, ph = 0, dp = 0 } of objets) {
+    const k = o.images > 1 ? (Math.floor(temps / o.pas) + ph) % o.images : 0;
+    sprite.poser(o.x + dx, o.y + dy, o.pied + dp, o.sx + k * o.w, o.sy);
   }
 }
 

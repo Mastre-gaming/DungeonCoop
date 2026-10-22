@@ -1,0 +1,58 @@
+{
+  "version": 1,
+  "id": "garde-orc",
+  "nom": "Garde orc",
+  "auteur": "",
+  "famille": "peau-verte",
+  "rang": "soldat",
+  "pv": 50,
+  "vitesse": 6,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "garde"
+  },
+  "capacites": [
+    {
+      "nom": "Coup de bouclier",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 8,
+      "de": 4,
+      "effet": "pousse 1,5 m",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Interposition",
+      "slot": "reaction",
+      "portee": "allié au contact",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "prend le coup visant le chef",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [
+    "poussee"
+  ],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      3,
+      8
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_green&head=Orc_male_green&armour=Plate_iron&legs=Armour_iron&shoes=Armour_iron&weapon=Mace_mace&shield=Round_Shield_brown",
+    "planche": ""
+  },
+  "valide": true
+}

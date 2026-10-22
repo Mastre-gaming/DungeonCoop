@@ -11,6 +11,7 @@
 // ses répliques aussi (les textes du jeu sont à l'équipe).
 import CHANTIER from './data/chantier.json';
 import { estTache, etatDe, lieuDe, tailleDe, POINTS } from './10_missions.js';
+import { T, CAMP } from './01_plan.js';
 
 export const name = 'chantier';
 export const always = true;
@@ -40,10 +41,25 @@ export const TEXTE = {
   aide: 'Chaque mission du camp rentrée fait monter les murs.',
 };
 
-let game, rendu, images, heros, missions, collision, visite, sol, panneau, gPanneau, chef, bulle, parler;
+let game, rendu, images, heros, missions, collision, visite, sol, sol2, panneau, gPanneau, chef, bulle, parler;
 const ouvriers = [], obstacles = [], pieces = [];
 const S = { t: 0, a: avancement([]), cache: false, parle: 0, regard: 2, dort: false, ailleurs: false };   // dort : la nuit (46_jour_nuit.js) ; ailleurs : parti chercher des outils à la forge (50_scenes.js)
 const P = CHANTIER.pieces.find((p) => p.nom === 'panneau');
+
+// Le camp a grandi vers le nord (plan agrandi) : le mur nord est 25 cases plus haut, et ses portes ont changé de place. Les pièces
+// du chantier ont été dessinées pour l'ancien camp : celles du nord montent de DY (et suivent la porte nord), les pancartes des
+// portes ouest et est suivent leur porte ; le reste (la base au sud-ouest, le chef et son panneau) n'a pas bougé.
+const DY = CAMP.y0 * T, NORD_DX = 21 * T - 325;
+const DU_NORD = ['souche', 'souche et hache', 'bûches', 'chèvre de levage', 'palette nord', 'palette nord 2', 'bûches du bûcheron', 'masse', 'brouette', 'porte nord, base ouest', 'porte nord, base est', 'porte nord, cintre', 'pancarte porte nord',
+  'ouvrier au treuil', 'ouvrier à la tranchée nord', 'bûcheron', 'ouvrier à la brouette', 'ouvrier à la tranchée ouest'];
+const decale = (o) => {
+  const nord = DU_NORD.includes(o.nom), porteNord = o.nom.includes('porte nord');
+  const [dx, dy] = porteNord ? [NORD_DX, DY] : nord ? [0, DY] : o.nom === 'pancarte porte ouest' ? [0, 160 - 252] : o.nom === 'pancarte porte est' ? [0, 288 - 610] : [0, 0];
+  if (!dx && !dy) return o;
+  const r = { ...o, x: o.x + dx, y: o.y + dy, pied: o.pied + dy };
+  if (o.bloque) r.bloque = [o.bloque[0] + dx, o.bloque[1] + dy, o.bloque[2], o.bloque[3]];
+  return r;
+};
 
 const ecran = (x, y) => {
   const cr = rendu.renderer.domElement.getBoundingClientRect();
@@ -84,16 +100,21 @@ function ranger() {
   }
 }
 
+const FORCE = Number(new URLSearchParams(location.search).get('murs'));   // ?murs=100 : les murs finis (captures, essais)
 function lire() {
   const a = avancement(missions.etat.issues);
+  if (FORCE > 0) for (const m of MURS) a[m] = Math.min(100, FORCE);
   if (MURS.some((m) => a[m] !== S.a[m]) || a.points !== S.a.points) { S.a = a; dessinerPanneau(); ranger(); }
 }
 
 export function init(g, options) {
   game = g;
   ({ rendu, images, heros, missions, collision, visite } = options);
-  sol = rendu.calqueSol(images.chantierSol, 'chantier-sol');
-  for (const p of CHANTIER.pieces.filter((x) => x !== P)) {
+  // (les ombres au sol : le haut va avec le mur nord, le bas reste au sud-ouest)
+  sol = rendu.calqueSol(images.chantierSol, 'chantier-sol', 0, DY, 0, 0, 1344, 300);
+  sol2 = rendu.calqueSol(images.chantierSol, 'chantier-sol', 0, 300, 0, 300, 1344, 1216 - 300);
+  for (const p0 of CHANTIER.pieces.filter((x) => x !== P)) {
+    const p = decale(p0);
     const sprite = rendu.sprite(images.chantier, 'chantier', p.sw, p.sh);
     sprite.poser(p.x, p.y, p.pied, p.sx, p.sy);
     const [x, y, w, h] = p.bloque ?? [];
@@ -103,7 +124,8 @@ export function init(g, options) {
   gPanneau = c.getContext('2d'); gPanneau.imageSmoothingEnabled = false;
   panneau = rendu.sprite(c, 'chantier-panneau', P.sw, P.sh);
   panneau.poser(P.x, P.y, P.pied);
-  for (const o of CHANTIER.gens) {
+  for (const o0 of CHANTIER.gens) {
+    const o = decale(o0);
     const sprite = rendu.sprite(images.chantier, 'chantier', o.w, 64);
     const [x, y, w, h] = o.bloque;
     ouvriers.push({ ...o, sprite, decalage: ouvriers.length * 0.37, obstacle: { x, y, w, h }, parti: true });
@@ -170,7 +192,7 @@ export function dispose() {
 // tout cacher (les captures de chantier_captures.mjs : le camp sans le chantier)
 export function cacher(oui = true) {
   S.cache = oui;
-  sol.visible = !oui;
+  sol.visible = !oui; sol2.visible = !oui;
   panneau.cacher(oui); chef.sprite.cacher(oui); ranger();
   if (oui) { bulle.hidden = true; parler.hidden = true; S.parle = 0; }
 }

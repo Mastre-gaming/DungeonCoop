@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "cultiste",
+  "nom": "Cultiste",
+  "auteur": "",
+  "famille": "humain",
+  "rang": "sbire",
+  "pv": 25,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "plus-proche"
+  },
+  "capacites": [
+    {
+      "nom": "Coup de dague",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 8,
+      "de": 4,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Sacrifice",
+      "slot": "passif",
+      "portee": "soi",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "en tombant, Inspire les alliés à 4,5 m",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      1,
+      4
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&hat=Hood_black&clothes=Longsleeve_red&legs=Pants_red&weapon=Dagger_dagger",
+    "planche": ""
+  },
+  "valide": true
+}
