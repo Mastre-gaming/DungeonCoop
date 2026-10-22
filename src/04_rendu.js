@@ -57,9 +57,9 @@ export function creerRendu(canvas) {
     cam: { x: 0, y: 0 },         // le coin haut-gauche de la vue, dans le monde
 
     // Le sol : une seule image, tout au fond.
-    sol(canvasSol) {
+    sol(canvasSol, x0 = 0, y0 = 0) {   // (x0, y0) : le coin haut-gauche du sol dans le monde (négatif : le monde monte vers le nord)
       const m = new THREE.Mesh(new THREE.PlaneGeometry(canvasSol.width, canvasSol.height), new THREE.MeshBasicMaterial({ map: tex('sol', canvasSol) }));
-      m.position.set(canvasSol.width / 2, -canvasSol.height / 2, -100);
+      m.position.set(x0 + canvasSol.width / 2, -(y0 + canvasSol.height / 2), -100);
       scene.add(m);
       return m;
     },

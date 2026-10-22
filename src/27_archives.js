@@ -4,12 +4,14 @@
 // En revenant (« Retour au camp »), on réapparaît devant elle (?spot=archives).
 // Ce n'est pas un des 8 lieux (ils suivent les axes du tableau de travail) : un objet du camp, comme la boîte aux lettres.
 import { poserTente } from './tente.js';
+import { ARCHIVES } from './01_plan.js';
 
 export const name = 'archives';
 export const ADRESSE = './archives.html';
 
 const T = 32;
-export const TENTE = { cx: 11, pied: 17.8 };          // en cases : le milieu de l'ouverture, le bas de la toile
+// (au plan agrandi : dans le quartier du savoir, à la place de la future bibliothèque)
+export const TENTE = { cx: (ARCHIVES.emprise[0] + ARCHIVES.emprise[2]) / 2, pied: ARCHIVES.emprise[3] - 0.4 };   // en cases : le milieu de l'ouverture, le bas de la toile
 export const PORTE = { x: TENTE.cx, y: TENTE.pied + 0.4 };
 
 let game, rendu, canvas, heros, collision, images, visite, bulle, sprites = [], obstacles = [];

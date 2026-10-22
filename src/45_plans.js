@@ -334,11 +334,13 @@ export function creerPlans({ missions, github, visite, horsLigne = false, redess
     return el('p', { class: 'rien' }, `« :: ${m.sorte} » n’est pas un dessin connu (${SORTES.join(', ')}).`);
   }
 
+  // Le cadre du plan du camp en petit (le camp agrandi : ses murs, et au nord le faubourg des fêtes) : x de 0 à 42, y de -50 à 38.
+  const CADRE = { x0: 0, y0: -50, w: 42, h: 88 };
   // Le plan du camp en petit : les lieux sur leur emprise, à la couleur de leur axe, avec leur niveau en direct.
   function planCamp() {
     const niveaux = missions.resume().niveaux, pct = (v, t) => `${(100 * v) / t}%`;
     const boite = (x0, y0, x1, y1, classe, style = '', ...enfants) =>
-      el('div', { class: classe, style: `left:${pct(x0, W)};top:${pct(y0, H)};width:${pct(x1 - x0, W)};height:${pct(y1 - y0, H)};${style}` }, ...enfants);
+      el('div', { class: classe, style: `left:${pct(x0 - CADRE.x0, CADRE.w)};top:${pct(y0 - CADRE.y0, CADRE.h)};width:${pct(x1 - x0, CADRE.w)};height:${pct(y1 - y0, CADRE.h)};${style}` }, ...enfants);
     const lieux = LIEUX.map((l) => {
       const [x0, y0, x1, y1] = emprise(l), a = LIEUX_AXES.find((x) => x.id === l.id), n = niveaux[l.id] ?? 0;
       return boite(x0, y0, x1, y1, `lieu-plan${n ? '' : ' vide'}`, `--teinte:${a?.couleur ?? '#8f8a7c'}`,

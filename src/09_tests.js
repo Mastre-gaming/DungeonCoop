@@ -1,7 +1,7 @@
 // Les vérifications du camp (?test) : elles jouent comme un joueur (le manuel §3).
 // Le test de marche part de l'apparition et va à pied jusqu'à chaque lieu puis au feu, en tenant les touches
 // (de vrais événements clavier, comme un joueur) ; il donne les coordonnées exactes de tout endroit où le héros reste coincé.
-import { T, W, H, LIEUX, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, MURAILLE, emprise } from './01_plan.js';
+import { T, W, H, MONDE, VISITE, LIEUX, EMPLACEMENTS, DEPARTS, CLAIRIERES, BOIS, FEU, APPARITION, CHEMINS, ENCLOS, MURAILLE, emprise } from './01_plan.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 import { LIEUX_AXES } from './10_missions.js';
 import { testsHudEpique } from './34_tests_hud.js';
@@ -75,7 +75,7 @@ export async function selfTest(t, game) {
   let chevauche = [];
   for (const a of LIEUX) for (const b of LIEUX) if (a.id < b.id && inter(marge(E[a.id]), E[b.id])) chevauche.push(`${a.id}/${b.id}`);
   t.eq(chevauche, [], 'aucune emprise de niveau 4 ne chevauche une autre, même à une case près');
-  t.eq(E.combat, [24, 2, 32, 10], 'le terrain d’entraînement a son emprise à lui : l’enclos de 8 x 8 cases (#77)');
+  t.eq([E.combat[2] - E.combat[0], E.combat[3] - E.combat[1]], [8, 8], 'le terrain d’entraînement a son emprise à lui : l’enclos de 8 x 8 cases (#77)');
   // (comme design/camp/plans/verifier.py) un sentier ne passe pas dans un lieu, sauf le bout qui mène à sa porte ;
   // le bas de l'emprise (1,3 case) est le devant du lieu, où les sentiers passent
   const traverse = [];
@@ -84,9 +84,9 @@ export async function selfTest(t, game) {
     for (let s = 0; s + 1 < ch.length; s++) {
       const [x0, y0] = ch[s], [x1, y1] = ch[s + 1], n = Math.ceil(Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) * 4) + 1;
       for (let i = 0; i <= n; i++) {
-        const x = x0 + ((x1 - x0) * i) / n + 0.5, y = y0 + ((y1 - y0) * i) / n + 0.5;
+        const x = x0 + ((x1 - x0) * i) / n, y = y0 + ((y1 - y0) * i) / n;   // (les sentiers du plan agrandi sont en vraies coordonnées)
         for (const l of LIEUX) {
-          if (Math.abs(l.porte[0] + 0.5 - fin[0]) < 1 && Math.abs(l.porte[1] - fin[1]) < 1) continue;
+          if (Math.abs(l.porte[0] + 1 - fin[0]) < 1.1 && Math.abs(l.porte[1] + 1 - fin[1]) < 1.1) continue;
           const e = E[l.id];
           if (e[0] + 0.3 < x && x < e[2] - 0.3 && e[1] + 0.3 < y && y < e[3] - 1.3 && !traverse.includes(`${k}/${l.id}`)) traverse.push(`${k}/${l.id}`);
         }
@@ -96,12 +96,36 @@ export async function selfTest(t, game) {
   t.eq(traverse, [], 'aucun sentier ne traverse un lieu');
   const surArbre = LIEUX.filter((l) => BOIS.some(([i, j]) => inter(E[l.id], [i, j, i + 1, j + 1]))).map((l) => l.id);
   t.eq(surArbre, [], 'aucun arbre dans une emprise de lieu');
-  t.eq([collision.largeur, collision.hauteur], [W * T, H * T], 'le camp fait 42 x 38 cases (avec l’entrée, #123)');
+  t.eq([collision.largeur, collision.hauteur], [MONDE.w, MONDE.h], 'le monde fait 122 x 110 cases : le camp agrandi, ses clairières, et le sud avec l’entrée (#123) comme avant');
   t.ok(!collision.bloque(APPARITION[0] * T, APPARITION[1] * T), "l'apparition est libre");
+
+  t.group('le plan agrandi : les portes, les clairières, le sud');
+  // tout se rejoint à pied depuis l'apparition : chaque emplacement, et le bout de chaque chemin de départ dans la forêt
+  const loin = [...EMPLACEMENTS.map((e) => [`l’emplacement ${e.n}`, e.porte[0] * T, (e.porte[1] + 1) * T]), ...DEPARTS.map((d) => [`le départ ${d.lettre}`, ...d.points.at(-1).map((v) => v * T)])];
+  const sansChemin = loin.filter(([, x, y]) => !collision.chemin(APPARITION[0] * T, APPARITION[1] * T, x, y, 400000)).map(([n]) => n);
+  t.eq(sansChemin, [], `on va à pied jusqu'à chaque emplacement et au bout de chaque chemin de départ (${loin.length})`);
+  // l'introduction du jeu, au sud, reste fermée : de la route du pont, on n'atteint aucune clairière sans passer par le camp
+  const PAS = 16, vus = new Set(), file = [[Math.floor(15 * T / PAS), Math.floor(36 * T / PAS)]];
+  vus.add(file[0].join());
+  let dehors = 0;
+  while (file.length) {
+    const [i, j] = file.pop();
+    for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const a2 = i + di, b2 = j + dj, cle = `${a2},${b2}`, x = (a2 + 0.5) * PAS, y = (b2 + 0.5) * PAS;
+      if (vus.has(cle) || y < (MURAILLE.douves[1] + 0.2) * T || collision.bloque(x, y)) continue;   // (on ne passe pas la muraille : on reste au sud d'elle)
+      vus.add(cle); file.push([a2, b2]);
+      if (x < 0 || x > W * T) dehors++;
+    }
+  }
+  t.ok(vus.size > 20 && dehors === 0, `depuis la route du pont, au sud de la muraille : ${vus.size} places libres, aucune hors de la largeur de la muraille`);
+  // le camp est fermé : sans la porte, on n'en sort pas par un mur (ouest, est, nord) ; les trois portes laissent passer
+  const portes = [['ouest', 0, 5], ['est', 42, 9], ['nord', 21, -25]].map(([n, x, y]) => [n, x * T, y * T]);
+  t.ok(portes.every(([n, x, y]) => (n === 'nord' ? !collision.bloque(x, y + 12) : !collision.bloque(x + (n === 'ouest' ? 32 : -32), y + 2))), 'les trois portes (ouest, est, nord) sont ouvertes');
+  t.ok(Object.keys(CLAIRIERES).includes('ouest') && Object.keys(CLAIRIERES).includes('est') && Object.keys(CLAIRIERES).includes('nord'), 'trois clairières : ouest, est et nord');
 
   if (visite) {
     t.group('la vue visite');
-    t.ok(rendu.vue.w >= W * T - 0.5 && rendu.vue.h >= H * T - 0.5, `tout le camp tient dans le cadre (vue ${Math.round(rendu.vue.w)} x ${Math.round(rendu.vue.h)})`);
+    t.ok(rendu.vue.w >= VISITE.w - 0.5 && rendu.vue.h >= VISITE.h - 0.5, `tout le camp tient dans le cadre (vue ${Math.round(rendu.vue.w)} x ${Math.round(rendu.vue.h)})`);
     t.ok(ctx.muraille.estompe === 0 && ctx.muraille.opacite === 1, 'en visite, la muraille de l’entrée est pleine');
     game.dbg.freeze(false);
     return;
@@ -126,7 +150,7 @@ export async function selfTest(t, game) {
   tenir(['ArrowLeft', 'ShiftLeft']); game.dbg.advance(3); tenir([]); game.dbg.advance(1.5);
   t.ok(camera.cam.x < c0.x - 50, 'il sort de la zone morte : la caméra le rattrape');
   const v = rendu.vue;
-  t.ok(camera.cam.x >= 0 && camera.cam.y >= 0 && camera.cam.x + v.w <= W * T + 0.5 && camera.cam.y + v.h <= H * T + 0.5, 'la caméra reste dans le camp');
+  t.ok(camera.cam.x >= MONDE.x0 && camera.cam.y >= MONDE.y0 && camera.cam.x + v.w <= MONDE.x1 + 0.5 && camera.cam.y + v.h <= MONDE.y1 + 0.5, 'la caméra reste dans le monde');
   t.ok(Math.abs(rendu.cam.x * rendu.echelle - Math.round(rendu.cam.x * rendu.echelle)) < 1e-6, 'la position de la caméra tombe sur un pixel d’écran');
   t.ok(Number.isInteger(rendu.echelle), `échelle entière (${rendu.echelle}) : le pixel art reste net`);
   const cases = [v.w / T, v.h / T];

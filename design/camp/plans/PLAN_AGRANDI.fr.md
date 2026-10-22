@@ -1,62 +1,44 @@
-# Le plan d'agrandissement du camp, par quartiers (proposition du 22 oct, à valider)
+# Le plan d'agrandissement du camp (v4, validé par le propriétaire le 22 oct, codé dans le jeu en local)
 
 ![Le plan agrandi](plan_agrandi.png)
 
-**En une phrase :** le camp se range en quartiers qui vont ensemble. Il grandit vers le nord à l'intérieur des murs, et s'ouvre hors les murs, au sud du pont-levis, sur un **faubourg des fêtes**. Il a quatre portes, et six chemins partent dans la forêt pour les prochaines missions.
+**En une phrase :** la muraille reste carrée et le camp grandit vers le nord, rangé en quartiers ; dehors, à l'ouest, à l'est et au nord, trois clairières sauvages, séparées par la forêt, accueillent les prochains bâtiments et les départs des prochaines missions ; le sud, l'introduction du jeu, ne change pas.
 
 ## Ce qui ne bouge pas
-**La grande muraille du sud, telle qu'elle** (demande du propriétaire) : même largeur (42 cases), mêmes douves, même pont-levis, et la grande porte toujours sur les colonnes 14 et 15. Le camp ne s'élargit pas : il grandit vers le nord, et le faubourg tient dans la même largeur.
+- **La première muraille et la grande porte du sud**, telles qu'elles : 42 cases, douves, pont-levis, porte sur les colonnes 14 et 15.
+- **Le sud, l'introduction :** la route du pont, la forêt de chaque côté et les limites de la carte. La carte a la forme d'une clé : large au nord, une queue étroite au sud. **De la route du pont, on n'atteint ni l'ouest, ni l'est, ni le nord** : il faut traverser le camp et sortir par sa porte (vérifié dans `?test`).
+- **Le repère :** l'origine est celle d'avant (la première muraille de x 0 à 42, son mur à y 31). Le camp monte donc dans les y négatifs (le mur nord est à y = -25), et le monde va de x -46 à 76 et de y -72 à 38.
+
+## Les murs et les portes
+La muraille est **carrée** : les murs ouest et est sont droits et plus longs (la toile des pièces est refaite par `design/camp/outils/murs_jeu.py`), le mur nord est 25 cases plus haut, avec des tours d'angle carrées. **Trois portes secondaires** (ouest, est, nord), toujours ouvertes, finies ou non : ce sont celles du chantier de Mope. Les murs montent toujours avec les missions de l'axe camp.
 
 ## Les quartiers
-| Quartier | Ce qu'il y a | Pourquoi ensemble |
-|---|---|---|
-| **le cœur du camp** (au milieu) | la place du village et son feu, le tableau d'affichage ; les emplacements 4 et 5 | on y arrive par la grande porte, et toutes les routes y mènent |
-| **le quartier du savoir** (au nord) | l'observatoire des cartographes, la grande bibliothèque des archives, autour de la place du savoir ; l'emplacement 1 | apprendre, préparer : les cartes, les livres, ce qu'on sait du monde |
-| **le quartier des artisans** (à l'ouest) | l'atelier des peintres, la forge ; l'emplacement 2 | fabriquer : les apparences, les outils |
-| **le quartier des héros** (à l'est) | le terrain d'entraînement, l'armurerie ; l'emplacement 3 | se préparer au combat : s'entraîner, s'équiper |
-| **le faubourg des fêtes** (hors les murs, au sud du pont-levis) | le théâtre des récits, l'estrade, autour de la place des fêtes ; l'emplacement 6 | se divertir : les histoires et la musique (demande du propriétaire) |
-
-Le faubourg est au bout de la route du pont : en sortant par la grande porte, la route longe le théâtre et arrive sur la place des fêtes, devant sa scène. Il n'a pas de mur : la forêt l'entoure.
-
-## Les quatre portes
-| Porte | Où | Elle mène à |
-|---|---|---|
-| sud, la grande porte | la muraille, colonnes 14 et 15 (inchangée) | au faubourg, au sud ; à la place du village, au nord |
-| ouest | le mur ouest, à hauteur de l'atelier | le quartier des artisans |
-| est | le mur est, à hauteur du feu | la place du village |
-| nord | le mur nord, à côté de la bibliothèque | la place du savoir |
-
-Ce sont les portes secondaires du chantier de Mope (19 oct) : une tourelle, une porte cloutée, une lanterne. Les murs ouest et est montent jusqu'au nouveau mur nord, reculé de 24 rangées.
-
-## Les chemins de départ des missions
-Six chemins de terre sortent du camp et s'enfoncent dans la forêt jusqu'au bord de la carte (en jaune sur le plan). Ils ne mènent encore nulle part : chacun attend une mission (une salle, un chapitre, un portail…).
-
-| Chemin | D'où il part |
+| Quartier | Ce qu'il y a |
 |---|---|
-| A | la porte nord |
-| B | la porte ouest |
-| C | la porte est |
-| D | la place des fêtes, vers le sud |
-| E | le faubourg, vers le sud-ouest |
-| F | le faubourg, vers le sud-est |
+| **le cœur du camp** | la place du village et son feu, le tableau d'affichage, la boîte aux lettres, le barde ; la sentinelle à l'entrée |
+| **le quartier du savoir** (au nord) | l'observatoire (la table des cartes), la bibliothèque (les archives, la tente d'aujourd'hui), autour de la place du savoir |
+| **les artisans** (à l'ouest) | l'atelier, la forge |
+| **les héros** (à l'est) | le terrain d'entraînement, l'armurerie |
+| **le faubourg des fêtes** (hors les murs, au nord, devant la porte nord) | le théâtre des récits et l'estrade, autour de la place des fêtes |
 
-## Les emplacements pour les prochains bâtiments (6 × 5 cases chacun)
-Un ou deux par quartier, pour que chaque nouveau bâtiment aille avec ses voisins : **1** le savoir, **2** les artisans, **3** les héros, **4** et **5** le cœur du camp, **6** les fêtes. Chacun a sa porte en bas, au bout d'un sentier, et une case de marge autour de lui. Au niveau 0, on y voit des piquets et une pancarte, comme les autres lieux.
+## Dehors : trois clairières sauvages
+Chacune a sa silhouette (des lobes qui se recouvrent) et **trois emplacements** pour les prochains bâtiments (6 × 5 cases) ; le camp en a trois aussi. Des sentiers de terre, étroits et sinueux (pas de pavés : c'est plus sauvage que dans le camp), partent des portes et **s'enfoncent dans la forêt** (A à F) : les départs des prochaines missions.
 
-## Les tailles
-Le camp fait 42 × 77 cases : 55 rangées dedans (au lieu de 31), la muraille et les douves (4 rangées), et 16 rangées pour le faubourg. Le théâtre fait 12 × 9 cases ; l'observatoire, la bibliothèque et l'atelier 9 × 7 ; le terrain d'entraînement garde son enclos de 8 × 8 ; les autres lieux 6 × 5.
+| Clairière | Ce qu'on y trouve |
+|---|---|
+| **l'ouest** | un ruisseau, un campement de chasseur (sa tente, son feu qui fume, ses bûches, son étendoir), des lapins |
+| **l'est** | un étang (des canards, des roseaux, des nénuphars), une ferme (des meules, une charrette, un épouvantail, un potager, des ruches et leurs abeilles) |
+| **le nord** | le faubourg des fêtes : la place des fêtes, ses étals rayés, ses lanternes, son puits, ses bancs, ses massifs de fleurs |
 
-## Vérifié par `plan_agrandi.py`
-`python plan_agrandi.py` refait le plan (`plan_agrandi.svg`) et vérifie qu'il n'y a :
-- aucun chevauchement entre deux lieux ou emplacements (avec une case de marge) ;
-- aucun lieu sur un mur, un bois ou une place, ni hors du faubourg quand il est dehors ;
-- aucun sentier qui traverse un lieu ou un bois, ni qui passe la muraille ailleurs qu'à la grande porte ;
-- rien qui ne soit relié à la place du village : les quatre portes, la porte de chaque lieu et de chaque emplacement, et le bout de chaque chemin de départ ;
-- aucun chemin de départ qui ne sorte pas dans la forêt.
+**Le décor vit :** des buissons (à baies, en fleurs), des fougères, des herbes hautes, des champignons, des rochers, des troncs couchés, des fleurs qui changent de couleur, des arbres isolés ; l'eau scintille et fait des ronds ; les papillons volent au-dessus des fleurs, les oiseaux traversent le ciel, le pollen (ou les feuilles à l'automne) dérive ; la nuit, des lucioles sortent dans les clairières et chaque lanterne a sa lumière.
 
-Résultat : **OK**.
+## Comment c'est fait
+- `design/camp/plans/plan_agrandi.py` dessine le plan, le vérifie (aucun chevauchement, rien qui traverse un lieu, un mur hors d'une porte, tout relié à la place du village, le sud fermé) et écrit `src/data/plan.json` (`python plan_agrandi.py --jeu`).
+- `src/01_plan.js` lit ce fichier : les lieux, les sentiers, les clairières, la forêt (tout ce qui n'est pas libre est bois, avec des arbres de plus en plus clairsemés), le sol (`terre`).
+- `src/53_sauvage.js` : le sol du dehors, les pièces dessinées pour le jeu, le décor des clairières et du camp. `src/54_vivant.js` : ce qui bouge.
+- Le monde est plus grand : la collision (`05_collision.js`) range les obstacles par paquets et cherche ses chemins dans un tas binaire ; les habitants du camp n'en regardent qu'un peu (leur recherche renonce si la cible est trop loin).
 
 ## À décider, puis à faire
-- **Valider le plan** (le propriétaire, et Mope pour les murs, les portes et le faubourg devant sa muraille).
-- **Le mettre dans le jeu :** `src/01_plan.js` (la taille, les lieux, les sentiers, les bois), `45_murs.js` et le chantier (le mur nord reculé, les murs ouest et est allongés), la muraille qui ne s'estompe plus de la même façon quand on sort vers le faubourg, la caméra et la vue du dashboard (le camp est bien plus haut), et les tests de marche depuis chaque porte.
-- Ce qui fait grandir les archives.
+- **Ce qui fait grandir les archives**, et leur bibliothèque (le design est validé, le jeu n'a encore que la tente).
+- **Les lieux agrandis dans le jeu** : le théâtre, l'observatoire, la halle de l'atelier, la bibliothèque (design validé le 19 oct) ; pour l'instant, leurs emplacements sont des piquets et une pancarte.
+- La vue visite (la carte du dashboard) ne montre que le camp ; les clairières n'y sont pas.

@@ -94,8 +94,8 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Technique (`axe: technique`) | la forge | les outils de l'équipe |
 | Le camp (`axe: camp`, ajouté le 18 oct) | **le camp tout entier** (pas de bâtiment) | à chaque niveau, le camp se modernise : son design graphique, sa vie (les niveaux sont à proposer, puis à choisir) |
 
-### Le plan d'agrandissement par quartiers (proposition du 22 oct, à valider)
-Le camp se range en cinq quartiers : le cœur du camp (la place du village, le tableau), le savoir au nord (l'observatoire, la bibliothèque), les artisans à l'ouest (l'atelier, la forge), les héros à l'est (le terrain, l'armurerie), et, **hors les murs**, au sud du pont-levis, **le faubourg des fêtes** (le théâtre des récits, l'estrade). La grande muraille ne bouge pas ; le camp grandit vers le nord (42 × 77 cases). Quatre portes (sud, ouest, est, nord), six emplacements pour les prochains bâtiments, et six chemins qui partent dans la forêt pour les départs des prochaines missions. Le détail et le contrôle : `design/camp/plans/PLAN_AGRANDI.fr.md` et `plan_agrandi.py`. Une fois validé, il remplace le plan des clairières ci-dessous.
+### Le plan d'agrandissement : la muraille carrée, des quartiers, trois clairières sauvages (v4, validé le 22 oct, codé en local)
+La première muraille et la grande porte du sud ne bougent pas ; le sud reste l'introduction du jeu (on n'en atteint ni l'ouest, ni l'est, ni le nord sans traverser le camp). Le camp monte vers le nord, **muraille carrée**, en quartiers (le cœur, le savoir, les artisans, les héros), avec quatre portes. **Dehors**, trois clairières sauvages et séparées (l'ouest et son ruisseau, l'est et son étang, le nord et le faubourg des fêtes), trois emplacements chacune pour les prochains bâtiments, et des sentiers qui s'enfoncent dans la forêt pour les départs des missions. Le détail, les captures et le contrôle : `design/camp/plans/PLAN_AGRANDI.fr.md` et `plan_agrandi.py`. **Il remplace le plan des clairières ci-dessous** (que le code n'utilise plus).
 
 ### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
 - **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
@@ -525,6 +525,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 19 oct | Les lieux n'ont pas de bannières ; chacun a sa propre silhouette ; les archives, une simple tente aujourd'hui, deviennent une bibliothèque | le propriétaire |
 | 19 oct | Le coin des récits devient, au dernier niveau, un théâtre gréco-romain où des personnages raconteront des histoires, le livre au milieu de la scène ; les derniers niveaux sont imposants ; les pavés débordent et s'effilochent dans l'herbe ; les emprises et le plan du camp peuvent grandir | le propriétaire |
 | 19 oct | Les niveaux v3 du coin des récits, de la table des cartes, de l'atelier et des archives sont validés ; le coin des récits est noté 8/10 | le propriétaire |
+| 22 oct | Le plan d'agrandissement v4 : muraille carrée et première muraille inchangée, le sud est l'introduction (fermé), quartiers, trois clairières sauvages séparées, environ trois emplacements chacune, chemins de départ dans la forêt ; le décor doit avoir l'air vivant | le propriétaire |
 
 | Question | Qui répond |
 |---|---|

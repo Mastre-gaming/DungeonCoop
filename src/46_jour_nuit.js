@@ -9,7 +9,7 @@
 // moment (le ciel, plus chaque source, qui baisse avec la distance) ; le second ajoute un peu de chaud autour des
 // sources, les fenêtres et les lucioles. Les fenêtres sont dans src/data/fenetres.json (design/camp/outils/jour_nuit_jeu.py).
 import * as THREE from 'three';
-import { T, W, H } from './01_plan.js';
+import { T, MONDE, CAMP, LIEUX, ARCHIVES } from './01_plan.js';
 import FENETRES from './data/fenetres.json';
 import MAINS from './data/mains.json';
 
@@ -18,23 +18,26 @@ export const always = true;
 
 const FEU = [1.0, 0.62, 0.28], FORGE = [1.0, 0.5, 0.2], LANTERNE = [1.0, 0.82, 0.45], TENTE = [1.0, 0.7, 0.4], BRASERO = [1.0, 0.58, 0.25];
 const TORCHE = [1.0, 0.5, 0.24];
+// (ce qui a changé de place avec le plan agrandi : l'armurerie était en (33, 3), le tableau en (25, 12) : le décalage, en pixels)
+const deLieu = (id, x0, y0) => { const e = LIEUX.find((l) => l.id === id).emprise; return { x: (e[0] - x0) * T, y: (e[1] - y0) * T }; };
+const ARM = deLieu('classes', 33, 3), TAB = deLieu('interface', 25, 12);
 // les sources fixes : x, y (pixels du monde), rayon, force, couleur ; `mur` : seulement quand ce mur est fini
 export const SOURCES = [
   { x: 640, y: 438, r: 170, f: 1.25, c: FEU },          // le feu de camp
   { x: 675, y: 322, r: 80, f: 0.9, c: LANTERNE },       // le lampadaire près du feu
-  { x: 1225, y: 228, r: 90, f: 1.0, c: FORGE },         // la forge de Baba
-  { x: 1117, y: 228, r: 46, f: 0.55, c: TENTE },        // une bougie dans la tente du nord-est
-  { x: 351, y: 548, r: 46, f: 0.55, c: TENTE },         // et dans celle de l'ouest
+  { x: 1225 + ARM.x, y: 228 + ARM.y, r: 90, f: 1.0, c: FORGE },         // la forge de Baba (l'armurerie a changé de place avec le plan agrandi)
+  { x: 1117 + ARM.x, y: 228 + ARM.y, r: 46, f: 0.55, c: TENTE },        // une bougie dans sa tente
+  { x: ((ARCHIVES.emprise[0] + ARCHIVES.emprise[2]) / 2) * T, y: (ARCHIVES.emprise[3] - 1.1) * T, r: 46, f: 0.55, c: TENTE },   // et dans la tente des archives
   { x: 410, y: 1146, r: 110, f: 1.1, c: BRASERO },      // les braseros du pont
   { x: 550, y: 1146, r: 110, f: 1.1, c: BRASERO },
   { x: 480, y: 1010, r: 60, f: 0.6, c: LANTERNE },      // sous la voûte de la grande porte
-  { x: 985, y: 492, r: 60, f: 0.75, c: LANTERNE },      // la lanterne de la table des cartes
-  { x: 83, y: 215, r: 60, f: 0.75, c: LANTERNE, mur: 'ouest' },   // les lanternes des portes secondaires
-  { x: 1274, y: 573, r: 60, f: 0.75, c: LANTERNE, mur: 'est' },
-  { x: 356, y: 27, r: 60, f: 0.75, c: LANTERNE, mur: 'nord' },
+  { x: 985 + TAB.x, y: 492 + TAB.y, r: 60, f: 0.75, c: LANTERNE },      // la lanterne du tableau d'affichage
+  { x: 83, y: 123, r: 60, f: 0.75, c: LANTERNE, mur: 'ouest' },   // les lanternes des portes secondaires (elles suivent leur porte)
+  { x: 1274, y: 251, r: 60, f: 0.75, c: LANTERNE, mur: 'est' },
+  { x: 21 * T + 31, y: CAMP.y0 * T + 27, r: 60, f: 0.75, c: LANTERNE, mur: 'nord' },
 ];
 const MAX = 24;                                  // sources dans le voile (les fixes, puis une torche par héros)
-const BOSQUETS = [[160, 470, 70], [620, 720, 70], [1170, 440, 70], [650, 110, 60]];
+const BOSQUETS = [[160, 470, 70], [620, 720, 70], [1170, 440, 70], [650, CAMP.y0 * T + 160, 60]];
 const LUCIOLES = 24;
 
 // Les moments de la journée (minutes depuis minuit, heure de Paris) : le ciel, la force des sources, les fenêtres, les
@@ -108,23 +111,26 @@ void main() {
   gl_FragColor = vec4(a, 1.0);
 }`;
 
-let rendu, heros, reseau, chantier, murs, muraille, visite, voiles, torches = new Map(), feuille, temps = 0;
+let rendu, heros, reseau, chantier, murs, muraille, visite, voiles, torches = new Map(), feuille, temps = 0, extras = [];
 const S = { force: null, min: 0, m: JOUR, dort: false, torche: false };
 const sources = Array.from({ length: MAX }, () => new THREE.Vector4()), couleurs = Array.from({ length: MAX }, () => new THREE.Vector3());
 const lucioles = Array.from({ length: LUCIOLES }, () => new THREE.Vector3());
 
 function voile(fragment, dessus, uniforms, ordre) {
-  const m = new THREE.Mesh(new THREE.PlaneGeometry(W * T, H * T), new THREE.ShaderMaterial({
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(MONDE.w, MONDE.h), new THREE.ShaderMaterial({
     vertexShader: VERTEX, fragmentShader: fragment, uniforms, transparent: true, depthTest: false, depthWrite: false,
     blending: THREE.CustomBlending, blendEquation: THREE.AddEquation, blendSrc: dessus ? THREE.OneFactor : THREE.ZeroFactor, blendDst: dessus ? THREE.OneFactor : THREE.SrcColorFactor,
   }));
-  m.position.set(W * T / 2, -H * T / 2, 100); m.renderOrder = ordre; m.frustumCulled = false;
+  m.position.set(MONDE.x0 + MONDE.w / 2, -(MONDE.y0 + MONDE.h / 2), 100); m.renderOrder = ordre; m.frustumCulled = false;
   rendu.scene.add(m);
   return m;
 }
 
 export function init(game, options) {
   ({ rendu, heros, reseau, chantier, murs, muraille, visite } = options);
+  // les feux de camp du dehors et les lanternes du camp et de la place des fêtes (53_sauvage.js) : seules les plus proches comptent
+  const v = options.camp?.vivants;
+  extras = [...(v?.feux ?? []).map((f) => ({ x: f.x, y: f.y - 8, r: 125, f: 1.1, c: FEU })), ...(v?.lanternes ?? []).map((l) => ({ x: l.x, y: l.y + 4, r: 62, f: 0.72, c: LANTERNE }))];
   S.force = lire(options.heure);
   if (visite) return api;
   feuille = planche();
@@ -163,8 +169,10 @@ export function update(dt) {
   const dort = nom(S.min) === 'nuit';
   if (dort !== S.dort) { S.dort = dort; chantier?.dormir?.(dort); murs?.dormir?.(dort); }
   // les sources : les fixes, puis les torches
-  const liste = SOURCES.filter((s) => (!s.mur || (murs?.avancement?.[s.mur] ?? 0) >= 100) && (!s.quand || s.quand()));   // (quand : les lanternes de la fête)
   const h = heros?.heros;
+  const liste = SOURCES.filter((s) => (!s.mur || (murs?.avancement?.[s.mur] ?? 0) >= 100) && (!s.quand || s.quand()));   // (quand : les lanternes de la fête)
+  // les lumières du dehors : les plus proches du héros (le voile n'en prend que quelques-unes à la fois)
+  if (h) liste.push(...extras.filter((e) => Math.hypot(e.x - h.x, e.y - h.y) < 520).sort((a, b) => Math.hypot(a.x - h.x, a.y - h.y) - Math.hypot(b.x - h.x, b.y - h.y)).slice(0, Math.max(0, MAX - liste.length - 6)));
   const mienne = h && torche('moi', { x: h.x, y: h.y, ligne: LIGNES[h.dir] ?? 2, rang: h.rang ?? 10, col: h.col ?? 0, feuille: heros.feuille }, !!heros.sprite?.mesh.visible, 0);
   if (mienne) liste.push(mienne);
   const vus = new Set(['moi']);

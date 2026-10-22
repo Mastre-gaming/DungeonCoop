@@ -10,7 +10,7 @@
 // On ne bloque pas le passage : les promeneurs passent à travers les gens (le test de marche n'est jamais gêné).
 // E sert d'abord aux lieux et aux personnages du camp : ce module passe après eux, et se tait quand l'un d'eux propose E.
 // Quand il est pris (ou rendu), la colonne dorée tombe sur lui (43_apparitions.js).
-import { T, W, LIEUX, FEU, APPARITION, ENCLOS, MURAILLE } from './01_plan.js';
+import { T, MONDE, X0, X1, Y0, LIEUX, FEU, APPARITION, ENCLOS, MURAILLE } from './01_plan.js';
 import { POSTE as BOITE } from './22_boite.js';
 import { HEROS } from './41_choix_heros.js';
 import { CLASSE as FORGERON } from './40_forgeron.js';
@@ -71,9 +71,9 @@ export const estPris = (id) => pris().has(id);
 const PAS = 16;
 let joignable = null;
 function remplir() {
-  const gw = Math.ceil((W * T) / PAS), gh = Math.ceil((MURAILLE.mur[0] * T) / PAS), vu = new Uint8Array(gw * gh);
-  const ok = (i, j) => i >= 0 && j >= 0 && i < gw && j < gh && !collision.bloque((i + 0.5) * PAS, (j + 0.5) * PAS);
-  const i0 = Math.floor((APPARITION[0] * T) / PAS), j0 = Math.floor((APPARITION[1] * T) / PAS), file = [[i0, j0]];
+  const gw = Math.ceil(MONDE.w / PAS), gh = Math.ceil((MURAILLE.mur[0] * T - MONDE.y0) / PAS), vu = new Uint8Array(gw * gh);
+  const ok = (i, j) => i >= 0 && j >= 0 && i < gw && j < gh && !collision.bloque(MONDE.x0 + (i + 0.5) * PAS, MONDE.y0 + (j + 0.5) * PAS);
+  const i0 = Math.floor((APPARITION[0] * T - MONDE.x0) / PAS), j0 = Math.floor((APPARITION[1] * T - MONDE.y0) / PAS), file = [[i0, j0]];
   vu[j0 * gw + i0] = 1;
   while (file.length) {
     const [i, j] = file.pop();
@@ -82,12 +82,12 @@ function remplir() {
       if (ok(a, b) && !vu[b * gw + a]) { vu[b * gw + a] = 1; file.push([a, b]); }
     }
   }
-  joignable = (x, y) => { const i = Math.floor(x / PAS), j = Math.floor(y / PAS); return i >= 0 && j >= 0 && i < gw && j < gh && vu[j * gw + i] === 1; };
+  joignable = (x, y) => { const i = Math.floor((x - MONDE.x0) / PAS), j = Math.floor((y - MONDE.y0) / PAS); return i >= 0 && j >= 0 && i < gw && j < gh && vu[j * gw + i] === 1; };
 }
 const atteignable = ([x, y]) => !collision.bloque(x, y) && !collision.bloque(x - 8, y) && !collision.bloque(x + 8, y) && joignable(x, y);
 function lesButs() {
   const pts = [];
-  for (let cy = 2.5; cy < MURAILLE.mur[0] - 1; cy += 3) for (let cx = 1.5; cx < W - 1; cx += 3) pts.push([cx * T, cy * T]);
+  for (let cy = Y0 + 2.5; cy < MURAILLE.mur[0] - 1; cy += 3) for (let cx = X0 + 1.5; cx < X1 - 1; cx += 3) pts.push([cx * T, cy * T]);
   return pts.filter(atteignable);
 }
 // son foyer : l'activité de son lieu de prédilection (la première, s'il y en a plusieurs du même nom)
@@ -106,7 +106,7 @@ function nouveauBut(p) {
   // une fois sur trois, il rentre à son foyer ; une fois sur trois, une autre activité ; sinon, il se balade
   const a = chez && de < 0.35 ? chez : de < 0.7 && activites.length ? activites[Math.floor(S.aleat() * activites.length)] : null;
   if (a) {
-    const r = (a === chez || libre(a.x, a.y, 1.5 * T)) && collision.chemin(p.x, p.y, a.x, a.y);
+    const r = (a === chez || libre(a.x, a.y, 1.5 * T)) && collision.chemin(p.x, p.y, a.x, a.y, 30000);
     if (r && r.length) { p.route = r; p.but = [a.x, a.y]; p.activite = a; return true; }
   }
   // un coin de la carte à moins de 15 cases (un chemin court se calcule vite) ; de proche en proche, il fait tout le tour
@@ -114,7 +114,7 @@ function nouveauBut(p) {
   for (let k = 0; k < 10 && proches.length; k++) {
     const [x, y] = proches[Math.floor(S.aleat() * proches.length)];
     if (!libre(x, y, 3 * T)) continue;
-    const r = collision.chemin(p.x, p.y, x, y);
+    const r = collision.chemin(p.x, p.y, x, y, 20000);
     if (r && r.length) { p.route = r; p.but = [x, y]; return true; }
   }
   p.pause = 1.5;
