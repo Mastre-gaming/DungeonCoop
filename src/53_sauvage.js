@@ -318,6 +318,9 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
   const S = (nom, x, y, plus = {}) => { const s = SPR[nom]; objets.push({ img: 'sauvage', sx: s.sx, sy: s.sy, sw: s.sw, sh: s.sh, x: Math.round(x * T - s.sw / 2), y: Math.round(y * T - s.sh), pied: Math.round(y * T), ...plus }); };
   const base = (x, y, w, h = 5) => obstacles.push({ x: Math.round(x * T - w / 2), y: Math.round(y * T - h), w, h });
   const deco = (cx, cy, cw, ch, x, y, plus = {}) => objets.push({ img: 'deco', sx: Math.round(cx * T), sy: Math.round(cy * T), sw: Math.round(cw * T), sh: Math.round(ch * T), x: Math.round(x * T), y: Math.round((y - ch) * T), pied: Math.round(y * T), ...plus });
+  // les accessoires de « [LPC] Tavern » (bluecarrot16) : tav(colonne, rangée, largeur, hauteur de la pièce en cases, x gauche, y du pied) ; tapis : posé à plat
+  const tav = (cx, cy, cw, ch, x, y, plus = {}) => objets.push({ img: 'taverne', sx: Math.round(cx * T), sy: Math.round(cy * T), sw: Math.round(cw * T), sh: Math.round(ch * T), x: Math.round(x * T), y: Math.round((y - ch) * T), pied: Math.round(y * T), ...plus });
+  const tapis = (cx, cy, cw, ch, x, y) => tav(cx, cy, cw, ch, x, y, { pied: Math.round((y - ch) * T) + 2 });
   const arbreSeul = (x, y, nom) => { const i = Math.floor(x), j = Math.floor(y); if (bloquees.has(`${i},${j}`)) return; bloquees.add(`${i},${j}`); objets.arbres.push([i, j, 0.25]); };
   objets.arbres = [];
 
@@ -386,6 +389,9 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
     deco(14, 20, 2, 2, cx + 2.6, ay + 2.2); base(cx + 3.6, ay + 2.2, 50, 8);             // les bûches
     S('panier', ax - 2.2, ay + 1.0); S('champignons', ax + 0.9, ay + 2.4);
     deco(14.2, 22.2, 1.8, 1.4, cx - 3.8, ay + 2.2); base(cx - 2.9, ay + 2.2, 24, 6);     // un billot et sa hache
+    tapis(13, 34, 3, 2, ax - 0.9, ay + 3.2);                                              // une peau d'ours sous les troncs
+    tav(0, 27, 1, 1, ax - 1.15, ay + 1.55, { pied: Math.round((ay + 1.75) * T) });       // un rôti sur le tronc
+    tav(2, 17, 1, 1, ax + 1.55, ay + 1.4, { pied: Math.round((ay + 1.4) * T) }); tav(2, 19, 1, 1, ax + 0.3, ay + 2.55);   // une chope, une bouteille
     vivants.zones.chasseur = { x: ax * T, y: ay * T };
     vivants.lucioles.push([ax, ay - 1]);
   }
@@ -403,10 +409,15 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
       for (let j = 0; j < 36; j++) for (let i = 0; i < 100; i++) { g.fillStyle = (j % 9 < 3) ? '#7a5632' : (j % 9 === 3 ? '#9a7442' : '#6a4a2a'); g.fillRect(x0 + i, y0 + j, 1, 1); }
       for (let rang = 0; rang < 4; rang++) for (let i = 4; i < 96; i += 9) { const y = y0 + rang * 9 + 2; g.fillStyle = '#4fae48'; g.fillRect(x0 + i, y - 2, 2, 4); g.fillStyle = '#8fd66a'; g.fillRect(x0 + i - 1, y - 3, 1, 2); g.fillRect(x0 + i + 2, y - 3, 1, 2); if (rang === 2) { g.fillStyle = '#e07a2a'; g.fillRect(x0 + i, y - 1, 2, 2); } }
     });
+    const pose = (nom, f, x, y) => { if (dansClairiere(x, y, nom) && dansClairiere(x + 1.2, y, nom) && !dansEtang(x, y, 1) && !surRuisseau(x, y, 1)) f(); };
+    pose('est', () => { tav(1, 1, 2, 2, fx - 1.7, fy + 0.5); base(fx - 0.7, fy + 0.5, 56, 8); }, fx - 1.7, fy + 0.5);   // des tonneaux
+    pose('est', () => { tav(13, 20, 1, 1, fx + 0.5, fy + 0.4); tav(14, 20, 1, 1, fx + 1.0, fy + 0.45); }, fx + 0.5, fy + 0.4);   // des dames-jeannes
+    tav(4, 25, 1, 1, fx - 0.5, fy + 2.55);                                                // un pain sur le muret du potager
     vivants.zones.ferme = { x: fx * T, y: fy * T };
     vivants.lucioles.push([fx, fy]);
   }
   vivants.zones.etang = { x: ex * T, y: ey * T, rx: erx * T, ry: ery * T };
+  if (dansClairiere(ex - 3.4, ey + 2.9, 'est') && !dansEtang(ex - 3.4, ey + 2.9, 0.6)) { tav(3, 0, 1, 1, ex - 3.4, ey + 2.9); base(ex - 2.9, ey + 2.9, 20, 6); tav(13, 20, 1, 1, ex - 5.0, ey + 2.85); }   // le tonneau et la dame-jeanne du pêcheur
   // ------- au nord : la place des fêtes : ses étals, ses lanternes, ses massifs, un puits, des tonneaux, des bancs
   {
     const place = PLACES.find((p) => p.nom === 'la place des fêtes');
@@ -424,11 +435,17 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
         if (orange) deco(6, 25, 2, 3, x - 1, y - 0.5); else deco(10.62, 25, 2.38, 3, x - 1.2, y - 0.5);
         base(x, y - 0.2, 60, 8); deco(8, 35, 2, 1.5, x - 1, y + 0.5); occupe.push([x - 1.6, y - 4, x + 1.6, y + 1.6]);
         deco(13.5, 17, 1, 1, x + 1.2, y + 1.3);
+        // l'étal garni : chopes, pain, fromage, bouteilles sur le comptoir ; ail, herbes et saucisses sous l'auvent
+        const pc = Math.round((y + 0.52) * T) + 1;
+        tav(2, 17, 1, 1, x - 0.95, y + 0.12, { pied: pc }); tav(4, 25, 1, 1, x - 0.4, y + 0.12, { pied: pc }); tav(0, 25, 1, 1, x + 0.15, y + 0.12, { pied: pc }); tav(2, 19, 1, 1, x + 0.55, y + 0.1, { pied: pc });
+        const ph = Math.round((y - 0.45) * T);
+        tav(8, 28, 1, 2, x - 0.9, y - 0.95, { pied: ph }); tav(2, 28, 1, 1, x - 0.1, y - 1.1, { pied: ph }); tav(9, 28, 2, 1, x - 0.45, y - 1.05, { pied: ph });
       }
       deco(14, 13, 2, 3.5, px - 5.6, py - 0.8); base(px - 4.6, py - 0.8, 44, 8);            // un puits à manivelle, sur le côté de la place
-      for (const [dx, dy] of [[-2.2, 3.1], [2.4, 3.0]]) { deco(6, 34, 2, 1, px + dx - 1, py + dy); base(px + dx, py + dy, 56, 6); }   // des bancs, face à la scène
+      for (const [dx, dy] of [[-2.2, 3.1], [2.4, 3.0]]) { deco(6, 34, 2, 1, px + dx - 1, py + dy); base(px + dx, py + dy, 56, 6); }
+      tav(9, 2, 1, 1, px - 2.7, py + 2.75, { pied: Math.round((py + 3.1) * T) + 1 });   // un jeu de dames sur un banc   // des bancs, face à la scène
       for (const [dx, dy, v] of [[-3.8, -0.6, 0], [3.6, -0.4, 2], [-1.6, 1.8, 3], [1.8, 2.0, 1]]) S('massif' + v, px + dx, py + dy);
-      for (const [dx, dy] of [[-4.6, 3.2], [4.4, 3.4]]) { objets.push({ img: 'tonneau', sx: 0, sy: 0, sw: 32, sh: 32, x: Math.round((px + dx) * T - 16), y: Math.round((py + dy) * T - 30), pied: Math.round((py + dy) * T) }); base(px + dx, py + dy, 20, 6); }
+      for (const [dx, dy] of [[-4.6, 3.2], [4.4, 3.4]]) { objets.push({ img: 'tonneau', sx: 0, sy: 0, sw: 32, sh: 32, x: Math.round((px + dx) * T - 16), y: Math.round((py + dy) * T - 30), pied: Math.round((py + dy) * T) }); base(px + dx, py + dy, 20, 6); tav(2, 17, 1, 1, px + dx - 0.5, py + dy - 0.3, { pied: Math.round((py + dy) * T) + 1 }); }
       vivants.zones.fetes = { x: px * T, y: py * T };
     }
   }
@@ -504,8 +521,15 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
     const savoir = PLACES.find((p) => p.nom === 'la place du savoir');
     if (savoir) for (const [dx, dy] of [[-3.6, -0.2], [3.6, -0.2], [-1.8, 2.8], [1.8, 2.8]]) {
       const x = savoir.x + dx, y = savoir.y + dy;
-      if (dansCamp(x, y) && !proche(x, y, -0.3) && loinDesChemins(x, y, 1.4)) { deco(6, 34, 2, 1, x - 1, y); base(x, y, 56, 6); }
+      if (dansCamp(x, y) && !proche(x, y, -0.3) && loinDesChemins(x, y, 1.4)) { deco(6, 34, 2, 1, x - 1, y); base(x, y, 56, 6); tav(dx < 0 ? 7 : 6, dx < 0 ? 0 : 1, 1, 1, x - 0.5, y - 0.05, { pied: Math.round(y * T) + 1 }); }   // un parchemin, ou un livre, sur le banc
     }
+    // les accessoires de la taverne, là où ils font sens : un parchemin et un livre sur les bancs du savoir ; à chaque porte, un tonneau, une lanterne
+    // et un bouclier de la garde ; des boucliers au pied du râtelier du terrain d'entraînement
+    for (const [bx, by, sx2, sy2] of [[2.1, 8.5, 2.95, 8.55], [39.3, 12.5, 38.45, 12.55], [16.9, -20.4, 17.75, -20.35]]) {
+      tav(3, 0, 1, 1, bx, by); base(bx + 0.5, by, 22, 6); tav(12, 14, 1, 1, bx, by - 0.55);   // un tonneau et sa lanterne
+      tav(2, 40, 1, 1, sx2, by); base(sx2 + 0.5, by, 20, 6);                                  // un bouclier posé contre le mur
+    }
+    { const [x0, , , y1] = LIEUX.find((q) => q.id === 'classes').emprise; tav(2, 41, 1, 1, x0 - 1.0, y1 + 0.1); tav(2, 39, 1, 1, x0 - 0.2, y1 + 0.2); tav(3, 41, 1, 1, x0 + 0.6, y1 + 0.15); }
     for (const id of ['technique', 'art']) {
       const l = LIEUX.find((q) => q.id === id), [x0, y0, x1, y1] = l.emprise;
       for (const [dx, dy, t] of [[x1 + 0.6, y1 - 0.4, 'tonneau'], [x1 + 1.6, y1 - 0.6, 'tonneau'], [x1 + 1.1, y1 - 1.7, 'tonneau']]) {

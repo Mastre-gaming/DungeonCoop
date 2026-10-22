@@ -165,14 +165,22 @@ LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes
 PLAT = {('recits', 3): 150, ('recits', 4): 150}
 PLAT_RECT = {'centre': [(326, 200, 444, 262), (40, 150, 222, 204)]}   # à plat : le foyer, le plancher de l'estrade (le barde et la troupe s'y tiennent)
 BANDE = 16
+NOM_EN_COURS = ['']
 COLONNES = {'infirmerie'}
 NIVEAUX_LIEU = {'centre': 1}   # le centre-ville n'a qu'un niveau
 MANUEL = {'centre'}   # ces lieux : tout ce qui bloque est écrit à la main (BLOQUE_MANUEL)   # ces lieux : l'obstacle suit tout le pied de ce qui est posé (et pas seulement le bas de chaque objet)
 
 def image(t): return np.array([[t.img[y][x] for x in range(t.W)] for y in range(t.H)], dtype=np.int32)
 
+# des bannières (de « [LPC] Tavern ») de chaque côté des grands bâtiments : (lieu, niveau) -> (x gauche, x droit, y, colonne gauche, colonne droite), en px de la toile
+BANNIERES = {('recits', 3): (58, 358, 96, 13, 12), ('recits', 4): (22, 394, 84, 13, 12), ('son', 3): (32, 192, 60, 14, 15), ('son', 4): (10, 214, 58, 14, 15)}
+def bannieres(t, nom, n):
+    b = BANNIERES.get((nom, n))
+    if b:
+        for x_, col in ((b[0], b[3]), (b[1], b[4])): t.lpc('tavern', col, 41, 1, 2, x_ / 32, b[2] / 32)
+
 def rendre(f, n, seed):
-    MODE[0] = 'plein'; A = image(f(n))
+    MODE[0] = 'plein'; tA = f(n); bannieres(tA, NOM_EN_COURS[0], n); A = image(tA)
     MODE[0] = 'sol'; G = image(f(n))
     MODE[0] = 'plein'; t = lieux_dessin.Toile(f(n).C, f(n).R); ns['herbe'](t, seed); H = image(t)
     return A, G, H
@@ -199,6 +207,7 @@ def composantes(masque, ecart=2):
 planche_pieces, donnees = [], {}
 for nom, idj, f, seed in LIEUX:
     donnees[idj] = []
+    NOM_EN_COURS[0] = nom
     for n in range(NIVEAUX_LIEU.get(nom, 5)):
         A, G, H = rendre(f, n, seed)
         h, w, _ = A.shape
