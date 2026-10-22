@@ -1,26 +1,26 @@
 {
-  "_lisez_moi": "Les textes du départ du camp vers la tour (Miro « Le prologue » : le contrat au tableau, puis le départ). Ils sont à Paolitus (axe Histoire) : remplacer chaque [crochet]. Une réplique : 4 lignes courtes au plus (STORY_STRUCTURE.md). {heros} : le nom du héros qui a trouvé le contrat ; {joueur} : le nom de son joueur ; {partants} : les noms de ceux qui partent. Les boutons et la question du vote sont des textes d'interface, à changer aussi si tu veux.",
+  "_lisez_moi": "Les textes du départ du camp vers la tour (Miro « Le prologue » : le contrat au tableau, puis le départ). Ils sont à Paolitus (axe Histoire) : premier jet du 22 oct, à corriger. Une réplique : 4 lignes courtes au plus (STORY_STRUCTURE.md). {heros} : le nom du héros qui a trouvé le contrat ; {joueur} : le nom de son joueur ; {partants} : les noms de ceux qui partent. Les boutons et la question du vote sont des textes d'interface, à changer aussi si tu veux.",
   "contrat": {
-    "titre": "[Le titre du contrat]",
+    "titre": "Contrat : la tour au-delà du gué",
     "texte": [
-      "[Ligne 1 du contrat : ce qu'on demande]",
-      "[Ligne 2 : la tour, ce qu'il y a là-haut]",
-      "[Ligne 3 : la récompense]"
+      "On recherche des aventuriers assez fous pour monter la tour, au-delà de la lisière, du gué et du vieux moulin.",
+      "Trois étages à franchir : les caves, la garnison, les hauteurs. Au sommet, son Gardien.",
+      "Récompense : une renommée à faire pâlir tous les camps de la région."
     ],
-    "signature": "[Qui signe le contrat]"
+    "signature": "Signé : un commanditaire qui préfère rester anonyme"
   },
-  "convocation": "[Ce que crie {heros} pour réunir le village, contrat en main]",
+  "convocation": "Tout le monde à l'estrade du nord ! J'ai un contrat entre les mains.",
   "discours": [
-    "[Réplique 1 : {heros} montre le contrat au village]",
-    "[Réplique 2 : la tour, ses trois étages et son Gardien]",
-    "[Réplique 3 : le plan pour y monter]",
-    "[Réplique 4 : on tente le contrat ? On vote]"
+    "Salutations mes très chères mastres ! J'ai une information capitale à vous livrer. Ce contrat était cloué au tableau ce matin.",
+    "Une tour se dresse au-delà de la lisière, passé le gué et le vieux moulin. Trois étages : les caves, la garnison, les hauteurs. Et tout en haut, un Gardien.",
+    "Le plan : on part à quatre par la grande porte, on prend le chemin, et on monte étage par étage. Chaque salle nous rendra plus forts. Une seule règle : pas d'échec critique là-haut.",
+    "Alors, mastres : qui tente le contrat avec moi ? On vote."
   ],
   "vote": {
     "question": "Tenter le contrat ?",
     "pour": "J'en suis",
     "contre": "Je reste au camp"
   },
-  "accepte": "[Ce que dit {heros} quand le groupe accepte : {partants} partent]",
-  "refuse": "[Ce que dit {heros} quand personne ne part : le contrat reste au tableau]"
+  "accepte": "Parfait ! Partent pour la tour : {partants}. Préparez vos sacs, on se retrouve à la grande porte.",
+  "refuse": "Personne ? Bon… le contrat reste au tableau. La tour, elle, ne bougera pas."
 }

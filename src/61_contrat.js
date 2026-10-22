@@ -255,7 +255,7 @@ function appliquer(e, moi) {
   if (e.etape === 'fin') { terminer(e, moi); return; }
   if (e.n !== S.nVue) commencer(e, moi);
   S.nVue = e.n; S.etapeVue = e.etape;
-  if (e.etape === 'rassemblement') { dialogue.hidden = true; choixBoite.hidden = true; }
+  if (e.etape === 'rassemblement') { choixBoite.hidden = true; montrerConvocation(e); }
   else if (e.etape === 'discours') montrerReplique(e, moi);
   else if (e.etape === 'vote') { if (nouvelle) dialogue.hidden = true; montrerChoix(e, moi); }
   else if (e.etape === 'resultat') { choixBoite.hidden = true; montrerResultat(e); }
@@ -281,6 +281,14 @@ function portraitDe(e) {
   return Object.assign(medaillon(planche, { p: 1 }), { className: 'contrat-portrait' });
 }
 const valeurs = (e) => ({ heros: e.qui.heros, joueur: e.qui.nom, partants: (e.partants ?? []).map((p) => p.nom).join(', ') });
+// pendant que le village se rassemble : celui qui a trouvé le contrat appelle tout le monde (sans bouton : ça passe tout seul)
+function montrerConvocation(e) {
+  dialogue.replaceChildren(portraitDe(e),
+    el('div', { class: 'dial-corps' },
+      el('p', { class: 'dial-qui' }, `${e.qui.heros} `, el('span', { class: 'contrat-joueur' }, e.qui.nom)),
+      el('p', { class: 'dial-texte' }, remplir(TEXTES.convocation, valeurs(e)))));
+  dialogue.hidden = false;
+}
 function montrerReplique(e, moi) {
   const ligne = remplir(TEXTES.discours[e.i], valeurs(e));
   const attendu = e.electeurs.length > 1 ? `${e.prets.length}/${e.electeurs.length} prêts` : '';
