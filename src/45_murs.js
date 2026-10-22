@@ -12,6 +12,7 @@
 import M from './data/murs.json';
 import { T, CAMP } from './01_plan.js';
 import { PRES, LOIN, dedansCamp } from './32_muraille.js';
+import ENTREE from './data/muraille.json';
 
 export const name = 'murs';
 export const always = true;
@@ -71,7 +72,9 @@ export function etat(cle, p) {
 function dessiner(cle, p) {
   const mur = MURS[cle], z = mur.zone, g = mur.g, e = etat(cle, p);
   g.clearRect(0, 0, z.w, z.h);
-  if (e.fini) poser(g, `${cle} fin`, z);
+  mur.fini = e.fini;
+  if (e.fini && cle === 'nord') { /* (le mur nord fini : la même façade que la grande muraille du sud, posée à part : grandNord) */ }
+  else if (e.fini) poser(g, `${cle} fin`, z);
   else if (cle === 'nord') {
     if (e.plein[1] > e.plein[0]) poser(g, 'nord plein', z, e.plein[0], 0, e.plein[1] - e.plein[0], 200);
     if (e.front[1] > e.front[0]) poser(g, 'nord front', z, e.front[0], 0, e.front[1] - e.front[0], 200);
@@ -87,7 +90,7 @@ function dessiner(cle, p) {
     piquets(g, z, pts);
   }
   // les portes : le passage reste ouvert, fini ou pas (on sort par là dans les clairières)
-  if (!e.fini) {
+  {
     if (cle === 'nord') g.clearRect(N.porte[0] - z.x, 0, N.porte[1] - N.porte[0], z.h);
     else { const m = cle === 'ouest' ? O : E; g.clearRect(0, m.porte[0] - z.y, z.w, m.porte[1] - m.porte[0]); }
   }
@@ -139,6 +142,16 @@ export function init(game, options) {
     if (sentier) mur.sentier = [];
     mur.k = 0; mur.voile = 0; mur.p = -1;
   }
+  // le mur nord fini : la façade de la grande muraille (muraille.png), la porte au milieu de la porte nord, les tours à ses deux bouts
+  {
+    const im = images.muraille, c = Object.assign(document.createElement('canvas'), { width: 1344, height: im.height }), g = c.getContext('2d');
+    g.imageSmoothingEnabled = false;
+    for (const [sx, sw, dx] of [[0, 356, 0], [112, 192, 356], [356, 248, 548], [604, 494, 796], [1290, 54, 1290]]) g.drawImage(im, sx, 0, sw, im.height, dx, 0, sw, im.height);
+    const base = N.pied + DY, haut = ENTREE.muraille.pied - ENTREE.muraille.y;
+    const sprite = rendu.sprite(c, 'mur-nord-grand', 1344, im.height);
+    sprite.poser(0, base - haut, base);
+    MURS.nord.grand = { sprite, base, voile: 0, canvas: c };
+  }
   LIGNES.forEach((o) => collision.ajouter(o));
   update(0);
   return api;
@@ -151,7 +164,8 @@ const avancement = () => chantier?.etat ?? { nord: 0, ouest: 0, est: 0 };
 function appliquer(mur) {
   const opacite = visite ? 1 : 1 - mur.voile + mur.voile * PRES * (1 - mur.k), pos = mur.k * (FLOUS.length - 1);
   const i = Math.min(FLOUS.length - 2, Math.floor(pos)), f = pos - i;
-  const groupes = [mur.couches.map((c) => c.sprite), ...mur.tours];
+  const groupes = [mur.couches.map((c) => c.sprite), ...(mur.fini && mur.grand ? [] : mur.tours)];
+  if (mur.fini && mur.grand) mur.tours.forEach((l) => l.forEach((s) => s.cacher(true)));
   for (const liste of groupes) liste.forEach((s, n) => {
     const m = s.mesh.material, a = visite ? (n === 0 ? 1 : 0) : n === i ? opacite * (1 - f) : n === i + 1 ? opacite * f : 0;
     const transparente = !visite && (mur.voile > 0 || mur.k > 0);
@@ -166,12 +180,21 @@ export function update(dt) {
   if (cle !== S.avant) { S.avant = cle; for (const m of Object.keys(MURS)) dessiner(m, a[m]); }
   const h = heros?.heros, suivre = dt > 0 ? 1 - Math.exp(-DOUCEUR * dt) : 1;
   for (const mur of Object.values(MURS)) {
-    const loge = !visite && !!h && dedansCamp(h.x, h.y);
+    const loge = false;   // (les trois murs restent pleins et nets : on veut bien les voir tout autour du camp ; seule la grande muraille du sud s'estompe, 32_muraille.js)
     const cible = loge ? Math.max(0.02, Math.min(1, mur.distance(h) / T / LOIN)) : 0;
     mur.k += (cible - mur.k) * suivre; if (Math.abs(cible - mur.k) < 0.002) mur.k = cible;
     // en entrant, d'un coup ; en sortant, en douceur (comme la grande muraille)
     mur.voile = loge ? 1 : mur.voile * (1 - suivre); if (mur.voile < 0.002) mur.voile = 0;
     appliquer(mur);
+    if (mur.grand) {
+      // derrière le mur nord (dehors, au nord), il cache le héros : il s'estompe quand on est dans son ombre, comme la façade sud vue de dedans
+      const G = mur.grand, derriere = G.base - h.y, cibleG = visite ? 0 : Math.max(0, Math.min(1, 1 - (derriere - 6 * T) / (3 * T))) * (derriere > 0 ? 1 : 0);
+      G.voile += (cibleG - G.voile) * suivre; if (Math.abs(cibleG - G.voile) < 0.002) G.voile = cibleG;
+      const m = G.sprite.mesh.material, transp = G.voile > 0;
+      if (m.transparent !== transp) { Object.assign(m, { transparent: transp, alphaTest: transp ? 0.01 : 0.5, depthWrite: !transp }); m.needsUpdate = true; }
+      m.opacity = 1 - G.voile * (1 - PRES);
+      G.sprite.cacher(S.cache || !mur.fini);
+    }
     const gars = mur.front[1];
     if (gars.x !== undefined && !S.cache && mur.p < 100) {
       gars.sprite.cacher(S.dort);
@@ -205,14 +228,15 @@ export function selfTest(t) {
   dessiner('ouest', 100);
   t.ok(px('ouest', O.x - 4, O.porte[0] - HAUT - 10) > 0 && !MURS.ouest.front[0].sprite.mesh.visible && !MURS.ouest.obstacle, 'à 100 % : la tourelle de la porte ouest, plus d’échafaudage');
   dessiner('nord', 100);
-  t.ok(px('nord', (N.porte[0] + N.porte[1]) / 2, N.pied - 20) > 0, 'à 100 % : la porte nord');
+  update(0);
+  t.ok(MURS.nord.fini && MURS.nord.grand.sprite.mesh.visible && px('nord', (N.porte[0] + N.porte[1]) / 2, N.pied - 20) === 0, 'à 100 % : le mur nord est la façade de la grande muraille, sa porte au milieu de la porte nord (passage libre)');
   S.avant = ''; update(0);
   // le flou : près du mur ouest, il est plus net et plus visible que le mur est, au loin
   if (heros && !visite) {
     const h = heros.heros, avantH = { x: h.x, y: h.y };
     heros.placer(4 * T, 6 * T, 'gauche'); for (let k = 0; k < 40; k++) update(0.1);
     const vis = (cle) => MURS[cle].couches.reduce((s, c) => s + (c.sprite.mesh.visible ? c.sprite.mesh.material.opacity : 0), 0);
-    t.ok(vis('ouest') > 0.4 && vis('est') < 0.01, `près du mur ouest : il est là (${vis('ouest').toFixed(2)}), le mur est a disparu (${vis('est').toFixed(2)})`);
+    t.ok(vis('ouest') > 0.99 && vis('est') > 0.99, `dans le camp, les murs restent pleins : près de l’ouest (${vis('ouest').toFixed(2)}) comme l’est au loin (${vis('est').toFixed(2)})`);
     // sorti du camp par la grande porte : les trois murs redeviennent pleins et nets, comme la façade sud
     heros.placer(15 * T, 37 * T, 'bas'); for (let k = 0; k < 40; k++) update(0.1);
     const net = (cle) => MURS[cle].couches[0].sprite.mesh.visible && MURS[cle].couches[0].sprite.mesh.material.opacity > 0.99 && MURS[cle].couches.slice(1).every((c) => !c.sprite.mesh.visible);

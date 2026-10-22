@@ -2,8 +2,8 @@
 // Ce module ne dessine pas à l'écran : il compose le sol dans un canevas et fait la liste des objets et des obstacles.
 //   objet    { img, sx, sy, sw, sh, x, y, pied }   une image découpée dans une planche, posée en (x, y) ; `pied` sert au tri
 //   obstacle { x, y, w, h }                        un rectangle où un pied ne peut pas entrer (pixels du monde)
-import { T, X0, Y0, X1, Y1, MONDE, CAMP, LIEUX, EMPLACEMENTS, ARBRES, BOIS, FEU, ENCLOS, terre, ETANG } from './01_plan.js';
-import { dessinerSol, decorSauvage } from './53_sauvage.js';
+import { T, X0, Y0, X1, Y1, MONDE, CAMP, LIEUX, EMPLACEMENTS, ARBRES, BOIS, FEU, ENCLOS, terre, ETANG, FOSSE } from './01_plan.js';
+import { dessinerSol, dessinerFosse, decorSauvage } from './53_sauvage.js';
 import POS from './data/carte_zones.json';
 import ENTREE from './data/muraille.json';
 
@@ -36,7 +36,8 @@ export function composerSol(im, solPlat = []) {
     }
   }
   // le dehors sauvage : la forêt, les clairières fleuries, le ruisseau et l'étang (53_sauvage.js)
-  dessinerSol(g, ox, oy);
+  dessinerSol(g, ox, oy, im);
+  dessinerFosse(g, ox, oy, im);               // les douves tout autour des trois autres murs, et leurs ponts
   for (const f of solPlat) f(g, ox, oy);      // ce que les clairières posent à plat (le potager)
   // l'entrée (#123) : le parement au pied de la muraille, les douves, le pont-levis abaissé et la route pavée
   g.drawImage(im.douves, 0 - ox, ENTREE.douves.y - oy);
@@ -128,6 +129,7 @@ export function composerCamp(images = {}) {
   const objets = [], obstacles = [], bloquees = new Set();
   for (const [i, j, d] of ARBRES) arbre(objets, i, j, d);
   for (const [i, j] of BOIS) bloquees.add(`${i},${j}`);
+  for (const [i, j] of FOSSE) bloquees.add(`${i},${j}`);       // l'eau des douves bloque (les ponts, non)
 
   // les piquets et la pancarte de chaque lieu au niveau 0 (14_lieux.js dessine ceux qui ont grandi) ; l'emprise donne la porte
   const lieux = {};

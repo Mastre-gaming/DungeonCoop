@@ -100,8 +100,10 @@ function ranger() {
   }
 }
 
+const FORCE = Number(new URLSearchParams(location.search).get('murs'));   // ?murs=100 : les murs finis (captures, essais)
 function lire() {
   const a = avancement(missions.etat.issues);
+  if (FORCE > 0) for (const m of MURS) a[m] = Math.min(100, FORCE);
   if (MURS.some((m) => a[m] !== S.a[m]) || a.points !== S.a.points) { S.a = a; dessinerPanneau(); ranger(); }
 }
 

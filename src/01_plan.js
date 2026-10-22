@@ -98,6 +98,18 @@ export function terre(i, j) {
   return false;
 }
 
+// Les douves, tout autour des trois autres murs, comme celles de la grande muraille du sud : deux cases d'eau au pied de chaque mur
+// (ouest, est, nord), qui rejoignent les douves du sud. Un pont-levis à chaque porte secondaire. L'eau bloque ; le pont, non.
+export const PONTS = { ouest: { j: [4, 5], i: [-1, 0] }, est: { j: [8, 9], i: [42, 43] }, nord: { i: [20, 21], j: [-30, -29] } };
+const dansPont = (i, j) => (i >= PONTS.ouest.i[0] && i <= PONTS.ouest.i[1] && j >= PONTS.ouest.j[0] && j <= PONTS.ouest.j[1]) ||
+  (i >= PONTS.est.i[0] && i <= PONTS.est.i[1] && j >= PONTS.est.j[0] && j <= PONTS.est.j[1]) ||
+  (i >= PONTS.nord.i[0] && i <= PONTS.nord.i[1] && j >= PONTS.nord.j[0] && j <= PONTS.nord.j[1]);
+export const FOSSE = [];
+for (let j = -30; j <= 34; j++) for (const i of [-1, 0, 42, 43]) if (!dansPont(i, j) && !(j >= 33 && (i === 0))) FOSSE.push([i, j]);
+for (const j of [-30, -29]) for (let i = 1; i < 42; i++) if (!dansPont(i, j)) FOSSE.push([i, j]);
+const dansFosse = new Set(FOSSE.map(([i, j]) => `${i},${j}`));
+export const estFosse = (i, j) => dansFosse.has(`${i},${j}`);
+
 // Ce qu'on peut parcourir : le camp, les clairières, les départs jusqu'au bout, la route du pont. Tout le reste est forêt.
 const libres = new Set();
 const cle = (i, j) => `${i},${j}`;
@@ -111,7 +123,7 @@ function marquer() {
     const clairiere = dansClairiere(cx, cy) && [[-0.9, 0], [0.9, 0], [0, -0.9], [0, 0.9]].every(([dx, dy]) => dansClairiere(cx + dx, cy + dy));
     const sentier = sauvages.some((ch) => distChemin(ch, cx, cy) <= 1.4) || CHEMINS.some((ch) => distChemin(ch, cx, cy) <= 1.5);
     const pont = cx >= 2 && cx <= 40 && cy > 31 && cy < 38;
-    if (dansCamp || clairiere || sentier || pont) libres.add(cle(i, j));
+    if ((dansCamp || clairiere || sentier || pont) && !dansFosse.has(cle(i, j))) libres.add(cle(i, j));
   }
 }
 marquer();
@@ -120,7 +132,7 @@ export const libre = (i, j) => libres.has(cle(i, j));
 // Les bois : tout ce qui n'est pas libre, plus la grande muraille et ses douves (sauf la porte et le pont).
 const REMPART = [...MURAILLE.mur, ...MURAILLE.douves].flatMap((j) => Array.from({ length: CAMP.x1 }, (_, i) => [i, j])).filter(([i]) => !MURAILLE.porte.includes(i));
 export const BOIS = [];
-for (let j = Y0; j < Y1; j++) for (let i = X0; i < X1; i++) if (!libres.has(cle(i, j)) && !(i >= 0 && i < 42 && j >= 32 && j <= 37 && libres.has(cle(i, j)))) BOIS.push([i, j]);
+for (let j = Y0; j < Y1; j++) for (let i = X0; i < X1; i++) if (!libres.has(cle(i, j)) && !dansFosse.has(cle(i, j)) && !(i >= 0 && i < 42 && j >= 32 && j <= 37 && libres.has(cle(i, j)))) BOIS.push([i, j]);
 BOIS.push(...REMPART);
 
 // Les arbres : la lisière et la forêt profonde, de plus en plus clairsemée. Arbre = [i, j, décalage du pied en cases].
@@ -144,6 +156,8 @@ const prof = new Map();
 const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;
 for (const [i, j] of BOIS) {
   if (i >= CAMP.x0 && i < CAMP.x1 && j >= MURAILLE.mur[0] && j <= MURAILLE.douves[1]) continue;   // la muraille et les douves : pas d'arbre dessus
+  if (i >= CAMP.x0 - 2 && i < CAMP.x1 + 2 && j >= -31 && j <= -23) continue;   // le mur nord (haut, comme le sud) et ses douves : les arbres ne les cachent pas
+  if (j >= -31 && j <= 34 && (i >= -4 && i <= 1 || i >= 41 && i <= 46)) continue;   // les murs ouest et est et leurs douves, idem
   const d = prof.get(cle(i, j)) ?? 7, h = hash(i, j);
   const proba = d <= 1 ? 100 : d === 2 ? 86 : d === 3 ? 70 : 52;     // en pourcents : la lisière est dense, le fond est plus clair
   if (h % 100 < proba) ARBRES.push([i, j, d <= 1 ? 0 : ((h >>> 8) % 3) * 0.35 - 0.3]);

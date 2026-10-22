@@ -8,7 +8,7 @@
 //   - la liste de ce qui bouge (feux, fumée, reflets, lucioles, oiseaux, bêtes) : 54_vivant.js la lit.
 // Les pièces dessinées pour le jeu sont faites ici, au chargement, dans une planche à part (images.sauvage) ; le reste vient
 // des planches LPC déjà dans le camp (décorations, rochers, arbres).
-import { T, X0, Y0, X1, Y1, MONDE, CAMP, LIEUX, EMPLACEMENTS, ARCHIVES, PLACES, CHEMINS, SAUVAGES, DEPARTS, CLAIRIERES, RUISSEAU, ETANG, BOIS, PROFONDEUR, terre, dansClairiere, libre } from './01_plan.js';
+import { T, X0, Y0, X1, Y1, MONDE, CAMP, LIEUX, EMPLACEMENTS, ARCHIVES, PLACES, CHEMINS, SAUVAGES, DEPARTS, CLAIRIERES, RUISSEAU, ETANG, BOIS, PROFONDEUR, FOSSE, PONTS, estFosse, terre, dansClairiere, libre } from './01_plan.js';
 
 // (un mélange des bits : les bas bits d'un simple produit dessinent des rayures en diagonale)
 const hash = (i, j, s = 0) => { let h = (Math.imul(i | 0, 73856093) ^ Math.imul(j | 0, 19349663) ^ Math.imul(s | 0, 83492791)) >>> 0; h ^= h >>> 15; h = Math.imul(h, 0x2c1b3c6d) >>> 0; h ^= h >>> 12; h = Math.imul(h, 0x297a2d39) >>> 0; h ^= h >>> 15; return h >>> 0; };
@@ -163,10 +163,61 @@ export function fabriquerSauvage() {
   return c;
 }
 
+// L'eau des douves : un morceau d'eau pris dans douves.png, répété (chaque bande de 54 px décalée, pour qu'on ne voie pas la répétition).
+let eauMemo = null;
+export function eauDouves(douves) {
+  if (eauMemo) return eauMemo;
+  const c = Object.assign(document.createElement('canvas'), { width: douves.width, height: 70 }), g = c.getContext('2d');
+  g.drawImage(douves, 0, 0);
+  const d = g.getImageData(0, 0, c.width, 70).data, W = c.width, H0 = 14, HH = 54;
+  eauMemo = (x, y) => {
+    const bande = Math.floor(y / HH), sx = (((x + bande * 211) % W) + W) % W, sy = H0 + ((y % HH) + HH) % HH, k = (sy * W + sx) * 4;
+    return [d[k], d[k + 1], d[k + 2]];
+  };
+  return eauMemo;
+}
+
+// Les douves tout autour des trois autres murs, et leurs ponts-levis aux trois portes (comme le pont de la grande porte).
+export function dessinerFosse(g, ox, oy, im) {
+  const eau = eauDouves(im.douves), px = (x, y, c) => { g.fillStyle = c; g.fillRect(x - ox, y - oy, 1, 1); };
+  const pont = (i, j) => (i >= PONTS.ouest.i[0] && i <= PONTS.ouest.i[1] && j >= PONTS.ouest.j[0] && j <= PONTS.ouest.j[1]) ||
+    (i >= PONTS.est.i[0] && i <= PONTS.est.i[1] && j >= PONTS.est.j[0] && j <= PONTS.est.j[1]) || (i >= PONTS.nord.i[0] && i <= PONTS.nord.i[1] && j >= PONTS.nord.j[0] && j <= PONTS.nord.j[1]);
+  for (const [i, j] of FOSSE) {
+    for (let y = j * T; y < (j + 1) * T; y++) for (let x = i * T; x < (i + 1) * T; x++) {
+      const c = eau(x, y);
+      // la rive : un liseré sombre, puis une lèvre de terre, du côté où l'eau s'arrête
+      const gauche = !estFosse(i - 1, j) && x - i * T < 3, droite = !estFosse(i + 1, j) && (i + 1) * T - 1 - x < 3;
+      const haut = !estFosse(i, j - 1) && y - j * T < 3, bas = !estFosse(i, j + 1) && (j + 1) * T - 1 - y < 3;
+      const bord = (gauche ? x - i * T : 9) < (haut ? y - j * T : 9) ? (gauche ? x - i * T : 9) : (haut ? y - j * T : 9);
+      const bord2 = Math.min(bord, droite ? (i + 1) * T - 1 - x : 9, bas ? (j + 1) * T - 1 - y : 9);
+      if (bord2 === 0) px(x, y, '#26211f');
+      else if (bord2 < 3) px(x, y, bord2 === 1 ? '#7a5632' : '#9a7442');
+      else px(x, y, `rgb(${c[0]},${c[1]},${c[2]})`);
+    }
+  }
+  // les ponts : des planches en travers, deux rampes de bois sur les côtés, un cadre sombre
+  const planches = (i0, j0, i1, j1, enLong) => {
+    const x0 = i0 * T, y0 = j0 * T, x1 = (i1 + 1) * T, y1 = (j1 + 1) * T;
+    for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) {
+      const t = enLong ? y - y0 : x - x0, u = enLong ? x - x0 : y - y0, pas = Math.floor(t / 7), r = t % 7;
+      let c = (pas % 2) ? '#8c5e34' : '#a06c3c';
+      if (r === 0) c = '#3e2a1c'; else if (r === 1) c = '#c58f58';
+      if ((u * 3 + pas * 5) % 17 === 0) c = '#6e4828';
+      const lg = enLong ? x1 - x0 : y1 - y0;
+      if (u < 3 || u >= lg - 3) c = u === 0 || u === lg - 1 ? '#26211f' : (u < 3 ? '#573726' : '#573726');
+      px(x, y, c);
+    }
+  };
+  planches(PONTS.ouest.i[0], PONTS.ouest.j[0], PONTS.ouest.i[1], PONTS.ouest.j[1], false);
+  planches(PONTS.est.i[0], PONTS.est.j[0], PONTS.est.i[1], PONTS.est.j[1], false);
+  planches(PONTS.nord.i[0], PONTS.nord.j[0], PONTS.nord.i[1], PONTS.nord.j[1], true);
+}
+
 // ---------------------------------------------------------------- le sol : ce qui se dessine à plat
 // `g` : le contexte du canevas du sol ; (ox, oy) : la place du coin haut-gauche du monde dans ce canevas.
-export function dessinerSol(g, ox, oy) {
+export function dessinerSol(g, ox, oy, im) {
   g.imageSmoothingEnabled = false;
+  const eauLPC = eauDouves(im.douves);
   const px = (x, y, col) => { g.fillStyle = col; g.fillRect(Math.round(x) - ox, Math.round(y) - oy, 1, 1); };
   const bloc = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x) - ox, Math.round(y) - oy, w, h); };
   const lire = (x, y) => g.getImageData(Math.round(x) - ox, Math.round(y) - oy, 1, 1).data;
@@ -216,15 +267,9 @@ export function dessinerSol(g, ox, oy) {
 
   // le ruisseau : une rive de terre, l'eau, des reflets clairs et des rides
   const dist = (pts, x, y) => { let d = 1e9; for (let k = 0; k + 1 < pts.length; k++) { const [ax, ay] = pts[k], [bx, by] = pts[k + 1], dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy, t = l ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / l)) : 0; d = Math.min(d, Math.hypot(x - ax - t * dx, y - ay - t * dy)); } return d; };
-  // l'eau : trois bleus selon la profondeur k (0 : la rive, 1 : le milieu), des traînées claires horizontales (les reflets du ciel),
-  // quelques sombres ; rien de régulier
-  const eau = (x, y, k) => {
-    const h = hash(x >> 3, y >> 1, 5), dx = x & 7;
-    if (h % 11 === 0 && dx < 5) return '#bfeaf8';
-    if (h % 17 === 3 && dx < 4) return '#7cc4e8';
-    if (h % 19 === 5 && dx < 6) return '#1f5f96';
-    return k < 0.2 ? '#5cb0dc' : k < 0.5 ? '#3a8ac8' : k < 0.8 ? '#2f7fbd' : '#276aa6';
-  };
+  // l'eau : la même que celle des douves de la grande muraille (LPC : un bleu plat, des traînées cyan en grappes), reprise de
+  // douves.png, pour que tout le camp ait la même eau ; plus sombre vers le milieu (k : 0 la rive, 1 le milieu)
+  const eau = (x, y) => { const c = eauLPC(x, y); return `rgb(${c[0]},${c[1]},${c[2]})`; };   // (les couleurs exactes des douves : en hiver, la glace les reconnaît, 51_saisons.js)
   const rive = (x, y) => { const h = hash(x, y, 7) % 10; return h < 4 ? '#8d6b44' : h < 7 ? '#a47c50' : h < 9 ? '#755633' : '#b89260'; };
   {
     const xs = RUISSEAU.map((q) => q[0]), ys = RUISSEAU.map((q) => q[1]);
@@ -261,6 +306,7 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
   for (const l of LIEUX) rect(l.emprise, 1.4);
   for (const e of EMPLACEMENTS) rect(e.emprise, 1.4);
   rect(ARCHIVES.emprise, 1.4);
+  for (const r of [[-2, -28.2, 1.4, 35.5], [41.6, -28.2, 45, 35.5], [-2, -28.2, 45, -24.4]]) occupe.push(r);   // les douves et leurs abords
   const proche = (x, y, m = 0) => occupe.some((o) => x > o[0] - m && x < o[2] + m && y > o[1] - m && y < o[3] + m);
   const loinSentier = (x, y, d) => !CHEMINS.some((ch) => distCh(ch, x, y) < d + 0.5) && !SAUVAGES.some((ch) => distCh(ch, x, y) < d) && !DEPARTS.some((q) => distCh(q.points, x, y) < d);
   const surPlace = (x, y, m = 0) => PLACES.some((p) => Math.hypot(x - p.x, y - p.y) < p.r + m);
@@ -412,7 +458,7 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
     const portes = [[0, 5], [42, 9], [21, -25]];
     // (ce qui est déjà là, à des places fixes : la sentinelle sur le grand sentier, le barde et son enceinte, la boîte aux lettres,
     // le chef de chantier et son panneau, la base du chantier : on laisse de la place autour)
-    for (const r of [[10.5, 18.5, 19.5, 31.5], [15, 12.5, 19.5, 16.5], [23, 14.5, 26.5, 17.5], [5.5, 17.5, 11, 22.5], [3, 22, 8, 27.5]]) occupe.push(r);
+    for (const r of [[10.5, 18.5, 19.5, 31.5], [15, 12.5, 19.5, 16.5], [23, 14.5, 26.5, 17.5], [5.5, 17.5, 11, 22.5], [3, 22, 8, 27.5], [2.6, 6.2, 4.6, 8.2], [37.4, 10.2, 39.4, 12.2], [17.4, -22.6, 19.4, -20.6]]) occupe.push(r);   // (les trois gardes des portes : 55_gardes.js)
     // des lanternes le long des allées, un côté puis l'autre, avec leur halo la nuit
     let cote = 1;
     CHEMINS.forEach((ch, k) => {

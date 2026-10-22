@@ -9,12 +9,13 @@ import { servir, ouvrir } from './captures.mjs';
 
 const RACINE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const VUES = {
-  sud: [15, 33, 0], porte: [15, 28, 0], feu: [20, 17, 0],
+  sud: [15, 40, -1], porte: [15, 28, 0], feu: [20, 17, 0],
   savoir: [21, -17, 0], artisans: [8, -3, 0], heros: [34, -3, 0], coeur: [20, 6, 0],
   nord: [21, -32, 0], fetes: ['fetes', 1.5, 0], theatre: [21, -40, -2],
   ouest: [-16, 4, 0], campement: ['chasseur', 1.5, 0], ruisseau: [-24, -4, 0],
   est: [53, 8, 0], etang: ['etang', 3, 0], ferme: ['ferme', 1.5, 0],
-  porteN: [21, -27, 0], porteO: [3, 5, 0], porteE: [39, 9, 0],
+  porteN: [21, -27, 0], porteO: [4, 7, 0], porteE: [38, 11, 0],
+  murO: [4, -10, 0], murE: [38, -10, 0], murN: [10, -22, 0], coinNO: [4, -22, -2], coinSO: [4, 28, -1],
   carte: null,
 };
 const args = process.argv.slice(2), noms = args.filter((a) => !a.startsWith('--'));
@@ -23,7 +24,7 @@ fs.mkdirSync(path.join(RACINE, 'shots'), { recursive: true });
 try {
   for (const nom of noms.length ? noms : Object.keys(VUES)) {
     const v = VUES[nom];
-    const page = await ouvrir(srv.url, nom === 'carte' ? 'visite&heure=12:00&meteo=beau&saison=ete' : 'spot=apparition&freeze&heure=12:00&meteo=beau&saison=ete');
+    const page = await ouvrir(srv.url, nom === 'carte' ? 'visite&heure=12:00&meteo=beau&saison=' + (process.env.SAISON ?? 'ete') : 'spot=apparition&freeze&murs=100&heure=12:00&meteo=beau&saison=' + (process.env.SAISON ?? 'ete'));
     if (nom !== 'carte') {
       const cible = typeof v[0] === 'string'
         ? await page.eval(`(() => { const z = dbg.camp.vivants.zones[${JSON.stringify(v[0])}]; return z ? [z.x / 32, z.y / 32 + ${v[1]}] : null; })()`)
@@ -34,7 +35,7 @@ try {
       await page.eval("(dbg.heros.cacher?.(), document.querySelectorAll('body > :not(#jeu)').forEach((e) => { if (e.tagName !== 'SCRIPT') e.style.display = 'none'; }), 1)");
     }
     await page.eval('(dbg.advance(1.5), 1)');
-    const out = path.join(RACINE, 'shots', `plan-${nom}.png`);
+    const out = path.join(RACINE, 'shots', `plan-${nom}${process.env.SAISON ? '-' + process.env.SAISON : ''}.png`);
     await page.shot(out);
     if (page.errors.length) console.log(`  erreurs sur ${nom} :`, page.errors.slice(0, 3).join(' | '));
     console.log(`${nom} → ${path.relative(RACINE, out)}`);

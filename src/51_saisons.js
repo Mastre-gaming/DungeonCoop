@@ -255,7 +255,7 @@ const OUVRIERS = {
   chantier: CHANTIER.gens.map((o) => [0, o.sy, o.w * (o.images ?? 1), 64]),
   murs: Object.values(MURS.gens).map((o) => [0, o.sy, o.w * (o.images ?? 1), 64]),
 };
-const PLANCHES = ['roche', 'tonneau', 'deco', 'armurerie', 'placeObjets', 'muraille', 'tableau', 'chantier', 'murs', 'panneau'];
+const PLANCHES = ['roche', 'tonneau', 'deco', 'armurerie', 'placeObjets', 'muraille', 'tableau', 'chantier', 'murs', 'panneau', 'sauvage'];
 
 // Tout le camp pour la saison, avant qu'il ne se dessine : les planches du décor (images), les arbres (camp.objets),
 // et le sol (sol, le canevas déjà composé). L'original de la planche des décorations reste pour les icônes du HUD.
