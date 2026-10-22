@@ -31,6 +31,16 @@ export const VILLAGE = [                                                        
   [DEVANT.x - 110, DEVANT.y - 30], [DEVANT.x - 70, DEVANT.y - 30], [DEVANT.x + 70, DEVANT.y - 30], [DEVANT.x + 110, DEVANT.y - 30],
   [DEVANT.x - 120, DEVANT.y + 4], [DEVANT.x - 84, DEVANT.y + 10], [DEVANT.x + 84, DEVANT.y + 10], [DEVANT.x + 120, DEVANT.y + 4],
   [DEVANT.x - 50, DEVANT.y + 34], [DEVANT.x + 50, DEVANT.y + 34]];
+// Le limier d'un Traqueur pendant la réunion (47_limier.js) : sur l'estrade, de l'autre côté du pupitre, de profil et tourné
+// vers son maître (de face, il est trop grand et dépasse de l'estrade) ; dans le public, à côté de son maître, tourné vers l'estrade. Chez chacun, d'après l'état que l'hôte dit à tous.
+export function placeDuLimier(e, id) {
+  if (!e || e.etape === 'fin' || !e.electeurs) return null;
+  if (id === e.qui.id) return { x: ESTRADE.x - 62, y: ESTRADE.y + 1, dir: 'droite' };   // de l'autre côté du pupitre, de profil, vers son maître
+  const k = e.electeurs.filter((x) => x !== e.qui.id).indexOf(id);
+  if (k < 0) return null;
+  const [x, y] = PUBLIC[k % PUBLIC.length];
+  return { x: x + 24, y: y + 4, dir: 'haut' };
+}
 const SORTIE = (k) => [DEVANT.x + (k % 2 ? 22 : -22), DEVANT.y + 6 + Math.floor(k / 2) * 26];   // après : dans l'allée
 
 // Un texte avec ses trous : {heros}, {joueur}, {partants}
@@ -149,9 +159,9 @@ export function creerControleur({ party = () => null, nom = (id) => id, emettre 
 }
 
 // --- La vue : le contrat au poteau, sa lecture, la cinématique, le choix -------------------------------------------------
-let game, rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau, nomDe;
+let game, rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau, nomDe, limier;
 let ctrl = null, arrets = [];
-const S = { lu: false, ouvert: false, t: 0, etapeVue: null, nVue: null, pris: [], monSpot: null, controle: true };
+const S = { lu: false, ouvert: false, t: 0, etapeVue: null, nVue: null, pris: [], monSpot: null, controle: true, posee: false };
 let sprite = null, ombre = null, excl = null, bulle = null, lecture = null, voile = null, bandes = null, dialogue = null, choixBoite = null;
 const CLE_LU = 'dungeoncoop:contrat-lu';
 
@@ -261,6 +271,7 @@ function commencer(e, moi) {
     const k = e.electeurs.filter((id) => id !== e.qui.id).indexOf(moi);
     S.monSpot = moi === e.qui.id ? [ESTRADE.x, ESTRADE.y] : PUBLIC[Math.max(0, k) % PUBLIC.length];
     heros.placer(S.monSpot[0], S.monSpot[1], moi === e.qui.id ? 'bas' : 'haut');
+    S.posee = true;
     camera?.cadrer({ x: DEVANT.x, y: ESTRADE.y + 40 }); camera?.snap?.();
     voile.classList.add('leve');
   }, 450);
@@ -313,6 +324,7 @@ function terminer(e, moi) {
   voile.classList.remove('leve');
   setTimeout(() => {
     relacher();
+    S.posee = false;
     const k = e.electeurs.indexOf(moi);
     const [x, y] = SORTIE(Math.max(0, k));
     heros.placer(x, y, 'bas');
@@ -327,10 +339,11 @@ function terminer(e, moi) {
 
 export function init(g, options = {}) {
   game = g;
-  ({ rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau } = options);
+  ({ rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau, limier } = options);
   nomDe = options.nom ?? ((id) => id);
   try { S.lu = localStorage.getItem(CLE_LU) === '1'; } catch {}
   ctrl = creerControleur({ party: () => reseau?.party, nom: nomDe, emettre: (n, d) => game.bus.emit(n, d), vue: { appliquer } });
+  limier?.brancherScene?.((id) => (S.posee ? placeDuLimier(ctrl?.etat, id) : null));
   if (visite) return api;
   creerSprite();
   excl = el('div', { class: 'excl contrat-excl', hidden: true, 'aria-hidden': 'true' }, '!');
@@ -457,6 +470,10 @@ export async function selfTest(t) {
   lecture.querySelector('#contrat-parler').click();
   t.ok(ctrl.ouvert && ctrl.etat.etape === 'rassemblement' && !heros.heros.controle, 'en parler : la réunion commence, le héros ne se pilote plus');
   await new Promise((ok) => setTimeout(ok, 520));
+  {
+    const pl = placeDuLimier(ctrl.etat, ctrl.etat.qui.id);
+    t.ok(pl && ESTRADE.x - pl.x > 40 && Math.abs(pl.y - ESTRADE.y) < 4 && pl.dir === 'droite', 'le limier d’un Traqueur qui parle : sur l’estrade, de l’autre côté du pupitre, tourné vers son maître (pas sur lui)');
+  }
   t.ok(Math.abs(h.x - ESTRADE.x) < 2 && Math.abs(h.y - ESTRADE.y) < 2 && S.pris.length >= 3 && S.pris.every((v) => v.scene?.contrat),
     `au terrain du nord : le héros monte sur l’estrade, ${S.pris.length} villageois se rangent devant`);
   ctrl.avancer(DUREES.rassemblement + 0.1);

@@ -198,7 +198,7 @@ async function demarrer(sortieTitre) {
   // la fête du niveau 4 : le jour où un lieu y arrive, des mâts, des guirlandes et une ronde de héros sur la place du feu
   const fete = game.use(feteSkill, { rendu, promeneurs, scenes, lieux, missions, jourNuit, fete: query.has('fete') });
   // le contrat au tableau et la réunion du départ (Paolitus, 22 oct) : la porte de l'aventure
-  const contrat = game.use(contratSkill, { rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau, nom: nomDuVote });
+  const contrat = game.use(contratSkill, { rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau, limier, nom: nomDuVote });
   // la case « Retour au dashboard » (B) : le chemin à l'envers, par l'écran titre et le ciel de nuit (en ?test, rien ne part)
   const versDashboard = { ouvert: false, essais: 0, ouvrir() { this.essais++; if (!query.has('test')) retourAuDashboard({ stamp: game.stamp }); }, fermer() {} };
   hud.brancher('dashboard', versDashboard);
