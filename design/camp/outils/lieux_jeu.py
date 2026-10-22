@@ -109,29 +109,35 @@ def infirmerie(n):
 # 56_habitants.js, l'enceinte et le barde par 24_radio.js). Ce qui bloque est écrit à la main (BLOQUE_MANUEL) : la guirlande flotte.
 BLOQUE_MANUEL = {'centre': []}
 def centre(n):
-    Tl = lieux_dessin.Toile; t = Tl(24, 15); D = ns['D']; OUT_ = ns['OUT']; cx, cy = 384, 224
+    # (22 oct, 2e version : la toile commence à la case (5, 7) ; l'estrade du barde est plus grande, à gauche ; le tableau d'affichage est en face, à
+    # droite, dans son propre lieu ; le feu est un grand feu de joie, ses flammes animées sont posées par 36_place.js)
+    Tl = lieux_dessin.Toile; t = Tl(27, 15); D = ns['D']; OUT_ = ns['OUT']; cx, cy = 480, 224
     B0, B1, B2, B3 = ns['B0'], ns['B1'], ns['B2'], ns['B3']; S0, S1, S2, S3, S4 = ns['S0'], ns['S1'], ns['S2'], ns['S3'], ns['S4']
-    OR1, OR2 = ns['OR1'], ns['OR2']
+    OR1, OR2 = ns['OR1'], ns['OR2']; V = 'tavern'
     bloc = BLOQUE_MANUEL['centre']; bloc.clear()
     ns['herbe'](t, 7)
-    ns['paves'](t, [('ellipse', cx, 240, 156, 108)], seed=21)                       # le parvis
-    # le foyer : un anneau de pierres, de la cendre, des braises
-    t.ombre(cx + 3, 240, 54, 22); t.ellipse(cx, 232, 51, 26, OUT_); t.ellipse(cx, 231, 49, 24, S3); t.ellipse(cx, 230, 45, 21, S1)
-    t.ellipse(cx, 231, 35, 14, OUT_); t.ellipse(cx, 231, 34, 13, (74, 58, 52)); t.ellipse(cx, 233, 23, 8, (46, 36, 36))
-    for a in range(0, 360, 22):
-        x_, y_ = cx + 41 * math.cos(math.radians(a)), 230 + 18 * math.sin(math.radians(a)); t.cadre(int(x_) - 5, int(y_) - 3, 10, 6, S2 if a % 44 else S0)
-    # les bancs en arc, au sud et sur les côtés, tournés vers le feu ; des souches et des bûches pour s'asseoir
-    for x_ in (cx - 112, cx + 16): t.lpc(D, 6, 34, 2, 1, x_ / 32, 9.15); bloc.append([x_ + 2, 9.15 * 32 + 12, 60, 12])
-    t.lpc(D, 4, 35, 1, 2, (cx - 100) / 32, 5.6); bloc.append([cx - 96, 5.6 * 32 + 40, 20, 18])
-    for x_, y_ in ((cx - 72, 290), (cx + 70, 290), (cx - 92, 162), (cx + 96, 168)):
+    ns['paves'](t, [('ellipse', cx, 240, 160, 110)], seed=21)                       # le parvis
+    # le foyer du feu de joie : un grand anneau de pierres, de la cendre, des bûches dressées en tipi
+    t.ombre(cx + 3, 242, 66, 26); t.ellipse(cx, 234, 64, 31, OUT_); t.ellipse(cx, 233, 62, 29, S3); t.ellipse(cx, 232, 58, 26, S1)
+    t.ellipse(cx, 233, 47, 19, OUT_); t.ellipse(cx, 233, 46, 18, (74, 58, 52)); t.ellipse(cx, 235, 32, 10, (46, 36, 36))
+    for a in range(0, 360, 18):
+        x_, y_ = cx + 53 * math.cos(math.radians(a)), 232 + 23 * math.sin(math.radians(a)); t.cadre(int(x_) - 5, int(y_) - 3, 10, 6, S2 if a % 36 else S0)
+    for (x0, x1) in ((cx - 34, cx - 4), (cx + 34, cx + 4), (cx - 22, cx + 2), (cx + 22, cx - 2)):   # les bûches, leurs pieds dans la cendre
+        t.ligne(x0, 240, x1, 214, OUT_, 4); t.ligne(x0, 239, x1, 215, B2, 2)
+    # les bancs en arc, au sud et à l'ouest ; des souches pour s'asseoir ; des bûches au nord-est ; la marmite sur son trépied
+    for x_ in (cx - 120, cx + 24): t.lpc(D, 6, 34, 2, 1, x_ / 32, 9.25); bloc.append([x_ + 2, 9.25 * 32 + 12, 60, 12])
+    t.lpc(D, 4, 35, 1, 2, (cx - 112) / 32, 5.6); bloc.append([cx - 108, 5.6 * 32 + 40, 20, 18])
+    for x_, y_ in ((cx - 78, 292), (cx + 78, 292), (cx - 96, 160), (cx + 100, 166)):
         t.lpc(D, 15, 23, 1, 1, x_ / 32 - 0.5, y_ / 32 - 0.9); bloc.append([x_ - 12, y_ - 8, 24, 10])
-    t.lpc(D, 14, 21, 2, 2, (cx + 112) / 32, 3.0); bloc.append([cx + 116, 3.0 * 32 + 46, 56, 14])     # des bûches au nord-est
-    # la marmite sur son trépied, à droite du feu
-    t.lpc(D, 13, 47, 1, 2, (cx + 84) / 32, 5.55); t.lpc(D, 11, 49, 1, 1, (cx + 78) / 32, 6.2); bloc.append([cx + 82, 6.2 * 32 + 14, 28, 14])
-    # la table commune, à l'est du parvis : une grande table et ses deux bancs
-    t.lpc(D, 8, 35, 2, 2, 19.0, 6.2); t.lpc(D, 6, 34, 2, 1, 18.9, 5.45); t.lpc(D, 6, 36, 2, 1, 18.9, 8.1); bloc.append([19.0 * 32 + 2, 6.2 * 32 + 20, 60, 36])
-    # les quatre poteaux de la guirlande : un poteau de bois et sa lanterne
-    postes = [(270, 160), (498, 160), (498, 320), (270, 320)]
+    t.lpc(D, 14, 21, 2, 2, (cx + 118) / 32, 3.0); bloc.append([cx + 122, 3.0 * 32 + 46, 56, 14])
+    t.lpc(D, 13, 47, 1, 2, (cx + 92) / 32, 5.55); t.lpc(D, 11, 49, 1, 1, (cx + 86) / 32, 6.2); bloc.append([cx + 90, 6.2 * 32 + 14, 28, 14])
+    # la table commune, au sud-est : une grande table, ses deux bancs, et garnie (chopes, pichet, pain, fromage, chandelle, jeu de dames)
+    tx, ty = 22.4, 9.7
+    t.lpc(D, 8, 35, 2, 2, tx, ty); t.lpc(D, 6, 34, 2, 1, tx - 0.1, ty - 0.75); t.lpc(D, 6, 36, 2, 1, tx - 0.1, ty + 1.9); bloc.append([tx * 32 + 2, ty * 32 + 20, 60, 36])
+    for (sx_, sy_, dx_, dy_) in ((2, 17, 0.05, -0.2), (0, 17, 0.55, -0.05), (6, 17, 1.1, -0.25), (4, 25, 0.2, 0.35), (0, 25, 0.85, 0.4), (1, 11, 1.3, 0.1), (9, 2, 0.5, 0.75)):
+        t.lpc(V, sx_, sy_, 1, 1, tx + dx_, ty + dy_)
+    # les quatre poteaux de la guirlande et sa lanterne ; la guirlande de lumières, en boucle autour du feu
+    postes = [(cx - 116, 160), (cx + 116, 160), (cx + 116, 322), (cx - 116, 322)]
     for (x_, y_) in postes:
         t.ombre(x_ + 3, y_, 8, 3); t.r(x_ - 3, y_ - 70, 6, 70, OUT_); t.r(x_ - 2, y_ - 69, 4, 68, B2); t.r(x_ - 2, y_ - 69, 1, 68, B3); t.r(x_ + 1, y_ - 69, 1, 68, B1)
         t.cadre(x_ - 6, y_ - 86, 12, 14, OR2, OUT_); t.r(x_ - 5, y_ - 79, 10, 1, OR1); t.r(x_ - 1, y_ - 85, 1, 12, OUT_); t.r(x_ - 7, y_ - 88, 14, 3, OUT_)
@@ -145,28 +151,24 @@ def centre(n):
             t.px(x_, y_, B0)
             if i % 12 == 6: t.r(x_ - 1, y_ + 1, 3, 3, OUT_); t.r(x_, y_ + 1, 1, 2, COUL[k % len(COUL)]); k += 1
     for a, b in zip(postes, postes[1:] + postes[:1]): guirlande(a, b)
-    # la table garnie : des chopes, un pichet, du pain, du fromage, une chandelle, un jeu de dames
-    V = 'tavern'
-    for (sx_, sy_, x_, y_) in ((2, 17, 19.05, 6.0), (0, 17, 19.55, 6.15), (6, 17, 20.1, 5.95), (4, 25, 19.2, 6.55), (0, 25, 19.85, 6.6), (1, 11, 20.3, 6.3), (9, 2, 19.5, 6.95)):
-        t.lpc(V, sx_, sy_, 1, 1, x_, y_)
-    # des tonneaux et des bouteilles près de l'estrade ; deux bannières aux couleurs de la troupe de chaque côté du rideau
-    t.lpc(V, 1, 1, 2, 2, 0.45, 5.0); t.lpc(V, 0, 0, 1, 2, 1.35, 4.85); bloc.append([20, 5.0 * 32 + 40, 80, 20])
-    # l'estrade du barde, à gauche du feu : un plancher de bois, sa face à poteaux, un rideau rouge derrière
-    ns['rideau'](t, 130, 84, 74, 150)
-    ns['scene'](t, 130, 90, 150, 176, 188, False)
-    for s_ in (-1, 1): t.lpc(D, 13, 0, 1, 1, (130 + s_ * 66) / 32 - 0.5, 3.7, s_ > 0)
-    bloc.append([40, 168, 180, 22])
-    t.lpc(V, 12, 41, 1, 2, 1.05, 2.0); t.lpc(V, 14, 41, 1, 2, 6.85, 2.0)
+    # la grande estrade du barde, à gauche : un plancher de bois, sa face à poteaux, un rideau rouge, des lanternes, deux bannières, des tonneaux
+    ex_, demi = 190, 138
+    ns['rideau'](t, ex_, demi - 6, 64, 146)
+    ns['scene'](t, ex_, demi, 146, 182, 194, False)
+    for s_ in (-1, 1): t.lpc(D, 13, 0, 1, 1, (ex_ + s_ * (demi - 22)) / 32 - 0.5, 3.4, s_ > 0)
+    bloc.append([ex_ - demi - 2, 150, 2 * demi + 4, 46])
+    t.lpc(V, 12, 41, 1, 2, (ex_ - demi + 2) / 32, 1.7); t.lpc(V, 14, 41, 1, 2, (ex_ + demi - 34) / 32, 1.7)
+    t.lpc(V, 1, 1, 2, 2, (ex_ - demi - 44) / 32, 6.6); bloc.append([ex_ - demi - 42, 6.6 * 32 - 20, 60, 20])
     return t
 ns['centre'] = centre
 
 LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes'], 2), ('atelier', 'art', ns['atelier'], 3), ('archives', 'archives', ns['archives'], 4), ('son', 'son', son, 5), ('infirmerie', 'infirmerie', infirmerie, 6), ('centre', 'centre', centre, 7)]
 # le sol plat : sous cette ligne (en px de la toile), ce qui n'est pas du sol de pavés mais plat (les gradins du théâtre)
 PLAT = {('recits', 3): 150, ('recits', 4): 150}
-PLAT_RECT = {'centre': [(326, 200, 444, 262), (40, 150, 222, 204)]}   # à plat : le foyer, le plancher de l'estrade (le barde et la troupe s'y tiennent)
+PLAT_RECT = {'centre': [(414, 198, 546, 270), (48, 144, 332, 198)]}   # à plat : le foyer, le plancher de l'estrade (le barde et la troupe s'y tiennent)
 BANDE = 16
 NOM_EN_COURS = ['']
-COLONNES = {'infirmerie'}
+COLONNES = {'infirmerie', 'archives', 'recits', 'cartes', 'atelier', 'son'}
 NIVEAUX_LIEU = {'centre': 1}   # le centre-ville n'a qu'un niveau
 MANUEL = {'centre'}   # ces lieux : tout ce qui bloque est écrit à la main (BLOQUE_MANUEL)   # ces lieux : l'obstacle suit tout le pied de ce qui est posé (et pas seulement le bas de chaque objet)
 
@@ -238,7 +240,7 @@ for nom, idj, f, seed in LIEUX:
                 x1_ = x_ + 1
                 while x1_ < w and bas[x1_] >= 0 and abs(int(bas[x1_]) - int(bas[x1_ - 1])) <= 4: x1_ += 1
                 if x1_ - x_ >= 6:
-                    haut_ = min(64, int(bas[x_:x1_].max() - min(np.nonzero(objet[:, k_])[0].min() for k_ in range(x_, x1_))))   # le corps de l'objet (64 px au plus), pas seulement son pied : on ne le traverse pas par le côté
+                    haut_ = (int(bas[x_:x1_].max() - min(np.nonzero(objet[:, k_])[0].min() for k_ in range(x_, x1_))))   # tout le corps de l'objet, du pied au faîte : on ne passe ni à travers ni « sur le toit »
                     bloque.append([int(x_ + 1), int(bas[x_:x1_].max() - max(haut_, 8) + 1), int(x1_ - x_ - 2), max(haut_, 8)])
                 x_ = x1_
         for pts in composantes(objet):
@@ -281,7 +283,7 @@ planche = Image.new('RGBA', (LARGEUR, hauteur), (0, 0, 0, 0))
 for (px_, py_), im in toutes: planche.paste(Image.fromarray(im, 'RGBA'), (px_, py_))
 sortie = os.path.join(RACINE, 'public', 'assets', 'lpc', 'lieux_batiments.png'); planche.save(sortie, optimize=True)
 print(sortie, planche.size)
-DECALAGES = {'infirmerie': [-61, -45], 'centre': [0, 0]}
+DECALAGES = {'infirmerie': [-61, -45], 'centre': [0, 0]}   # (le centre : son emprise est la toile elle-même, 14_lieux.js)
 JSON = {'_lisez_moi': "Fabriqué par design/camp/outils/lieux_jeu.py : ne pas modifier à la main.", 'decalage': [-32, -32], 'decalages': DECALAGES, 'lieux': {}}
 for idj, niveaux in donnees.items():
     JSON['lieux'][idj] = [{'sol': {'sx': d['sol_pos'][0], 'sy': d['sol_pos'][1], 'w': d['w'], 'h': d['h']},

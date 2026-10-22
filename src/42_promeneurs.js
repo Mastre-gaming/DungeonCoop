@@ -28,9 +28,9 @@ const ARME = { eclaireuse: 'tir', 'voleur-exemple': 'tir', druide: 'sort', barde
 const lieu = (id) => LIEUX.find((l) => l.id === id).porte;
 // Les activités devant le décor : où se tenir (en cases), tourné vers quoi, quel geste (ou 'repos'), combien de temps.
 const ACTIVITES = [
-  { nom: 'se chauffer au feu', a: [FEU[0], FEU[1] + 2.6], dir: 'haut', geste: 'sort', duree: 6 },
-  { nom: 'se chauffer au feu', a: [FEU[0] - 1.6, FEU[1] + 2.9], dir: 'haut', geste: 'sort', duree: 6 },   // (à l'ouest du feu : le barde de la radio)
-  { nom: 'se chauffer au feu', a: [FEU[0] + 1.6, FEU[1] + 2.9], dir: 'haut', geste: 'sort', duree: 6 },
+  { nom: 'se chauffer au feu', a: [FEU[0], FEU[1] + 2.0], dir: 'haut', geste: 'sort', duree: 6 },
+  { nom: 'se chauffer au feu', a: [FEU[0] - 1.6, FEU[1] + 2.1], dir: 'haut', geste: 'sort', duree: 6 },   // (à l'ouest du feu : le barde de la radio)
+  { nom: 'se chauffer au feu', a: [FEU[0] + 1.6, FEU[1] + 2.1], dir: 'haut', geste: 'sort', duree: 6 },
   { nom: 's’entraîner', a: [ENCLOS.ouest + 2, ENCLOS.nord + 3.5], dir: 'haut', geste: 'arme', duree: 7 },
   { nom: 's’entraîner', a: [ENCLOS.est - 2, ENCLOS.nord + 3.5], dir: 'haut', geste: 'arme', duree: 7 },
   { nom: 'lire le tableau', a: [lieu('interface')[0] + 2.4, lieu('interface')[1] + 1.6], dir: 'haut', geste: 'repos', duree: 5 },

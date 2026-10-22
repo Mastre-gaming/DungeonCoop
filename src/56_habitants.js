@@ -29,15 +29,15 @@ const BETES = [
   { zone: 'ferme', dx: 0.2, dy: 2.8, r: 2.5, robe: 'rousse' }, { zone: 'ferme', dx: 2.2, dy: 1.2, r: 2.5, robe: 'rousse' },
   { zone: 'chasseur', dx: 1.4, dy: 1.6, r: 1.2, robe: 'chat' }, { feu: true, dx: 2.6, dy: 1.2, r: 1.2, robe: 'chat' },
 ];
-// La troupe du barde, sur son estrade (design/camp/outils/lieux_jeu.py, centre : l'estrade est à la case (8, 7) + (46..214, 150..202) px) :
+// La troupe du barde, sur son estrade (design/camp/outils/lieux_jeu.py, centre : l'estrade est à la case (5, 7) + (46..346, 146..194) px) :
 // un tambour, une chanteuse, un flûtiste et une danseuse, qui jouent en boucle (les gestes de leur planche LPC). Le barde et son enceinte,
 // eux, sont posés par 24_radio.js.
-const SCENE = [256, 224];
+const SCENE = [160, 224];
 const GESTES = { estoc: [4, 8, 8], sort: [0, 7, 5] };
 // (le tambour et la flûte viennent de « [LPC] Tavern » de bluecarrot16 : leurs animations sont dans la planche, rangée 14 pour le tambour, 6 pour la flûte)
 const TROUPE = [
-  { planche: 'hab-tambour', x: 98, y: 168, rang: 14, images: 6, fps: 5 }, { planche: 'hab-lectrice', x: 124, y: 160, geste: null },
-  { planche: 'hab-flutiste', x: 182, y: 168, rang: 6, images: 8, fps: 6, dec: 0.4 }, { planche: 'hab-fermiere', x: 206, y: 160, geste: 'sort', dec: 1.1 },
+  { planche: 'hab-tambour', x: 108, y: 174, rang: 14, images: 6, fps: 5 }, { planche: 'hab-lectrice', x: 150, y: 164, geste: null },
+  { planche: 'hab-flutiste', x: 244, y: 174, rang: 6, images: 8, fps: 6, dec: 0.4 }, { planche: 'hab-fermiere', x: 280, y: 164, geste: 'sort', dec: 1.1 },
 ];
 const troupe = [];
 const gens = [], betes = [];

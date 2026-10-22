@@ -4386,12 +4386,11 @@
 <polyline points="252,238 346.5,245 346.5,231" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="245,427 210,350 157.5,329 157.5,315" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="105,364 182,371 245,427" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="217,455 147,451.5 147,434" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="252,294 350,319.2 350,308" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="399,392 322,399 245,427" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="350,396.2 350,364" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="364,396.2 364,448" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
-<polyline points="245,427 280,483 315,483 315,476" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="399,392 336,381.5 280,385 245,427" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="350,383.59999999999997 350,364" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="245,427 266,441 308,441 308,434" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="245,427 280,483 315,483" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="210,511 154,515.1999999999999 154,504" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="315,483 315,534.8000000000001 364,534.8000000000001 364,525" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
 <polyline points="210,574 210,609" fill="none" stroke="#d9c08f" stroke-width="14" stroke-linejoin="round" stroke-linecap="round"/>
@@ -4410,28 +4409,24 @@
 <rect x="126" y="266" width="63" height="49" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
 <rect x="150.5" y="312.2" width="14" height="5.6000000000000005" fill="#7a5230"/>
 <text x="157.5" y="293.5" font-size="8" fill="#2b1a0a" text-anchor="middle">l’atelier des peintres</text>
-<rect x="126" y="399" width="42" height="35" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
-<rect x="140" y="431.2" width="14" height="5.6000000000000005" fill="#7a5230"/>
-<text x="147.0" y="419.5" font-size="8" fill="#2b1a0a" text-anchor="middle">la forge</text>
+<rect x="133" y="469" width="42" height="35" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
+<rect x="147" y="501.19999999999993" width="14" height="5.6000000000000005" fill="#7a5230"/>
+<text x="154.0" y="489.5" font-size="8" fill="#2b1a0a" text-anchor="middle">la forge</text>
 <rect x="322" y="252" width="56" height="56" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
 <rect x="343" y="305.2" width="14" height="5.6000000000000005" fill="#7a5230"/>
 <text x="350.0" y="283.0" font-size="8" fill="#2b1a0a" text-anchor="middle">le terrain d’entraînement</text>
 <rect x="329" y="329" width="42" height="35" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
 <rect x="343" y="361.2" width="14" height="5.6000000000000005" fill="#7a5230"/>
 <text x="350.0" y="349.5" font-size="8" fill="#2b1a0a" text-anchor="middle">l’armurerie</text>
-<rect x="294" y="441" width="42" height="35" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
-<rect x="308" y="473.19999999999993" width="14" height="5.6000000000000005" fill="#7a5230"/>
-<text x="315.0" y="461.5" font-size="8" fill="#2b1a0a" text-anchor="middle">le tableau d’affichage</text>
+<rect x="287" y="399" width="42" height="35" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
+<rect x="301" y="431.2" width="14" height="5.6000000000000005" fill="#7a5230"/>
+<text x="308.0" y="419.5" font-size="8" fill="#2b1a0a" text-anchor="middle">le tableau d’affichage</text>
 <rect x="210" y="0" width="84" height="63" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
 <rect x="245" y="60.199999999999996" width="14" height="5.6000000000000005" fill="#7a5230"/>
 <text x="252.0" y="34.5" font-size="8" fill="#2b1a0a" text-anchor="middle">le théâtre des récits</text>
 <rect x="126" y="28" width="42" height="35" fill="#fbf6ea" stroke="#6b4f2c" stroke-width="1.5"/>
 <rect x="140" y="60.199999999999996" width="14" height="5.6000000000000005" fill="#7a5230"/>
 <text x="147.0" y="48.5" font-size="8" fill="#2b1a0a" text-anchor="middle">l’estrade</text>
-<rect x="133" y="469" width="42" height="35" fill="#fff" fill-opacity=".4" stroke="#185FA5" stroke-width="1.6" stroke-dasharray="5 3"/>
-<circle cx="154.0" cy="486.5" r="8" fill="#185FA5"/><text x="154.0" y="490.0" font-size="9" fill="#fff" text-anchor="middle">1</text>
-<rect x="343" y="413" width="42" height="35" fill="#fff" fill-opacity=".4" stroke="#185FA5" stroke-width="1.6" stroke-dasharray="5 3"/>
-<circle cx="364.0" cy="430.5" r="8" fill="#185FA5"/><text x="364.0" y="434.0" font-size="9" fill="#fff" text-anchor="middle">2</text>
 <rect x="343" y="490" width="42" height="35" fill="#fff" fill-opacity=".4" stroke="#185FA5" stroke-width="1.6" stroke-dasharray="5 3"/>
 <circle cx="364.0" cy="507.5" r="8" fill="#185FA5"/><text x="364.0" y="511.0" font-size="9" fill="#fff" text-anchor="middle">3</text>
 <rect x="-56" y="231" width="42" height="35" fill="#fff" fill-opacity=".4" stroke="#185FA5" stroke-width="1.6" stroke-dasharray="5 3"/>

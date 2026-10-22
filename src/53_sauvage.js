@@ -435,11 +435,9 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
         if (orange) deco(6, 25, 2, 3, x - 1, y - 0.5); else deco(10.62, 25, 2.38, 3, x - 1.2, y - 0.5);
         base(x, y - 0.2, 60, 8); deco(8, 35, 2, 1.5, x - 1, y + 0.5); occupe.push([x - 1.6, y - 4, x + 1.6, y + 1.6]);
         deco(13.5, 17, 1, 1, x + 1.2, y + 1.3);
-        // l'étal garni : chopes, pain, fromage, bouteilles sur le comptoir ; ail, herbes et saucisses sous l'auvent
+        // l'étal garni : chopes, pain, fromage, bouteilles sur le comptoir
         const pc = Math.round((y + 0.52) * T) + 1;
         tav(2, 17, 1, 1, x - 0.95, y + 0.12, { pied: pc }); tav(4, 25, 1, 1, x - 0.4, y + 0.12, { pied: pc }); tav(0, 25, 1, 1, x + 0.15, y + 0.12, { pied: pc }); tav(2, 19, 1, 1, x + 0.55, y + 0.1, { pied: pc });
-        const ph = Math.round((y - 0.45) * T);
-        tav(8, 28, 1, 2, x - 0.9, y - 0.95, { pied: ph }); tav(2, 28, 1, 1, x - 0.1, y - 1.1, { pied: ph }); tav(9, 28, 2, 1, x - 0.45, y - 1.05, { pied: ph });
       }
       deco(14, 13, 2, 3.5, px - 5.6, py - 0.8); base(px - 4.6, py - 0.8, 44, 8);            // un puits à manivelle, sur le côté de la place
       for (const [dx, dy] of [[-2.2, 3.1], [2.4, 3.0]]) { deco(6, 34, 2, 1, px + dx - 1, py + dy); base(px + dx, py + dy, 56, 6); }
@@ -475,7 +473,7 @@ export function decorSauvage({ objets, obstacles, bloquees, images }) {
     const portes = [[0, 5], [42, 9], [21, -25]];
     // (ce qui est déjà là, à des places fixes : la sentinelle sur le grand sentier, le barde et son enceinte, la boîte aux lettres,
     // le chef de chantier et son panneau, la base du chantier : on laisse de la place autour)
-    for (const r of [[10.5, 18.5, 19.5, 31.5], [15, 12.5, 19.5, 16.5], [23, 14.5, 26.5, 17.5], [5.5, 17.5, 11, 22.5], [3, 22, 8, 27.5], [2.6, 6.2, 4.6, 8.2], [37.4, 10.2, 39.4, 12.2], [17.4, -22.6, 19.4, -20.6], [31.8, 21.4, 41, 29.8], [8.5, 8.5, 32, 21]]) occupe.push(r);   // (le centre-ville : 14_lieux.js)   // (les trois gardes des portes : 55_gardes.js)
+    for (const r of [[10.5, 18.5, 19.5, 31.5], [15, 12.5, 19.5, 16.5], [23, 14.5, 26.5, 17.5], [5.5, 17.5, 11, 22.5], [3, 22, 8, 27.5], [2.6, 6.2, 4.6, 8.2], [37.4, 10.2, 39.4, 12.2], [17.4, -22.6, 19.4, -20.6], [31.8, 21.4, 41, 29.8], [5, 8.5, 32, 21]]) occupe.push(r);   // (le centre-ville : 14_lieux.js)   // (les trois gardes des portes : 55_gardes.js)
     // des lanternes le long des allées, un côté puis l'autre, avec leur halo la nuit
     let cote = 1;
     CHEMINS.forEach((ch, k) => {
