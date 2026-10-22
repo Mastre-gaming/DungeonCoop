@@ -1,0 +1,17 @@
+/* Le panneau « Une run t'attend » (même cadre que le bandeau de la run). */
+#run-reprise {
+  position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 30;
+  min-width: 300px; max-width: 92vw; padding: 10px 16px 12px; box-sizing: border-box;
+  background: rgba(30, 22, 14, .94); border: 2px solid #c9a24a; border-radius: 4px; color: #f3e6c4;
+  font: 14px/1.35 system-ui, sans-serif; text-align: center;
+}
+#run-reprise[hidden] { display: none; }
+#run-reprise .titre { font-weight: 700; color: #e8c25a; margin-bottom: 2px; }
+#run-reprise .ligne { font-size: 13px; color: #d8c89a; }
+#run-reprise .boutons { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+#run-reprise button {
+  cursor: pointer; padding: 5px 12px; font: inherit; color: #f3e6c4; background: #3a2c1c;
+  border: 2px solid #6a5232; border-radius: 3px;
+}
+#run-reprise button:hover { border-color: #e8c25a; }
+#run-reprise button.principal { color: #2a1d0e; background: #e8c25a; border-color: #8a6a2a; }
