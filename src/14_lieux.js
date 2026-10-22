@@ -3,7 +3,9 @@
 // Un niveau montre ses pièces et celles des niveaux d'avant. Une pièce peut s'animer (lanternes, torches) et bloquer
 // le passage (sa base). Quand un lieu monte de niveau en direct, il s'illumine un instant.
 // Porte T : le tableau d'affichage d'abord (validé par le propriétaire), les sept autres ensuite, sur son modèle.
-import { T, LIEUX, emprise, terre } from './01_plan.js';
+import { T, LIEUX, ARCHIVES, emprise, terre } from './01_plan.js';
+import ESQUISSES from '../design/animations/esquisses/esquisses.json';
+import BRIQUES from './entrainement/effets.json';
 import ARMURERIE from './data/armurerie.json';
 import BATIMENTS from './data/lieux_batiments.json';
 
@@ -96,6 +98,12 @@ export const PLANCHERS = { classes: 2, interface: 2 };
 // Le plafond (demande du propriétaire, 19 oct) : le tableau d'affichage ne dépasse pas le niveau 2 pour l'instant, même
 // avec des missions rentrées (elles comptent toujours ; le niveau monte quand on lève le plafond). dbg.lieux.forcer passe outre.
 export const PLAFONDS = { interface: 2 };
+// Les archives (pas un des huit lieux : 27_archives.js) : de la corde et la pancarte à la grande bibliothèque. Ce qui les fait grandir
+// (demande du propriétaire, 22 oct) : les animations et les infos rentrées dans l'Archive (les scènes de Fraps et les briques de combat).
+export const SEUILS_ARCHIVES = [0, 10, 30, 60, 100];
+export const animationsRentrees = () => ESQUISSES.effets.length + Object.keys(BRIQUES).length;
+const niveauArchives = () => SEUILS_ARCHIVES.reduce((n, s, i) => (animationsRentrees() >= s ? i : n), 0);
+const LIEUX_JEU = [...LIEUX, { id: 'archives', ...ARCHIVES }];
 const DALLES = -9000;   // le pied des dalles : sous tout ce qui se trie, au-dessus du sol
 
 let game, rendu, images, collision, missions, decor;
@@ -167,7 +175,7 @@ function poser(e) {
 }
 
 function niveauxVoulus() {
-  const n = { ...(missions?.resume().niveaux ?? {}) };
+  const n = { ...(missions?.resume().niveaux ?? {}), archives: niveauArchives() };
   for (const [id, v] of Object.entries(PLANCHERS)) n[id] = Math.max(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(PLAFONDS)) n[id] = Math.min(v, n[id] ?? 0);
   for (const [id, v] of Object.entries(forces)) n[id] = v;
@@ -177,7 +185,7 @@ function niveauxVoulus() {
 export function init(g, options) {
   game = g;
   ({ rendu, images, collision, missions, decor } = options);
-  for (const l of LIEUX) construire(l, PLANCHERS[l.id] ?? 0);
+  for (const l of LIEUX_JEU) construire(l, PLANCHERS[l.id] ?? 0);
   return api;
 }
 
@@ -185,7 +193,7 @@ export function update(dt) {
   temps += dt;
   const voulus = niveauxVoulus();
   decor?.niveaux(voulus);
-  for (const l of LIEUX) {
+  for (const l of LIEUX_JEU) {
     const e = etat[l.id], n = voulus[l.id] ?? 0;
     if (e.niveau !== n) {
       const monte = n > e.niveau;

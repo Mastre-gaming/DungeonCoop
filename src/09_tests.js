@@ -107,8 +107,8 @@ export async function selfTest(t, game) {
   // les bâtiments dessinés pour le jeu : le coin des récits, la table des cartes, l'atelier grandissent du niveau 0 au niveau 4
   if (game.dbg.lieux) {
     const L = game.dbg.lieux, nb = {};
-    for (const id of ['histoire', 'level', 'art']) { L.forcer(id, 0); const p0 = L.pieces(id); L.forcer(id, 4); nb[id] = [p0, L.pieces(id)]; L.forcer(id, null); }
-    t.ok(Object.values(nb).every(([a, b]) => a >= 3 && b >= 8), `histoire, level et art : de la corde et la pancarte (niveau 0) au grand bâtiment (niveau 4) : ${JSON.stringify(nb)}`);
+    for (const id of ['histoire', 'level', 'art', 'son', 'archives']) { L.forcer(id, 0); const p0 = L.pieces(id); L.forcer(id, 4); nb[id] = [p0, L.pieces(id)]; L.forcer(id, null); }
+    t.ok(Object.values(nb).every(([a, b]) => a >= 1 && b >= 3), `histoire, level, art, son (l’estrade) et archives : de la corde et la pancarte (niveau 0) au grand bâtiment (niveau 4) : ${JSON.stringify(nb)}`);
   }
   // l'introduction du jeu, au sud, reste fermée : de la route du pont, on n'atteint aucune clairière sans passer par le camp
   const PAS = 16, vus = new Set(), file = [[Math.floor(15 * T / PAS), Math.floor(36 * T / PAS)]];

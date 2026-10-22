@@ -261,7 +261,7 @@ La première muraille et la grande porte du sud ne bougent pas ; le sud reste l'
   | 3 · l'atelier du peintre | une maison à colombage blanc, toit de chaume doré, deux grandes fenêtres à meneaux ; l'enseigne à la palette, l'étendoir, un chevalet dehors |
   | 4 · la halle des peintres | une halle blanche à poteaux de bois, son grand toit de verre, deux hautes fenêtres cintrées, une porte double vitrée ; à gauche l'échafaudage, son échelle et une statue en cours de taille ; à droite le grand chevalet et sa toile (le camp au couchant) ; l'étendoir, les pots |
 
-  **Les archives** : de la simple tente d'aujourd'hui (`src/27_archives.js`) à **la grande bibliothèque** (demande du propriétaire, 19 oct). On la reconnaît à ses hautes fenêtres où l'on voit les rayonnages pleins de livres, et à sa coupole. Ce n'est pas un des 8 lieux : ce qui la fait grandir reste à choisir (proposé : le nombre de cartes des archives, puisque chaque nouvel asset y a la sienne).
+  **Les archives** : de la simple tente d'aujourd'hui (`src/27_archives.js`) à **la grande bibliothèque** (demande du propriétaire, 19 oct). On la reconnaît à ses hautes fenêtres où l'on voit les rayonnages pleins de livres, et à sa coupole. Ce n'est pas un des 8 lieux : ce qui la fait grandir reste à choisir (**décidé le 22 oct par le propriétaire : les animations et les infos rentrées dans l'Archive** ; dans le jeu, le nombre de scènes de Fraps et de briques de combat du catalogue, aux seuils 0, 10, 30, 60 et 100 — `src/14_lieux.js`).
 
   | Niveau | Ce qu'on voit |
   |---|---|
@@ -535,3 +535,7 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | Ce qui fait grandir les archives ; la place des quatre lieux agrandis sur le plan du camp | le propriétaire |
 | Les noms définitifs des lieux et le texte de la bulle d'arrivée | le responsable de l'axe Histoire, quand il y en aura un |
 | Les crédits : un écran de crédits dans le jeu, à partir de `CREDITS.md` et des fichiers de crédits des packs | le propriétaire |
+
+
+## Les bâtiments des lieux dans le jeu (22 oct)
+Le coin des récits (histoire), la table des cartes (level), l'atelier (art), l'estrade (son, « Son, c'est l'estrade ») et les archives sont dessinés du niveau 0 au niveau 4 : `design/camp/outils/lieux_jeu.py` sépare chaque maquette en sol et en bandes triées avec le héros (`public/assets/lpc/lieux_batiments.png`, `src/data/lieux_batiments.json`), et `src/14_lieux.js` les pose au niveau que donnent les missions de l'axe (les archives : ce qu'on rentre dans l'Archive). L'estrade n'avait pas de maquette : ses cinq niveaux sont ceux de `lieux_jeu.py` (corde et pancarte, estrade de bois, rideau rouge et bancs, kiosque de pierre, grande scène à fronton), à faire valider.

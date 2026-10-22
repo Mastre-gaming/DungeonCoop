@@ -3,7 +3,6 @@
 // (archives.html) : on entre dans une immense tente, sa bibliothèque au fond, et l'on y consulte tous les assets du projet.
 // En revenant (« Retour au camp »), on réapparaît devant elle (?spot=archives).
 // Ce n'est pas un des 8 lieux (ils suivent les axes du tableau de travail) : un objet du camp, comme la boîte aux lettres.
-import { poserTente } from './tente.js';
 import { ARCHIVES } from './01_plan.js';
 
 export const name = 'archives';
@@ -24,7 +23,7 @@ export function init(g, options) {
   game = g;
   ({ rendu, canvas, heros, collision, images, visite } = options);
   game.input.bindings.consulter ??= ['KeyE'];
-  ({ sprites, obstacles } = poserTente({ rendu, deco: images.deco, collision, cx: TENTE.cx, pied: TENTE.pied, enseigne: 'livre' }));
+  // (le bâtiment lui-même, de la corde à la grande bibliothèque, est dessiné par 14_lieux.js selon ce qu'on a rentré dans l'Archive)
   bulle = document.createElement('a');
   bulle.className = 'bulle-panneau bulle-terrain bulle-archives';
   bulle.href = ADRESSE;
@@ -49,7 +48,6 @@ export function dispose() { bulle?.remove(); for (const s of sprites) s.retirer(
 export function selfTest(t) {
   t.group('la tente des archives');
   if (visite) { update(); t.ok(bulle.hidden, 'en visite (la carte du dashboard) : pas de héros, pas de bulle'); return; }
-  t.ok(sprites.length === 3 && obstacles.every((o) => o.w > 0 && o.h > 0), 'la petite tente, sa potence et l’enseigne au livre sont posées, et elles bloquent le passage');
   const h = heros.heros, avant = { x: h.x, y: h.y, controle: h.controle };
   heros.placer(PORTE.x * T, (PORTE.y + 0.8) * T, 'haut'); h.controle = true;
   update();

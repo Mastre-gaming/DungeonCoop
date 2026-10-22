@@ -5,7 +5,7 @@ const FICHIERS = {
   deco: 'decorations-medieval.png', grandFeu: 'CampFireFinished.png', heros: 'heros.png', sentinelle: 'sentinelle.png',
   panneau: 'panneau_carte.png', rats: 'rats.png', armurerie: 'armurerie.png', placeSols: 'place_sols.png', placeObjets: 'place_objets.png', muraille: 'muraille.png', douves: 'douves.png', brasero: 'brasero.png',
   tableau: 'tableau.png', crieur: 'crieur.png', forgeron: 'forgeron.png', chantier: 'chantier.png', chantierSol: 'chantier_sol.png', murs: 'murs.png', animaux: 'animaux.png', gardien: 'entrainement/gardien.png', lieuxBat: 'lieux_batiments.png',
-  'hab-paysan': 'hab-paysan.png', 'hab-chasseur': 'hab-chasseur.png', 'hab-pecheur': 'hab-pecheur.png', 'hab-badaud1': 'hab-badaud1.png', 'hab-badaud2': 'hab-badaud2.png', 'hab-marchand': 'hab-marchand.png',
+  'hab-paysan': 'hab-paysan.png', 'hab-chasseur': 'hab-chasseur.png', 'hab-pecheur': 'hab-pecheur.png', 'hab-badaud1': 'hab-badaud1.png', 'hab-badaud2': 'hab-badaud2.png', 'hab-marchand': 'hab-marchand.png', 'hab-fermiere': 'hab-fermiere.png', 'hab-marchande': 'hab-marchande.png', 'hab-badaude': 'hab-badaude.png', 'hab-lectrice': 'hab-lectrice.png',
 };
 
 const charger = (src) => new Promise((ok, ko) => {

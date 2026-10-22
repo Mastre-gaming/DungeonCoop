@@ -14,13 +14,15 @@ const [CW, CH] = A.case;
 const GENS = [
   { zone: 'chasseur', dx: -2.2, dy: 1.2, r: 3, planche: 'hab-chasseur', flane: true },
   { zone: 'ferme', dx: -3, dy: 2.5, r: 4, planche: 'hab-paysan', flane: true },
-  { zone: 'ferme', dx: 2, dy: 3.5, r: 3, planche: 'hab-marchand', flane: true },
+  { zone: 'ferme', dx: 2, dy: 3.5, r: 3, planche: 'hab-fermiere', flane: true },
   { zone: 'etang', dx: -4.2, dy: 2.6, r: 0.6, planche: 'hab-pecheur', flane: false, dir: 'droite' },
   { zone: 'fetes', dx: -3, dy: 1.5, r: 4, planche: 'hab-badaud1', flane: true },
-  { zone: 'fetes', dx: 3.5, dy: 2, r: 4, planche: 'hab-badaud2', flane: true },
-  { zone: 'fetes', dx: 0.5, dy: 3.6, r: 3, planche: 'hab-marchand', flane: true },
-  { zone: 'fetes', dx: -5.5, dy: -0.5, r: 0.5, planche: 'hab-paysan', flane: false, dir: 'bas' },
-  { zone: 'fetes', dx: 6, dy: -0.5, r: 0.5, planche: 'hab-chasseur', flane: false, dir: 'bas' },
+  { zone: 'fetes', dx: 3.5, dy: 2, r: 4, planche: 'hab-badaude', flane: true },
+  { zone: 'fetes', dx: 0.5, dy: 3.6, r: 3, planche: 'hab-lectrice', flane: true },
+  { zone: 'fetes', dx: -5.5, dy: -0.5, r: 0.5, planche: 'hab-marchande', flane: false, dir: 'bas' },
+  { zone: 'fetes', dx: 6, dy: -0.5, r: 0.5, planche: 'hab-marchand', flane: false, dir: 'bas' },
+  { zone: 'fetes', dx: -1.5, dy: 2.2, r: 3, planche: 'hab-badaud2', flane: true },
+  { zone: 'ferme', dx: 0, dy: 4.4, r: 3, planche: 'hab-marchande', flane: true },
 ];
 const BETES = [
   { zone: 'ferme', dx: -1, dy: 1.4, r: 2.5, robe: 'poule' }, { zone: 'ferme', dx: 1.2, dy: 1.8, r: 2.5, robe: 'poule' },
@@ -35,7 +37,10 @@ const hasard = (a, b) => a + S.aleat() * (b - a);
 export function init(game, options) {
   ({ heros, rendu, collision, jourNuit, visite } = options);
   const { images, camp } = options, zones = camp.vivants.zones;
-  const pos = (d) => d.feu ? [FEU[0] * T + d.dx * T, FEU[1] * T + d.dy * T] : zones[d.zone] ? [zones[d.zone].x + d.dx * T, zones[d.zone].y + d.dy * T] : null;
+  // (si la place est prise par un objet, la plus proche place libre)
+  const libre = (p) => { if (!p || !collision.bloque(p[0], p[1])) return p; for (let r = 8; r <= 160; r += 8) for (let a = 0; a < 6.283; a += 0.5) { const x = p[0] + Math.cos(a) * r, y = p[1] + Math.sin(a) * r; if (!collision.bloque(x, y)) return [x, y]; } return null; };
+  const pos0 = (d) => d.feu ? [FEU[0] * T + d.dx * T, FEU[1] * T + d.dy * T] : zones[d.zone] ? [zones[d.zone].x + d.dx * T, zones[d.zone].y + d.dy * T] : null;
+  const pos = (d) => libre(pos0(d));
   for (const d of GENS) {
     const p = pos(d); if (!p) continue;
     gens.push({ ...d, x: p[0], y: p[1], ancre: [...p], dir: d.dir ?? 'bas', but: null, pause: hasard(0.5, 4), t: S.aleat() * 3, marche: false,

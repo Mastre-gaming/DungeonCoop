@@ -35,7 +35,47 @@ for nom in ('paves', 'terre', 'herbe'):
     ns[nom] = sol(ns[nom])
 ns['cadre_emprise'] = lambda *a, **k: None
 
-LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes'], 2), ('atelier', 'art', ns['atelier'], 3)]
+# ------------------------------------------------------------------ l'estrade (le lieu « son », 6 x 5 : une toile de 8 x 7, l'emprise en 1, 1 à 7, 6)
+# demande du propriétaire, 22 oct : « Son, c'est l'estrade ». Niveau 0 : la corde et la pancarte ; 1 : une petite estrade de bois ;
+# 2 : l'estrade au rideau rouge et ses bancs ; 3 : le kiosque de pierre, son toit d'ardoise ; 4 : la grande scène à fronton.
+def son(n):
+    Tl = lieux_dessin.Toile; t = Tl(8, 7); cx = 128; ns['herbe'](t, 5)
+    T_ = 32; D = ns['D']; chemin = ('bande', cx, 190, cx, 230, 22)
+    souche = lambda x, y: t.lpc(D, 15, 23, 1, 1, x / T_ - 0.5, y / T_ - 0.5)
+    if n == 0:
+        ns['sentier'](t, cx); ns['piquets'](t, cx)
+    elif n == 1:
+        ns['terre'](t, [('ellipse', cx, 150, 84, 36), chemin])
+        ns['scene'](t, cx, 36, 106, 122, 130, False)
+        for s_ in (-1, 1): souche(cx + s_ * 66, 156)
+        t.lpc(D, 13, 0, 1, 1, cx / T_ - 0.5 + 1.3, 3.5)
+    elif n == 2:
+        ns['terre'](t, [('ellipse', cx, 150, 96, 42), chemin])
+        ns['rideau'](t, cx, 52, 56, 100)
+        ns['scene'](t, cx, 58, 100, 118, 128, False)
+        for s_ in (-1, 1): t.lpc(D, 13, 0, 1, 1, (cx + s_ * 46) / T_ - 0.5, 1.7, s_ > 0)
+        ns['lutrin_au'](t, cx, 116)
+        t.lpc(D, 6, 34, 2, 1, 1.4, 5.0); t.lpc(D, 6, 34, 2, 1, 4.6, 5.0)
+        for s_ in (-1, 1): souche(cx + s_ * 84, 148)
+    elif n == 3:
+        ns['paves'](t, [('ellipse', cx, 152, 104, 46), chemin], seed=13)
+        ns['scene'](t, cx, 62, 104, 126, 138, True)
+        for s_ in (-1, 1): ns['colonne'](t, cx + s_ * 58, 56, 106)
+        ns['toit_ardoise'](t, cx, 60, 36, 76, 46)
+        ns['lutrin_au'](t, cx, 122)
+        for s_ in (-1, 1): ns['reverbere'](t, cx + s_ * 98, 176); ns['buis'](t, cx + s_ * 84, 150)
+    else:
+        ns['paves'](t, [('ellipse', cx, 150, 120, 60), chemin], seed=14)
+        ns['mur_pierre'](t, cx - 80, 52, cx + 80, 104)
+        ns['arche'](t, cx - 18, 58, 36, 46, ns['OUT'])
+        ns['fronton'](t, cx, 52, 86, 26)
+        ns['scene'](t, cx, 84, 104, 126, 140, True)
+        for s_ in (-1, 1): ns['colonne'](t, cx + s_ * 70, 56, 106); ns['brasero'](t, cx + s_ * 96, 150); ns['reverbere'](t, cx + s_ * 56, 200); ns['buis'](t, cx + s_ * 108, 172)
+        ns['lutrin_au'](t, cx, 124)
+    return t
+ns['son'] = son
+
+LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes'], 2), ('atelier', 'art', ns['atelier'], 3), ('archives', 'archives', ns['archives'], 4), ('son', 'son', son, 5)]
 # le sol plat : sous cette ligne (en px de la toile), ce qui n'est pas du sol de pavés mais plat (les gradins du théâtre)
 PLAT = {('recits', 3): 150, ('recits', 4): 150}
 BANDE = 16

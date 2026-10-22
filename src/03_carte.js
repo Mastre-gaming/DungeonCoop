@@ -143,7 +143,7 @@ export function composerCamp(images = {}) {
     } else if (l.id === 'combat') {
       enclos(objets, obstacles);
       lieux[l.id] = { ...l };
-    } else if (l.id === 'histoire' || l.id === 'level' || l.id === 'art') {
+    } else if (l.id === 'histoire' || l.id === 'level' || l.id === 'art' || l.id === 'son') {
       lieux[l.id] = { ...l };                                // 14_lieux.js les dessine à chaque niveau, du niveau 0 (la corde et la pancarte) au 4
     } else if (l.id === 'classes') {
       lieux[l.id] = { ...l };                                // l'armurerie : 14_lieux.js la dessine en entier, à chaque niveau
