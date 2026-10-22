@@ -13,6 +13,7 @@ import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
 import { calculerBilan } from './bilan.js';
 import { DEBUT_INFINI } from './regles.js';
+import { LISTE as SALLES } from './salles.js';
 import * as REG from './reglages-combat.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
@@ -43,6 +44,7 @@ export function init(g, options) {
   game = g;
   ({ combat, vue, canvas, nouveauCombat } = options);
   if (options.horloge) ui.horloge = options.horloge;
+  ui.salle = SALLES.find((x) => x.id === options.salle) ?? null;   // la salle jouée (salles.js) ; sans elle, la salle d'essai
   // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
   ui.choix = equipePour(new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe, monGithub());
   construire();
@@ -96,8 +98,15 @@ function construire() {
     ' des alliés · molette : zoom · clic droit glissé : la vue');
   dom.accueil = el('div', { class: 'fond-terrain', id: 'accueil' }, el('section', { class: 'cadre-terrain' },
     el('h1', {}, 'Le terrain d’entraînement'),
-    el('p', {}, 'Le combat D1 du kit papier (la Salle d’essai de Fraps), joué ', el('strong', {}, 'sans cases'),
-      ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
+    ui.salle
+      ? el('p', {}, el('strong', {}, ui.salle.nom), ' : ', el('em', {}, ui.salle.idee), ' Un combat ', el('strong', {}, 'sans cases'), ' : chaque classe a une distance maximale par tour, en mètres.')
+      : el('p', {}, 'Le combat D1 du kit papier (la Salle d’essai de Fraps), joué ', el('strong', {}, 'sans cases'),
+        ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
+    // la salle : en changer recharge le terrain (son sol, son décor et ses obstacles se construisent au chargement)
+    dom.salle = el('label', { class: 'choix-salle' }, 'La salle',
+      el('select', { id: 'choix-salle', onchange: (e) => changerSalle(e.target.value) },
+        el('option', { value: '' }, 'La salle d’essai'),
+        ...SALLES.map((x) => el('option', { value: x.id, selected: x.id === ui.salle?.id }, x.nom)))),
     dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
     dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
     el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (le Traqueur de Paolitus, Shadow de Fraps : chacune ne se joue que par son auteur). ◀ ▶ pour changer.'),
@@ -184,6 +193,7 @@ function proprioPlace(k) {
 function dessinerLobby() {
   dom.groupe.hidden = !reseau;
   dom.boutonsEquipe.hidden = !!reseau;
+  dom.salle.querySelector('select').disabled = !!reseau;   // à plusieurs, tout le groupe joue la salle où il est entré
   dom.titreEquipe.textContent = reseau ? 'Le lobby : chacun prend ses héros et choisit leur classe' : 'Ton équipe : choisis la classe de chacun';
   for (const i of [...dom.mode.querySelectorAll('input'), dom.infiniCase]) i.disabled = !!reseau && !reseau.hote;
   dom.commencer.hidden = !!reseau && !reseau.hote;
@@ -225,6 +235,16 @@ function commencer() {
   lance();
   combat.commencer();
   vider();
+}
+// Une autre salle : la même page, avec ?salle= (et l'équipe, le mode de tour, le mode infini choisis), rechargée.
+function changerSalle(id) {
+  const q = new URLSearchParams(location.search);
+  if (id) q.set('salle', id); else q.delete('salle');
+  q.set('equipe', ui.choix.join(','));
+  q.set('mode', dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe');
+  if (dom.infiniCase.checked) q.set('infini', ''); else q.delete('infini');
+  q.delete('go');
+  location.assign(`${location.pathname}?${q}`);
 }
 function lance() { dom.accueil.hidden = true; dom.fin.hidden = true; ui.fini = false; ui.finMontree = false; ui.sale = true; }
 function accueil() { dom.fin.hidden = true; dom.accueil.hidden = false; ui.fini = false; ui.finMontree = false; dessinerPlaces(); ui.sale = true; }
@@ -597,7 +617,7 @@ function montrerDe(e) {
   dom.de.replaceChildren(
     el('span', { class: 'de-qui' }, qui?.nom ?? ''),
     el('span', { class: 'des' }, e.jets.map((j) => el('span', { class: `face${e.jets.length > 1 && j !== e.k ? ' ecarte' : ''}` }, String(j)))),
-    el('span', { class: 'calcul' }, e.mod != null ? `${e.k} + ${e.mod} = ${e.k + e.mod}` : e.glace ? `glace : d20 ${e.k}` : 'critique assuré'),
+    el('span', { class: 'calcul' }, e.mod != null ? `${e.k} ${e.mod < 0 ? '−' : '+'} ${Math.abs(e.mod)} = ${e.k + e.mod}` : e.glace ? `glace : d20 ${e.k}` : 'critique assuré'),
     el('strong', { class: 'resultat' }, res));
   dom.de.hidden = false;
   clearTimeout(minuterieDe); minuterieDe = setTimeout(() => { dom.de.hidden = true; }, 1500);

@@ -7,7 +7,7 @@
 // Le hasard passe par `alea` (une graine en ?test, pour que tout se rejoue pareil).
 import {
   CONTACT, ECART_MIN, dist, metres, vue, enTenaille, carteDistances, chemin, longueurChemin, indiceDe, pointDe,
-  libre, simulerPoussee, pointLibreProche, trajetLibre,
+  libre, simulerPoussee, pointLibreProche, trajetLibre, ecartHauteur, niveauA, NIVEAU_M,
 } from './geometrie.js';
 import { lire } from './reglages-combat.js';   // les nombres qu'on règle à la main (panneau) ; leurs défauts sont les valeurs d'avant
 
@@ -170,7 +170,7 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 // equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
 // ennemis : le groupe d'une salle du donjon, [{ id, type, x, y }] (type : une clé d'ENNEMIS) ; sans lui, les 7 du kit D1
 // placés par departs.ennemis. Victoire : tous les ennemis vaincus, le chef compris (#260).
-export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null }) {
+export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -228,6 +228,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   tonneaux.forEach(([x, y], k) => S.tonneaux.push({ id: `t${k}`, x, y }));
   if (flaque) peindre(flaque.x, flaque.y, flaque.r, () => ({ t: 'eau', ttl: null, par: null }));
+  // les surfaces d'une salle (salles.js) : le gué, un feu de camp, une flaque d'huile… là dès le début, sans fin
+  for (const sf of surfaces) peindre(sf.x, sf.y, sf.r, () => ({ t: sf.t, ttl: null, par: null }));
 
   const U = (id) => S.unites.find((u) => u.id === id);
   const herosVivants = () => S.unites.filter((u) => u.camp === 'h' && !u.ko);
@@ -495,9 +497,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (A.el === 'foudre' && surfaceA(cible)?.t === 'eau') notes.push('la cible est dans l’eau : électrise toute la flaque (8 à chacun)');
     if (A.el === 'feu' && surfaceA(cible)?.t === 'huile') notes.push('la cible est dans l’huile : tout s’enflamme');
     if (A.aTerre) notes.push('la cible sera À terre');
-    return { av: av && !des ? 1 : des && !av ? -1 : 0, mult, dm: campMult(att), notes, aCombos, tenaille, huile, coriace: !!cible.coriace };
+    // la hauteur (à l'essai, comme dans Baldur's Gate 3) : +2 au d20 d'en haut, −2 d'en bas (un niveau de 3 m ou plus)
+    const ecart = ecartHauteur(trame.salle, att, cible), haut = ecart >= 0.75 ? 2 : ecart <= -0.75 ? -2 : 0;
+    if (haut > 0) notes.push(`d’en haut (${Math.round(ecart * NIVEAU_M)} m) : +2 au d20`);
+    if (haut < 0) notes.push(`d’en bas (${Math.round(-ecart * NIVEAU_M)} m) : −2 au d20`);
+    return { av: av && !des ? 1 : des && !av ? -1 : 0, mult, dm: campMult(att), notes, aCombos, tenaille, huile, haut, coriace: !!cible.coriace };
   }
-  const noter = (k, A, c) => (A.auto ? 'critique' : k <= lire('des.rate') ? 'rate' : k >= lire('des.critique') ? 'critique' : k + A.mod <= (c.coriace ? lire('des.eraflureCoriace') : lire('des.eraflure')) ? 'eraflure' : 'touche');
+  const noter = (k, A, c) => (A.auto ? 'critique' : k <= lire('des.rate') ? 'rate' : k >= lire('des.critique') ? 'critique' : k + A.mod + (c.haut ?? 0) <= (c.coriace ? lire('des.eraflureCoriace') : lire('des.eraflure')) ? 'eraflure' : 'touche');
   function chances(A, c) {
     const o = { rate: 0, eraflure: 0, touche: 0, critique: 0 };
     if (A.auto) { o.critique = 1; return o; }
@@ -539,7 +545,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (att.st.inspire) delete att.st.inspire;          // le chant ne sert qu'une fois
     const qui = `${att.nom} → ${cible.nom} · ${A.nom}`;
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
-    ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
+    const mod = A.mod + c.haut;                         // (la hauteur s'ajoute au d20, comme la caractéristique)
+    ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : mod, resultat: g, av: c.av });
     if (g === 'rate') { log(`${qui} · d20 ${label} : Raté !`, att.camp === 'e' ? 'ennemi' : 'mauvais'); if (lire('des.ratesComiques') >= 0.5) rate(att); else flotter(att, 'Raté !', 'info'); return g; }
     const jet = d(A.de) + (A.de2 ? d(A.de2) : 0);
     let n = A.base + jet + A.dmod;
@@ -548,7 +555,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     n = finalDeg(Math.round(n * c.mult), c.dm);
     c.aCombos.forEach(([a, w]) => combo(a, att.id, w));
     if (c.tenaille && att.camp === 'h') S.stats.tenailles++;
-    log(`${qui} · d20 ${label}${A.auto ? '' : ` + ${A.mod} = ${k + A.mod}`} : ${NOM_RESULTAT[g]} · ${n} dégâts${c.mult > 1 ? ` (×${c.mult})` : ''}`, att.camp === 'e' ? 'ennemi' : '');
+    log(`${qui} · d20 ${label}${A.auto ? '' : ` ${mod < 0 ? '−' : '+'} ${Math.abs(mod)} = ${k + mod}`} : ${NOM_RESULTAT[g]} · ${n} dégâts${c.mult > 1 ? ` (×${c.mult})` : ''}`, att.camp === 'e' ? 'ennemi' : '');
     blesser(cible, n, att.id, { sansFaiblesse: true, melee: A.melee, sansMult: true });
     rage(att, lire('rage.gain')); rage(cible, lire('rage.gain'));
     if (!cible.mort && !cible.ko) {
@@ -569,7 +576,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const autres = [...S.unites.filter((u) => !u.mort && !u.ko && u !== cible), ...S.tonneaux.filter((b) => b !== cible), ...enclumes()];
     const sim = simulerPoussee(trame, src, cible, longueur, { obstacles: autres, surGlace: (x, y) => S.surfaces[cle(x, y)]?.t === 'glace' });
     log(`${src.nom} ${o.attire ? 'attire' : o.proj ? 'projette' : 'pousse'} ${estUnite ? cible.nom : 'le tonneau'} de ${metres(sim.parcouru)} m.`, src.camp === 'e' ? 'ennemi' : '');
-    ev({ type: 'poussee', id: cible.id, tonneau: !estUnite, chemin: sim.chemin.map((p) => ({ ...p })) });
+    ev({ type: 'poussee', id: cible.id, tonneau: !estUnite, chemin: sim.chemin.map((p) => ({ ...p })), chute: sim.chute });
     let vu = surfaceA(cible);
     for (const p of sim.chemin) {
       cible.x = p.x; cible.y = p.y;
@@ -595,8 +602,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         cible.x = p.x; cible.y = p.y;
         ev({ type: 'place', id: cible.id, x: p.x, y: p.y });
       }
+    } else if (sim.arret === 'chute') {
+      // poussé du haut d'un plateau : 10 par niveau de chute (3 m), et À terre (FIGHT_RULES, la hauteur, à l'essai)
+      const n = 10 * Math.max(1, sim.chute);
+      log(`${cible.nom} tombe de ${Math.max(1, sim.chute) * NIVEAU_M} m : ${n} dégâts, et À terre.`, cible.camp === 'h' ? 'mauvais' : 'bon');
+      blesser(cible, n, src.id);
+      if (!cible.mort && !cible.ko) cible.st.aTerre = { par: parHeros };
     } else if (sim.arret && !(o.attire && sim.heurte === o.attire)) {      // attiré jusqu'au lanceur : il arrive, sans choc
-      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +${lire('poussee.degatsMur')}.`);
+      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : sim.heurte?.falaise ? 'la falaise' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +${lire('poussee.degatsMur')}.`);
       if (sim.heurte === S.enclume && S.enclume.par !== parHeros) combo(S.enclume.par, parHeros, 'poussé contre l’enclume');
       blesser(cible, lire('poussee.degatsMur'), src.id);
       if (o.proj && !cible.mort && !cible.ko) { cible.st.aTerre = { par: parHeros }; log(`${cible.nom} est À terre.`, 'muet'); }
@@ -992,7 +1005,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       let pres = Infinity, voit = false;
       for (const h of herosVivants()) { const dd = dist(p, h); pres = Math.min(pres, dd); if (!voit && dd <= 8 && vue(trame.salle, p, h)) voit = true; }
       const atteint = frappeurs.filter((h) => dist(p, h) <= h.vitesse + CONTACT).length;
-      return (voit ? Math.abs(pres - 4) * 3 + (pres < 4 ? 6 : 0) : 100 + pres) + atteint * 8 + dg(p.x, p.y) * 4 + cout * 0.15;
+      // (la hauteur : un archer la garde, +2 au d20 et caché à qui recule ; il ne la quitte que s'il n'y a rien à viser de là-haut)
+      return (voit ? Math.abs(pres - 4) * 3 + (pres < 4 ? 6 : 0) : 100 + pres) + atteint * 8 - niveauA(trame.salle, p.x, p.y) * 10 + dg(p.x, p.y) * 4 + cout * 0.15;
     }, 3);
     if (e.mort || S.resultat) return;
     const A = attaqueEnnemi(e);

@@ -47,6 +47,7 @@ Les coups d'équipe | deux classes côte à côte dépensent leur action ensembl
 ## À trancher et à faire
 - ? Le mode de tour, les PV et la durée d'un combat #26 @équipe
 - ? Des cases, ou une distance libre en mètres (l'essai du terrain) #26 @équipe
+- ? La hauteur, à l'essai (comme BG3) : des plateaux et leurs falaises, des rampes et des échelles, +2 au d20 d'en haut, −2 d'en bas, la vue coupée par le rebord, et les chutes (10 par niveau, À terre) ; deux salles pour l'essayer, la butte et le col (deux fois plus grand) @Baba
 - La grille des combos, classe par classe #27
 - Ce que montre l'aperçu d'un combo #28
 - Un deuxième combat d'essai avec les quatre classes choisies #29
