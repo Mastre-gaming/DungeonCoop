@@ -29,7 +29,7 @@ Play one fight of `FIGHT_RULES.md` with real dice before any code, **once in eac
 7 4 . . . . . . g . #      g grunt  a archer  B brute  L leader
 8 _ _ _ _ _ _ _ _ _ _
 ```
-**Goal: defeat the leader** (the rest flee).
+**Goal: defeat every enemy**, the leader included.
 
 ## Test heroes (level 1, built with `CLASS_TEMPLATE.md`; test classes only)
 Each friend will design their own class; these exist so the rules can be played now. Team moves unlock at level 6, so they're left out of this level 1 test.
