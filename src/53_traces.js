@@ -198,7 +198,7 @@ export function selfTest(t) {
     'les sentiers : très usé vers le lieu le plus actif des 14 derniers jours, l’herbe reprend là où personne ne va (le vieux travail ne compte plus)');
   t.ok(Object.values(usures([], jour)).every((v) => v === 1), 'personne n’a travaillé : les sentiers restent comme ils sont');
   t.eq(grossesMissions(issues).map((i) => i.number), [5, 3, 1, 6], 'un étendard par grosse mission rentrée, le plus ancien d’abord (pas les M, ni les L en cours)');
-  t.ok(place(0).x < place(2).x && place(1).x > place(0).x && place(0).y === place(1).y && place(24).y !== place(0).y && place(72) === null,
+  t.ok(place(2).x < place(0).x && place(3).x > place(1).x && place(1).x > place(0).x && place(0).y === place(1).y && place(24).y !== place(0).y && place(72) === null,
     'les étendards : à gauche puis à droite de la route, en s’éloignant de la porte, rang après rang');
   // le sol : moins de terre là où personne ne va, plus là où on va tout le temps (et jamais dans l'emprise d'un lieu)
   const canvas = (u0) => { const c = composerSol(images, () => u0); return c.getContext('2d').getImageData(0, 0, c.width, c.height).data; };
