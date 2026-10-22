@@ -53,7 +53,7 @@ async function demarrer() {
   const alea = query.has('graine') || query.has('test') ? graine(Number(query.get('graine')) || 20261018) : Math.random;
   // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
   const equipe = equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (la classe d'un autre joueur : pas pour moi)
-  const creer = (eq, infini = null) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null, equipe: eq, alea, infini });
+  const creer = (eq, infini = null) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null, equipe: eq, alea, infini, victoire: SALLE.VICTOIRE ?? 'chef' });
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.
   // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)
@@ -67,7 +67,7 @@ async function demarrer() {
 
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini') });
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();

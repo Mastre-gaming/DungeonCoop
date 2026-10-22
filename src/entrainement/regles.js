@@ -169,14 +169,15 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
 // ennemis : le groupe d'une salle du donjon, [{ id, type, x, y }] (type : une clé d'ENNEMIS) ; sans lui, les 7 du kit D1
-// placés par departs.ennemis. Victoire : le chef vaincu s'il y en a un (les autres s'enfuient), sinon tous les ennemis.
-export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null }) {
+// placés par departs.ennemis. victoire : 'chef' (le chef vaincu s'il y en a un, les autres s'enfuient ; sinon tous les ennemis)
+// ou 'tous' (tous les ennemis vaincus, chef compris : les salles de salles.js).
+export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null, victoire = 'chef' }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
   // --- L'état (des données seulement : on peut le copier pour « Annuler ») ---------------------------------------
   const S = {
-    mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], enclume: null, surfaces: {}, journal: [], evenements: [],
+    mode, victoire, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], enclume: null, surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
     heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
     infini: infini ? { manche: infini.manche, xp: infini.xp, niveau: infini.niveau } : null,
@@ -334,8 +335,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (!herosVivants().some((x) => !x.familier)) finir('defaite');
     } else {
       u.mort = true; ev({ type: 'ko', id: u.id });
-      log(u.type === 'chef' ? 'Le chef est vaincu ! Les autres s’enfuient.' : `${u.nom} est vaincu.`, 'bon');
-      if (u.type === 'chef' || !ennemisVivants().length) finir('victoire');
+      const parChef = u.type === 'chef' && S.victoire !== 'tous';
+      log(parChef ? 'Le chef est vaincu ! Les autres s’enfuient.' : `${u.nom} est vaincu.`, 'bon');
+      if (parChef || !ennemisVivants().length) finir('victoire');
     }
   }
   function finir(r) {
@@ -1356,6 +1358,6 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
+    _: { attaquer, blesser, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
   };
 }

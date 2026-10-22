@@ -13,6 +13,9 @@
 // La butte et le col (?salle=butte|col) ajoutent la hauteur (FIGHT_RULES, à l'essai, comme dans Baldur's Gate 3) : des
 // plateaux d'un ou deux niveaux de 3 m, des falaises qu'on ne franchit que par une rampe ou une échelle, +2 au d20
 // d'en haut, la vue coupée par le rebord, et les chutes (geometrie.js). Le col est deux fois plus grand (34 × 26).
+//
+// Dans ces salles, on gagne quand tous les ennemis sont vaincus, chef compris (VICTOIRE) : le chef n'y fait pas fuir les
+// autres. On les choisit à l'accueil du terrain (LISTE), ou par l'adresse.
 import { T } from '../01_plan.js';
 import { FACE } from './geometrie.js';
 
@@ -172,6 +175,8 @@ const SALLES = {
   },
 };
 export const NOMS = Object.keys(SALLES);
+// pour l'accueil du terrain : chaque salle, son nom et sa question
+export const LISTE = NOMS.map((id) => ({ id, nom: SALLES[id].nom, idee: SALLES[id].idee }));
 
 // Les rangées de troncs d'un bois : du bas du rectangle vers le haut, tant que la cime (≈ 3,3 cases au-dessus du pied)
 // reste dans le rectangle ; au moins une. Ce qui bloque monte jusqu'au haut des cimes : on ne cache personne dessous.
@@ -356,7 +361,7 @@ export function construire(id) {
   }
 
   return {
-    id, nom: S.nom, idee: S.idee, L, H, ZONE,
+    id, nom: S.nom, idee: S.idee, L, H, ZONE, VICTOIRE: 'tous',
     salle: () => ({ l: L, h: H, obstacles, relief, rampes }),
     DEPARTS: S.departs, ENNEMIS: S.ennemis ?? null, TONNEAUX: S.tonneaux ?? [], FLAQUE: null, SURFACES: S.surfaces ?? [],
     composerSol, composerDecor,
