@@ -94,6 +94,9 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Technique (`axe: technique`) | la forge | les outils de l'équipe |
 | Le camp (`axe: camp`, ajouté le 18 oct) | **le camp tout entier** (pas de bâtiment) | à chaque niveau, le camp se modernise : son design graphique, sa vie (les niveaux sont à proposer, puis à choisir) |
 
+### Le plan d'agrandissement par quartiers (proposition du 22 oct, à valider)
+Le camp se range en cinq quartiers : le cœur du camp (la place du village, le tableau), le savoir au nord (l'observatoire, la bibliothèque), les artisans à l'ouest (l'atelier, la forge), les héros à l'est (le terrain, l'armurerie), et, **hors les murs**, au sud du pont-levis, **le faubourg des fêtes** (le théâtre des récits, l'estrade). La grande muraille ne bouge pas ; le camp grandit vers le nord (42 × 77 cases). Quatre portes (sud, ouest, est, nord), six emplacements pour les prochains bâtiments, et six chemins qui partent dans la forêt pour les départs des prochaines missions. Le détail et le contrôle : `design/camp/plans/PLAN_AGRANDI.fr.md` et `plan_agrandi.py`. Une fois validé, il remplace le plan des clairières ci-dessous.
+
 ### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
 - **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
 - **Trois clairières de deux lieux, séparées par des bois,** chacune regroupant des axes qui vont ensemble :
