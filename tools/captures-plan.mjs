@@ -26,7 +26,7 @@ try {
   for (const nom of noms.length ? noms : Object.keys(VUES)) {
     const v = VUES[nom];
     const page = await ouvrir(srv.url, nom === 'carte' ? 'visite&heure=12:00&meteo=beau&saison=' + (process.env.SAISON ?? 'ete') : 'spot=apparition&freeze&murs=100&heure=12:00&meteo=beau&saison=' + (process.env.SAISON ?? 'ete'));
-    if (process.env.NIV && nom !== 'xx') await page.eval(`(['histoire', 'level', 'art', 'archives', 'son', 'infirmerie'].forEach((id) => dbg.lieux.forcer(id, ${Number(process.env.NIV)})), 1)`);
+    if (process.env.NIV && nom !== 'xx') await page.eval(`(['histoire', 'level', 'art', 'archives', 'son', 'infirmerie', 'classes', 'combat', 'interface', 'technique'].forEach((id) => dbg.lieux.forcer(id, ${Number(process.env.NIV)})), 1)`);
     if (nom !== 'carte') {
       const cible = typeof v[0] === 'string'
         ? await page.eval(`(() => { const z = dbg.camp.vivants.zones[${JSON.stringify(v[0])}]; return z ? [z.x / 32, z.y / 32 + ${v[1]}] : null; })()`)

@@ -158,7 +158,8 @@ function construire(lieu, niveau) {
   }
   const liste = NIVEAUX[lieu.id];
   if (!liste) return;
-  for (const [i, j] of pavesDe(lieu, niveau)) {   // une variante de dalle par case, toujours la même
+  // (le terrain d'entraînement n'est pas pavé : son sol est de la terre battue, demande du propriétaire du 22 oct)
+  for (const [i, j] of lieu.id === 'combat' ? [] : pavesDe(lieu, niveau)) {   // une variante de dalle par case, toujours la même
     const sprite = rendu.sprite(images.tableau, 'tableau', T, T);
     e.sprites.push({ sprite, p: { sx: ((i + 5) * 7 + (j + 5) * 13) % 8, sy: 0 }, x: o.x + i * T, y: o.y + j * T, pied: DALLES });
   }

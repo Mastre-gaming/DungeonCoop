@@ -164,7 +164,9 @@ for nom, idj, f, seed in LIEUX:
                 if bas[x_] < 0: x_ += 1; continue
                 x1_ = x_ + 1
                 while x1_ < w and bas[x1_] >= 0 and abs(int(bas[x1_]) - int(bas[x1_ - 1])) <= 4: x1_ += 1
-                if x1_ - x_ >= 6: bloque.append([int(x_ + 1), int(bas[x_:x1_].max() - 7), int(x1_ - x_ - 2), 8])
+                if x1_ - x_ >= 6:
+                    haut_ = min(64, int(bas[x_:x1_].max() - min(np.nonzero(objet[:, k_])[0].min() for k_ in range(x_, x1_))))   # le corps de l'objet (64 px au plus), pas seulement son pied : on ne le traverse pas par le côté
+                    bloque.append([int(x_ + 1), int(bas[x_:x1_].max() - max(haut_, 8) + 1), int(x1_ - x_ - 2), max(haut_, 8)])
                 x_ = x1_
         for pts in composantes(objet):
             ys = [p[0] for p in pts]; xs = [p[1] for p in pts]
