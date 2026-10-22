@@ -113,6 +113,15 @@ export async function selfTest(t, game) {
     t.eq(C.S.journal.filter((l) => l.t.includes('Frappe du chef')).length, 2, 'au 3e tour, le chef frappe une zone : les deux héros proches sont visés');
   }
   {
+    // la victoire : tous les ennemis vaincus, le chef compris (#260) ; un critique assuré pour ne dépendre d'aucun dé
+    const C = neuf(), b = trouver(C, 'brute'), A = { ...C._.attaqueHeros(CAPACITES.fracas), auto: true }, chef = C.U('chef');
+    C.commencer();
+    chef.pv = 1; C._.attaquer(b, chef, A);
+    t.ok(chef.mort && !C.S.resultat && C.ennemisVivants().length === 6, 'le chef tombe : le combat continue, les six autres ennemis restent');
+    for (const e of C.ennemisVivants()) { e.pv = 1; C._.attaquer(b, e, A); }
+    t.eq(C.S.resultat, 'victoire', 'le dernier ennemi tombe : victoire');
+  }
+  {
     const C = neuf();
     C.S.mode = 'equipe'; C.commencer();
     const b = trouver(C, 'brute');
@@ -164,7 +173,7 @@ export async function selfTest(t, game) {
     t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} : le combat va jusqu’au bout (${C.S.resultat} au round ${C.S.round}, ${Math.round(performance.now() - debut)} ms)`);
   }
 
-  t.eq(empreintes(), ['c2103c7f', 'a0437e3a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
+  t.eq(empreintes(), ['de314d1d', '839ecd4a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');

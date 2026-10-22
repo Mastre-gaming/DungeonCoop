@@ -169,7 +169,7 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
 // ennemis : le groupe d'une salle du donjon, [{ id, type, x, y }] (type : une clé d'ENNEMIS) ; sans lui, les 7 du kit D1
-// placés par departs.ennemis. Victoire : le chef vaincu s'il y en a un (les autres s'enfuient), sinon tous les ennemis.
+// placés par departs.ennemis. Victoire : tous les ennemis vaincus, le chef compris (#260).
 export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
@@ -332,8 +332,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (!herosVivants().some((x) => !x.familier)) finir('defaite');
     } else {
       u.mort = true; ev({ type: 'ko', id: u.id });
-      log(u.type === 'chef' ? 'Le chef est vaincu ! Les autres s’enfuient.' : `${u.nom} est vaincu.`, 'bon');
-      if (u.type === 'chef' || !ennemisVivants().length) finir('victoire');
+      log(u.type === 'chef' ? 'Le chef est vaincu !' : `${u.nom} est vaincu.`, 'bon');
+      if (!ennemisVivants().length) finir('victoire');
     }
   }
   function finir(r) {

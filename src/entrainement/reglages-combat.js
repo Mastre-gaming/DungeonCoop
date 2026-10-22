@@ -35,7 +35,7 @@ export const DEFS = [
   N('ennemis.sbire', 'difficulte', 2, 'Sbires', '', 3, 0, 8, 1),
   N('ennemis.archer', 'difficulte', 2, 'Archers', '', 2, 0, 6, 1),
   N('ennemis.brute', 'difficulte', 2, 'Brutes ennemies', '', 1, 0, 3, 1),
-  N('ennemis.chef', 'difficulte', 2, 'Chef (0 : on gagne quand tous sont vaincus)', '', 1, 0, 1, 1),
+  N('ennemis.chef', 'difficulte', 2, 'Chef (0 : sans chef)', '', 1, 0, 1, 1),
   N('heros.pv', 'difficulte', 2, 'Santé des héros', '×', 1, 0.25, 3, 0.05),
   N('degats.heros', 'difficulte', 2, 'Dégâts des héros', '×', 1, 0.25, 3, 0.05),
   N('degats.ennemis', 'difficulte', 2, 'Dégâts des ennemis', '×', 1, 0.25, 3, 0.05),
