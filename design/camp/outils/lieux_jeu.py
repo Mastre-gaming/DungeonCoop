@@ -16,6 +16,7 @@ ns = {'__name__': 'lieux_niveaux_jeu'}
 src = open(os.path.join(ICI, 'lieux_niveaux.py'), encoding='utf-8').read().split('def planche_apercu')[0]
 exec(compile(src, 'lieux_niveaux.py', 'exec'), ns)
 
+ns['composer'].cache['tavern'] = ns['lire'](os.path.join(RACINE, 'design', 'camp', 'pieces', 'tavern-deco.png'))   # [LPC] Tavern (bluecarrot16, CC-BY-SA 3.0) : chopes, assiettes, tonneaux, bannières, chandelles
 MODE, PROF = ['plein'], [0]
 Toile = lieux_dessin.Toile
 for nom in ('px', 'ombre', 'lpc', 'sprite'):
@@ -144,11 +145,18 @@ def centre(n):
             t.px(x_, y_, B0)
             if i % 12 == 6: t.r(x_ - 1, y_ + 1, 3, 3, OUT_); t.r(x_, y_ + 1, 1, 2, COUL[k % len(COUL)]); k += 1
     for a, b in zip(postes, postes[1:] + postes[:1]): guirlande(a, b)
+    # la table garnie : des chopes, un pichet, du pain, du fromage, une chandelle, un jeu de dames
+    V = 'tavern'
+    for (sx_, sy_, x_, y_) in ((2, 17, 19.05, 6.0), (0, 17, 19.55, 6.15), (6, 17, 20.1, 5.95), (4, 25, 19.2, 6.55), (0, 25, 19.85, 6.6), (1, 11, 20.3, 6.3), (9, 2, 19.5, 6.95)):
+        t.lpc(V, sx_, sy_, 1, 1, x_, y_)
+    # des tonneaux et des bouteilles près de l'estrade ; deux bannières aux couleurs de la troupe de chaque côté du rideau
+    t.lpc(V, 1, 1, 2, 2, 0.45, 5.0); t.lpc(V, 0, 0, 1, 2, 1.35, 4.85); bloc.append([20, 5.0 * 32 + 40, 80, 20])
     # l'estrade du barde, à gauche du feu : un plancher de bois, sa face à poteaux, un rideau rouge derrière
     ns['rideau'](t, 130, 84, 74, 150)
     ns['scene'](t, 130, 90, 150, 176, 188, False)
     for s_ in (-1, 1): t.lpc(D, 13, 0, 1, 1, (130 + s_ * 66) / 32 - 0.5, 3.7, s_ > 0)
     bloc.append([40, 168, 180, 22])
+    t.lpc(V, 12, 41, 1, 2, 1.05, 2.0); t.lpc(V, 14, 41, 1, 2, 6.85, 2.0)
     return t
 ns['centre'] = centre
 

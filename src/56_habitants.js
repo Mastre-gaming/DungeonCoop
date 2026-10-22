@@ -34,9 +34,10 @@ const BETES = [
 // eux, sont posés par 24_radio.js.
 const SCENE = [256, 224];
 const GESTES = { estoc: [4, 8, 8], sort: [0, 7, 5] };
+// (le tambour et la flûte viennent de « [LPC] Tavern » de bluecarrot16 : leurs animations sont dans la planche, rangée 14 pour le tambour, 6 pour la flûte)
 const TROUPE = [
-  { planche: 'hab-paysan', x: 98, y: 168, geste: 'estoc' }, { planche: 'hab-lectrice', x: 124, y: 160, geste: null },
-  { planche: 'hab-badaud1', x: 182, y: 168, geste: 'sort', dec: 0.4 }, { planche: 'hab-fermiere', x: 206, y: 160, geste: 'sort', dec: 1.1 },
+  { planche: 'hab-tambour', x: 98, y: 168, rang: 14, images: 6, fps: 5 }, { planche: 'hab-lectrice', x: 124, y: 160, geste: null },
+  { planche: 'hab-flutiste', x: 182, y: 168, rang: 6, images: 8, fps: 6, dec: 0.4 }, { planche: 'hab-fermiere', x: 206, y: 160, geste: 'sort', dec: 1.1 },
 ];
 const troupe = [];
 const gens = [], betes = [];
@@ -101,7 +102,7 @@ export function update(dt) {
     o.t += dt;
     o.sprite.cacher(cache); o.ombre.cacher(cache);
     if (cache) continue;
-    const g = o.geste && GESTES[o.geste];
+    const g = o.rang != null ? [o.rang - DIRS.bas, o.images, o.fps] : o.geste && GESTES[o.geste];
     const rang = g ? g[0] + DIRS.bas : MARCHE + DIRS.bas, col = g ? Math.floor(o.t * g[2]) % g[1] : 0;
     o.sprite.poser(SCENE[0] + o.x - 32, SCENE[1] + o.y - 60, SCENE[1] + o.y, col * 64, rang * 64); o.ombre.poser(SCENE[0] + o.x, SCENE[1] + o.y - 1);
   }
