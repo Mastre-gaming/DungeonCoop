@@ -14,9 +14,9 @@ const VUES = {
   nord: [21, -32, 0], fetes: ['fetes', 1.5, 0], theatre: [21, -40, -2],
   ouest: [-16, 4, 0], campement: ['chasseur', 1.5, 0], ruisseau: [-24, -4, 0],
   est: [53, 8, 0], etang: ['etang', 3, 0], ferme: ['ferme', 1.5, 0],
-  porteN: [21, -27, 0], porteO: [4, 7, 0], porteE: [38, 11, 0],
+  porteN: [21, -27, 0], porteO: [6, 7, 0], porteE: [36, 11, 0],
   murO: [4, -10, 0], murE: [38, -10, 0], murN: [10, -22, 0], coinNO: [4, -22, -2], coinSO: [4, 28, -1],
-  archives: [34.5, -12, -1], estrade: [6, -36, -1], infirmerie: [36.5, 26, -2], recits: [21, -41, -2], cartes: [7.5, -17.5, -1], atelier: [7.5, -5.5, -1],
+  archives: [34.5, -12, -1], estrade: [6, -36, -1], armurerie: [35, 6, -2], infirmerie: [36.5, 26, -2], recits: [21, -41, -2], cartes: [7.5, -17.5, -1], atelier: [7.5, -5.5, -1],
   carte: null,
 };
 const args = process.argv.slice(2), noms = args.filter((a) => !a.startsWith('--'));

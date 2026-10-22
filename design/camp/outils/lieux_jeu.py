@@ -105,6 +105,7 @@ LIEUX = [('recits', 'histoire', ns['recits'], 1), ('cartes', 'level', ns['cartes
 # le sol plat : sous cette ligne (en px de la toile), ce qui n'est pas du sol de pavés mais plat (les gradins du théâtre)
 PLAT = {('recits', 3): 150, ('recits', 4): 150}
 BANDE = 16
+COLONNES = {'infirmerie'}   # ces lieux : l'obstacle suit tout le pied de ce qui est posé (et pas seulement le bas de chaque objet)
 
 def image(t): return np.array([[t.img[y][x] for x in range(t.W)] for y in range(t.H)], dtype=np.int32)
 
@@ -153,6 +154,18 @@ for nom, idj, f, seed in LIEUX:
         sol[..., 3] = np.where(gl, 255, 0)
         sol[objet & ~sol_g, 3] = 0            # sous un objet, du sol seulement là où il y en a vraiment
         pieces, bloque = [], []
+        if nom in COLONNES:   # tout le pied de ce qui est posé, par tronçons : le bâtiment, les lits, l'étal, le chaudron
+            bas = np.full(w, -1)
+            for x_ in range(w):
+                ys_ = np.nonzero(objet[:, x_])[0]
+                if len(ys_): bas[x_] = ys_.max()
+            x_ = 0
+            while x_ < w:
+                if bas[x_] < 0: x_ += 1; continue
+                x1_ = x_ + 1
+                while x1_ < w and bas[x1_] >= 0 and abs(int(bas[x1_]) - int(bas[x1_ - 1])) <= 4: x1_ += 1
+                if x1_ - x_ >= 6: bloque.append([int(x_ + 1), int(bas[x_:x1_].max() - 7), int(x1_ - x_ - 2), 8])
+                x_ = x1_
         for pts in composantes(objet):
             ys = [p[0] for p in pts]; xs = [p[1] for p in pts]
             y0, y1, x0, x1 = min(ys), max(ys) + 1, min(xs), max(xs) + 1
@@ -170,7 +183,7 @@ for nom, idj, f, seed in LIEUX:
                     im[..., :3] = A[by0:by1, cx0:cx1, :3]; im[..., 3] = np.where(masque[by0:by1, cx0:cx1], 255, 0)
                     pieces.append({'im': im, 'x': int(cx0), 'y': int(by0), 'pied': int(by1)})
                 k += 1
-            if (x1 - x0) >= 10 and len(pts) >= 80: bloque.append([int(x0 + 3), int(b - 8), int(x1 - x0 - 6), 8])
+            if nom not in COLONNES and (x1 - x0) >= 10 and len(pts) >= 80: bloque.append([int(x0 + 3), int(b - 8), int(x1 - x0 - 6), 8])
         donnees[idj].append({'lieu': nom, 'n': n, 'w': int(w), 'h': int(h), 'sol': sol, 'pieces': pieces, 'bloque': bloque})
 
 # la planche : le sol de chaque niveau (grand), puis les bandes, en rangées

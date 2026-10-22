@@ -151,11 +151,7 @@ function construire(lieu, niveau) {
   const complet = COMPLETS[lieu.id];
   if (complet) {
     const n = complet[Math.min(niveau, complet.length - 1)];
-    for (const [i, j] of n.dalles) {   // une variante de dalle par case, toujours la même
-      const v = ((i + 3) * 7 + (j + 3) * 13) % 8;
-      const sprite = rendu.sprite(images.armurerie, 'armurerie', T, T);
-      e.sprites.push({ sprite, p: { sx: v, sy: 6 }, x: o.x + i * T, y: o.y + j * T, pied: DALLES });
-    }
+    // (plus de dalles de pierre : le sol de l'armurerie est de la terre battue, dessinée avec le reste du sol, 01_plan.js)
     n.pieces.forEach(poserPiece);
     poser(e);
     return;

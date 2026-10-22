@@ -94,6 +94,17 @@ function dessiner(cle, p) {
     if (cle === 'nord') g.clearRect(N.porte[0] - z.x, 0, N.porte[1] - N.porte[0], z.h);
     else { const m = cle === 'ouest' ? O : E; g.clearRect(0, m.porte[0] - z.y, z.w, m.porte[1] - m.porte[0]); }
   }
+  // l'arche : le mur ouest ou est fini passe au-dessus de la route (on marche dessous : 45_murs.js, update)
+  if (mur.arche) {
+    const m = cle === 'ouest' ? O : E, ag = mur.arche.g, ha = m.porte[1] - m.porte[0];
+    ag.clearRect(0, 0, mur.arche.canvas.width, ha);
+    if (e.fini) {
+      poser(ag, `${cle} plein`, { x: z.x, y: m.porte[0] }, 0, m.porte[0], 2000, ha);
+      ag.fillStyle = '#2a2230';   // l'ombre des deux entrées de l'arche, de part et d'autre
+      for (const bx of [m.x - z.x, m.x + m.w - z.x - 3]) ag.fillRect(bx, 4, 3, ha - 8);
+    }
+    mur.arche.sprite.cacher(S.cache || !e.fini);
+  }
   // les flous préparés, à partir de l'image nette
   mur.couches.forEach((c, i) => {
     if (i) { c.g.clearRect(0, 0, z.w, z.h); c.g.filter = `blur(${FLOUS[i]}px)`; c.g.drawImage(mur.canvas, 0, 0); c.g.filter = 'none'; }
@@ -140,15 +151,24 @@ export function init(game, options) {
     const sentier = P[`${cle} sentier`];
     // (le sentier de la porte est dessiné par le sol du camp, 01_plan.js : la pièce de sentier de la maquette n'est plus posée)
     if (sentier) mur.sentier = [];
+    if (cle !== 'nord') {
+      const m = cle === 'ouest' ? O : E, ha = m.porte[1] - m.porte[0];
+      const canvas = Object.assign(document.createElement('canvas'), { width: z.w, height: ha });
+      const sprite = rendu.sprite(canvas, `murs-arche-${cle}`, z.w, ha);
+      sprite.poser(z.x, DY + m.porte[0], DY + m.porte[1] + 3);
+      mur.arche = { canvas, g: canvas.getContext('2d'), sprite, op: 1 };
+      mur.arche.g.imageSmoothingEnabled = false;
+    }
     mur.k = 0; mur.voile = 0; mur.p = -1;
   }
   // le mur nord fini : la façade de la grande muraille (muraille.png), la porte au milieu de la porte nord, les tours à ses deux bouts
   {
-    const im = images.muraille, c = Object.assign(document.createElement('canvas'), { width: 1344, height: im.height }), g = c.getContext('2d');
+    const im = images.muraille, HG = ENTREE.muraille.pied - ENTREE.muraille.y + 6;   // (sans les chaînes du pont-levis, qui pendent sous la porte du sud : ici le pont est de l'autre côté)
+    const c = Object.assign(document.createElement('canvas'), { width: 1344, height: HG }), g = c.getContext('2d');
     g.imageSmoothingEnabled = false;
-    for (const [sx, sw, dx] of [[0, 356, 0], [112, 192, 356], [356, 248, 548], [604, 494, 796], [1290, 54, 1290]]) g.drawImage(im, sx, 0, sw, im.height, dx, 0, sw, im.height);
+    for (const [sx, sw, dx] of [[0, 356, 0], [112, 192, 356], [356, 248, 548], [604, 494, 796], [1290, 54, 1290]]) g.drawImage(im, sx, 0, sw, HG, dx, 0, sw, HG);
     const base = N.pied + DY, haut = ENTREE.muraille.pied - ENTREE.muraille.y;
-    const sprite = rendu.sprite(c, 'mur-nord-grand', 1344, im.height);
+    const sprite = rendu.sprite(c, 'mur-nord-grand', 1344, HG);
     sprite.poser(0, base - haut, base);
     MURS.nord.grand = { sprite, base, voile: 0, canvas: c };
   }
@@ -186,6 +206,13 @@ export function update(dt) {
     // en entrant, d'un coup ; en sortant, en douceur (comme la grande muraille)
     mur.voile = loge ? 1 : mur.voile * (1 - suivre); if (mur.voile < 0.002) mur.voile = 0;
     appliquer(mur);
+    if (mur.arche && h) {
+      const m = mur === MURS.ouest ? O : E, dessous = h.x > m.x - 16 && h.x < m.x + m.w + 16 && h.y > DY + m.porte[0] - 8 && h.y < DY + m.porte[1] + 8;
+      mur.arche.op += ((dessous && !visite ? 0.4 : 1) - mur.arche.op) * suivre;
+      const mat = mur.arche.sprite.mesh.material, transp = mur.arche.op < 0.999;
+      if (mat.transparent !== transp) { Object.assign(mat, { transparent: transp, alphaTest: transp ? 0.01 : 0.5, depthWrite: !transp }); mat.needsUpdate = true; }
+      mat.opacity = mur.arche.op;
+    }
     if (mur.grand) {
       // derrière le mur nord (dehors, au nord), il cache le héros : il s'estompe quand on est dans son ombre, comme la façade sud vue de dedans
       const G = mur.grand, derriere = G.base - h.y, cibleG = visite ? 0 : Math.max(0, Math.min(1, 1 - (derriere - 6 * T) / (3 * T))) * (derriere > 0 ? 1 : 0);

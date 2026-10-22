@@ -5,6 +5,7 @@
 // Tout est en cases de 32 px. Une case (x, y) va de (x*T, y*T) à ((x+1)*T, (y+1)*T). L'origine est restée celle d'avant :
 // la première muraille va de x 0 à 42 et son mur est à y 31 ; le camp monte donc dans les y négatifs, et le monde aussi.
 import PLAN from './data/plan.json';
+import ARMURERIE_JEU from './data/armurerie.json';
 
 export const T = 32;
 // Le monde, en cases : x de X0 à X1, y de Y0 à Y1 (le sud, au-delà de la muraille, est comme avant : jusqu'à y = 38).
@@ -26,6 +27,13 @@ const NOMS = {
 };
 const dePlan = (p) => ({ porte: [p.porte[0] - 1, p.porte[1] - 1], emprise: p.emprise, dehors: p.clairiere === 'dedans' ? null : p.clairiere });
 export const LIEUX = Object.keys(NOMS).map((id) => ({ id, lieu: NOMS[id][0], axe: NOMS[id][1], ...dePlan(PLAN.lieux.find((l) => l.id === id)) }));
+// Le sol de l'armurerie (le terrain d'entraînement et ses abords) : de la terre battue, plus de dalles de pierre (demande du propriétaire, 22 oct).
+// Ce sont les cases où ses dalles se posaient, aux niveaux d'avant : on y met de la terre, qui se dessine avec le reste du sol.
+const SOL_ARMURERIE = new Set();
+{
+  const [ex, ey] = LIEUX.find((l) => l.id === 'classes').emprise;
+  for (const n of ARMURERIE_JEU.niveaux) for (const [i, j] of n.dalles) SOL_ARMURERIE.add(`${ex + i},${ey + j}`);
+}
 // Les archives (la tente, puis la bibliothèque) : un objet du camp, pas un des huit lieux (src/27_archives.js).
 export const ARCHIVES = (({ emprise, porte }) => ({ emprise, porte }))(PLAN.lieux.find((l) => l.id === 'archives'));
 // Les emplacements pour les prochains bâtiments (6 x 5), trois par clairière et trois dans le camp.
@@ -89,6 +97,7 @@ const bruit = (x, y) => Math.sin(x * 2.9 + y * 1.7) * 0.5 + Math.sin(x * 5.3 - y
 export function terre(i, j) {
   const [sx0, sy0, sx1, sy1] = ENCLOS.sol;
   if (i >= sx0 && i <= sx1 && j >= sy0 && j <= sy1) return true;         // le sol de l'enclos
+  if (SOL_ARMURERIE.has(`${i},${j}`) || SOL_ARMURERIE.has(`${i - 1},${j}`) || SOL_ARMURERIE.has(`${i},${j - 1}`) || SOL_ARMURERIE.has(`${i - 1},${j - 1}`)) return true;
   for (const { x, y, r } of PLACES) if (Math.hypot(i - x, j - y) <= r) return true;
   for (const [cx, cy, r] of COURS) if (Math.hypot(i - cx, j - cy) <= r) return true;
   for (const ch of CHEMINS) if (distChemin(ch, i, j) <= 1.05) return true;
