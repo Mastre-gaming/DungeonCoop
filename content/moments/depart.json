@@ -1,0 +1,26 @@
+{
+  "_lisez_moi": "Les textes du départ du camp vers la tour (Miro « Le prologue » : le contrat au tableau, puis le départ). Ils sont à Paolitus (axe Histoire) : remplacer chaque [crochet]. Une réplique : 4 lignes courtes au plus (STORY_STRUCTURE.md). {heros} : le nom du héros qui a trouvé le contrat ; {joueur} : le nom de son joueur ; {partants} : les noms de ceux qui partent. Les boutons et la question du vote sont des textes d'interface, à changer aussi si tu veux.",
+  "contrat": {
+    "titre": "[Le titre du contrat]",
+    "texte": [
+      "[Ligne 1 du contrat : ce qu'on demande]",
+      "[Ligne 2 : la tour, ce qu'il y a là-haut]",
+      "[Ligne 3 : la récompense]"
+    ],
+    "signature": "[Qui signe le contrat]"
+  },
+  "convocation": "[Ce que crie {heros} pour réunir le village, contrat en main]",
+  "discours": [
+    "[Réplique 1 : {heros} montre le contrat au village]",
+    "[Réplique 2 : la tour, ses trois étages et son Gardien]",
+    "[Réplique 3 : le plan pour y monter]",
+    "[Réplique 4 : on tente le contrat ? On vote]"
+  ],
+  "vote": {
+    "question": "Tenter le contrat ?",
+    "pour": "J'en suis",
+    "contre": "Je reste au camp"
+  },
+  "accepte": "[Ce que dit {heros} quand le groupe accepte : {partants} partent]",
+  "refuse": "[Ce que dit {heros} quand personne ne part : le contrat reste au tableau]"
+}
