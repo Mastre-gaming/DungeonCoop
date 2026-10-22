@@ -12,6 +12,7 @@ import { CAPACITES, HEROS, ENNEMIS, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIP
 import { monGithub } from './joueur.js';
 import { CONTACT, metres } from './geometrie.js';
 import { calculerBilan } from './bilan.js';
+import * as REG from './reglages-combat.js';
 import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
@@ -196,7 +197,16 @@ export const adresseEquipe = (equipe, mode) => `?equipe=${equipe.join(',')}&mode
 const notes = () => Object.fromEntries([...dom.fin.querySelectorAll('input')].map((i) => [{ fun: 'Fun sur 10', lent: 'Ce qui a semblé lent', cases: 'Sans cases', regle: 'Une règle à changer' }[i.name], i.value.trim()]));
 
 // --- Le déroulé -------------------------------------------------------------------------------------------------
-function vider() { const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true; }
+function vider() {
+  const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true;
+  // le réglage « finir la phase quand plus personne n'a rien à faire » (seul ; à plusieurs, c'est l'hôte : multi.js)
+  if (!reseau && REG.oui('phase.autoFin') && combat.rienAFaire()) {
+    banniere('Plus rien à faire : fin de la phase');
+    ui.sel = null; ui.cap = null; ui.annuler = []; ui.portee = null;
+    combat.finPhaseHeros();
+    vider();
+  }
+}
 function commencer() {
   if (reseau) return void (reseau.hote && reseau.commencer());
   const mode = dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe';
@@ -331,7 +341,12 @@ export function update() {
   const libre = !vue.occupe();
   if (libre && ui.etaitOccupe) ui.sale = true;          // la file vient de finir : on redessine (boutons, zone de marche)
   ui.etaitOccupe = !libre;
-  if (combat.S.phase === 'heros' && combat.S.debutPhase) dom.chrono.textContent = `phase des héros ${duree(ui.horloge() - combat.S.debutPhase)}`;
+  if (combat.S.phase === 'heros' && combat.S.debutPhase) {
+    const ecoule = ui.horloge() - combat.S.debutPhase, limite = REG.lire('phase.minuteur') * 1000;
+    dom.chrono.textContent = limite > 0 ? `phase des héros · reste ${duree(Math.max(0, limite - ecoule))}` : `phase des héros ${duree(ecoule)}`;
+    // le minuteur de la phase des héros (réglage) : seul, la phase finit toute seule ; à plusieurs, c'est l'hôte (multi.js)
+    if (limite > 0 && ecoule >= limite && !reseau && !vue.occupe() && !ui.fini) { banniere('Temps écoulé : fin de la phase'); finPhase(); }
+  }
   if (ui.fini && libre && dom.fin.hidden && !ui.finMontree) { ui.finMontree = true; montrerFin(false); }
   if (!ui.sale) return;
   if (!libre) {

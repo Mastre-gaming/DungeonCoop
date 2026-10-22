@@ -376,3 +376,8 @@ body [hidden] { display: none !important; }
 .bilan-table .tampon { margin-left: 6px; }
 
 #ouvrir-reglages kbd { color: var(--encre); }
+
+.reglage.simple { grid-template-areas: "pt lb lb" "pt cu cu" "pt df df"; }
+.reglage.simple input[type=checkbox] { grid-area: cu; justify-self: start; width: 18px; height: 18px; accent-color: var(--bois-clair); }
+.reglage.simple select { grid-area: cu; font: 500 .85rem var(--texte); background: #fffaf0; border: 2px solid var(--bois); color: var(--encre); padding: 1px 4px; }
+.reglages-groupe:not([open]) summary { opacity: .85; }

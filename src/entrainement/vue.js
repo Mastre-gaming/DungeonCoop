@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import { T } from '../01_plan.js';
 import PERSOS from './persos.json';
 import { CONTACT } from './geometrie.js';
-import { lire } from './reglages-combat.js';
+import { lire, surChangement } from './reglages-combat.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
 import { creerFilms, traction, ENCLUME as ENCLUME_FILM } from './films.js';
@@ -57,7 +57,8 @@ export const effets = () => fx;
 // La caméra : son centre (cx, cy), l'échelle affichée (s) qui glisse vers celle des crans (base × 2^(crans/4), #122),
 // le point de l'écran qui reste sous la souris pendant le zoom (ancre), la molette pas encore comptée (des petits pas).
 const cam = { s: 2, base: 2, crans: 0, ancre: null, molette: 0, cx: 0, cy: 0, cible: null, glisse: null };
-const CRANS = 4, MOLETTE = 100, ZOOM_MAX = 5, DOUCEUR_ZOOM = 12;
+const CRANS = 4, MOLETTE = 100, ZOOM_MAX = 5;      // (la douceur du zoom, le zoom de départ : réglages « Ressenti »)
+let zoomDemande = lire('feel.zoom');
 let marques = {};                      // ce que l'interface demande de montrer (voir dessinerMarques)
 // (une clé neuve : les barres sont maintenant montrées par défaut, sous les pieds ; l'ancien choix « cachées » ne compte plus)
 const CLE_PLAQUES = 'dungeoncoop:barres-terrain';
@@ -92,7 +93,7 @@ const STYLES = {
 };
 const STYLE_DEFAUT = 'percutant';
 // (en px d'écran : sans ça, au zoom normal, 1 px du monde ≈ 1 px d'écran, et la secousse du style Sobre ne se voyait pas)
-const ECRAN = 1.8, SECOUSSE_MAX = 14, RECUL_MAX = 12, SECOUSSE_DUREE = 0.32;
+const ECRAN = 1.8, SECOUSSE_MAX = 14, RECUL_MAX = 12;      // (la durée, la force de la secousse et le recul : réglages « Ressenti »)
 const calme = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 let style = STYLE_DEFAUT;
 let gel = 0, coup = null;                              // l'arrêt sur image restant (s) ; le dernier jet (attaque)
@@ -128,6 +129,8 @@ export function init(g, options) {
   calquePlaques = Object.assign(document.createElement('div'), { className: 'plaques-terrain' });
   calquePlaques.setAttribute('aria-hidden', 'true');
   document.body.append(calquePlaques);
+  // le zoom de départ réglé en plein jeu : la caméra y glisse
+  surChangement(() => { if (lire('feel.zoom') !== zoomDemande) { zoomDemande = lire('feel.zoom'); const [min, max] = bornesCrans(); cam.crans = Math.max(min, Math.min(max, zoomDemande)); } });
   try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); if (lu) { plaques.e = !!lu.e; plaques.h = !!lu.h; } } catch {}
 
   fx = creerEffets(rendu, images);
@@ -200,7 +203,7 @@ const bornesCrans = () => [Math.floor(CRANS * Math.log2(1 / cam.base)), Math.cei
 // La taille de l'écran a changé (ou le début) : l'échelle de base suit l'écran ; on garde ses crans.
 function ajusterCamera(premiere = false) {
   cam.base = echelleDeBase();
-  if (premiere) cam.crans = 0;
+  if (premiere) cam.crans = lire('feel.zoom');
   const [min, max] = bornesCrans();
   cam.crans = Math.max(min, Math.min(max, cam.crans));
   cam.s = echelleDe(cam.crans);
@@ -217,7 +220,7 @@ function glisserZoom(dt) {
   while (Math.abs(cam.molette) >= MOLETTE) { zoomer(cam.molette < 0 ? 1 : -1, cam.ancre?.x, cam.ancre?.y); cam.molette -= Math.sign(cam.molette) * MOLETTE; }
   const but = echelleDe(cam.crans);
   if (cam.s === but) return;
-  let e = Math.exp(Math.log(cam.s) + (Math.log(but) - Math.log(cam.s)) * (1 - Math.exp(-DOUCEUR_ZOOM * dt)));
+  let e = Math.exp(Math.log(cam.s) + (Math.log(but) - Math.log(cam.s)) * (1 - Math.exp(-lire('feel.zoomDouceur') * dt)));
   if (Math.abs(Math.log(but / e)) < 0.003) e = but;
   const avant = cam.ancre ? rendu.versMonde(cam.ancre.x, cam.ancre.y) : null;
   cam.s = e;
@@ -531,10 +534,10 @@ function impact(a, att, n, resultat, tombe) {
   for (const id of r.etincelles ?? []) fx.jouer(id, { x: a.x, y: a.y - 26 });
   if (calme) return;
   const ech = Math.max(0.5, canvas.clientWidth / rendu.vue.w);             // px d'écran par px du monde
-  secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids * ECRAN) / ech); secousse.t = 0;
+  secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids * ECRAN) * lire('feel.secousse') / ech); secousse.t = 0;
   if (att) {
     const dx = a.x - att.x, dy = a.y - att.y, l = Math.hypot(dx, dy) || 1;
-    a.recul = { x: dx / l, y: dy / l, n: Math.min(RECUL_MAX, r.recul * poids * ECRAN / ech), t: 0 };
+    a.recul = { x: dx / l, y: dy / l, n: Math.min(RECUL_MAX, r.recul * poids * ECRAN / ech) * lire('feel.recul'), t: 0 };
   }
   if (r.ralenti) { ralenti.k = r.ralenti.k; ralenti.reste = r.ralenti.d; }
   if (r.flash || r.traits || r.voile || r.zoom) {
@@ -600,7 +603,12 @@ function creerPlaque(u) {
   calquePlaques.append(el);
   return { el, barre, plein, chiffre, etats, pv: null, ko: null, cle: '' };
 }
-const plaqueVisible = (a) => plaques[a.camp] && !a.cache && !a.mort;
+// Les barres de vie (réglage « Ressenti ») : toujours (V et Maj+V les cachent par camp), au survol (survolé, choisi, ciblé, qui agit), ou jamais.
+const plaqueVisible = (a) => {
+  const mode = lire('feel.barres');
+  if (!plaques[a.camp] || a.cache || a.mort || mode === 2) return false;
+  return mode === 0 || a.id === marques.survolCible || a.id === marques.selection || a.id === marques.actif || !!marques.cibles?.includes(a.id);
+};
 // Une icône d'état : à l'échelle entière du pixel art (×2 de près, ×1 de loin), les tours qui restent en bas à droite.
 function iconeEtat(e) {
   const box = Object.assign(document.createElement('span'), { className: `etat-icone ${e.genre}` });
@@ -667,7 +675,7 @@ export function update(dtReel) {
   let ox = 0, oy = 0;
   if (secousse.a > 0) {
     secousse.t += dtReel;
-    const k = Math.max(0, 1 - secousse.t / SECOUSSE_DUREE), amp = secousse.a * k * k;
+    const k = Math.max(0, 1 - secousse.t / lire('feel.secousseDuree')), amp = secousse.a * k * k;
     ox = (Math.random() * 2 - 1) * amp; oy = (Math.random() * 2 - 1) * amp;
     if (k <= 0) secousse.a = 0;
   }

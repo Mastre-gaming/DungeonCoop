@@ -1,7 +1,8 @@
 // Le panneau de réglages du combat (R) : on règle les nombres du combat soi-même, sans demander à personne. Les valeurs
-// vivent dans reglages-combat.js ; ici, seulement l'affichage : des sections repliables, un curseur et un champ par valeur,
-// un point sur ce qui a changé, copier/coller la config, deux préréglages (A, B : la touche B passe de l'un à l'autre).
-// À plusieurs, seul l'hôte règle : les invités voient le panneau en lecture seule, « réglé par l'hôte ».
+// vivent dans reglages-combat.js ; ici, seulement l'affichage : des sections repliables, un curseur et un champ par valeur
+// (une case à cocher, une liste pour les autres), un point sur ce qui a changé, copier/coller la config, deux préréglages
+// (A, B : la touche B passe de l'un à l'autre). À plusieurs, seul l'hôte règle : les invités voient le panneau en
+// lecture seule, « réglé par l'hôte ».
 import * as REG from './reglages-combat.js';
 
 export const name = 'panneau-reglages';
@@ -19,13 +20,14 @@ const el = (tag, attrs = {}, ...enfants) => {
 };
 const lectureSeule = () => REG.estExterne();
 const decimales = (d) => (String(d.step).split('.')[1] ?? '').length;
+const affiche = (d, v) => v.toFixed(decimales(d));
 
 export function init(g, options) {
   ({ ihm } = options);
   construire();
   REG.surChangement(rafraichir);
   touches = (e) => {
-    if (e.target.closest?.('input, textarea') || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.closest?.('input, textarea, select') || e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.code === 'KeyR') basculer();
     else if (e.code === 'KeyB') permuter();
   };
@@ -47,7 +49,7 @@ function construire() {
     const defs = REG.DEFS.filter((d) => d.groupe === gr.id && d.etape <= REG.ETAPE_OUVERTE);
     if (!defs.length) return null;
     const bouton = el('button', { type: 'button', class: 'bouton-jeu discret petit', 'data-reinit': gr.id, onclick: (e) => { e.preventDefault(); REG.reinitialiser(gr.id); } }, 'Réinitialiser');
-    return el('details', { class: 'reglages-groupe', open: true, 'data-groupe': gr.id }, el('summary', {}, gr.titre, bouton), ...defs.map(rangee));
+    return el('details', { class: 'reglages-groupe', open: !!gr.ouvert, 'data-groupe': gr.id }, el('summary', {}, gr.titre, bouton), ...defs.map(rangee));
   }).filter(Boolean);
   dom.texte = el('textarea', { class: 'reglages-texte', rows: 5, hidden: true, spellcheck: 'false', 'aria-label': 'Config à coller (JSON)' });
   dom.valider = el('button', { type: 'button', class: 'bouton-jeu petit', id: 'appliquer-config', hidden: true, onclick: appliquerTexte }, 'Appliquer');
@@ -64,15 +66,32 @@ function construire() {
   if (aide) aide.append(' · ', el('kbd', {}, 'R'), ' réglages · ', el('kbd', {}, 'B'), ' préréglage A/B');
 }
 
+// Une rangée : un curseur et son champ (un nombre), une case (oui/non) ou une liste (un choix).
 function rangee(d) {
-  const curseur = el('input', { type: 'range', min: d.min, max: d.max, step: d.step, 'aria-label': d.label });
-  const champ = el('input', { type: 'number', min: d.min, max: d.max, step: d.step, 'aria-label': `${d.label} (valeur)` });
   const point = el('span', { class: 'point-change', title: 'Changé par rapport au défaut', 'aria-hidden': 'true' }, '●');
-  curseur.addEventListener('input', () => REG.regler(d.id, curseur.value));
-  champ.addEventListener('change', () => { REG.regler(d.id, champ.value); rafraichir(); });
-  const r = el('div', { class: 'reglage', 'data-id': d.id }, point, el('label', {}, d.label), curseur, champ, el('span', { class: 'unite' }, d.unite),
-    el('span', { class: 'defaut muet' }, `défaut ${d.def.toFixed(decimales(d))}`));
-  ligne.set(d.id, { d, curseur, champ, point, r });
+  const defaut = el('span', { class: 'defaut muet' }, `défaut ${d.type === 'bool' ? (d.def ? 'oui' : 'non') : d.type === 'choix' ? d.choix[d.def] : affiche(d, d.def)}${d.unite ? ` ${d.unite}` : ''}`);
+  const etiquette = el('label', {}, d.label);
+  let controles, montrer, r;
+  if (d.type === 'bool') {
+    const c = el('input', { type: 'checkbox', 'aria-label': d.label });
+    c.addEventListener('change', () => REG.regler(d.id, c.checked ? 1 : 0));
+    controles = [c]; montrer = (v) => { c.checked = v >= 0.5; };
+    r = el('div', { class: 'reglage simple', 'data-id': d.id }, point, etiquette, c, defaut);
+  } else if (d.type === 'choix') {
+    const c = el('select', { 'aria-label': d.label }, d.choix.map((t, k) => el('option', { value: k }, t)));
+    c.addEventListener('change', () => REG.regler(d.id, c.value));
+    controles = [c]; montrer = (v) => { c.value = String(v); };
+    r = el('div', { class: 'reglage simple', 'data-id': d.id }, point, etiquette, c, defaut);
+  } else {
+    const curseur = el('input', { type: 'range', min: d.min, max: d.max, step: d.step, 'aria-label': d.label });
+    const champ = el('input', { type: 'number', min: d.min, max: d.max, step: d.step, 'aria-label': `${d.label} (valeur)` });
+    curseur.addEventListener('input', () => REG.regler(d.id, curseur.value));
+    champ.addEventListener('change', () => { REG.regler(d.id, champ.value); rafraichir(); });
+    controles = [curseur, champ];
+    montrer = (v) => { if (document.activeElement !== champ) champ.value = affiche(d, v); curseur.value = v; };
+    r = el('div', { class: 'reglage', 'data-id': d.id }, point, etiquette, curseur, champ, el('span', { class: 'unite' }, d.unite), defaut);
+  }
+  ligne.set(d.id, { d, controles, montrer, point, r });
   return r;
 }
 
@@ -81,11 +100,9 @@ function rafraichir() {
   const seul = lectureSeule();
   dom.panneau.dataset.seul = String(seul);
   dom.hote.hidden = !seul;
-  for (const { d, curseur, champ, point, r } of ligne.values()) {
-    const v = REG.lire(d.id);
-    if (document.activeElement !== champ) champ.value = v.toFixed(decimales(d));
-    curseur.value = v;
-    curseur.disabled = champ.disabled = seul;
+  for (const { d, controles, montrer, point, r } of ligne.values()) {
+    montrer(REG.lire(d.id));
+    for (const c of controles) c.disabled = seul;
     point.style.visibility = REG.estChange(d.id) ? 'visible' : 'hidden';
     r.classList.toggle('change', REG.estChange(d.id));
   }

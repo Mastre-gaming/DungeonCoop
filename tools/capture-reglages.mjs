@@ -17,6 +17,13 @@ try {
   await page.eval("(() => { const set = (id, v) => { const c = document.querySelector('.reglage[data-id=\"' + id + '\"] input[type=range]'); c.value = v; c.dispatchEvent(new Event('input', { bubbles: true })); }; set('ennemis.pv', 0.5); set('ennemis.vitesse', 1.5); return 1; })()");
   await page.eval("dbg.advance(0.5), 1");
   await page.shot(path.join(SORTIE, 'reglages-1-panneau.png'));
+  // toutes les sections ouvertes : les règles (étape 2), puis le ressenti (étape 3), en bas du panneau
+  await page.eval("document.querySelectorAll('#reglages details').forEach((d) => { d.open = true; }), document.querySelector('#reglages').scrollTop = 0, 1");
+  await page.eval("(() => { const p = document.querySelector('#reglages'); const d = document.querySelector('details[data-groupe=\"hasard\"]'); p.scrollTop = d.offsetTop - 60; return 1; })()");
+  await page.shot(path.join(SORTIE, 'reglages-3-regles.png'));
+  await page.eval("(() => { const p = document.querySelector('#reglages'); p.scrollTop = p.scrollHeight; return 1; })()");
+  await page.shot(path.join(SORTIE, 'reglages-4-ressenti.png'));
+  await page.eval("document.querySelectorAll('#reglages details').forEach((d) => { d.open = ['rythme', 'difficulte'].includes(d.dataset.groupe); }), document.querySelector('#reglages').scrollTop = 0, 1");
   // la fin d'un combat joué d'un trait, et son bilan
   await page.eval("window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyR' })), 1");
   await page.eval(`(() => {

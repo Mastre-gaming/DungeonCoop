@@ -200,6 +200,8 @@ function surMessage(de, m) {
 function envoyerSalon() { party?.toAll({ t: 'salon', L, R: REG.instantane() }); ihm.redessiner(); }
 // L'hôte : les événements du combat à montrer ici, et à tous avec l'état.
 function diffuser() {
+  // le réglage « finir la phase quand plus personne n'a rien à faire »
+  if (hote && L.phase === 'combat' && REG.oui('phase.autoFin') && combat.rienAFaire()) { L.pret = []; combat.finPhaseHeros(); }
   const evs = combat.S.evenements.splice(0);
   vue.jouer(evs);
   ihm.etatRecu();
@@ -238,6 +240,9 @@ const adresseCamp = () => `./index.html?spot=combat&${hote ? 'hote' : 'code'}=${
 export function update(dt) {
   if (!party) return;
   party.update(dt);
+  // le minuteur de la phase des héros (réglage) : l'hôte finit la phase quand le temps est écoulé
+  const limite = REG.lire('phase.minuteur') * 1000;
+  if (hote && limite > 0 && L.phase === 'combat' && combat.S.phase === 'heros' && combat.S.debutPhase && !horloge && Date.now() - combat.S.debutPhase >= limite) { L.pret = []; combat.finPhaseHeros(); diffuser(); }
   for (const [id, c] of curseurs) if (!party.others.has(id)) { c.remove(); curseurs.delete(id); }
   for (const o of party.others.values()) {
     let c = curseurs.get(o.id);

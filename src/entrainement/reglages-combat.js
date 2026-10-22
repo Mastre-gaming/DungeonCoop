@@ -7,18 +7,82 @@
 const CLE = 'dungeoncoop:reglages-combat';
 
 export const GROUPES = [
-  { id: 'rythme', titre: 'Rythme et animations' },
-  { id: 'ennemis', titre: 'Ennemis' },
-  { id: 'soins', titre: 'Soins' },
+  { id: 'rythme', titre: 'Rythme et animations', ouvert: true },
+  { id: 'difficulte', titre: 'Difficulté', ouvert: true },
+  { id: 'hasard', titre: 'Hasard (les dés)' },
+  { id: 'combos', titre: 'Combos et états' },
+  { id: 'equilibre', titre: 'Équilibre (ressources et ennemis)' },
+  { id: 'classes', titre: 'Dégâts par classe (pour tester)' },
+  { id: 'ressenti', titre: 'Ressenti et lisibilité' },
 ];
-// etape : la mission qui ouvre le réglage au panneau (1 : les trois premiers boutons ; 2 : les règles ; 3 : le ressenti)
-export const ETAPE_OUVERTE = 1;
+// etape : la mission qui ouvre le réglage au panneau (1 : rythme et santé des ennemis ; 2 : les règles ; 3 : le ressenti)
+export const ETAPE_OUVERTE = 3;
+// type : 'bool' (case à cocher, 0 ou 1) ou 'choix' (une liste : `choix`) ; sinon un nombre (curseur et champ)
+const N = (id, groupe, etape, label, unite, def, min, max, step, plus = {}) => ({ id, groupe, etape, label, unite, def, min, max, step, ...plus });
+const OUI = (id, groupe, etape, label, def) => ({ id, groupe, etape, label, unite: '', def, min: 0, max: 1, step: 1, type: 'bool' });
+const CLASSES = [['brute', 'Brute'], ['mage', 'Mage'], ['voleur', 'Voleur'], ['gardien', 'Gardien'], ['eclaireuse', 'Éclaireuse'], ['chevalier', 'Chevalier'], ['druide', 'Druide'],
+  ['barde', 'Barde'], ['traqueur-au-limier', 'Traqueur'], ['shadow', 'Shadow'], ['baba-brisenclume', 'Baba Brisenclume']];
 export const DEFS = [
-  { id: 'ennemis.vitesse', groupe: 'rythme', etape: 1, label: 'Vitesse des tours ennemis (marche et pauses)', unite: '×', def: 1, min: 0.25, max: 4, step: 0.05 },
-  { id: 'anim.vitesse', groupe: 'rythme', etape: 1, label: 'Vitesse globale des animations', unite: '×', def: 1, min: 0.25, max: 4, step: 0.05 },
-  { id: 'ennemis.pv', groupe: 'ennemis', etape: 1, label: 'Santé des ennemis', unite: '×', def: 1, min: 0.1, max: 5, step: 0.05 },
-  { id: 'releve.pv', groupe: 'soins', etape: 2, label: 'PV d’un allié relevé', unite: 'PV', def: 25, min: 1, max: 150, step: 1 },
-  { id: 'potion.soin', groupe: 'soins', etape: 2, label: 'Soin d’une potion', unite: 'PV', def: 20, min: 1, max: 100, step: 1 },
+  // --- Rythme ---
+  N('ennemis.vitesse', 'rythme', 1, 'Vitesse des tours ennemis (marche et pauses)', '×', 1, 0.25, 4, 0.05),
+  N('anim.vitesse', 'rythme', 1, 'Vitesse globale des animations', '×', 1, 0.25, 4, 0.05),
+  N('phase.minuteur', 'rythme', 2, 'Minuteur de la phase des héros (0 = aucun)', 's', 0, 0, 60, 5),
+  OUI('phase.autoFin', 'rythme', 2, 'Finir la phase quand plus personne n’a rien à faire', 0),
+  // --- Difficulté ---
+  N('ennemis.pv', 'difficulte', 1, 'Santé des ennemis', '×', 1, 0.1, 5, 0.05),
+  N('ennemis.sbire', 'difficulte', 2, 'Sbires', '', 3, 0, 8, 1),
+  N('ennemis.archer', 'difficulte', 2, 'Archers', '', 2, 0, 6, 1),
+  N('ennemis.brute', 'difficulte', 2, 'Brutes ennemies', '', 1, 0, 3, 1),
+  N('ennemis.chef', 'difficulte', 2, 'Chef (0 : on gagne quand tous sont vaincus)', '', 1, 0, 1, 1),
+  N('heros.pv', 'difficulte', 2, 'Santé des héros', '×', 1, 0.25, 3, 0.05),
+  N('degats.heros', 'difficulte', 2, 'Dégâts des héros', '×', 1, 0.25, 3, 0.05),
+  N('degats.ennemis', 'difficulte', 2, 'Dégâts des ennemis', '×', 1, 0.25, 3, 0.05),
+  N('releve.pv', 'difficulte', 2, 'PV d’un allié relevé', 'PV', 25, 1, 150, 1),
+  N('potion.nb', 'difficulte', 2, 'Potions par héros', '', 1, 0, 5, 1),
+  N('potion.soin', 'difficulte', 2, 'Soin d’une potion', 'PV', 20, 1, 100, 1),
+  // --- Hasard ---
+  N('des.rate', 'hasard', 2, 'Raté automatique : le d20 vaut au plus', '', 1, 0, 5, 1),
+  N('des.eraflure', 'hasard', 2, 'Éraflure : jet + bonus au plus', '', 9, 0, 19, 1),
+  N('des.eraflureCoriace', 'hasard', 2, 'Éraflure contre un ennemi coriace : jet + bonus au plus', '', 12, 0, 19, 1),
+  N('des.critique', 'hasard', 2, 'Critique : le d20 vaut au moins', '', 20, 15, 20, 1),
+  N('des.critMult', 'hasard', 2, 'Multiplicateur d’un critique', '×', 2, 1, 4, 0.5),
+  N('des.bonusEnnemis', 'hasard', 2, 'Bonus au jet des ennemis', '', 2, -5, 10, 1),
+  OUI('des.ratesComiques', 'hasard', 2, 'Ratés comiques (le d6 qui suit un raté)', 1),
+  // --- Combos et états ---
+  N('etat.brulure.duree', 'combos', 2, 'Brûlure : durée', 'tours', 2, 1, 6, 1),
+  N('etat.brulure.degats', 'combos', 2, 'Brûlure : dégâts par tour', 'PV', 5, 1, 30, 1),
+  N('etat.gele.duree', 'combos', 2, 'Gelé : durée', 'tours', 1, 1, 4, 1),
+  N('etat.trempe.duree', 'combos', 2, 'Trempé : durée', 'rounds', 3, 1, 8, 1),
+  N('etat.huile.duree', 'combos', 2, 'Huilé : durée', 'rounds', 3, 1, 8, 1),
+  N('surface.duree', 'combos', 2, 'Durée d’une surface (eau, huile, feu, glace)', 'rounds', 3, 1, 8, 1),
+  N('feu.degats', 'combos', 2, 'Dégâts du feu', 'PV', 6, 1, 30, 1),
+  N('eau.degats', 'combos', 2, 'Dégâts de l’eau électrisée', 'PV', 8, 1, 40, 1),
+  N('mult.feuHuile', 'combos', 2, 'Feu sur un Huilé : multiplicateur', '×', 2, 1, 4, 0.5),
+  N('mult.foudreTrempe', 'combos', 2, 'Foudre sur un Trempé : multiplicateur', '×', 2, 1, 4, 0.5),
+  N('poussee.distance', 'combos', 2, 'Distance des poussées', '×', 1, 0.5, 3, 0.1),
+  N('poussee.degatsMur', 'combos', 2, 'Dégâts d’un choc contre un obstacle', 'PV', 8, 0, 30, 1),
+  N('poussee.degatsFosse', 'combos', 2, 'Dégâts de la chute dans le fossé (hors sbires)', 'PV', 20, 0, 60, 1),
+  OUI('des.tenaille', 'combos', 2, 'Avantage en tenaille (éteint : plus de tenaille, Shadow compris)', 1),
+  // --- Équilibre ---
+  N('rage.gain', 'equilibre', 2, 'Rage par coup donné ou reçu', '', 10, 0, 30, 1),
+  N('mana.gain', 'equilibre', 2, 'Mana au début du tour', '', 5, 0, 20, 1),
+  N('concentration.gain', 'equilibre', 2, 'Concentration par préparation exploitée', '', 1, 0, 3, 1),
+  N('foi.gain', 'equilibre', 2, 'Foi par soin ou protection', '', 1, 0, 3, 1),
+  N('energie.gain', 'equilibre', 2, 'Énergie à chaque tour (au plus son maximum)', '', 3, 0, 5, 1),
+  N('elan.gain', 'equilibre', 2, 'Élan par case parcourue', '', 1, 0, 3, 1),
+  N('ia.blesse', 'equilibre', 2, 'Les ennemis visent : le plus blessé (poids de la Brute)', '', 30, 0, 100, 5),
+  N('ia.proche', 'equilibre', 2, 'Les ennemis visent : le plus proche (poids du sbire)', '', 4, 0, 30, 1),
+  N('ia.soigneur', 'equilibre', 2, 'Les ennemis visent : le soigneur (Gardien, Chevalier, Barde)', '', 0, 0, 60, 5),
+  // --- Dégâts par classe (des boutons d'essai : aucune fiche de classe ne change) ---
+  ...CLASSES.map(([id, nom]) => N(`classe.${id}`, 'classes', 2, nom, '×', 1, 0.25, 3, 0.05)),
+  // --- Ressenti (vue.js) ---
+  N('feel.secousse', 'ressenti', 3, 'Force de la secousse de l’écran', '×', 1, 0, 3, 0.1),
+  N('feel.secousseDuree', 'ressenti', 3, 'Durée de la secousse', 's', 0.32, 0.05, 1, 0.01),
+  N('feel.recul', 'ressenti', 3, 'Recul de celui qui est touché', '×', 1, 0, 3, 0.1),
+  N('feel.zoom', 'ressenti', 3, 'Zoom au départ (crans)', '', 0, -4, 8, 1),
+  N('feel.zoomDouceur', 'ressenti', 3, 'Douceur du zoom (plus grand : plus sec)', '', 12, 2, 40, 1),
+  N('feel.barres', 'ressenti', 3, 'Barres de vie', '', 0, 0, 2, 1, { type: 'choix', choix: ['Toujours', 'Au survol', 'Cachées'] }),
+  // (les soins : les deux de l'étape 1, déjà là)
 ];
 const PAR_ID = Object.fromEntries(DEFS.map((d) => [d.id, d]));
 export const def = (id) => PAR_ID[id];
@@ -64,6 +128,7 @@ function nettoyer(o) {
 
 // --- Lire ----------------------------------------------------------------------------------------------------------
 export const lire = (id) => valeurs[id];
+export const oui = (id) => valeurs[id] >= 0.5;
 export const surChangement = (f) => { ecouteurs.push(f); return () => { const k = ecouteurs.indexOf(f); if (k >= 0) ecouteurs.splice(k, 1); }; };
 export const estChange = (id) => valeurs[id] !== PAR_ID[id].def;
 export const changees = () => Object.fromEntries(DEFS.filter((d) => valeurs[d.id] !== d.def).map((d) => [d.id, valeurs[d.id]]));
