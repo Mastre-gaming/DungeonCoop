@@ -54,7 +54,8 @@ Le niveau 6 est le coup d'équipe (à écrire avec une autre classe). Le niveau 
 
 ## Au terrain d'entraînement
 
-- **Classe jouable** (13e) : `src/entrainement/regles.js` (`HEROS['riff-ossel']`, ses trois sorts de départ, le Rythme, les Os fragiles) ; elle ne se joue que par son auteur (DonBabaa).
-- **Feuille** : `python outil/planche.py` (depuis `outil/`) écrit `public/assets/lpc/entrainement/riff-ossel.png` : les rangées LPC (marche, repos, blessé…) avec la guitare, puis une animation par sort (rangées 26 à 41 : Riff, Riff au contact = le Fracas, Ballade, Course effrénée).
-- **Pas encore au terrain** : le Power chord (niveau 2) et le Solo de la hache (niveau 5), les sous-classes ; les sons de Rythme, blessé et K.O. sont de synthèse (`src/entrainement/sons-synthese.js`), à remplacer par des enregistrements ; des icônes à lui (il emprunte celles du tir rapide, du soin et du chant).
+- **Classe jouable** (13e) : `src/entrainement/regles.js` (`HEROS['riff-ossel']`, ses cinq sorts, le Rythme, les Os fragiles) ; elle ne se joue que par son auteur (DonBabaa).
+- **Feuille** : `python outil/planche.py` (depuis `outil/`) écrit `public/assets/lpc/entrainement/riff-ossel.png` : les rangées LPC (marche, repos, blessé…) avec la guitare, puis une animation par sort (rangées 26 à 49 : Riff, Riff au contact = le Fracas, Ballade, Course effrénée, Power chord, Solo = le Fracas dramatique).
+- **Les niveaux** : le Power chord (niveau 2, 1 Rythme, action bonus : +d6 à la prochaine attaque d'un allié à 9 m) et le Solo de la hache (niveau 5, 3 Rythme, au contact : 14 + d6 + DEX, cible Exposée, puis bond de 4,5 m en arrière, à l'opposé de la cible) sont au terrain. Le terrain n'a pas de niveaux de héros : le réglage « Niveau de Riff Ossel » (Réglages, difficulté ; 5 par défaut) les montre ou les cache (1 : ni l'un ni l'autre, 2 : le Power chord, 5 : les deux).
+- **Pas encore au terrain** : le Final de concert (niveau 9), les sous-classes ; les sons de Rythme, blessé et K.O. sont de synthèse (`src/entrainement/sons-synthese.js`), à remplacer par des enregistrements ; des icônes à lui (il emprunte celles du tir rapide, du soin et du chant).
 - Vérifié : `?test` terrain 507/507, armurerie 98/98, archives 47/47 ; image de chaque sort : `node tools/riff_capture.mjs` (dans `shots/`).

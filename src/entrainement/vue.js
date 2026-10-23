@@ -26,7 +26,7 @@ export const always = true;
 const DIR = { haut: 0, gauche: 1, bas: 2, droite: 3 };
 // Les rangées LPC (64 px) et leur nombre d'images : sort, estoc, marche, taille, tir, blessé, repos.
 // (riff, contact, ballade, course : les animations de Riff Ossel, une par sort, sous les rangées LPC de sa planche)
-const ANIM = { sort: [0, 7], estoc: [4, 8], marche: [8, 9], attaque: [12, 6], tir: [16, 13], blesse: [20, 6], repos: [22, 2], riff: [26, 9], contact: [30, 13], ballade: [34, 12], course: [38, 9] };
+const ANIM = { sort: [0, 7], estoc: [4, 8], marche: [8, 9], attaque: [12, 6], tir: [16, 13], blesse: [20, 6], repos: [22, 2], riff: [26, 9], contact: [30, 13], ballade: [34, 12], course: [38, 9], power: [42, 6], solo: [46, 13] };
 const VITESSE_MARCHE = 5 * T;          // 5 cases par seconde à l'écran (le temps réel du jeu, pas la règle)
 const COULEURS = {
   eau: [[46, 120, 196], [70, 150, 220], [148, 206, 244], [24, 78, 140]],

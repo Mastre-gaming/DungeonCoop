@@ -83,13 +83,14 @@ export const HEROS = {
     capacites: ['batonNoue', 'mueBete', 'mueCosa', 'mueIllumine', 'pousser', 'potion', 'relever'] },
   // Riff Ossel (content/classes/riff-ossel.json, par DonBabaa) : DEX 14 (+2), SAG 12 (+1), CHA 15 (+2), 110 PV, 6 cases (9 m),
   // le Rythme (+1 chaque fois qu'un allié attaque, 4 au plus, il retombe à 0 si aucun allié n'a attaqué de tout un tour).
-  // Riff (base, à 9 m ; au contact, le même coup à la hache) · Ballade (soutien) · Course effrénée (préparation). Pas de Power chord
-  // ni de Solo ici : ils viennent aux niveaux 2 et 5.
+  // Riff (base, à 9 m ; au contact, le même coup à la hache) · Ballade (soutien) · Course effrénée (préparation) ; le Power chord vient
+  // au niveau 2 et le Solo de la hache au niveau 5 (NIVEAU_RIFF, le réglage « riff.niveau » : le terrain les montre tous).
   'riff-ossel': { nom: 'Riff Ossel', court: 'RIF', auteur: 'DonBabaa', pv: 110, vitesse: 6, dex: 2, res: { type: 'Rythme', v: 1, max: 4 }, role: 'Soutien · rock à distance',
     faiblesse: 'Os fragiles : les dégâts de poussée, de mur et de chute lui font ×2.',
     passif: 'Rythme : +1 chaque fois qu’un allié attaque (4 au plus) ; il retombe à 0 si aucun allié n’a attaqué de tout un tour.',
-    capacites: ['riff', 'ballade', 'courseEffrenee', 'pousser', 'potion', 'relever'] },
+    capacites: ['riff', 'ballade', 'courseEffrenee', 'powerChord', 'solo', 'pousser', 'potion', 'relever'] },
 };
+export const NIVEAU_RIFF = { powerChord: 2, solo: 5 };
 export const RIFF = 'riff-ossel';
 // Les trois formes du Changepeau : leurs PV à elles et leur kit, qui remplace Bâton noué et la Mue (Pousser, la Potion et
 // Relever restent) ; « Quitter la forme » le rend orc, debout. Chacune a sa faiblesse.
@@ -107,7 +108,8 @@ export const capacitesDe = (a, b) => {
   const [S, x] = b === undefined ? [null, a] : [a, b];
   const u = typeof x === 'string' ? { type: x } : x;
   const base = u?.forme && FORMES[u.forme.id] ? [...FORMES[u.forme.id].capacites, 'pousser', 'potion', 'relever'] : HEROS[u?.type]?.capacites ?? [];
-  return S?.braseros?.some((br) => !br.renverse) ? [...base, 'renverser'] : base;
+  const lvl = lire('riff.niveau'), dispo = u?.type === RIFF ? base.filter((id) => !NIVEAU_RIFF[id] || lvl >= NIVEAU_RIFF[id]) : base;
+  return S?.braseros?.some((br) => !br.renverse) ? [...dispo, 'renverser'] : dispo;
 };
 const formeDe = (u) => u?.forme?.id ?? null;
 // Une classe faite par un joueur (« auteur » : son pseudo GitHub, comme dans content/classes/) ne se joue que par lui ;
@@ -222,6 +224,8 @@ export const CAPACITES = {
   riff: { nom: 'Riff', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 8, de: 4, anim: 'riff', animContact: 'contact', contact: true, ds: 'Portée 9 m · 5–7 / 11–14 / 22–28 ; au contact, le même coup à la hache (attaque d’opportunité)' },
   ballade: { nom: 'Ballade', slot: 'action', type: 'soin', portee: 6, soin: { base: 8, de: 4, mod: 1 }, retire: true, releve: true, anim: 'ballade',
     ds: 'Un allié à 9 m · 10–13 PV, sans jet ; retire Brûlure, Gelé ou Huilé · un allié KO : relevé à distance (2 Rythme, une fois par combat)' },
+  powerChord: { nom: 'Power chord', slot: 'bonus', type: 'puissance', portee: 6, cout: 1, anim: 'power', ds: '1 Rythme · la prochaine attaque d’un allié à 9 m fait +d6' },
+  solo: { nom: 'Solo de la hache', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 14, de: 6, cout: 3, expose: true, recul: 3, anim: 'solo', ds: '3 Rythme · au contact : 15–20 / 30–40 · la cible est Exposée ; puis il bondit de 4,5 m en arrière, sans riposte' },
   courseEffrenee: { nom: 'Course effrénée', slot: 'bonus', type: 'course', portee: 6, cout: 1, anim: 'course', ds: '1 Rythme · un allié à 9 m gagne 3 m de déplacement ce tour et s’éloigne sans attaque d’opportunité' },
 };
 export const BABA = 'baba-brisenclume';
@@ -233,7 +237,7 @@ export const NOM_SURFACE = { eau: 'l’eau', huile: 'l’huile', feu: 'le feu', 
 export const NOM_PIEGE = { machoires: 'les mâchoires', glu: 'la glu', collet: 'le collet' };
 // Les capacités d'un héros dans ce combat : les siennes, plus « Renverser » tant qu'il reste un brasero debout.
 export const NOM_RESULTAT = { rate: 'Raté', eraflure: 'Éraflure', touche: 'Touché', critique: 'Critique' };
-export const NOM_ETAT = { surpris: 'Surpris', trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé', inspire: 'Inspiré', etourdi: 'Étourdi', lame: 'Lame ardente', bouclier: 'Trempe', ardent: 'Arme ardente', attire: 'Étreint' };
+export const NOM_ETAT = { puissance: 'Power chord', surpris: 'Surpris', trempe: 'Trempé', huile: 'Huilé', brulure: 'Brûlure', gele: 'Gelé', aTerre: 'À terre', expose: 'Exposé', inspire: 'Inspiré', etourdi: 'Étourdi', lame: 'Lame ardente', bouclier: 'Trempe', ardent: 'Arme ardente', attire: 'Étreint' };
 
 // --- Les surfaces : des taches sur une trame fine (un demi-pas de case), dessinées sans cases -----------------------
 const MAILLE = 0.5;
@@ -745,6 +749,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     cible.expose = false;
     if (att.st.inspire) delete att.st.inspire;          // le chant ne sert qu'une fois
+    const pc = att.st.puissance; if (pc) delete att.st.puissance;       // le Power chord aussi : sur le prochain coup, touché ou raté
     const qui = `${att.nom} → ${cible.nom} · ${A.nom}`;
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
     const mod = A.mod + c.haut;                         // (la hauteur s'ajoute au d20, comme la caractéristique)
@@ -760,6 +765,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const jet = d(A.de) + (A.de2 ? d(A.de2) : 0);
 
     let n = A.base + jet + A.dmod;
+    if (pc) { const b = d(6); n += b; log(`Power chord de ${U(pc.par)?.nom ?? 'Riff Ossel'} : +${b} aux dégâts.`, 'combo'); if (pc.par !== att.id) combo(pc.par, att.id, 'power chord'); flotter(att, `+${b} Power chord`, 'info'); }
     if (g === 'eraflure') n = Math.floor(n / 2);
     if (g === 'critique') n = Math.round(n * lire('des.critMult'));
     n = finalDeg(Math.round(n * c.mult), c.dm);
@@ -1847,7 +1853,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     else if (cap.type === 'ombre') ennemisVivants().filter((u) => aPortee(h, cap, u) && sortieOmbre(h, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'bond') ennemisVivants().filter((u) => aPortee(h, cap, u) && atterrissage(h, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'ardent') herosVivants().filter((u) => u !== h && !u.familier && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
-    else if (['inspiration', 'course'].includes(cap.type)) herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+    else if (['inspiration', 'course', 'puissance'].includes(cap.type)) herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'enclume') ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'forge') herosVivants().filter((u) => !u.familier && (u === h || dist(h, u) <= CONTACT)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'tenailles') {
@@ -2001,6 +2007,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         if (gain > 0) { h.forme.pv += gain; ev({ type: 'forme', id: h.id, pv: h.forme.pv, n: gain }); log(`${h.nom} dévore : +${gain} PV de forme.`, 'bon'); }
       }
       if (cap.curee && !h.ko && !h.mort) reculer(h, u, 2);
+      if (cap.recul && !h.ko && !h.mort) reculer(h, u, cap.recul);          // le Solo de la hache : le bond en arrière (4,5 m)
       return true;
     }
     if (cap.type === 'poussee') {
@@ -2109,6 +2116,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'texte', id: u.id, texte: 'Inspiré !' });
       log(`${h.nom} chante pour ${u.nom} : avantage à sa prochaine attaque.`, 'bon');
+      return true;
+    }
+    if (cap.type === 'puissance' && u && u.camp === 'h' && !u.ko && !u.familier && u !== h && dist(h, u) <= cap.portee) {       // le Power chord
+      payer(h, cap); u.st.puissance = { par: h.id };
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'texte', id: u.id, texte: '+d6 !' });
+      log(`${h.nom} lâche un power chord : la prochaine attaque de ${u.nom} fait +d6.`, 'bon');
       return true;
     }
     if (cap.type === 'course' && u && u.camp === 'h' && !u.ko && !u.familier && u !== h && dist(h, u) <= cap.portee) {       // la Course effrénée

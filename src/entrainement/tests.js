@@ -678,7 +678,8 @@ export async function selfTest(t, game) {
     t.ok(H.capacites.every((k) => CAPACITES[k] && icone(k)), 'chaque capacité a une icône');
     t.eq(['riff', 'riff-contact', 'ballade', 'courseEffrenee', 'pousser'].map((c) => sonDe('riff-ossel', c.split('-')[0], c.endsWith('contact') ? 'contact' : 'riff')), ['riff', 'riff-melee', 'ballade', 'course', null], 'ses sons : le Riff, le Fracas au contact, la Ballade, la Course effrénée');
     t.ok(sonDe('brute', 'fracas', 'attaque') === null, 'les autres classes n’ont pas de son (pour l’instant)');
-    t.eq(ordreBarre(H.capacites, CAPACITES).slice(0, 3), ['riff', 'courseEffrenee', 'ballade'], 'sa barre : Riff (attaque), Course effrénée (préparation), Ballade (soutien)');
+    t.eq(ordreBarre(H.capacites, CAPACITES).slice(0, 5), ['riff', 'courseEffrenee', 'solo', 'ballade', 'powerChord'], 'sa barre : Riff (attaque), Course effrénée (préparation), Solo (exploitation), Ballade et Power chord (soutien)');
+    t.eq(['powerChord', 'solo'].map((c) => sonDe('riff-ossel', c, 'x')), ['power', 'solo'], 'ses sons : le Power chord et le Solo de la hache');
   }
   const riff = (o = {}) => {
     const C = essai(['riff-ossel', 'brute', 'voleur', 'mage'], { alea: des(Array(60).fill(15)), ...o });
@@ -732,6 +733,40 @@ export async function selfTest(t, game) {
     r.res.v = 2; const mv = b.t.mv;
     t.ok(C.utiliser(r, 'courseEffrenee', { id: b.id }) && b.t.mv === mv + 2 && b.t.desengage && r.res.v === 1, 'la Course effrénée : l’allié gagne 3 m et s’éloigne sans attaque d’opportunité, pour 1 Rythme');
     t.ok(!r.t.bonus, 'elle prend l’action bonus');
+  }
+  {
+    // le Power chord (niveau 2) : 1 Rythme, action bonus ; la prochaine attaque de l'allié fait +d6, une seule fois
+    const { C, r, b, s } = riff();
+    r.res.v = 2; poser(C, b.id, 8.4, 10);
+    t.ok(C.cibles(r, CAPACITES.powerChord).some((x) => x.id === b.id) && !C.cibles(r, CAPACITES.powerChord).some((x) => x.id === r.id), 'le Power chord vise un allié à 9 m, pas Riff lui-même');
+    t.ok(C.utiliser(r, 'powerChord', { id: b.id }) && b.st.puissance && r.res.v === 1 && !r.t.bonus && r.t.action, 'il coûte 1 Rythme et l’action bonus (pas l’action)');
+    poser(C, s.id, 9.5, 10); const pv = s.pv, ok = C.utiliser(b, 'fracas', { id: s.id });
+    t.ok(ok && !b.st.puissance && pv - s.pv > 0, `la prochaine attaque de la Brute porte (${pv - s.pv} dégâts, avec le +d6) et le Power chord s’éteint`);
+    r.res.v = 0; r.t.bonus = true;
+    t.ok(!C.peutUtiliser(r, CAPACITES.powerChord), 'sans Rythme, pas de Power chord');
+  }
+  {
+    // le Solo de la hache (niveau 5) : 3 Rythme, au contact ; 14 + d6 + DEX, la cible est Exposée, puis le bond de 4,5 m en arrière
+    const { C, r, s } = riff();
+    r.res.v = 4; poser(C, r.id, 10.0, 10); poser(C, s.id, 11.1, 10);
+    t.ok(C.cibles(r, CAPACITES.solo).some((x) => x.id === s.id), 'le Solo vise l’ennemi au contact');
+    const pv = s.pv; C.S.evenements.length = 0;
+    t.ok(C.utiliser(r, 'solo', { id: s.id }) && r.res.v === 1 && !r.t.action, 'il coûte 3 Rythme et l’action');
+    t.ok(C.S.evenements.some((e) => e.type === 'attaque' && e.cap === 'solo' && e.anim === 'solo'), 'son animation « solo »');
+    t.ok(pv - s.pv >= 17 && s.expose, `il fait ${pv - s.pv} dégâts (17–22) et la cible est Exposée`);
+    const bond = dist(r, s) - 0.73;
+    t.ok(dist(r, { x: 10.0, y: 10 }) > 2.5 && dist(r, { x: 10.0, y: 10 }) <= 3 + 0.01 && bond > 0, `puis il bondit en arrière : ${(dist(r, { x: 10.0, y: 10 }) * 1.5).toFixed(1)} m`);
+    t.ok(C.S.evenements.some((e) => e.type === 'marche' && e.id === r.id), 'le bond se voit (un déplacement)');
+    r.res.v = 2; r.t.action = true; poser(C, r.id, 10.0, 10); poser(C, s.id, 11.1, 10);
+    t.ok(!C.peutUtiliser(r, CAPACITES.solo) || C.cibles(r, CAPACITES.solo).length === 0 || r.res.v < 3, 'sans 3 Rythme, pas de Solo');
+    t.ok(C._.attaqueReflexe(r)?.id === 'riff', 'le Solo n’est pas son attaque d’opportunité : c’est le Riff');
+  }
+  {
+    // le niveau : le Power chord vient au 2, le Solo au 5 (le réglage « riff.niveau », 5 au terrain)
+    const tous = (n) => { REG.regler('riff.niveau', n); return capacitesDe('riff-ossel').filter((k) => ['powerChord', 'solo'].includes(k)); };
+    const n1 = tous(1), n2 = tous(2), n5 = tous(5); REG.regler('riff.niveau', 5);
+    t.eq([n1, n2, n5], [[], ['powerChord'], ['powerChord', 'solo']], 'niveau 1 : ni l’un ni l’autre · niveau 2 : le Power chord · niveau 5 : le Solo aussi');
+    t.ok(capacitesDe('brute').length === 6 && !capacitesDe('mage').includes('solo'), 'les autres classes ne changent pas');
   }
   {
     // Os fragiles : poussée, mur et chute lui font ×2

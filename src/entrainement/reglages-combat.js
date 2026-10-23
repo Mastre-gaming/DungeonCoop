@@ -40,6 +40,7 @@ export const DEFS = [
   N('degats.heros', 'difficulte', 2, 'Dégâts des héros', '×', 1, 0.25, 3, 0.05),
   N('degats.ennemis', 'difficulte', 2, 'Dégâts des ennemis', '×', 1, 0.25, 3, 0.05),
   N('releve.pv', 'difficulte', 2, 'PV d’un allié relevé', 'PV', 25, 1, 150, 1),
+  N('riff.niveau', 'difficulte', 2, 'Niveau de Riff Ossel (Power chord au 2, Solo de la hache au 5)', '', 5, 1, 9, 1),
   N('potion.nb', 'difficulte', 2, 'Potions par héros', '', 1, 0, 5, 1),
   N('potion.soin', 'difficulte', 2, 'Soin d’une potion', 'PV', 20, 1, 100, 1),
   // --- Hasard ---
