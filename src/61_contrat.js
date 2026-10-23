@@ -50,7 +50,8 @@ export const remplir = (s, v = {}) => String(s ?? '').replace(/\{(\w+)\}/g, (m, 
 // `party()` : le groupe (party-net) ou null ; `nom(id)` : le nom d'un joueur ; `emettre(n, d)` : le bus ; `vue` :
 // { appliquer(etat, moi) } (rien en test). L'état : { n, etape, i, qui: { id, nom, heros, image }, electeurs, prets, choix,
 // restant, accepte, partants }.
-export function creerControleur({ party = () => null, nom = (id) => id, emettre = () => {}, vue = null, lignes = TEXTES.discours.length } = {}) {
+export function creerControleur({ party = () => null, nom = (id) => id, emettre = () => {}, vue = null, lignes = TEXTES.discours.length, durees = DUREES } = {}) {
+  const D = durees;   // (les tests jouent la réunion en accéléré)
   let n = 0, s = null, etat = null, minuteur = 0;
   const moi = () => party()?.id ?? 'me';
   const enGroupe = () => !!party()?.active;
@@ -104,7 +105,7 @@ export function creerControleur({ party = () => null, nom = (id) => id, emettre 
       if (s.electeurs.every((e) => s.prets.includes(e))) api.suivante(); else diffuser();
       return true;
     },
-    suivante() { if (s.i + 1 < lignes) aller('discours', s.i + 1); else { aller('vote'); s.restant = enGroupe() ? DUREES.vote : null; diffuser(); } },
+    suivante() { if (s.i + 1 < lignes) aller('discours', s.i + 1); else { aller('vote'); s.restant = enGroupe() ? D.vote : null; diffuser(); } },
     // Mon choix : vrai (j'en suis), faux (je reste au camp). On peut changer d'avis tant que le vote tourne.
     choisir(oui) {
       if (!etat || etat.etape !== 'vote') return false;
@@ -116,7 +117,7 @@ export function creerControleur({ party = () => null, nom = (id) => id, emettre 
       s.choix[id] = oui;
       if (s.electeurs.every((e) => e in s.choix)) {
         if (s.restant == null) { conclure(); return true; }                       // seul : tout de suite
-        s.restant = Math.min(s.restant, DUREES.apresVote);                         // tout le monde a choisi : 3 s pour changer d'avis
+        s.restant = Math.min(s.restant, D.apresVote);                         // tout le monde a choisi : 3 s pour changer d'avis
       }
       diffuser();
       return true;
@@ -125,13 +126,13 @@ export function creerControleur({ party = () => null, nom = (id) => id, emettre 
     avancer(dt) {
       if (!s || !estHote()) return;
       minuteur += dt;
-      if (s.etape === 'rassemblement' && minuteur >= DUREES.rassemblement) aller('discours', 0);
-      else if (s.etape === 'discours' && minuteur >= DUREES.ligne) api.suivante();
+      if (s.etape === 'rassemblement' && minuteur >= D.rassemblement) aller('discours', 0);
+      else if (s.etape === 'discours' && minuteur >= D.ligne) api.suivante();
       else if (s.etape === 'vote' && s.restant != null) {
         const avant = Math.ceil(s.restant);
         s.restant = Math.max(0, s.restant - dt);
         if (s.restant <= 0) conclure(); else if (Math.ceil(s.restant) !== avant) diffuser();
-      } else if (s.etape === 'resultat' && minuteur >= DUREES.resultat) finir();
+      } else if (s.etape === 'resultat' && minuteur >= D.resultat) finir();
     },
     // Ce que dit party-net.
     ecouter(type, d) {
@@ -146,7 +147,7 @@ export function creerControleur({ party = () => null, nom = (id) => id, emettre 
       } else if (type === 'leave' && s && estHote()) {
         // qui part ne compte plus (et n'est plus attendu)
         s.electeurs = s.electeurs.filter((e) => e !== d.id); delete s.choix[d.id]; s.prets = s.prets.filter((e) => e !== d.id);
-        if (s.etape === 'vote' && s.electeurs.length && s.electeurs.every((e) => e in s.choix)) s.restant = Math.min(s.restant ?? 0, DUREES.apresVote);
+        if (s.etape === 'vote' && s.electeurs.length && s.electeurs.every((e) => e in s.choix)) s.restant = Math.min(s.restant ?? 0, D.apresVote);
         diffuser();
       } else if (type === 'join' && s && estHote()) {
         // qui arrive en pleine réunion la rejoint (il peut encore choisir)
@@ -418,10 +419,11 @@ export async function selfTest(t) {
   const { createLoopback, createParty } = await import('./skills/party-net/module/03_skill.js');
   t.group('le contrat : la réunion à plusieurs (l’hôte mène)');
   {
-    const hub = createLoopback(); const H = 1 / 30;
+    const hub = createLoopback(); const H = 1 / 10;
+    const VITE = { rassemblement: 1.2, ligne: 0.8, vote: 4, apresVote: 0.5, resultat: 0.5 };   // la réunion en accéléré (les vraies durées : DUREES)
     const gens = [], fabrique = (nomJ) => {
       const P = { nom: nomJ, fins: [] };
-      P.ctrl = creerControleur({ party: () => P.party, nom: (id) => id, emettre: (n, d) => { if (n === 'contrat:fin') P.fins.push(d); } });
+      P.ctrl = creerControleur({ party: () => P.party, nom: (id) => id, durees: VITE, emettre: (n, d) => { if (n === 'contrat:fin') P.fins.push(d); } });
       P.party = createParty({ transport: () => hub.transport(), fields: ['x'], me: () => ({ x: 0 }), name: () => nomJ, now: () => hub.time,
         on: (ty, d) => { if (ty === 'game') P.ctrl.ecouter('game', d); else if (ty === 'leave' || ty === 'join') P.ctrl.ecouter(ty, d); } });
       gens.push(P); return P;
@@ -431,36 +433,36 @@ export async function selfTest(t) {
     const ana = fabrique('Ana'); ana.party.join('contr'); pas(0.4);
     const ben = fabrique('Ben'); ben.party.join('contr'); pas(0.4);
     t.ok(ana.ctrl.demander({ nom: 'Ana', heros: 'Traqueur', image: 'heros' }), 'Ana a lu le contrat et en parle au village');
-    pas(0.3);
+    pas(0.5);
     t.ok([hote, ana, ben].every((P) => P.ctrl.etat?.etape === 'rassemblement' && P.ctrl.etat.qui.id === ana.party.id), 'tout le monde voit la réunion, et c’est Ana qui parle');
-    pas(DUREES.rassemblement + 0.2);
+    pas(VITE.rassemblement);
     t.eq(ben.ctrl.etat.etape, 'discours', 'le village est réuni : le discours commence');
     for (const P of [hote, ana, ben]) P.ctrl.passer();
     pas(0.3);
     t.eq(ben.ctrl.etat.i, 1, 'tout le monde a cliqué : la réplique suivante');
-    pas(DUREES.ligne * (TEXTES.discours.length - 1) + 0.5);
+    pas(VITE.ligne * (TEXTES.discours.length - 1) + 0.5);
     t.eq(ana.ctrl.etat.etape, 'vote', 'sans clic, les répliques passent toutes seules, puis le choix');
     hote.ctrl.choisir(true); ana.ctrl.choisir(true); ben.ctrl.choisir(false); pas(0.3);
-    t.ok(ben.ctrl.etat.restant <= DUREES.apresVote, 'tout le monde a choisi : plus que 3 s pour changer d’avis');
-    pas(DUREES.apresVote + 0.3);
+    t.ok(ben.ctrl.etat.restant <= VITE.apresVote, 'tout le monde a choisi : plus que 3 s pour changer d’avis');
+    pas(VITE.apresVote + 0.3);
     t.ok(ana.ctrl.etat.etape === 'resultat' && ana.ctrl.etat.accepte && ana.ctrl.etat.partants.map((p) => p.id).sort().join() === [hote.party.id, ana.party.id].sort().join(),
       'le contrat est accepté : l’hôte et Ana partent, Ben reste au camp');
-    pas(DUREES.resultat + 0.3);
+    pas(VITE.resultat + 0.3);
     t.ok([hote, ana, ben].every((P) => !P.ctrl.ouvert) && hote.fins[0]?.accepte && hote.fins[0].partants.length === 2, 'la réunion se termine chez tous ; « contrat:fin » dit qui part');
     // personne ne part
-    hote.ctrl.demander({ nom: 'Hôte', heros: 'Brute', image: 'heros' }); pas(DUREES.rassemblement + 0.2);
+    hote.ctrl.demander({ nom: 'Hôte', heros: 'Brute', image: 'heros' }); pas(VITE.rassemblement + 0.2);
     for (let i = 0; i < TEXTES.discours.length; i++) { for (const P of [hote, ana, ben]) P.ctrl.passer(); pas(0.3); }
     for (const P of [hote, ana, ben]) P.ctrl.choisir(false);
-    pas(DUREES.apresVote + 0.3);
+    pas(VITE.apresVote + 0.3);
     t.ok(ana.ctrl.etat?.etape === 'resultat' && !ana.ctrl.etat.accepte, 'tout le monde reste au camp : le contrat attendra');
-    pas(DUREES.resultat + 0.3);
+    pas(VITE.resultat + 0.3);
     // quelqu'un part en plein choix : on ne l'attend pas
-    hote.ctrl.demander({ nom: 'Hôte', heros: 'Brute', image: 'heros' }); pas(DUREES.rassemblement + 0.2);
+    hote.ctrl.demander({ nom: 'Hôte', heros: 'Brute', image: 'heros' }); pas(VITE.rassemblement + 0.2);
     for (let i = 0; i < TEXTES.discours.length; i++) { for (const P of [hote, ana, ben]) P.ctrl.passer(); pas(0.3); }
     hote.ctrl.choisir(true); ana.ctrl.choisir(false); pas(0.2);
     ben.party.leave(); pas(0.5);
-    t.ok(hote.ctrl.etat.electeurs.length === 2 && hote.ctrl.etat.restant <= DUREES.apresVote, 'Ben part en plein choix : on ne l’attend plus');
-    pas(DUREES.apresVote + DUREES.resultat + 0.6);
+    t.ok(hote.ctrl.etat.electeurs.length === 2 && hote.ctrl.etat.restant <= VITE.apresVote, 'Ben part en plein choix : on ne l’attend plus');
+    pas(VITE.apresVote + VITE.resultat + 0.6);
     t.ok(!hote.ctrl.ouvert && hote.fins.at(-1).partants.length === 1, 'et l’hôte part seul');
   }
   if (visite || !sprite) return;

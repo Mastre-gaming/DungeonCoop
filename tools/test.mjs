@@ -10,7 +10,7 @@ try {
   const pages = [['', 'test'], ...(process.argv.includes('--visite') ? [['', 'test&visite']] : []), ['entrainement.html', 'test'], ['classe.html', 'test'], ['archives.html', 'test']];
   for (const [chemin, q] of pages) {
     const page = await ouvrir(srv.url + chemin, q);
-    await page.waitFor('document.documentElement.dataset.test', 120000);
+    await page.waitFor('document.documentElement.dataset.test', 240000);   // (4 min : le camp et ses 1000 tests et plus, en rendu logiciel)
     const r = await page.eval('({ ...window.__test, marche: dbg.tests?.rapportMarche })');
     console.log(`${chemin}?${q} : ${r.passed}/${r.total}`);
     for (const f of r.failed) console.log(`  ✗ ${f}`);
