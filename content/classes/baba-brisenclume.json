@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "id": "baba-brisenclume",
+  "nom": "Baba Brisenclume",
+  "auteur": "DonBabaa",
+  "phrase": "Vieux forgeron de légende, il a repris le marteau pour une dernière bataille.",
+  "role": "tank",
+  "twist": "forge l'équipement de ses alliés en plein combat",
+  "archetype": "Fighter",
+  "caracs": { "FOR":  15, "DEX":  9, "CON":  15, "INT":  10, "SAG":  10, "CHA":  12 },
+  "pv": 130,
+  "vitesse": 4,
+  "ressource": "rage",
+  "capacites": [
+    { "nom":  "Marteau", "sorte":  "base", "slot":  "action", "portee":  "contact", "zone":  "aucune", "carac":  "FOR", "cout":  "", "effet":  "ses poussées vont 1 case plus loin (FOR 14+)", "cree":  [], "utilise":  ["aterre"], "renforts":  [] },
+    { "nom":  "Enclume et Forge", "sorte":  "exploitation", "slot":  "action", "portee":  "moyenne", "zone":  "aucune", "carac":  "FOR", "cout":  "Chute : une fois par combat · Forge : 20 Rage (sa Chaleur)", "effet":  "Deux faces (propriétaire, 19 oct). (a) Chute d'Enclume, une fois par combat : une enclume tombe sur la case visée, 14 + d6 + FOR, la cible est À terre ; l'enclume reste sur sa case jusqu'à la fin du combat : elle bloque le passage, couvre (une attaque à distance qui passe derrière elle a le désavantage) et sert d'obstacle (une poussée contre elle fait +8). Une seule enclume à la fois. (b) Forge, en action bonus, Baba au contact de l'enclume : sur lui ou un allié au contact, Lame Ardente (la prochaine attaque fait +d6 et compte comme du feu : elle enflamme l'Huile et les cibles Huilées) ou Trempe (un bouclier de 10).", "cree":  ["aterre", "feu"], "utilise":  ["huile"], "renforts":  ["effet", "effet"] },
+    { "nom":  "Tenailles", "sorte":  "preparation", "slot":  "action", "portee":  "courte", "zone":  "aucune", "carac":  "FOR", "cout":  "", "effet":  "attrape et tire de 3 m vers lui : un ennemi (loin des alliés fragiles, dans l'Huile, le Feu ou la Glace, ou en tenaille), un allié (pour le sauver) ou son enclume (pour la rapprocher)", "cree":  ["attirer"], "utilise":  [], "renforts":  [] }
+  ],
+  "faiblesse": "Vieux Os : se relever d'À terre lui coûte tout son déplacement, et la Glace le renverse sur 1 à 14 ; loin de son enclume, il ne peut plus forger",
+  "sousClasses": [
+    { "nom":  "Maître Forgeron", "idee":  "le feu et les dégâts : niv. 3 Enclume Ardente (la Chute d'Enclume deux fois par combat, l'enclume tombe en flammes : une case de Feu sous elle et autour) · niv. 7 Lame Ardente dure 2 attaques · niv. 11 son Marteau laisse une case de Feu · niv. 15 la Forge touche tous les alliés d'une grande zone" },
+    { "nom":  "Rempart", "idee":  "l'armure et la protection : niv. 3 Interposition (réaction, prend le coup à la place d'un allié au contact) · niv. 7 Trempe donne 15 · niv. 11 Interposition à 2 cases · niv. 15 Trempe donne 20, et +10 Rage par coup pris pour un allié" }
+  ],
+  "look": { "corps":  "un vieux forgeron au corps musclé, crâne dégarni, barbe d'hiver blanche et moustache, l'air en colère, peau bronzée par la forge", "tenue":  "torse nu, épaulière de cuir en bandoulière, épaulières de fer noirci aux bords incandescents, brassards de cuivre brûlant, pantalon sombre, bottes à rebord ; deux marteaux à une main aux faces chauffées à blanc", "touche":  "les yeux en feu, des braises dans la barbe, des étincelles qui montent autour de lui (design/classes/baba-brisenclume/)", "lien":  "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=muscular&body=Body_Color_amber&head=Human_Male_Elderly_amber&expression=Angry_amber&hair=Balding_white&beard=Winter_Beard_white&bauldron=Bauldron_leather&shoulders=Pauldrons_black&bracers=Bracers_copper&legs=Pants_charcoal&shoes=Rimmed_Boots_brown&mustache=Mustache_white", "base":  "baba-brisenclume" },
+  "references": "Signature niv. 20, Chef-d'œuvre : une fois par combat, il forge une arme légendaire pour un allié (dégâts doublés pendant 2 rounds)."
+}

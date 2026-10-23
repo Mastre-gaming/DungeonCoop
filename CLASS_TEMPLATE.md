@@ -11,7 +11,7 @@ Remade from the owner's answers on 17 Oct 2026. Anyone can design **as many clas
 | Starting abilities | **3**, and one of them must be a **basic attack** |
 | Resource | **picked from the shared list** below |
 | Weakness | **one real drawback**, written on the sheet |
-| Gear | **none at the start**: every item is looted |
+| Gear | **none**: there is no item system for now (owner, 20 Oct); a hero grows through levels and ability upgrades |
 | Growth | levels 1 to 20, with a **subclass at level 3** (D&D style) |
 
 ## 1. Identity
@@ -31,7 +31,7 @@ Each stat starts at 8. Raising it costs: 9 = 1 point, 10 = 2, 11 = 3, 12 = 4, 13
 | Constitution (CON) | | | +5 health per modifier point, at level 1 and every level |
 | Intelligence (INT) | | | added to the d20 and damage of arcane abilities; surface abilities last +1 round at 14+ |
 | Wisdom (WIS) | | | added to healing and nature or divine abilities; spots traps and hidden rooms |
-| Charisma (CHA) | | | added to presence abilities (taunts, inspire); better shop prices and event choices |
+| Charisma (CHA) | | | added to presence abilities (taunts, inspire); better event choices |
 
 Modifier = (score − 10) ÷ 2, rounded down: 8 → −1, 10 → 0, 12 → +1, 14 → +2, 15 → +2.
 
@@ -93,7 +93,7 @@ One real drawback that the enemies or the room can use, e.g. "can't stand on Ice
 
 ## 8. The look (for the LPC sprite in Sprite Painter)
 - **Body and build:**
-- **Outfit and colours:** (no gear yet; this is how they look before any loot)
+- **Outfit and colours:** (there is no gear: this is how they look)
 - **One touch that makes them theirs** (horns, a scar, a crest, a plume, an emblem):
 
 ## 9. References and in-jokes

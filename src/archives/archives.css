@@ -97,3 +97,7 @@ body { color: var(--creme); font: 14px/1.45 var(--texte); }
   .liste-archives, .detail-archives { overflow: visible; }
 }
 @media (max-width: 560px) { .archives { padding: 12px 14px; } .scene-grande canvas { max-width: 100%; height: auto !important; } }
+
+.fiche-ennemi { display: grid; gap: 6px; }
+.fiche-ennemi h3 { margin: 6px 0 0; font-size: 1em; }
+.fiche-ennemi .statut { margin: 0; justify-self: start; padding: 1px 8px; border: 1px solid currentColor; border-radius: 3px; font-size: .85em; color: #7a5a08; }

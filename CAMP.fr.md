@@ -94,6 +94,9 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 | Technique (`axe: technique`) | la forge | les outils de l'équipe |
 | Le camp (`axe: camp`, ajouté le 18 oct) | **le camp tout entier** (pas de bâtiment) | à chaque niveau, le camp se modernise : son design graphique, sa vie (les niveaux sont à proposer, puis à choisir) |
 
+### Le plan d'agrandissement : la muraille carrée, des quartiers, trois clairières sauvages (v4, validé le 22 oct, codé en local)
+La première muraille et la grande porte du sud ne bougent pas ; le sud reste l'introduction du jeu (on n'en atteint ni l'ouest, ni l'est, ni le nord sans traverser le camp). Le camp monte vers le nord, **muraille carrée**, en quartiers (le cœur, le savoir, les artisans, les héros), avec quatre portes. **Dehors**, trois clairières sauvages et séparées (l'ouest et son ruisseau, l'est et son étang, le nord et le faubourg des fêtes), trois emplacements chacune pour les prochains bâtiments, et des sentiers qui s'enfoncent dans la forêt pour les départs des missions. Le détail, les captures et le contrôle : `design/camp/plans/PLAN_AGRANDI.fr.md` et `plan_agrandi.py`. **Il remplace le plan des clairières ci-dessous** (que le code n'utilise plus).
+
 ### Le plan : les clairières (retenu le 18 oct, à détailler plus tard)
 - **Un camp de 42 × 28 cases.** Au centre : le feu, le tableau d'affichage et le point d'apparition des héros. On arrive là où se trouve le travail.
 - **Trois clairières de deux lieux, séparées par des bois,** chacune regroupant des axes qui vont ensemble :
@@ -127,14 +130,85 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
 - **D'après les références de Mope** (Minas Tirith : la ville blanche, sa grande porte, ses remparts) : le camp a une entrée majestueuse au sud, là où le sentier sort aujourd'hui de la lisière.
 - **Le camp s'agrandit de 10 rangées au sud (42 × 38 cases).** La muraille a sa propre bande, sous tous les lieux : elle ne cache rien du camp. La lisière sud disparaît ; à l'ouest et à l'est, la forêt descend jusqu'en bas et avale les bouts de la muraille.
 - **La muraille :** pierre blanche, 4 cases de façade, créneaux, chemin de ronde et contreforts. Elle finit de chaque côté sur une tour d'angle à moitié cachée dans les arbres. **Trois tours de guet, à droite seulement,** avec un dôme vert et une bannière.
+- **Le chemin de ronde vu un peu de dessus** (demandé par Mope le 18 oct, « pour donner du relief ») : son sol est en dalles, plus claires au fond, avec un petit mur côté camp ; devant, un rebord bas et des créneaux courts, entre lesquels on voit presque les pieds des archers. Le dessus des tours est fait pareil. Les archers (#124) se tiendront au milieu des dalles, avec une ombre, le rebord devant leurs jambes.
 - **La grande porte,** au bout du sentier (la même colonne qu'aujourd'hui) : deux tours plus hautes à dômes verts, une voûte en plein cintre, la herse relevée, une galerie à trois baies et un blason doré (une flamme, le feu du camp). Des bannières aux couleurs des axes sur les tours, avec « MASTRES » écrit à la verticale en lettres gothiques dorées.
 - **Les douves et le pont-levis :** deux cases d'eau au pied de la muraille ; le pont-levis abaissé, avec ses chaînes, est le seul passage. Au-delà, une route pavée entre deux braseros.
-- **La muraille fantôme :** une fois la porte passée vers le nord, la muraille devient fantôme (environ 20 % d'opacité, et floue) tant qu'un héros est derrière elle, pour qu'on voie bien le camp ; elle redevient pleine quand on ressort.
+- **La muraille fantôme, en fondu selon la distance** (demandé par Mope le 18 oct) : une fois la porte passée vers le nord, la muraille s'estompe. Collé à elle, sous la voûte, elle est presque nette et un peu transparente (70 %, on voit le héros passer) ; plus on s'éloigne, plus elle est floue et pâle, jusqu'à disparaître à 9 cases de son pied ; elle revient de la même façon quand on se rapproche, et redevient pleine quand on ressort.
 - **Quatre archers** postés (mission #124, à venir) : un sur chaque tour de la porte, un sur la muraille de chaque côté. Ils saluent (bras levés, rangée « sort » LPC) chaque héros qui entre ou qui sort. Ils viennent du générateur LPC, à travers `lpc-sprite-mods`.
 - **L'art :** dessiné pixel par pixel dans le style LPC (contour sombre, lumière en haut à gauche, rampe de pierre blanche), comme le panneau-carte ; l'eau, les arbres et les personnages sont des pièces LPC, crédités dans `CREDITS.md`.
 - **Dans le jeu :** `src/32_muraille.js` pose la muraille (une seule image, triée sur son pied) et l'estompe dès que le héros passe sous la voûte ; les pièces (`muraille.png`, `douves.png`, `brasero.png`) sont faites par `design/camp/outils/muraille.py`. La muraille et l'eau bloquent sur les rangées 31 à 34, sauf les colonnes 14 et 15 (la porte et le pont). Le point nommé `porte` est sur la route, `entree` juste après la porte.
-- **Vérifié** dans `?test` : la muraille et les douves bloquent partout sauf à la porte ; on va à pied de la route au feu par le pont et la porte ; la muraille est pleine dehors et en visite, fantôme (20 %, floue) dedans, déjà sous la voûte, et redevient pleine quand on ressort.
-- **La maquette** (v4, validée par Mope le 18 oct, agrandissement compris) est dans `design/camp/entree/` : la porte, l'arrivée avec la muraille fantôme, et le camp entier ; à côté, les mêmes vues prises dans le jeu (5 à 7).
+- **Vérifié** dans `?test` : la muraille et les douves bloquent partout sauf à la porte ; on va à pied de la route au feu par le pont et la porte ; la muraille est pleine dehors et en visite ; dedans, elle a disparu au feu, et en revenant vers elle (8, 5, 2,5 puis 0,8 case) elle est à chaque pas plus visible et moins floue ; elle redevient pleine quand on ressort.
+- **La maquette** (v4, validée par Mope le 18 oct, agrandissement compris) est dans `design/camp/entree/` : la porte, l'arrivée avec la muraille fantôme, et le camp entier ; à côté, les mêmes vues prises dans le jeu (5 à 7), le flou progressif (8) et le chemin de ronde vu de dessus avec des archers provisoires (9, `MAQUETTE=dossier python3 design/camp/outils/muraille.py`).
+
+### Le chantier des trois autres murs et les portes secondaires (proposé par Mope le 19 oct, design validé)
+- **Le camp sera fermé de tous les côtés :** après la muraille du sud, on construit les murs du nord, de l'ouest et de l'est. Le design montre le chantier **au tout début des travaux**, pour que les joueurs voient la muraille monter au fil des missions.
+- **Où passent les murs :** le long de la lisière, côté camp, sans agrandir le camp. Le mur nord est collé à la ligne d'arbres du haut ; le mur ouest part de la tour d'angle sud-ouest, une case à l'intérieur de la lisière ; le mur est part de la tour d'angle sud-est, sous le bord de la forêt.
+- **Chaque mur à un stade différent :**
+  - **Ouest (le plus avancé) :** deux assises de pierre blanche depuis la tour d'angle, un échafaudage avec un maçon dessus ; au-dessus du bois, des piquets et un cordeau.
+  - **Nord :** la base de la tour d'angle nord-ouest (le petit bosquet du coin a été abattu : souches et bois coupé), une première assise, une chèvre de levage avec son treuil, des palettes de pierres, une brouette ; la tranchée des fondations s'arrête au bord du bosquet nord, où travaille un bûcheron ; le cordeau reprend après.
+  - **Est :** seulement le tracé (piquets et cordeau), un ouvrier qui plante un piquet, le début de la tranchée au-dessus des tours du sud, et la première charrette de pierres qui arrive par le sentier.
+- **Les murs pas finis sont vus de haut comme un vrai chantier :** deux parements de pierres blanches et, au milieu, le blocage (des moellons dans le mortier).
+- **La base du chantier,** au pied du mur ouest : une cabane, des palettes de pierres, un tas de sable, une auge à mortier.
+- **Le chef de chantier** se tient au carrefour du sentier des archives, à côté de son panneau « Chantier » (une barre d'avancement par mur : N, O, E). On passe devant en allant au feu ; E pour lui parler : il dit où en est chaque mur. **L'avancement monte avec les missions fermées de l'axe camp** (validé par Mope le 19 oct). Ses textes de la maquette sont provisoires : sa voix est à l'équipe.
+- **Une porte secondaire sur chaque mur,** moins officielle que la grande porte : une seule tourelle crénelée, un peu plus haute que le mur, une porte de bois cloutée, une lanterne ; pas de dôme, pas de bannière, pas d'or ; un passage d'environ 40 × 62 pixels (la grande porte : 72 × 106). Chacune au bout d'un sentier qui existe : **nord** entre le coin des récits et la table des cartes (au chantier : les deux bases de la tourelle et le cintre de bois dressé entre elles), **ouest** au bout du sentier du coin des récits, au-dessus du bois (les deux bases, le passage entre elles), **est** au bout du sentier de l'atelier (l'emplacement tracé au cordeau). Une pancarte à chaque emplacement.
+- **Réalisme :** rien ne passe sur un arbre, une tour ou un toit ; là où un mur traverse un bois, le chantier s'arrête au bord, et il faudra d'abord abattre les arbres.
+- **Les ouvriers et le chef** de la maquette sont des personnages provisoires (planches déjà dans le jeu) ; les vrais viendront du générateur LPC, à travers `lpc-sprite-mods`.
+- **La maquette** (v3, validée par Mope le 19 oct) est dans `design/camp/chantier/` : le camp entier, le nord-ouest, la base ouest, l'est, le chef de chantier, et la porte secondaire à côté de la grande porte. Elle est dessinée par `design/camp/outils/chantier.py` par-dessus deux captures (`chantier_captures.mjs` : le camp, puis le même avec seulement le sol).
+- **Dans le jeu** (`src/44_chantier.js`) : les mêmes pièces, découpées une par une par `design/camp/outils/chantier_jeu.py` et triées comme le reste du décor ; les murs commencés et les tranchées bloquent le passage ; les ouvriers travaillent (ils tapent, creusent, tournent le treuil), et le chef de chantier se tourne vers le héros qui approche. **Le compte de l'avancement :** au premier jour (le 19 oct), nord 6 %, ouest 18 %, est 2 % ; chaque point d'une mission de l'axe camp rentrée depuis (S 1, M 3, L 8) ajoute 2 % à chaque mur, jusqu'à 100 %. Le panneau et le chef le disent. Les murs eux-mêmes montent à l'écran : voir juste en dessous.
+- **Les murs qui montent** (design v4 validé par Mope le 19 oct, `design/camp/murs/`, dessiné par `design/camp/outils/murs_montent.py`) : avec l'avancement, chaque mur monte à l'écran. L'ouest et l'est montent du sud vers le nord, le nord de l'ouest vers l'est. Sur chaque mur : le tronçon fini (pleine hauteur, chemin de ronde, merlons), le front de taille (deux assises de plus, un échafaudage et un maçon qui travaille), la tranchée creusée devant, puis les piquets et le cordeau jusqu'au bout. À 100 % : le mur fini, avec sa porte secondaire et le sentier qui y mène ; le chantier se range (cabane, palettes et ouvriers partent ; le chef et son panneau restent, avec des fanions).
+  - **Les jointures :** au sud, les murs ouest et est continuent et disparaissent derrière les tours de la grande muraille (on n'en voit jamais le bout) ; au nord, deux tours d'angle sont là dès le début, et les murs ouest et est viennent s'appuyer contre leur face ; le mur nord passe derrière le bosquet nord.
+  - **Les arbres :** ceux du bois, hors du camp, sont coupés au ras des murs ouest et est (aucun ne dépasse côté camp) ; la rangée du haut, derrière le mur nord, est enlevée (on n'en voyait que les troncs) ; dans le bois ouest, les arbres sur la ligne du mur (colonnes 2 et 3) sont abattus.
+  - **Le flou, pour tout le château :** comme la grande muraille, une fois dans le camp chaque mur s'estompe et devient flou selon la distance du héros à ce mur (presque net collé à lui, disparu à 9 cases). En visite (la carte du dashboard), ils restent pleins et nets.
+  - **Dans le jeu :** `src/45_murs.js`, les pièces dessinées par `design/camp/outils/murs_jeu.py` (`public/assets/lpc/murs.png`, `src/data/murs.json`). La ligne des murs bloque toujours, finie ou pas.
+
+### Le jour et la nuit (proposé le 19 oct, design validé par Mope : « je valide tout bravo »)
+- **Le camp suit la vraie heure de Paris :** l'aube de 6 h à 8 h, le jour jusqu'à 18 h, le crépuscule jusqu'à 20 h 30, puis la nuit ; on passe de l'un à l'autre en une demi-heure. Sur la carte du dashboard (la visite), le camp reste en plein jour, pour rester lisible.
+- **La nuit, seul ce qui brûle éclaire autour de soi :** le feu de camp, le lampadaire, la forge de Baba, la lanterne de la table des cartes, les braseros du pont, une bougie dans chaque tente, et les lanternes des portes secondaires une fois leur mur fini. Les fenêtres des tours s'allument (à peine, quand la muraille n'est plus qu'un voile, dans le camp), et des lucioles volent près des bosquets. Au crépuscule, les fenêtres et les lanternes s'allument déjà.
+- **La nuit, les ouvriers et le chef de chantier vont se coucher :** il ne reste que le matériel et le panneau.
+- **La torche :** au crépuscule et la nuit, chaque héros (le sien et ceux des autres joueurs) porte une torche, allumée toute seule et éteinte à l'aube : serrée dans sa main droite (sa main passe par-dessus le manche, et la torche suit sa main quand il marche), penchée vers l'extérieur, loin du visage (validé par Mope le 19 oct : « la torche doit être mise dans la main du joueur »). Elle éclaire 3 à 4 cases autour de lui, d'une lumière chaude, et sa flamme danse.
+- **La maquette** est dans `design/camp/jour-nuit/` (dessinée par `design/camp/outils/jour_nuit.py` et `torche.py`). **Dans le jeu :** `src/46_jour_nuit.js` (deux voiles de lumière posés sur le camp : l'un multiplie, l'autre ajoute le chaud, les fenêtres et les lucioles) ; les fenêtres sont relevées dans l'image de la muraille par `design/camp/outils/jour_nuit_jeu.py` (`src/data/fenetres.json`). `?heure=22:30` force une heure.
+
+### La météo (proposée le 19 oct, design validé par Mope : « Météo validée »)
+- **Elle change toute seule toutes les trois heures (heure de Paris),** la même pour tous les joueurs, et la plupart du temps il fait beau : sur une journée, environ 7 créneaux sur 10 au beau temps, puis la pluie, plus rarement l'orage. Le brouillard ne vient que le matin (de 3 h à 9 h) et se lève dans la matinée. La pluie arrive et part en dix minutes, le brouillard en une demi-heure. Sur la carte du dashboard (la visite), beau temps. En hiver, la neige tombe à la place de la pluie et de l'orage (plus bas, les saisons).
+- **La pluie :** le ciel se couvre, la pluie tombe en biais (de fines rayures, un pixel vers la gauche tous les trois vers le bas), la terre mouillée fonce et des flaques se forment au milieu des chemins (et sur la place du feu). Les gouttes éclaboussent la terre et l'herbe, jamais un toit, un arbre ou un personnage, qui passent devant. Les douves font des ronds, pas le pont.
+- **L'orage :** plus sombre, la pluie plus forte et plus longue ; de temps en temps (toutes les 6 à 18 secondes), un éclair blanchit tout le camp en deux éclats rapprochés.
+- **Le brouillard du matin :** plus épais vers les douves et dans la forêt du bord, plus léger au milieu du camp ; ses nappes dérivent lentement.
+- **Avec le jour et la nuit :** une nuit de pluie, le feu et les torches brillent sous la pluie ; la pluie et la brume ne brillent pas dans le noir.
+- **La maquette** est dans `design/camp/meteo/` (dessinée par `design/camp/outils/meteo.py`). **Dans le jeu :** `src/48_meteo.js` (un voile au sol, sous tout le reste, qui lit le sol du camp et celui de la place ; le ciel couvert ; la pluie et le brouillard par-dessus tout ; l'éclair). `?meteo=pluie` (ou `orage`, `brouillard`, `neige`, `beau`) force un temps ; en `?test`, beau temps et midi.
+
+### Les animaux (proposés le 19 oct, design validé par Mope le 20 oct : « je valide les animaux »)
+- **Les poules :** trois blanches et deux rousses picorent autour de la cabane de l'ouest et de l'abreuvoir. Elles font quelques pas, s'écartent quand un héros passe trop près, et rentrent sous la cabane la nuit et quand il pleut.
+- **Le chat :** un chat roux dort roulé en boule sur les pavés, au chaud près du feu ; de temps en temps il s'étire, puis se rendort.
+- **Les lapins :** deux à chaque lisière de la forêt (ouest et est), dans l'herbe seulement. Ils font de petits bonds ; un héros approche : ils détalent vers les arbres et disparaissent, puis reviennent un peu plus tard. La nuit, ils dorment.
+- **Les canards :** un colvert et deux canes ensemble, et un autre colvert plus loin, nagent lentement le long des douves et font demi-tour ; la nuit, ils dorment sur l'eau.
+- **Les papillons :** quelques-uns volettent au-dessus de l'herbe, le jour et au beau temps seulement.
+- **Les règles :** une bête ne se pose que là où elle tient tout entière sur le sol dégagé (terre ou herbe), jamais devant un toit, un arbre ou un mur ; les bêtes ne bloquent personne. Elles sont dessinées au pixel dans le style LPC (contour sombre, trois teintes, lumière en haut à gauche).
+- **La maquette** est dans `design/camp/animaux/` (dessinée par `design/camp/outils/animaux.py`). **Dans le jeu :** `src/49_animaux.js` ; la planche des bêtes et leurs places sont fabriquées par `design/camp/outils/animaux_jeu.py` (`public/assets/lpc/animaux.png`, `src/data/animaux.json`).
+
+### Les scènes entre habitants (proposées le 19 oct, design validé par Mope le 20 oct : « parfait je valide »)
+- **De temps en temps** (toutes les 25 à 60 secondes), deux ou trois habitants qui se croisent font quelque chose ensemble pendant une vingtaine de secondes, puis chacun repart à ses occupations. Une scène à la fois.
+- **La veillée au feu** (plus souvent le soir et la nuit) : trois héros autour du feu, chacun parle à son tour ; le héros de départ s'assoit sur le banc et rit (seule sa planche sait s'asseoir ; sinon, un autre se tient debout).
+- **Le crieur et son public :** quand il crie une nouvelle, deux ou trois promeneurs viennent l'écouter au pied de l'estrade.
+- **Une commande à la forge** (le jour) : le chef de chantier quitte son panneau, va à pied chercher des outils devant la forge pendant que le forgeron frappe sur l'enclume, puis il rentre.
+- **Un duel à l'enclos** (pas la nuit) : deux héros s'entraînent l'un contre l'autre, un troisième les encourage, accoudé à la barrière.
+- **Quand ils se parlent, ils bougent :** celui qui parle fait des gestes des mains, ceux qui écoutent hochent la tête. Au-dessus de celui qui parle, une petite bulle à image (un point d'exclamation, un cœur, un rire, une étoile, un marteau…), sans texte : les répliques restent à l'équipe.
+- **On parle à l'un d'eux (E) :** il laisse la scène, elle s'arrête, et chacun repart.
+- **La maquette** est dans `design/camp/scenes/` (des petites animations, dessinées par `design/camp/outils/scenes.py`). **Dans le jeu :** `src/50_scenes.js` (les héros vont à leur place par les chemins, `42_promeneurs.js` les y garde ; le chef de chantier quitte son panneau grâce à `44_chantier.js`).
+
+### Les saisons et la fête du niveau 4 (proposées le 19 oct, design validé par Mope le 21 oct : « Validé »)
+- **Le camp suit les vraies saisons,** les mêmes pour tous les joueurs (le calendrier de Paris, comme la météo) : le printemps à partir du 21 mars, l'été du 21 juin, l'automne du 23 septembre, l'hiver du 21 décembre. Sur la carte du dashboard (la visite), on voit la saison du moment.
+- **Le printemps :** l'herbe plus tendre, des fleurs blanches, jaunes, roses et mauves dans l'herbe dégagée, et un feuillu sur deux en fleurs (roses et blanches).
+- **L'été :** le camp tel qu'il est dessiné.
+- **L'automne :** chaque feuillu prend sa teinte (or, orange, rouge ou jaune-vert), l'herbe jaunit, et des feuilles tombées jonchent le sol, surtout au pied des arbres. Plus de papillons.
+- **L'hiver :** la neige sur le sol, sur le haut des toits, des tentes, des murs, des tours et des feuillus ; les chemins, tassés par les pas, restent visibles ; les douves gèlent (avec quelques fêlures). La neige tombe à la place de la pluie, sans flaques. Plus de canards ni de papillons ; sous la neige, les poules rentrent.
+- **Ce qui ne change pas :** les sapins restent verts toute l'année (en hiver, un peu de neige sur leurs branches). Les habitants, les héros et les bêtes restent tels quels : la neige ne tombe jamais sur leur tête.
+- **La fête du niveau 4 :** le jour où un lieu atteint le niveau 4 (le jour de Paris où rentre la mission qui l'y fait passer), le camp fait la fête toute la journée. Quatre mâts plantés aux coins de la place du feu, des guirlandes de fanions et de lanternes de papier entre eux (les fanions flottent ; la nuit, les lanternes éclairent). De temps en temps, une ronde : les héros qui se promènent viennent danser en rond sur la place, devant le feu, pendant une minute, puis repartent ; le barde de la radio joue à côté. On parle à un danseur (E) : il quitte la ronde. Pendant la fête, pas d'autre scène entre habitants.
+- **La maquette** est dans `design/camp/saisons/` (dessinée par `design/camp/outils/saisons.py`). **Dans le jeu :** `src/51_saisons.js` (au chargement, les planches du décor et le sol sont repeints pour la saison, une fois ; l'été ne repeint rien) et `src/52_fete.js` (les mâts, les guirlandes, la ronde). `?saison=hiver` (ou `printemps`, `ete`, `automne`) force une saison, `?fete` la fête ; en `?test`, l'été.
+
+### Le camp garde des traces (proposé le 19 oct, design validé par Mope le 22 oct : « je valide »)
+- **La voie des étendards :** chaque grosse mission (taille L) rentrée plante un étendard devant la grande porte, de chaque côté de la route, aux couleurs de son axe (une étoile dorée brodée, une pomme dorée en haut du mât). Le plus ancien est le plus près de la porte ; la voie s'allonge vers l'extérieur, douze de chaque côté par rang, puis un deuxième rang derrière (entre les étendards du premier) et un troisième devant. Ceux des trois derniers jours ont une gerbe de fleurs au pied. Les drapeaux ondulent au vent. On s'approche d'un étendard, E : la mission, qui l'a faite et quand, et son axe. (Des stèles de pierre avaient été essayées : en rangées, elles faisaient cimetière.)
+- **Les sentiers qui s'usent :** chaque sentier suit le travail des 14 derniers jours (les points des missions rentrées) dans le lieu où il mène, comparé au lieu le plus actif. Moins de 10 % : personne n'y va, l'herbe reprend un bord du sentier par endroits ; moins de 35 % : normal ; moins de 70 % : usé, des plaques de terre piétinée ; au-delà : très usé, il déborde sur l'herbe par endroits (jamais dans l'emprise d'un lieu). La route de la porte au feu est toujours très usée : tout le monde la prend. Si personne n'a travaillé depuis 14 jours, rien ne change. Le sol est celui du jeu (les pièces LPC « dirt ») : seuls les coins du sentier changent.
+- **La maquette** est dans `design/camp/traces/` (dessinée par `design/camp/outils/traces.py`). **Dans le jeu :** `src/53_traces.js` (les étendards, E, l'usure lue dans les missions ; le sol est redessiné quand elle change, puis repeint pour la saison) ; l'usure de chaque tronçon de sentier dans `src/01_plan.js` (`CHEMINS_LIEUX`, `terreUsee`).
 
 ### Comment un lieu grandit
 - **Les points :** chaque mission fermée de l'axe rapporte S = 1, M = 3, L = 8.
@@ -160,6 +234,51 @@ Un lieu par axe du plan. **Les noms sont provisoires :** les lieux du camp font 
   | 4 | l'appentis des armes s'accole à l'atelier (arcs et lames dessous), le grand tas de bois derrière lui, la grande enclume, deux torches de part et d'autre du foyer ; une cour pavée |
 
   Le design : `design/camp/outils/armurerie.json` (aperçu `pieces/arm_apercu.png`). `armurerie_jeu.py` en tire la planche du jeu (`public/assets/lpc/armurerie.png` : mur, toit, gueule du foyer, poteau retourné, dalles) et les niveaux (`src/data/armurerie.json`), que dessine `src/14_lieux.js`.
+- **Le coin des récits, la table des cartes, l'atelier et les archives (v3, validés par le propriétaire le 19 oct ; le coin des récits noté 8/10) :** sur le modèle de l'armurerie, chaque niveau est une composition entière. Les demandes du propriétaire (19 oct) : **pas de bannières** ; **chaque lieu a sa propre silhouette** ; **des derniers niveaux imposants** ; **le sol pavé déborde et s'effiloche dans l'herbe** (des pierres semées de moins en moins serrées), jamais un bord carré ; la terre battue a un bord irrégulier. **Les emprises grandissent** (le plan du camp s'agrandira pour elles, il est en cours) : 12 × 9 cases pour le coin des récits, 9 × 7 pour les trois autres. Les grands bâtiments sont dessinés pixel par pixel dans la pierre blanche, le cuivre vert et l'or de la place et de la muraille : les lieux vont avec le centre du village.
+
+  **Le coin des récits** (axe Histoire) : de l'arc de souches au **théâtre gréco-romain**, où des personnages viendront raconter des histoires. **Le lutrin et son grand livre sont toujours au milieu de la scène,** face au sud, dans l'axe du sentier.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 · le cercle du conteur | le lutrin sur une pierre plate, au milieu ; quatre souches en arc devant lui, un petit feu, les livres ; une ronde de terre battue |
+  | 2 · l'estrade du conteur | une estrade de bois et son rideau rouge entre deux poteaux, deux lanternes, le lutrin au milieu ; deux rangs de bancs, une allée au milieu |
+  | 3 · le petit théâtre | une scène de pierre, son mur à colonnes, ses niches et ses statues, un petit fronton ; l'orchestre en demi-cercle, trois rangs de gradins et leur escalier ; deux braseros ; les pavés |
+  | 4 · le théâtre des récits | le grand mur de scène à deux étages (colonnes, niches et statues, le livre doré au milieu, le fronton) ; six rangs de gradins et trois escaliers ; le mur extérieur à arcades et sa grande arche d'entrée, au bout du sentier ; deux braseros, deux réverbères, deux buis |
+
+  **La table des cartes** (axe Salles et carte) : le camp d'une expédition, jusqu'à l'observatoire. Le signe : la table et sa carte dépliée.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 · la table de l'éclaireur | la table et sa carte, le panier de cartes roulées, un tabouret, un poteau indicateur |
+  | 2 · l'auvent du cartographe | la table sous un auvent rayé vert, un globe sur son pied, le panier, le poteau ; les premiers pavés au seuil |
+  | 3 · la roulotte des explorateurs | une roulotte de bois à roues ; la table et sa carte à côté, une carte du pays sur un chevalet, le poteau |
+  | 4 · l'observatoire des cartographes | une tour ronde de pierre blanche, son parapet crénelé, ses meurtrières éclairées, et en haut la grande lunette de laiton et une sphère armillaire ; la roulotte à son pied, la grande table et la carte du pays, le globe, deux réverbères |
+
+  **L'atelier** (axe Pixel art) : du chevalet en plein air à **la halle de verre des peintres**. Le signe : le chevalet et sa toile.
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 | des piquets et une pancarte |
+  | 1 · le chevalet en plein air | le chevalet, un tabouret, les pots de couleur, l'étendoir des étoffes teintes |
+  | 2 · l'abri du peintre | le chevalet sous un auvent rayé orange, l'étendoir, les pots ; les premiers pavés au seuil |
+  | 3 · l'atelier du peintre | une maison à colombage blanc, toit de chaume doré, deux grandes fenêtres à meneaux ; l'enseigne à la palette, l'étendoir, un chevalet dehors |
+  | 4 · la halle des peintres | une halle blanche à poteaux de bois, son grand toit de verre, deux hautes fenêtres cintrées, une porte double vitrée ; à gauche l'échafaudage, son échelle et une statue en cours de taille ; à droite le grand chevalet et sa toile (le camp au couchant) ; l'étendoir, les pots |
+
+  **Les archives** : de la simple tente d'aujourd'hui (`src/27_archives.js`) à **la grande bibliothèque** (demande du propriétaire, 19 oct). On la reconnaît à ses hautes fenêtres où l'on voit les rayonnages pleins de livres, et à sa coupole. Ce n'est pas un des 8 lieux : ce qui la fait grandir reste à choisir (**décidé le 22 oct par le propriétaire : les animations et les infos rentrées dans l'Archive** ; dans le jeu, le nombre de scènes de Fraps et de briques de combat du catalogue, aux seuils 0, 10, 30, 60 et 100 — `src/14_lieux.js`).
+
+  | Niveau | Ce qu'on voit |
+  |---|---|
+  | 0 · la petite tente (aujourd'hui) | la tente pointue à l'entrée ouverte, la potence et l'enseigne au livre |
+  | 1 · la tente et ses coffres | la tente, un coffre, le lutrin, une pile de livres ; les premiers pavés au seuil |
+  | 2 · la grande tente des archives | la grande tente (celle qu'on voit de l'intérieur), son entrée, deux lanternes, le coffre, les livres |
+  | 3 · la bibliothèque | un bâtiment de pierre blanche au toit d'ardoise, deux hautes fenêtres cintrées où l'on voit les rayonnages et leurs livres, la porte de bois sous le livre doré, trois marches ; un lutrin, deux réverbères |
+  | 4 · la grande bibliothèque | une rotonde à colonnes et sa coupole de cuivre vert, sa lanterne et son épi doré ; entre les colonnes, des fenêtres pleines de livres ; deux ailes au toit d'ardoise ; le grand escalier, deux statues, deux réverbères |
+
+  La tente d'aujourd'hui n'a pas d'emprise réservée : avant d'entrer dans le jeu, la place des archives (et celle des trois autres lieux, plus grands qu'avant) est à revoir sur le plan du camp (`src/01_plan.js`, `design/camp/plans/verifier.py`).
+
+  Le design : `design/camp/outils/lieux_niveaux.py` dessine les 20 niveaux (aperçus `pieces/recits_apercu.png`, `cartes_apercu.png`, `atelier_apercu.png`, `archives_apercu.png`). Les grands bâtiments sont dans `lieux_batiments.py`, le sol (herbe, terre battue, pavés qui s'effilochent) dans `lieux_dessin.py` ; les premiers niveaux des cartes, de l'atelier et des archives sont des pièces LPC (`lieux_specs.py`), et les objets-signes que LPC n'a pas sont dessinés par `objets_lieux.py`. Pas encore dans le jeu : une fois choisis, ils y entrent comme l'armurerie (une planche du jeu et un `src/data/<lieu>.json`).
 - **Premier lieu dessiné en pièces LPC :** le tableau d'affichage, du niveau 0 au niveau 4 (corde et pancarte, panneau de parchemins, panneaux couverts et enseigne, kiosque à auvent rayé, cabane avec lanterne et bannière). Depuis, son apparence dans le décor est devenue le panneau-carte (plus bas) ; ses niveaux sont à redessiner sur ce modèle.
 
 ### Le feu de camp
@@ -174,6 +293,19 @@ Il n'appartient à aucun lieu : **il montre l'équipe entière**, avec la somme 
 | 4 | 200 | les bannières de toutes les zones autour du feu, des tabourets |
 
 Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus nombreuses quand il grandit. Pour comparer : les 8 lieux au niveau 4 font 280 points.
+
+**La place du village (validée le 18 oct, dans le jeu) : le feu devient le centre du village.** Les 5 tailles du feu sont 5 niveaux de la place, dans la pierre blanche de la muraille (pavés décalés de la route du pont, étendards dorés aux couleurs des axes, braseros). **Elle est livrée au niveau 2** ; avec les vraies missions, elle prend tout de suite la taille du feu de l'équipe (3 au 19 oct).
+
+| Niveau | Ce qu'on voit |
+|---|---|
+| 0 · le feu de bivouac | le petit feu et sa souche, l'herbe sauvage |
+| 1 · la place du village | le grand feu dans un foyer de pierres blanches, trois bancs autour, le chaudron sur son trépied, un tonneau, une souche, le panneau d'annonces, un réverbère ; un premier rond de pavés |
+| 2 · la fontaine | une fontaine de pierre blanche au milieu, les braseros (le feu de l'équipe brûle toujours) au bout du banc du nord, un banc à l'est et à l'ouest tournés vers elle, deux réverbères ; les sentiers commencent à se paver, l'herbe autour est tondue |
+| 3 · le cœur du village | une fontaine à deux coupes, deux bancs au nord, des étendards, trois réverbères, un buis ; la terre battue recule devant une pelouse rayée et fleurie |
+| 4 · le centre du village | la grande fontaine à trois coupes et son dôme de cuivre, la pierre des bâtisseurs au sud entre deux buis, la couronne d'étendards, une haie basse taillée ; tous les sentiers pavés et bordés |
+
+- **Rien ne gêne le passage** : les objets sont rangés entre les quatre sentiers (jamais dans leurs couloirs), voisins collés ou bien écartés (pas de fente où un pied se coince). Le barde et son enceinte (ouest), la boîte aux lettres (est) et l'arrêt du tour (sud) gardent leur place. `design/camp/outils/place_niveaux.py` le vérifie à pied pour chaque niveau.
+- **Comment c'est fait** : `place_niveaux.py` dessine la place (aperçu `pieces/place_apercu.png`) ; `place_jeu.py` en tire un calque de sol par niveau (`place_sols.png`), les objets et leurs images d'animation (`place_objets.png` : l'eau, les braseros, les étendards, les lanternes) et `src/data/place.json` ; `src/36_place.js` les pose et remplace le petit feu.
 
 ### Le barde et la radio Deadlock (mission #94, 18 oct.)
 - **Près du feu, à l'ouest, un barde** est assis sur une souche, une lyre médiévale sur les genoux, avec **une enceinte** à côté de lui. Il diffuse DEADLOCK RECORDS RADIO, la station de Mastres Racing : les morceaux de Deadlock Records, l'animateur et les jingles, comme un petit poste.
@@ -200,10 +332,40 @@ Les flammes sont animées (5 images LPC) et des étincelles montent du feu, plus
   - **Au terrain d'entraînement, ensemble (#80) :** en groupe, E devant le terrain emmène tout le groupe dans son lobby (n'importe qui peut le demander : l'hôte emmène tout le monde). Au retour, le groupe se refait au camp avec le même code.
 - **S'approcher d'un lieu** affiche son axe, son niveau, ses points, et les missions de cet axe (ouvertes et récentes). Un lien mène au tableau de travail pour en prendre une.
 
+### L'écran titre (demandé le 19 oct)
+- **Avant le camp,** un écran titre en pixel art rétro (`src/45_titre.js`), qui raconte la soirée : au premier plan, notre camp au crépuscule, fermé par sa palissade, avec sa porte gardée par la sentinelle (tentes, bannières, râtelier, cible, tonneaux, bois coupé, braseros, lanterne, des rats) et l'équipe autour du feu ; derrière la porte, le chemin de la montée et ses 6 salles (la lisière, le gué, le moulin… un petit feu par salle, des monstres qui patrouillent) ; au loin, la tour sur sa montagne, trois étages et la lueur du gardien au sommet, qui balaie la plaine. Le menu **Jouer, Rejoindre, Réglages, Retour au dashboard** (Jouer ouvre le camp en solo ; on héberge au camp, avec « Jouer à plusieurs ») et « Autour du feu » (les médaillons des héros) sont dans les cadres du HUD épique ; la date du build est dans un coin. Un lien `?code=ABCDE` ouvre Rejoindre, le code déjà tapé ; `?test`, `?spot`, `?visite` et `?hote` le passent.
+- **Les passages, comme une seule caméra :** en venant du dashboard, un écran noir (le fond de la page, pendant le chargement), puis le ciel de nuit, et la caméra descend sur le paysage et la tour. Après Jouer ou Rejoindre, la caméra **bascule** : l'écran titre se dissout dans le sol du vrai camp vu en perspective sous l'horizon (comme le « mode 7 » des consoles 16 bits), puis elle pivote jusqu'à regarder droit vers le bas, le soir se lève, et l'image tombe pile sur le camp vivant. « Retour au dashboard », depuis le menu, fait remonter la caméra au ciel de nuit, puis le noir. Dans le camp, la case **« Retour au dashboard » (B)** fait le chemin à l'envers, en un peu plus d'une seconde : la caméra bascule du camp vers l'horizon de l'écran titre, remonte au ciel de nuit, le noir, puis le dashboard.
+- **La règle des sièges : les héros de l'équipe sont autour du feu.** Quatre sièges, remplis dans cet ordre :
+  1. le héros que **j'ai choisi** dans le menu du choix du héros (gardé dans ce navigateur) ;
+  2. les héros **créés par les joueurs** : chaque fiche de `content/classes/` dont l'auteur est un pseudo GitHub (Baba Brisenclume, par DonBabaa) ;
+  3. le **set de base** (Chevalier, Druide, Barde, Éclaireuse, puis le héros de départ) pour les sièges vides.
+
+  Un héros n'est jamais assis deux fois. Dès qu'un joueur crée son héros, il apparaît sur l'écran titre de tout le monde ; quand le choix de chacun sera partagé (par le Worker du camp), **le dernier héros choisi par chaque joueur** prendra sa place au rang 2, à la place de ceux qu'il a créés.
+
 ### Le héros de départ (validé le 18 oct)
 - **Un humain de base du générateur LPC :** peau claire, tête d'homme humain, expression neutre, cheveux simples châtain foncé, tee-shirt blanc, pantalon et bottes marron. Le lien du générateur est dans `dl/lpc/heros/credits.txt`.
 - **Les vraies animations LPC, dans les 4 directions :** marche en 8 images, à environ 2,3 cases par seconde ; course en 8 images, à environ 4,3 cases par seconde. Au repos, il garde la pose debout dans la dernière direction prise.
 - **Commandes :** flèches ou ZQSD pour marcher, Maj pour courir, ou un clic maintenu pour marcher vers le pointeur. Les poteaux du tableau et le feu bloquent le passage.
+
+### Le choix du héros, avant d'entrer au camp (demande du propriétaire, 19 oct)
+- **Un menu avant l'entrée :** à chaque arrivée, avant la scène de la sentinelle, on choisit le héros qu'on incarne. Puis la scène d'arrivée se joue avec lui (il entre par le sud et monte vers la sentinelle).
+- **Des onglets :** le **set de base** (le héros de départ et les classes d'essai : Chevalier, Barde, Druide, Éclaireuse, Voleur), puis **un onglet par joueur**, qui ne montre **que ses héros** (les classes de `content/classes/` dont l'`auteur` est son pseudo GitHub). Un joueur sans héros a son onglet vide, qui renvoie à l'armurerie.
+- **Le médaillon suit :** en haut à gauche, le médaillon montre le héros choisi. Un clic dessus rouvre le menu, pour changer de héros sur place.
+- **Un héros incarné quitte son poste :** quand on incarne Baba Brisenclume, il n'est plus à la forge.
+- **Le choix est gardé** dans ce navigateur : le menu s'ouvre sur le dernier héros pris.
+- Les héros des classes n'ont pas de course LPC : Maj les fait marcher plus vite, au rythme de la course.
+- **Validé par le propriétaire le 19 oct** (LOCKED.md).
+
+### Les héros du camp : ils se promènent et parlent (demande du propriétaire, 19 oct)
+- **Chaque héros qu'on peut incarner se balade sur toute la carte**, dans la muraille, de proche en proche (une étape fait au plus 15 cases), et s'arrête un moment entre deux. Il ne vise jamais l'endroit d'un autre : ils ne s'agglutinent pas. Ils ne bloquent pas le passage.
+- **Chacun a son foyer, là où il a du sens** : il y apparaît et y revient souvent (une fois sur trois). Le Chevalier au terrain d'entraînement, l'Éclaireuse à la table des cartes, le Druide au coin des récits, la Barde sur l'estrade, le Voleur dans la foule du tableau d'affichage, le héros de départ au feu.
+- **Il interagit avec le décor** (une fois sur trois, ailleurs que chez lui) : se chauffer les mains au feu, s'entraîner au terrain (l'épée, l'arc, la dague ou un sort selon sa classe), lire le tableau ou les récits, étudier les cartes, poster une lettre, chanter sur l'estrade. Ses animations de base, de sa planche LPC : la marche, le repos, et pour les gestes le sort, l'estoc, la taille et le tir, dans les 4 directions.
+- **Baba Brisenclume ne se promène pas :** il reste à sa forge.
+- **E devant un héros** (Baba compris, à sa forge) : il s'arrête, se tourne vers toi et dit une réplique, la suivante à chaque fois. De temps en temps, un héros qu'on voit en dit une tout seul.
+- **Ses répliques lui sont propres**, basiques et parfois drôles, d'après sa fiche de classe : `src/data/repliques.json`. **Texte provisoire** : les textes du jeu sont à l'équipe.
+- **Un héros pris par un joueur quitte le camp** pour lui laisser la place : le mien, et ceux des amis du groupe (chacun dit au groupe quel héros il incarne ; sa copie porte ce héros).
+- **Apparaître, disparaître :** quand un ami rejoint le groupe ou le quitte, quand il change de héros, et quand un héros du camp est pris (ou rendu), une colonne de lumière dorée tombe sur lui et une bouffée de poussière part de ses pieds ; il se montre (ou s'en va) quand la lumière touche le sol.
+- **E, c'est interagir** (l'aide en bas à gauche le dit) : consulter un lieu, parler à un personnage, écouter le barde, lire le courrier. Un lieu ou un personnage du camp passe avant un héros qui se promène.
 
 ### La sentinelle au spawn (validée le 18 oct)
 - **Ce qu'elle fait :** à la toute première arrivée, elle arrête le héros et lui demande son **nom de dev**. Le camp sait alors qui rentre quelle mission.
@@ -237,6 +399,7 @@ Le propriétaire l'aime tel quel (`LIKED.md`). On l'ouvre en s'approchant du tab
 - **À droite, la zone choisie :** la carte du tableau, où la zone clignote ; son niveau et ce qui manque pour le suivant ; ses missions sur des parchemins épinglés, rangées en « à prendre », « en cours » et « rentrées ».
 - **Chaque parchemin :** le numéro de l'issue, le titre, la taille et ses points (« M · 3 pts »), le jalon, qui s'en occupe ou qui l'a rentrée, et **comment la rentrer : « une PR qui contient `Ferme #33`, fusionnée »**. C'est le lien entre coder et voir le monde grandir.
 - **En pied :** prendre une mission se fait dans le tableau de travail du dashboard (« Je prends »), avec un lien vers lui. En v0, le camp ne fait que lire.
+- **L'onglet « Plans » (mission #157, 19 oct.) :** à côté de l'onglet « Missions », les plans du jeu en fiches : ce qu'on construit, comment, et où on en est. Chaque chose prévue porte un sceau lu en direct dans les missions (bâti, en chantier, à prendre, pas encore de mission, à trancher). Connecté à GitHub, on modifie une fiche (le texte à gauche, l'aperçu à droite), on en crée, on en retire, on les range. Les fiches de départ sont dans `content/plans/` ; une fiche modifiée au camp devient un commentaire de l'issue #157, avec son historique (seuls comptent ceux de l'équipe). Le format est dans l'aide de l'éditeur et en tête de `src/45_plans.js`.
 
 ### La première connexion
 Il faut comprendre tout de suite que **ce monde ne grandit que si l'équipe le construit**, en codant, en dessinant, en écrivant, puis en commitant.
@@ -359,12 +522,27 @@ Pour plus tard, si le sol manque de variété : [[LPC] Terrains](https://opengam
 | 18 oct | La sentinelle au spawn : un chevalier LPC sans retouche qui demande le nom de dev à la première arrivée, relié au pseudo GitHub par `equipe.json` ; un nom inconnu entre comme visiteur | le propriétaire |
 | 18 oct | « Les premières fois du dev » (l'équipement des héros) : à définir plus tard | le propriétaire |
 | 18 oct | L'armurerie : tente, tente et abri de forge, puis un atelier de pierre (pas une petite maison), des dalles qui gagnent le sol ; livrée au niveau 2 | le propriétaire |
+| 18 oct | La place du village : le feu devient le centre du village dans la pierre de la muraille (sans flou), une fontaine dès le niveau 2, les sentiers qui se pavent, l'herbe qui se dompte, et rien qui gêne le passage ; livrée au niveau 2 | le propriétaire |
 | 18 oct | Après le nom, la sentinelle presse le joueur et lui fait faire le tour du camp : le feu, le tableau, un terrain vide, un rat | le propriétaire |
+| 19 oct | Un menu de choix du héros avant d'entrer au camp : le set de base, puis un onglet par joueur avec seulement ses héros ; le médaillon suit le héros choisi ; Baba incarné n'est plus à la forge | le propriétaire |
+| 19 oct | Les héros qu'on peut incarner se promènent dans le camp et parlent (E), chacun avec ses répliques ; un héros pris par un joueur (moi ou un ami) disparaît pour lui laisser la place | le propriétaire |
+| 19 oct | Les héros se baladent sur toute la carte, chacun depuis un foyer qui a du sens, et interagissent avec le décor ; une colonne dorée quand quelqu'un apparaît ou disparaît (un ami qui rejoint ou part, un héros pris) ; E, c'est interagir | le propriétaire |
+| 19 oct | Les lieux n'ont pas de bannières ; chacun a sa propre silhouette ; les archives, une simple tente aujourd'hui, deviennent une bibliothèque | le propriétaire |
+| 19 oct | Le coin des récits devient, au dernier niveau, un théâtre gréco-romain où des personnages raconteront des histoires, le livre au milieu de la scène ; les derniers niveaux sont imposants ; les pavés débordent et s'effilochent dans l'herbe ; les emprises et le plan du camp peuvent grandir | le propriétaire |
+| 19 oct | Les niveaux v3 du coin des récits, de la table des cartes, de l'atelier et des archives sont validés ; le coin des récits est noté 8/10 | le propriétaire |
+| 22 oct | Le plan d'agrandissement v4 : muraille carrée et première muraille inchangée, le sud est l'introduction (fermé), quartiers, trois clairières sauvages séparées, environ trois emplacements chacune, chemins de départ dans la forêt ; le décor doit avoir l'air vivant | le propriétaire |
 
 | Question | Qui répond |
 |---|---|
 | Valider le feu de camp et ses 5 tailles (seuils 0, 10, 40, 100, 200 points) | le propriétaire |
 | Les 5 niveaux du tableau d'affichage sur le modèle du panneau-carte | Claude propose, le propriétaire choisit |
 | Les sept autres lieux, un par un, sur le modèle validé (porte T) | Claude propose, le propriétaire choisit |
+| Ce qui fait grandir les archives ; la place des quatre lieux agrandis sur le plan du camp | le propriétaire |
 | Les noms définitifs des lieux et le texte de la bulle d'arrivée | le responsable de l'axe Histoire, quand il y en aura un |
 | Les crédits : un écran de crédits dans le jeu, à partir de `CREDITS.md` et des fichiers de crédits des packs | le propriétaire |
+
+
+## Les bâtiments des lieux dans le jeu (22 oct)
+Le coin des récits (histoire), la table des cartes (level), l'atelier (art), l'estrade (son, « Son, c'est l'estrade ») et les archives sont dessinés du niveau 0 au niveau 4 : `design/camp/outils/lieux_jeu.py` sépare chaque maquette en sol et en bandes triées avec le héros (`public/assets/lpc/lieux_batiments.png`, `src/data/lieux_batiments.json`), et `src/14_lieux.js` les pose au niveau que donnent les missions de l'axe (les archives : ce qu'on rentre dans l'Archive). L'estrade n'avait pas de maquette : ses cinq niveaux sont ceux de `lieux_jeu.py` (corde et pancarte, estrade de bois, rideau rouge et bancs, kiosque de pierre, grande scène à fronton), à faire valider.
+
+**L'infirmerie (22 oct, essai demandé par le propriétaire) :** dans l'enceinte, à l'emplacement n° 3 du camp (à l'est, sous le tableau d'affichage, porte vers (37, 28)) ; le n° 1 est pris par le chantier de la muraille. Maquette de la session « Overnight prompt » (`design/camp/infirmerie/`, pièces LPC), ses cinq niveaux : pancarte, tente, échoppe, bâtiment à toit de chaume, bâtiment décoré. **Sans axe pour l'instant** : provisoirement, elle suit l'axe Combat (`AXE_INFIRMERIE` dans `src/14_lieux.js`) ; le propriétaire doit choisir un label d'axe, ou la ranger sous Combat. Le soin au camp n'est pas dans le jeu.

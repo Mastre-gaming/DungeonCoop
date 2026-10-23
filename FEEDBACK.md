@@ -2,6 +2,44 @@
 
 Les fiches et les remarques des parties jouées, une entrée par partie, la plus récente en haut. Chaque entrée garde la fiche telle quelle, puis ce qu'on en tire, et un ordre conseillé. On ne construit que ce que la personne responsable de l'aspect choisit (CLAUDE.md, « Feedback »). Le compte rendu du combat D1 est à part : `design/combat-d1/COMPTE_RENDU.fr.md`.
 
+## 19 oct. 2026 · les animations de Baba Brisenclume (DonBabaa)
+
+Revue faite sur la page de revue (l'artifact « Revue de Baba Brisenclume »), une note et un mot par animation de ses capacités (`design/animations/outil/forgeron.mjs`).
+
+### La fiche
+| Animation | Note | Retour |
+|---|---|---|
+| Interposition | 10 | validée : **verrouillée** (`LOCKED.md`) |
+| Chute d'Enclume | 7 | « L'enclume doit être plus grosse, enflammée et impressionnante. » |
+| Marteau | 6 | « Le croissant fait ressembler le marteau à une pioche. Le marteau doit continuer sa trajectoire après l'impact. Le coup doit donner une impression de puissance. » |
+| Chef-d'œuvre | 6 | « Baba doit frapper sur une enclume. L'arme créée doit être impressionnante et unique ; créer un modèle d'arme légendaire par archétype de héros. » |
+| Tenailles | 5 | « Lorsque la chaîne tire, Baba doit lui aussi avoir une animation qui le fait tirer la chaîne avec effort et puissance. » |
+| Lame Ardente | – | « Change le sort LPC : Baba doit faire apparaître une enclume et taper dessus. » |
+| Trempe | – | le même changement que la Lame Ardente (propriétaire, 19 oct) |
+
+### Ce qu'on en tire
+1. **Le geste « sort » ne convient pas à la Forge** : la Lame Ardente et la Trempe passent à une enclume qui apparaît, sur laquelle Baba tape ; le Chef-d'œuvre aussi.
+2. **La puissance manque aux coups** (Marteau, Tenailles) : le geste doit aller au bout, et Baba doit montrer l'effort.
+3. **Idée du propriétaire, le même jour :** la Chute d'Enclume devient une capacité de départ ; l'enclume reste sur le terrain (mur, couverture, obstacle), Baba doit être près d'elle pour les capacités qui en ont besoin, et les Tenailles peuvent tirer l'enclume ou un allié. Tranché par le propriétaire le même jour : attaque de base Marteau ; capacité 1 à deux faces, (a) Chute d'Enclume une fois par combat, (b) Forge (attaque ou armure) au contact de l'enclume ; capacité 3 Tenailles ; le reste inchangé (`content/classes/baba-brisenclume.json`). La Chute d'Enclume du Maître Forgeron au niveau 3 devient Enclume Ardente (deux fois par combat, en flammes).
+
+### Ordre conseillé
+1. Tenailles (5) : le geste de traction de Baba.
+2. L'enclume qui apparaît : Lame Ardente, Trempe, Chef-d'œuvre.
+3. Marteau (6) : la traînée qui suit la tête et va jusqu'au bout, l'onde de choc.
+4. Chute d'Enclume (7) : plus grosse, en flammes ; d'abord trancher l'idée de l'enclume qui reste.
+5. Les armes légendaires par archétype (Chef-d'œuvre).
+
+### Fait (version 2, le même jour, propriétaire : « oui »)
+Tout l'ordre ci-dessus, dans `design/animations/outil/forgeron.mjs` ; l'Interposition n'a pas bougé (verrouillée, refaite à l'identique).
+- **Tenailles** : la chaîne lancée, puis trois à-coups où Baba ramène le bras, recule d'un pas, racle le sol, avec des traits d'effort et de la sueur. Trois scènes : un ennemi, un allié tiré hors d'une flaque de feu, l'enclume qui racle le sol.
+- **L'enclume qui apparaît** : l'enclume du camp (LPC) se pose devant lui ; il tape dessus, le coup tombe sur son dessus (les têtes de ses marteaux, image par image : `design/classes/baba-brisenclume/marteaux.json`). Lame Ardente, Trempe et Chef-d'œuvre partent de là.
+- **Marteau** : la taille LPC jouée à l'envers ; le marteau part d'au-dessus de la tête, traverse la cible et finit au sol, avec une traînée qui suit la tête (plus de croissant), une onde de choc et l'écran qui tremble.
+- **Chute d'Enclume** : deux fois plus grosse, en flammes, un cercle de feu ; elle reste sur sa case et refroidit en fumant.
+- **Chef-d'œuvre** : une arme légendaire par archétype, qui sort de l'enclume deux fois plus grande dans des rayons d'or : l'Épée de l'Aube (Combattant), la Masse du Soleil (Soutien), l'Arc des Braises (À distance), le Sceptre-Étoile (Mage). Les noms sont provisoires : ils sont à l'équipe.
+La page de revue est à jour ; les notes de la version 2 s'y enregistrent à part, celles de la version 1 restent en rappel.
+
+**Validé par le propriétaire le 19 oct : « je valide les animations ».** Toutes sont verrouillées (`LOCKED.md`).
+
 ## 18 oct. 2026 · le terrain d'entraînement, sans cases (Paolitus)
 
 ### La fiche

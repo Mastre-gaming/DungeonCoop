@@ -1,0 +1,47 @@
+Character: Cyclope
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_Plump_bronze&clothes=Sleeveless_brown&legs=Pants_brown&weapon=Club_club
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/male/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases; 'Thick' Male Revised Run/Climb by JaidynReiman (based on ElizaWy's LPC Revised)
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, JaidynReiman, Benjamin K. Smith (BenCreating), Evert, Eliza Wyatt (ElizaWy), TheraHedwig, MuffinElZangano, Durrani, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/human/male_plump/walk.png
+
+original head by Redshrike, plump version by ??
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: Stephen Challener (Redshrike), ??
+
+torso/clothes/sleeveless/sleeveless/male/walk/brown.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Matthew Krohn (makrohn), JaidynReiman, Marcel van de Steeg (MadMarcel), Nila122, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+legs/pants/male/walk.png
+
+original male pants by wulax, recolors and edits to v3 base by bluecarrot16, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+weapon/blunt/club/walk/club.png
+
+Licenses: OGA-BY 3.0+, GPL 3.0, CC-BY 4.0
+
+Authors: bluecarrot16
+
+Download TXT
+Download CSV

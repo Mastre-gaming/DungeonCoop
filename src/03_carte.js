@@ -2,7 +2,8 @@
 // Ce module ne dessine pas à l'écran : il compose le sol dans un canevas et fait la liste des objets et des obstacles.
 //   objet    { img, sx, sy, sw, sh, x, y, pied }   une image découpée dans une planche, posée en (x, y) ; `pied` sert au tri
 //   obstacle { x, y, w, h }                        un rectangle où un pied ne peut pas entrer (pixels du monde)
-import { T, W, H, LIEUX, ARBRES, BOIS, FEU, ENCLOS, terre } from './01_plan.js';
+import { T, X0, Y0, X1, Y1, MONDE, CAMP, LIEUX, EMPLACEMENTS, ARBRES, BOIS, FEU, ENCLOS, terreUsee, usureCase, ETANG, FOSSE } from './01_plan.js';
+import { dessinerSol, dessinerFosse, decorSauvage } from './53_sauvage.js';
 import POS from './data/carte_zones.json';
 import ENTREE from './data/muraille.json';
 
@@ -14,27 +15,35 @@ const BORD = {   // masque des coins en terre (haut-gauche 1, haut-droite 2, bas
   8: [0, 2], 12: [1, 2], 4: [2, 2], 10: [0, 3], 5: [2, 3], 2: [0, 4], 3: [1, 4], 1: [2, 4],
   7: [1, 0], 11: [2, 0], 13: [1, 1], 14: [2, 1],
 };
-export function composerSol(im) {
-  const c = Object.assign(document.createElement('canvas'), { width: W * T, height: H * T });
+// usure(n, k) : l'usure des sentiers (53_traces.js) ; c : le canevas du sol à redessiner (quand l'usure change), sinon un neuf.
+export function composerSol(im, solPlat = [], usure = () => 1, c = Object.assign(document.createElement('canvas'), { width: MONDE.w, height: MONDE.h })) {
   const g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
-  const coin = [];
-  for (let j = 0; j <= H; j++) { coin[j] = []; for (let i = 0; i <= W; i++) coin[j][i] = terre(i, j); }
-  for (let j = 0; j < H; j++) {
-    for (let i = 0; i < W; i++) {
-      const x = i * T, y = j * T, h = hash(i, j);
+  const ox = MONDE.x0, oy = MONDE.y0;       // le canevas commence au coin haut-gauche du monde
+  const coin = {};
+  for (let j = Y0; j <= Y1; j++) { coin[j] = {}; for (let i = X0; i <= X1; i++) coin[j][i] = terreUsee(i, j, usure); }
+  for (let j = Y0; j < Y1; j++) {
+    for (let i = X0; i < X1; i++) {
+      const x = i * T - ox, y = j * T - oy, h = hash(i, j);
       g.drawImage(im.herbe, T, 3 * T, T, T, x, y, T, T);
       if (h % 9 === 0) g.drawImage(im.herbe, (h >>> 4) % 3 * T, 5 * T, T, T, x, y, T, T);   // des touffes, ici et là
       const m = (coin[j][i] ? 1 : 0) | (coin[j][i + 1] ? 2 : 0) | (coin[j + 1][i] ? 4 : 0) | (coin[j + 1][i + 1] ? 8 : 0);
       const tuile = (cx, cy) => g.drawImage(im.terre, cx * T, cy * T, T, T, x, y, T, T);
-      if (m === 15) { if (h % 5 === 0) tuile((h >>> 3) % 3, 5); else tuile(1, 3); }
+      if (m === 15) {
+        const u = usureCase(i, j, usure);   // usé : des plaques de terre piétinée (la tuile foncée de la planche), plus sur un sentier très usé
+        if (u >= 2 && h % (u === 3 ? 2 : 3) === 0) tuile(0, 5); else if (h % 5 === 0) tuile((h >>> 3) % 3, 5); else tuile(1, 3);
+      }
       else if (m === 9) { tuile(...BORD[1]); tuile(...BORD[8]); }
       else if (m === 6) { tuile(...BORD[2]); tuile(...BORD[4]); }
       else if (m) tuile(...BORD[m]);
     }
   }
+  // le dehors sauvage : la forêt, les clairières fleuries, le ruisseau et l'étang (53_sauvage.js)
+  dessinerSol(g, ox, oy, im);
+  dessinerFosse(g, ox, oy, im);               // les douves tout autour des trois autres murs, et leurs ponts
+  for (const f of solPlat) f(g, ox, oy);      // ce que les clairières posent à plat (le potager)
   // l'entrée (#123) : le parement au pied de la muraille, les douves, le pont-levis abaissé et la route pavée
-  g.drawImage(im.douves, 0, ENTREE.douves.y);
+  g.drawImage(im.douves, 0 - ox, ENTREE.douves.y - oy);
   return c;
 }
 
@@ -119,11 +128,13 @@ export function dessinerPanneau(g, im, niveaux = {}, zone = null, temps = 0) {
   r(64, 52, 9, 1, '#2a2333');
 }
 
-export function composerCamp() {
+export function composerCamp(images = {}) {
   const objets = [], obstacles = [], bloquees = new Set();
   for (const [i, j, d] of ARBRES) arbre(objets, i, j, d);
   for (const [i, j] of BOIS) bloquees.add(`${i},${j}`);
+  for (const [i, j] of FOSSE) bloquees.add(`${i},${j}`);       // l'eau des douves bloque (les ponts, non)
 
+  // les piquets et la pancarte de chaque lieu au niveau 0 (14_lieux.js dessine ceux qui ont grandi) ; l'emprise donne la porte
   const lieux = {};
   for (const l of LIEUX) {
     const [px, py] = l.porte;
@@ -135,6 +146,8 @@ export function composerCamp() {
     } else if (l.id === 'combat') {
       enclos(objets, obstacles);
       lieux[l.id] = { ...l };
+    } else if (l.id === 'histoire' || l.id === 'level' || l.id === 'art' || l.id === 'son') {
+      lieux[l.id] = { ...l };                                // 14_lieux.js les dessine à chaque niveau, du niveau 0 (la corde et la pancarte) au 4
     } else if (l.id === 'classes') {
       lieux[l.id] = { ...l };                                // l'armurerie : 14_lieux.js la dessine en entier, à chaque niveau
     } else {
@@ -143,18 +156,21 @@ export function composerCamp() {
     }
     lieux[l.id].centre = [(px + 1) * T, (py + 1) * T];     // le devant du lieu : là où le sentier arrive
   }
+  // les emplacements libres, pour les prochains bâtiments : des piquets et une pancarte, comme un lieu au niveau 0
+  for (const e of EMPLACEMENTS) if (e.n !== 3) emplacement(objets, obstacles, [e.porte[0] - 1, e.porte[1] - 1]);   // (le n° 3 : l'infirmerie, 14_lieux.js)
+
+  // le dehors, sauvage : les buissons, les fougères, les rochers, le campement, la ferme, la place des fêtes (53_sauvage.js)
+  const sauvage = decorSauvage({ objets, obstacles, bloquees, images });
+  for (const [i, j, d] of sauvage.arbres) arbre(objets, i, j, d);
 
   // Le feu, taille 0 (CAMP §4) : le petit feu animé et une souche pour s'asseoir.
   const fx = FEU[0] * T, fy = FEU[1] * T + 8;
   const feu = { img: 'deco', sx: 8 * T, sy: 47 * T, sw: 32, sh: 64, x: fx - 16, y: fy - 62, pied: fy, images: 5, pas: 0.12 };
-  obstacles.push({ x: fx - 15, y: fy - 12, w: 30, h: 22 });   // assez bas pour qu'on ne se tienne pas dans les flammes
-  const souche = deco(15, 23, 1, 1, fx + 1.2 * T, fy - 0.3 * T - 26);
-  objets.push(souche);
-  obstacles.push({ x: souche.x + 6, y: souche.pied - 10, w: 20, h: 8 });
+  // (ce qui bloque autour du feu, et sa souche, sont à la place du village : src/36_place.js, qui cache ce petit feu)
 
   // Les deux braseros au bout du pont (#123) : animés par la muraille (32_muraille.js) ; leur pied bloque.
   const braseros = ENTREE.braseros.map(([x, y]) => ({ x: x - 8, y, pied: y + 38 }));
   for (const b of braseros) obstacles.push({ x: b.x + 2, y: b.pied - 6, w: 12, h: 6 });
 
-  return { objets, obstacles, bloquees, lieux, feu, braseros };
+  return { objets, obstacles, bloquees, lieux, feu, braseros, vivants: sauvage.vivants, solPlat: sauvage.sol };
 }

@@ -12,9 +12,11 @@ import PERSOS from './persos.json';
 import SURF from './surfaces.json';
 import { terrain } from './salle.js';
 import { CONTACT } from './geometrie.js';
+import { lire, surChangement } from './reglages-combat.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
 import * as VIE from './vie.js';
+import { creerFilms, traction, ENCLUME as ENCLUME_FILM } from './films.js';
 
 export const name = 'vue';
 export const always = true;
@@ -29,34 +31,95 @@ const COULEURS = {
   glace: [[176, 222, 240], [206, 238, 250], [255, 255, 255], [96, 150, 186]],
   feu: [[214, 80, 22], [244, 136, 30], [255, 220, 90], [130, 36, 14]],
   foin: [[204, 172, 84], [222, 192, 104], [240, 214, 140], [140, 110, 46]],
+  // les pièges du Traqueur : le fer des mâchoires, l'ambre de la glu, la corde du collet
+  'piege-machoires': [[92, 92, 98], [120, 120, 128], [200, 200, 210], [40, 40, 46]],
+  'piege-glu': [[176, 128, 40], [200, 156, 60], [240, 210, 120], [100, 70, 20]],
+  'piege-collet': [[150, 110, 60], [176, 136, 80], [220, 190, 130], [80, 56, 26]],
 };
+// Le limier du Traqueur (public/assets/lpc/compagnons/limier.png, comme au camp) : une créature du combat (regles.js,
+// FAMILIERS), dessinée avec sa planche ; il court à la cible d'un ordre et revient ; à terre, il est terni.
+const LIGNES_CHIEN = { haut: 0, gauche: 1, bas: 2, droite: 3 };
+const VITESSE_CHIEN = 9 * T;
+const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' };
 
 let game, rendu, images, combat, salle, canvas, niveauPlan, pont, saison, des = null;
 const aff = new Map();                 // ce que la vue montre de chaque créature (ça suit la file, pas l'état final)
 const tonneaux = new Map();
 const braseros = new Map();
 const tombes = [], chutes = [];                     // les éboulis qui ferment un chemin (la fourche), posés une fois            // la lisière : id → { x, y, renverse, s } (la planche : 4 images de flamme, puis renversé)
+// l'enclume de Baba Brisenclume : { x, y, s, cache }, celle de sa Chute d'Enclume (films.js) ; ses animations validées
+// (les films) la cachent quand elles la dessinent elles-mêmes (sa chute, la Forge)
+let enclume = null;
+let films = null;
+const BABA = 'baba-brisenclume';
+const FILMS_ENCLUME = ['chute-enclume', 'lame-ardente', 'trempe'];
 let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
 let file = [], courant = null, ecouteurs = [];
+let phaseVue = null;                  // la phase que la file montre en ce moment (les ennemis jouent : leurs tours se règlent à part)
 let temps = 0, prochainFeu = 0;
 // le combo (le retour du propriétaire, 23 oct : « des animations satisfaisantes pour confirmer le combo ») : un ralenti,
 // une secousse, un trait doré entre les deux héros, des éclats d'or à l'impact ; le tampon « COMBO ! » est dans l'interface
-let ralenti = 0, secousse = 0, dernierImpact = null;
+let dernierImpact = null;
 let fx = null, etatsVus = new Map();   // les effets joués, et les états montrés (relus quand la file est vide)
 let etatsPlaques = new Map();         // id → les états sous sa barre (etats.js), relus aussi quand la file est vide
 export const effets = () => fx;
 // La caméra : son centre (cx, cy), l'échelle affichée (s) qui glisse vers celle des crans (base × 2^(crans/4), #122),
 // le point de l'écran qui reste sous la souris pendant le zoom (ancre), la molette pas encore comptée (des petits pas).
 const cam = { s: 2, base: 2, crans: 0, ancre: null, molette: 0, cx: 0, cy: 0, cible: null, glisse: null };
-const CRANS = 4, MOLETTE = 100, ZOOM_MAX = 5, DOUCEUR_ZOOM = 12;
+const CRANS = 4, MOLETTE = 100, ZOOM_MAX = 5;      // (la douceur du zoom, le zoom de départ : réglages « Ressenti »)
+let zoomDemande = lire('feel.zoom');
 let marques = {};                      // ce que l'interface demande de montrer (voir dessinerMarques)
 // (une clé neuve : les barres sont maintenant montrées par défaut, sous les pieds ; l'ancien choix « cachées » ne compte plus)
 const CLE_PLAQUES = 'dungeoncoop:barres-terrain';
 const plaques = { e: true, h: true }; // les barres de vie montrées : des ennemis (e), des alliés (h)
 let calquePlaques = null;
+// Le ressenti des coups : au moment où le coup touche (l'arme ou le projectile arrive, pas à la fin de l'animation),
+// un arrêt sur image (la file et les animations attendent), une secousse de la caméra, un éclair blanc et un recul
+// de la cible, et son chiffre ; dosés sur le résultat du d20 et sur les dégâts. Quatre styles, à essayer avec
+// ?ressenti=sobre|percutant|manga|cinema ; en plus, selon le style : des étincelles, un éclair de tout l'écran,
+// des traits de vitesse autour de la cible, un coup de zoom, un ralenti, un voile sombre qui isole la cible.
+//   gel : l'arrêt (s) · secousse, recul : en px d'écran, à tous les zooms (mesurés à l'échelle des maquettes, ×1,8) · flash, traits, voile : leur force (0 à 1) · zoom : +x % ·
+//   ralenti : { k : la vitesse, d : sa durée réelle (s) } · etincelles : des briques en plus sur la cible
+const STYLES = {
+  sobre: {
+    eraflure: { gel: 0.025, secousse: 0.8, recul: 1.5 }, touche: { gel: 0.05, secousse: 1.6, recul: 3 },
+    critique: { gel: 0.11, secousse: 3.2, recul: 5 }, autre: { gel: 0.02, secousse: 1, recul: 1.5 },
+  },
+  percutant: {
+    eraflure: { gel: 0.035, secousse: 1.2, recul: 2 }, touche: { gel: 0.075, secousse: 2.6, recul: 4, etincelles: ['impact-etoile'] },
+    critique: { gel: 0.2, secousse: 6, recul: 7, etincelles: ['impact-dore', 'impact-etoile'] }, autre: { gel: 0.03, secousse: 1.4, recul: 2 },
+  },
+  manga: {
+    eraflure: { gel: 0.04, secousse: 1.4, recul: 2.5 }, touche: { gel: 0.1, secousse: 3.2, recul: 5, traits: 0.55, etincelles: ['impact-etoile'] },
+    critique: { gel: 0.3, secousse: 7, recul: 9, traits: 1, flash: 0.4, zoom: 0.07, etincelles: ['impact-dore', 'impact-etoile'] },
+    autre: { gel: 0.03, secousse: 1.6, recul: 2 },
+  },
+  cinema: {
+    eraflure: { gel: 0.03, secousse: 1, recul: 2 }, touche: { gel: 0.06, secousse: 2, recul: 4 },
+    critique: { gel: 0.05, ralenti: { k: 0.18, d: 0.6 }, secousse: 4, recul: 8, voile: 0.6, zoom: 0.12, etincelles: ['impact-dore'] },
+    autre: { gel: 0.025, secousse: 1.2, recul: 2 },
+  },
+};
+const STYLE_DEFAUT = 'percutant';
+// (en px d'écran : sans ça, au zoom normal, 1 px du monde ≈ 1 px d'écran, et la secousse du style Sobre ne se voyait pas)
+const ECRAN = 1.8, SECOUSSE_MAX = 14, RECUL_MAX = 12;      // (la durée, la force de la secousse et le recul : réglages « Ressenti »)
+const calme = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+let style = STYLE_DEFAUT;
+let gel = 0, coup = null;                              // l'arrêt sur image restant (s) ; le dernier jet (attaque)
+const secousse = { a: 0, t: 0 };
+const ralenti = { k: 1, reste: 0 };
+// ce qui se joue par-dessus le terrain (sous l'interface) : l'éclair de l'écran, les traits, le voile ; et le zoom
+const ecran = { cible: null, t: 9, flash: 0, traits: 0, voile: 0, zoom: 0, tenue: 0 };
+let voile = null;
 
 export function init(g, options) {
   game = g;
+  const q = new URLSearchParams(location.search).get('ressenti');
+  style = STYLES[q] ? q : STYLE_DEFAUT;
+  document.documentElement.dataset.ressenti = style;
+  voile = Object.assign(document.createElement('div'), { className: 'voile-impact' });
+  voile.innerHTML = '<div class="vi-voile"></div><div class="vi-traits"></div><div class="vi-flash"></div>';
+  document.body.append(voile);
   ({ rendu, images, combat, salle, canvas } = options);
   niveauPlan = options.plan ?? null; pont = options.pont ?? null; saison = options.saison ?? 'ete'; des = options.des ?? null;
   const W = salle.l * T, H = salle.h * T;
@@ -76,9 +139,12 @@ export function init(g, options) {
   calquePlaques = Object.assign(document.createElement('div'), { className: 'plaques-terrain' });
   calquePlaques.setAttribute('aria-hidden', 'true');
   document.body.append(calquePlaques);
+  // le zoom de départ réglé en plein jeu : la caméra y glisse
+  surChangement(() => { if (lire('feel.zoom') !== zoomDemande) { zoomDemande = lire('feel.zoom'); const [min, max] = bornesCrans(); cam.crans = Math.max(min, Math.min(max, zoomDemande)); } });
   try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); if (lu) { plaques.e = !!lu.e; plaques.h = !!lu.h; } } catch {}
 
   fx = creerEffets(rendu, images);
+  films = creerFilms(rendu, images);
   peupler();
   VIE.init({ rendu, images, combat, plan: niveauPlan, heros: herosVus, saison });          // la vie du chemin (vie.js)
 
@@ -109,8 +175,9 @@ const herosVus = () => [...aff.values()].filter((a) => a.camp === 'h' && !a.ko).
 // Les personnages et les tonneaux du combat, en sprites LPC.
 function peupler() {
   for (const u of combat.S.unites) {
-    const img = images[`perso_${u.type === 'brt' ? 'brute-ennemie' : u.type}`];
-    const meta = PERSOS[u.type === 'brt' ? 'brute-ennemie' : u.type];
+    const chien = u.type === 'limier';
+    const img = chien ? images.limier : images[`perso_${u.type === 'brt' ? 'brute-ennemie' : u.type}`];
+    const meta = chien ? { attaque: null } : PERSOS[u.type === 'brt' ? 'brute-ennemie' : u.type];
     const nomTex = `perso-${u.type}`;
     const s64 = rendu.sprite(img, nomTex, 64, 64);
     const grand = meta.attaque ? rendu.sprite(img, nomTex, meta.attaque.taille, meta.attaque.taille) : null;
@@ -118,20 +185,23 @@ function peupler() {
     aff.set(u.id, {
       id: u.id, type: u.type, camp: u.camp, x: u.x * T, y: u.y * T, dir: u.camp === 'h' ? 'droite' : u.camp === 'p' ? 'bas' : 'gauche', anim: 'repos', t: Math.random(),
       pv: u.pv, ko: u.ko, mort: u.mort, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20 * (meta.echelle ?? 1), 5 * (meta.echelle ?? 1)),
-      pvMax: u.pvMax, plaque: creerPlaque(u),
+      pvMax: u.pvMax, plaque: creerPlaque(u), chien,
     });
   }
   for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
-  for (const b of combat.S.braseros) braseros.set(b.id, { x: b.x * T, y: b.y * T, renverse: b.renverse, s: rendu.sprite(images.brasero, 'brasero', 32, 64) });
+for (const b of combat.S.braseros) braseros.set(b.id, { x: b.x * T, y: b.y * T, renverse: b.renverse, s: rendu.sprite(images.brasero, 'brasero', 32, 64) });
+  const e = combat.S.enclume;
+  enclume = { x: (e?.x ?? 0) * T, y: (e?.y ?? 0) * T, s: rendu.sprite(images.film_enclume, 'film-enclume', ENCLUME_FILM.w, ENCLUME_FILM.h), cache: !e };
 }
 
 // Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
 export function remplacer(nouveau) {
   for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); a.plaque.intention.remove(); }
   for (const b of tonneaux.values()) b.s.retirer();
+  enclume?.s.retirer(); films.vider();
   for (const b of braseros.values()) b.s.retirer();
   for (const s of tombes.splice(0)) s.retirer();
-  aff.clear(); tonneaux.clear(); braseros.clear(); file = []; courant = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
+  aff.clear(); tonneaux.clear(); braseros.clear(); file = []; courant = null; phaseVue = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
   combat = nouveau;
   peupler();
   VIE.dispose(); VIE.init({ rendu, images, combat, plan: niveauPlan, heros: herosVus, saison });
@@ -150,7 +220,7 @@ const bornesCrans = () => [Math.floor(CRANS * Math.log2(1 / cam.base)), Math.cei
 // La taille de l'écran a changé (ou le début) : l'échelle de base suit l'écran ; on garde ses crans.
 function ajusterCamera(premiere = false) {
   cam.base = echelleDeBase();
-  if (premiere) cam.crans = 0;
+  if (premiere) cam.crans = lire('feel.zoom');
   const [min, max] = bornesCrans();
   cam.crans = Math.max(min, Math.min(max, cam.crans));
   cam.s = echelleDe(cam.crans);
@@ -167,7 +237,7 @@ function glisserZoom(dt) {
   while (Math.abs(cam.molette) >= MOLETTE) { zoomer(cam.molette < 0 ? 1 : -1, cam.ancre?.x, cam.ancre?.y); cam.molette -= Math.sign(cam.molette) * MOLETTE; }
   const but = echelleDe(cam.crans);
   if (cam.s === but) return;
-  let e = Math.exp(Math.log(cam.s) + (Math.log(but) - Math.log(cam.s)) * (1 - Math.exp(-DOUCEUR_ZOOM * dt)));
+  let e = Math.exp(Math.log(cam.s) + (Math.log(but) - Math.log(cam.s)) * (1 - Math.exp(-lire('feel.zoomDouceur') * dt)));
   if (Math.abs(Math.log(but / e)) < 0.003) e = but;
   const avant = cam.ancre ? rendu.versMonde(cam.ancre.x, cam.ancre.y) : null;
   cam.s = e;
@@ -203,14 +273,14 @@ const TYPES = ['', 'eau', 'huile', 'glace', 'feu', 'foin'];
 const BLOC_LPC = { foin: 0, feu: 1, huile: 2, glace: 3 };                 // leur bloc de 3 x 6 cases dans surfaces_lpc.png
 const PLEIN_VARIE = { feu: true, huile: true, glace: true };             // le blé n'a pas de variantes pleines (sa rangée 5 est de l'herbe)
 const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;     // toujours le même tirage au même endroit
-let planche = null, blocs = null;
+let planchePx = null, blocs = null;
 function pixelsPlanche() {
-  if (!planche && images.surfaces) {
+  if (!planchePx && images.surfaces) {
     const im = images.surfaces, c = Object.assign(document.createElement('canvas'), { width: im.width, height: im.height }), g = c.getContext('2d');
     g.drawImage(im, 0, 0);
-    planche = g.getImageData(0, 0, im.width, im.height);
+    planchePx = g.getImageData(0, 0, im.width, im.height);
   }
-  return planche;
+  return planchePx;
 }
 function blocsLPC() {                                // chaque bloc dans sa propre toile : terrain() le lit depuis (0, 0)
   if (!blocs && images.surfaces_lpc) {
@@ -229,7 +299,7 @@ function redessinerSurfaces(flammes = 0) {
   const nx = Math.ceil(W / M), ny = Math.ceil(H / M), grille = new Uint8Array(nx * ny);
   for (const [k, s] of Object.entries(combat.mailles())) {
     const [i, j] = k.split(',').map(Number);
-    if (i >= 0 && j >= 0 && i < nx && j < ny) grille[j * nx + i] = TYPES.indexOf(s.t);
+    if (i >= 0 && j >= 0 && i < nx && j < ny) grille[j * nx + i] = Math.max(0, TYPES.indexOf(s.t));      // (les pièges : dessinés à part, plus bas)
   }
   const at = (i, j) => (i >= 0 && j >= 0 && i < nx && j < ny ? grille[j * nx + i] : 0);
   // l'eau : une nappe lisse, pixel par pixel
@@ -289,6 +359,13 @@ function redessinerSurfaces(flammes = 0) {
     poses.sort((a, b) => a[0] - b[0]);
     for (const [, sx, sy, sw, sh, x, y] of poses) ctxSurfaces.drawImage(images.surfaces, sx, sy, sw, sh, x, y, sw, sh);
   }
+  // les pièges du Traqueur (une tache de la couleur du fer, de l'ambre ou de la corde, au contour plus sombre)
+  for (const [k, s] of Object.entries(combat.mailles())) {
+    if (s.t !== 'piege') continue;
+    const [i, j] = k.split(',').map(Number), c = COULEURS[`piege-${s.v}`] ?? COULEURS['piege-machoires'], r = M * 0.72;
+    ctxSurfaces.fillStyle = `rgb(${c[3].join(',')})`; ctxSurfaces.beginPath(); ctxSurfaces.arc((i + 0.5) * M, (j + 0.5) * M, r, 0, Math.PI * 2); ctxSurfaces.fill();
+    ctxSurfaces.fillStyle = `rgb(${c[1].join(',')})`; ctxSurfaces.beginPath(); ctxSurfaces.arc((i + 0.5) * M, (j + 0.5) * M, r - 1.5, 0, Math.PI * 2); ctxSurfaces.fill();
+  }
   texSurfaces.needsUpdate = true;
 }
 const feuPresent = () => Object.values(combat.mailles()).some((s) => s.t === 'feu');
@@ -331,7 +408,7 @@ export function dessinerMarques(m = marques) {
     g.beginPath(); g.moveTo(x, y - 6); g.lineTo(x + 2, y - 2); g.lineTo(x + 6, y); g.lineTo(x + 2, y + 2); g.lineTo(x, y + 6); g.lineTo(x - 2, y + 2); g.lineTo(x - 6, y); g.lineTo(x - 2, y - 2); g.closePath(); g.fill(); g.stroke();
   }
   const anneau = (id, couleur, epais = 2) => {
-    const a = aff.get(id) ?? tonneaux.get(id) ?? braseros.get(id); if (!a) return;
+    const a = aff.get(id) ?? tonneaux.get(id) ?? braseros.get(id) ?? (id === 'enclume' && !enclume?.cache ? enclume : null); if (!a) return;
     g.strokeStyle = couleur; g.lineWidth = epais; g.beginPath(); g.ellipse(a.x, a.y - 1, 15, 7, 0, 0, Math.PI * 2); g.stroke();
   };
   for (const id of m.cibles ?? []) anneau(id, 'rgba(255, 214, 90, 0.9)');
@@ -426,7 +503,7 @@ export function dessinerMarques(m = marques) {
   }
   if (m.chemin?.length) {
     const h = aff.get(m.selection);
-    g.strokeStyle = m.cheminOk === false ? 'rgba(255, 90, 74, 0.9)' : 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 2; g.setLineDash([4, 4]);
+    g.strokeStyle = m.cheminOk === false ? 'rgba(255, 90, 74, 0.9)' : m.cheminDanger ? 'rgba(255, 110, 60, 1)' : 'rgba(255, 255, 255, 0.95)'; g.lineWidth = 2; g.setLineDash([4, 4]);
     g.beginPath(); g.moveTo(h.x, h.y);
     for (const p of m.chemin) g.lineTo(p.x * T, p.y * T);
     g.stroke(); g.setLineDash([]);
@@ -480,14 +557,28 @@ function scene(e) {
     }
     case 'poussee': {
       const cible = e.tonneau ? tonneaux.get(e.id) : a, dep = { x: cible.x, y: cible.y };
+      const tiree = !e.tonneau && films.de(cible);                // tirée par les Tenailles de Baba : au rythme de ses à-coups
+      if (tiree) return tirer(tiree, cible, e.chemin, () => { a.anim = 'blesse'; }, () => { a.anim = 'repos'; });
       const pts = e.chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
       const duree = Math.min(0.6, 0.12 + Math.hypot(fin.x - dep.x, fin.y - dep.y) / (12 * T));
       fx.jouer('poussiere', { x: dep.x, y: dep.y }); fx.jouer('poussiere', { x: fin.x, y: fin.y, retard: duree });
+      // poussé du haut d'un plateau : un petit bond par-dessus le bord, puis la chute (plus longue)
+      if (e.chute) {
+        const d2 = duree + 0.15 * e.chute;
+        return { duree: d2, maj(t, k) {
+          cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k * k;
+          if (!e.tonneau) { a.anim = 'blesse'; a.enfonce = -0.6 * Math.sin(Math.PI * Math.min(1, k * 1.6)); }
+        }, fin() {
+          if (!e.tonneau) { a.anim = 'repos'; a.enfonce = 0; }
+          if (!calme) { secousse.a = Math.max(secousse.a, (2.5 * e.chute * ECRAN) / Math.max(0.5, canvas.clientWidth / rendu.vue.w)); secousse.t = 0; }
+        } };
+      }
       return { duree, maj(t, k) {
         cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k; if (!e.tonneau) a.anim = 'blesse';
       }, fin() { if (!e.tonneau) a.anim = 'repos'; } };
     }
     case 'attaque': case 'lance': {
+      if (aff.get(e.type === 'attaque' ? e.de : e.id)?.type === BABA) { const sb = sceneBaba(e); if (sb) return sb; }
       const att = aff.get(e.type === 'attaque' ? e.de : e.id), cible = e.type === 'attaque' ? aff.get(e.vers) : { x: e.x * T, y: e.y * T };
       dernierImpact = { x: cible.x, y: cible.y };
       // l'attaque d'un héros : le panneau de jet (61_des.js, le dé de cristal), avec les dés déjà tirés par les règles ;
@@ -503,16 +594,34 @@ function scene(e) {
       }
       tourner(att, cible);
       att.anim = e.anim ?? 'attaque'; att.t = 0;
+      coup = e.type === 'attaque' ? { de: e.de, vers: e.vers, resultat: e.resultat } : null;
       viser((att.x + cible.x) / 2, (att.y + cible.y) / 2);
       if (e.type === 'attaque' && !e.jetMontre) pourEcouteurs({ ...e, type: 'de' });
       // l'effet de la capacité : la scène dure jusqu'à ce que le coup arrive (les dégâts s'affichent après)
       const genre = att.camp === 'e' ? (e.anim === 'tir' ? 'tir' : ['brt', 'chef'].includes(att.type) ? 'lourd' : 'taille') : null;
       const d = e.type === 'attaque' ? effetsAttaque(fx, e.cap, att, cible, genre) : effetsLance(fx, e.cap, att, cible, e.cap === 'fioleCible' ? cible : null);
-      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj() {}, fin() { att.anim = 'repos'; } };
+      // (effetsAttaque rend la fin de l'effet : l'impact est 0,05 s avant)
+      const quand = Math.max(0.12, d - 0.05);
+      let porte = e.type !== 'attaque';
+      const toucher = () => {
+        porte = true;
+        const suite = file[0];
+        if (suite?.type !== 'degats' || suite.id !== e.vers || !cible) return;
+        suite.porte = true; coup = null;
+        cible.anim = 'blesse'; cible.t = 0;
+        impact(cible, att, suite.n, e.resultat, suite.pv <= 0);
+        chiffre(cible, suite.n, e.resultat);
+      };
+      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj(t) { if (!porte && t >= quand) toucher(); }, fin() { if (!porte) toucher(); att.anim = 'repos'; } };
     }
     case 'degats': {
-      a.pv = e.pv; a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
-      flottant(a, `−${e.n}`, 'degats');
+      a.pv = e.pv;
+      if (e.porte) return { duree: 0.2, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };   // (déjà montré à l'impact)
+      a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
+      const jet = coup?.vers === e.id ? coup : null; coup = null;
+      const resultat = jet?.resultat ?? 'autre';
+      impact(a, jet ? aff.get(jet.de) : null, e.n, resultat, e.pv <= 0);
+      chiffre(a, e.n, resultat);
       return { duree: 0.32, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };
     }
     case 'soin':
@@ -522,12 +631,40 @@ function scene(e) {
       return { duree: 0.3 };
     case 'ko': a.anim = 'tombe'; a.t = 0; if (a.camp === 'h') a.ko = true; else a.mort = true; return { duree: 0.55 };
     case 'ranime':
-      a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, '+25', 'soin');
+      a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, `+${e.pv}`, 'soin');
       fx.jouer('colonne-doree', { x: a.x, y: a.y }); fx.jouer('croix-soin', { x: a.x, y: a.y, retard: 0.2 });
       return { duree: 0.5 };
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
+    // le Pas dans l’ombre de Shadow : il s’enfonce dans son ombre, et en ressort derrière la cible
+    // (l'esquisse : design/classes/shadow/captures/pas-ombre.gif ; les briques « flaque-ombre », « fumee-ombre », « ombre-file »,
+    // « chevrons-tenaille »). Il s'enfonce dans sa flaque, son ombre file au ras du sol jusque derrière la cible, il remonte
+    // d'une flaque qui s'ouvre là-bas, tourné vers elle ; deux chevrons clignent autour d'elle : elle est prise entre deux.
+    case 'ombre': {
+      const dep = { x: a.x, y: a.y }, p = { x: e.x * T, y: e.y * T }, c = aff.get(e.cible) ?? p;
+      const PLONGE = 0.4, vol = Math.min(0.5, 0.18 + Math.hypot(p.x - dep.x, p.y - dep.y) / (14 * T)), MONTE = 0.45, arrive = PLONGE + vol;
+      fx.jouer('ombre-file', { x: dep.x, y: dep.y, vers: p, retard: PLONGE, duree: vol, miroir: p.x < dep.x });
+      fx.jouer('flaque-ombre', { x: p.x, y: p.y, retard: arrive - 0.2 });
+      fx.jouer('fumee-ombre', { x: p.x, y: p.y, retard: arrive });
+      fx.jouer('chevrons-tenaille', { x: c.x, y: c.y - 58, retard: arrive + MONTE });
+      let passe = false;
+      return { duree: arrive + MONTE, maj(t) {
+        if (t < PLONGE) { a.plonge = t / PLONGE; a.cache = a.plonge > 0.95; return; }
+        if (t < arrive) { a.cache = true; return; }
+        if (!passe) { passe = true; a.x = p.x; a.y = p.y; tourner(a, c); }
+        a.cache = false; a.plonge = Math.max(0, 1 - (t - arrive) / MONTE);
+      }, fin() { a.x = p.x; a.y = p.y; a.plonge = 0; a.cache = false; tourner(a, c); } };
+    }
+    // l'enclume de Baba : posée (sa chute est dans le film de la Chute d'Enclume), ou tirée par les Tenailles
+    case 'enclume': {
+      const p = { x: e.x * T, y: e.y * T };
+      if (e.chute) { Object.assign(enclume, { x: p.x, y: p.y, cache: false }); return { duree: 0 }; }
+      const tiree = films.de(enclume);
+      if (tiree) return tirer(tiree, enclume, e.chemin.length ? e.chemin : [{ x: e.x, y: e.y }]);
+      const dep = { x: enclume.x, y: enclume.y };
+      return { duree: 0.35, maj(t, k) { enclume.x = dep.x + (p.x - dep.x) * k; enclume.y = dep.y + (p.y - dep.y) * k; }, fin() { enclume.x = p.x; enclume.y = p.y; } };
+    }
     case 'tonneau': { const b = tonneaux.get(e.id); if (b) { b.cache = true; flottant(b, 'Huile !', 'info'); fx.jouer('verre-brise', { x: b.x, y: b.y }); fx.jouer('impact-lourd', { x: b.x, y: b.y }); } return { duree: 0.25 }; }
     case 'fourche': {        // un éboulis ferme chaque chemin perdu : des rochers entassés en travers, de bord à bord
       for (const r of e.tombe) {
@@ -542,7 +679,7 @@ function scene(e) {
         tombes.push(s); chutes.push({ s, x: r.x0 * T - 20, y: r.y0 * T - 12, pied: r.y1 * T });
         for (let k = 0; k < 3; k++) fx.jouer('poussiere', { x: ((r.x0 + r.x1) / 2) * T + (k - 1) * 14, y: r.y1 * T - k * 20, retard: 0.45 + k * 0.08 });
       }
-      secousse = 0.4;
+      secousse.a = Math.max(secousse.a, 9); secousse.t = 0;
       return { duree: 0.9, maj(t, k) { const e = Math.min(1, k / 0.55); for (const o of chutes) o.s.poser(o.x, o.y - 240 * (1 - e * e), o.pied); }, fin() { for (const o of chutes) o.s.poser(o.x, o.y, o.pied); chutes.length = 0; } };
     }
     case 'porte': {          // la herse se lève (vie.js) ; la caméra regarde la porte
@@ -566,20 +703,20 @@ function scene(e) {
     case 'herse': {          // la herse monte (la garde entre en combat) ou tombe (le treuil)
       VIE.herse(e.id, e.levee);
       const p = niveauPlan?.troncon?.portes?.find((o) => o.id === e.id);
-      if (p) { viser(((p.x0 + p.x1) / 2) * T, (p.y1 + 1) * T); if (!e.levee) { secousse = 0.3; fx.jouer('impact-lourd', { x: ((p.x0 + p.x1) / 2) * T, y: (p.y1 + 1) * T, retard: 0.15 }); fx.jouer('poussiere', { x: ((p.x0 + p.x1) / 2) * T, y: (p.y1 + 1.2) * T, retard: 0.15 }); } }
+      if (p) { viser(((p.x0 + p.x1) / 2) * T, (p.y1 + 1) * T); if (!e.levee) { secousse.a = Math.max(secousse.a, 8); secousse.t = 0; fx.jouer('impact-lourd', { x: ((p.x0 + p.x1) / 2) * T, y: (p.y1 + 1) * T, retard: 0.15 }); fx.jouer('poussiere', { x: ((p.x0 + p.x1) / 2) * T, y: (p.y1 + 1.2) * T, retard: 0.15 }); } }
       return { duree: e.levee ? 0.8 : 0.45 };
     }
     case 'levier': {         // un objet du combat : la corde, la vanne, le treuil
       const z = e.zone, cx = ((z.x0 + z.x1) / 2) * T, cy = ((z.y0 + z.y1) / 2) * T;
       viser(cx, cy);
-      if (e.sorte === 'corde') { if (pont) pont.visible = false; secousse = 0.25; for (let k = 0; k < 4; k++) fx.jouer('couronne-eau', { x: cx + (k - 1.5) * 26, y: cy + ((k % 2) - 0.5) * 30, retard: k * 0.06 }); }
+      if (e.sorte === 'corde') { if (pont) pont.visible = false; secousse.a = Math.max(secousse.a, 7); secousse.t = 0; for (let k = 0; k < 4; k++) fx.jouer('couronne-eau', { x: cx + (k - 1.5) * 26, y: cy + ((k % 2) - 0.5) * 30, retard: k * 0.06 }); }
       if (e.sorte === 'vanne') for (let k = 0; k < 6; k++) fx.jouer('couronne-eau', { x: z.x0 * T + (k + 0.5) * ((z.x1 - z.x0) * T / 6), y: cy, retard: k * 0.05 });
       pourEcouteurs(e);
       return { duree: 0.6 };
     }
     case 'tonneau-pose': { const b = { x: e.x * T, y: e.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false }; tonneaux.set(e.id, b); fx.jouer('poussiere', { x: b.x, y: b.y }); return { duree: 0.25 }; }
     case 'fouille': case 'de': {      // un test (fouille, borne, piège, persuasion, glace) : le dé de cristal, puis le résultat annoncé
-      const t = testDe(e), pour = e.type === 'de' ? { type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= 9 ? 'glisse' : 'tient', de: e.id, glace: true } : e;   // (la glace, comme avant, pour l'interface)
+      const t = testDe(e), pour = e.type === 'de' ? { type: 'de', jets: [e.k], k: e.k, mod: null, resultat: e.k <= (e.seuil ?? 9) ? 'glisse' : 'tient', de: e.id, glace: true } : e;   // (la glace, comme avant, pour l'interface)
       if (!des || !t) { pourEcouteurs(pour); return { duree: e.type === 'de' ? 0.5 : 0 }; }
       let fini = false;
       const qui = combat.U(e.id);
@@ -592,6 +729,19 @@ function scene(e) {
     case 'charge': viser(((e.x0 + e.x1) / 2) * T, ((e.y0 + e.y1) / 2) * T); pourEcouteurs(e); return { duree: 0.7 };
     case 'brasero': { const b = braseros.get(e.id); if (b) { b.renverse = true; fx.jouer('poussiere', { x: b.x, y: b.y }); } return { duree: 0.3 }; }
     case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
+    case 'piege': flottant(a, NOM_PIEGE[e.v] ?? 'Piège !', 'info'); fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-lourd', { x: a.x, y: a.y }); return { duree: 0.35 };
+    case 'limier': {
+      // le limier court au contact de la cible d'un ordre, puis revient à sa place (à côté de son maître)
+      const c = a; if (!c) return { duree: 0 };
+      const u = combat.U(e.id), b = e.vers ? aff.get(e.vers) : null, dep = { x: c.x, y: c.y };
+      const fin = b ? { x: b.x + (c.x < b.x ? -24 : 24), y: b.y + 4 } : { x: u.x * T, y: u.y * T };
+      const duree = Math.min(0.7, Math.max(0.15, Math.hypot(fin.x - dep.x, fin.y - dep.y) / VITESSE_CHIEN));
+      if (b) viser((dep.x + b.x) / 2, (dep.y + b.y) / 2);
+      return { duree, maj(t, k) {
+        c.x = dep.x + (fin.x - dep.x) * k; c.y = dep.y + (fin.y - dep.y) * k; c.anim = 'marche';
+        if (Math.abs(fin.x - dep.x) + Math.abs(fin.y - dep.y) > 1) c.dir = versDir(fin.x - dep.x, fin.y - dep.y);
+      }, fin() { c.anim = 'repos'; if (b) c.dir = versDir(b.x - c.x, b.y - c.y); } };
+    }
     case 'zone': marques.zone = { x: e.x, y: e.y, r: e.r, surf: e.surf }; dessinerMarques(); return { duree: 0.35, fin() { marques.zone = null; dessinerMarques(); } };
     case 'menace': marques.menace = { x: e.x, y: e.y, r: e.r }; dessinerMarques(); viser(e.x * T, e.y * T); return { duree: 0.85, fin() { marques.menace = null; dessinerMarques(); } };
     case 'eclair': pourEcouteurs(e); return { duree: 0.35 };
@@ -600,7 +750,7 @@ function scene(e) {
     case 'combo': {
       const A = aff.get(e.a), B = aff.get(e.b), ici = dernierImpact ?? (B ? { x: B.x, y: B.y } : null);
       if (!A || !B || !ici) { pourEcouteurs(e); return { duree: 0.7 }; }
-      ralenti = 0.55; secousse = 0.35;
+      ralenti.k = 0.35; ralenti.reste = 0.55; secousse.a = Math.max(secousse.a, 10); secousse.t = 0;
       viser(ici.x, ici.y);
       fx.jouer('impact-dore', { x: ici.x, y: ici.y - 24 }); fx.jouer('impact-dore', { x: ici.x - 14, y: ici.y - 34, retard: 0.08 }); fx.jouer('impact-dore', { x: ici.x + 14, y: ici.y - 14, retard: 0.16 });
       fx.jouer('impact-etoile', { x: ici.x, y: ici.y - 50, retard: 0.05 });
@@ -615,7 +765,7 @@ function scene(e) {
 }
 // Les tests qui passent par le panneau de jet : ce qu'ils sont, leur DD, ce qui se passe selon le résultat
 function testDe(e) {
-  if (e.type === 'de') return e.quoi === 'glace' ? { titre: 'Jet d’équilibre', sous: 'sur la glace', dd: 10, ok: 'Il garde l’équilibre', ko: 'Il glisse : À terre' } : null;
+  if (e.type === 'de') return e.quoi === 'glace' ? { titre: 'Jet d’équilibre', sous: 'sur la glace', dd: (e.seuil ?? 9) + 1, ok: 'Il garde l’équilibre', ko: 'Il glisse : À terre' } : null;
   if (e.dd == null) return null;
   if (e.persuasion) return { titre: 'Jet de persuasion', sous: 'négocier avec les bandits', dd: e.dd, ok: 'Ils acceptent le passage', ko: 'Ils refusent' };
   if (e.piege) return { titre: 'Jet de prudence', sous: 'le piège du chariot', dd: e.dd, ok: 'Piège désamorcé', ko: `Le piège claque : ${e.degats ?? 0} dégâts` };
@@ -624,13 +774,120 @@ function testDe(e) {
 }
 function pourEcouteurs(e) { for (const f of ecouteurs) f(e); }
 
+// --- Baba Brisenclume : ses animations validées (films.js) -----------------------------------------------------------
+// Chaque capacité joue sa scène verrouillée ; la file reprend quand le coup porte (l'image « impact »), le film continue.
+function sceneBaba(e) {
+  const b = aff.get(e.type === 'attaque' ? e.de : e.id);
+  if (e.type === 'attaque' && e.cap === 'marteau') {
+    const c = aff.get(e.vers);
+    pourEcouteurs({ ...e, type: 'de' });
+    viser((b.x + c.x) / 2, (b.y + c.y) / 2);
+    return { duree: Math.max(0.5, films.jouer('marteau', { baba: b, cible: c }).impact + 0.05) };
+  }
+  if (e.type === 'attaque' && e.cap === 'chuteEnclume') { pourEcouteurs({ ...e, type: 'de' }); return { duree: 0.5 }; }   // (le film tourne déjà)
+  if (e.type !== 'lance') return null;
+  if (e.cap === 'chuteEnclume') {
+    const p = { x: e.x * T, y: e.y * T };
+    viser(p.x, p.y - 30);
+    return { duree: films.jouer('chute-enclume', { baba: b, cible: p }).impact };
+  }
+  if (e.cap === 'tenailles') {
+    const c = e.vers === 'enclume' ? enclume : aff.get(e.vers);
+    viser((b.x + c.x) / 2, (b.y + c.y) / 2);
+    return { duree: films.jouer(e.vers === 'enclume' ? 'tenailles-enclume' : 'tenailles', { baba: b, cible: c }).impact };
+  }
+  if (e.cap === 'lameArdente' || e.cap === 'trempe') {
+    // il se tourne vers son enclume (la scène la fait apparaître devant lui, là où elle est) ; l'allié, au contact, reçoit
+    // le feu ou le bouclier où qu'il soit (la traînée s'étire jusqu'à lui)
+    const c = aff.get(e.vers), soi = c === b;
+    viser(b.x, b.y);
+    return { duree: films.jouer(e.cap === 'lameArdente' ? 'lame-ardente' : 'trempe', { baba: b, cible: c, vers: enclume, sansMilieu: soi }).impact };
+  }
+  return null;
+}
+// une cible tirée par les Tenailles : elle avance de son chemin au rythme des à-coups du film (jusqu'au dernier)
+function tirer(film, cible, chemin, pendant = () => {}, apres = () => {}) {
+  const dep = { x: cible.x, y: cible.y }, pts = chemin.map((p) => ({ x: p.x * T, y: p.y * T })), fin = pts[pts.length - 1] ?? dep;
+  const F = film.F, dernier = F.tire[F.tire.length - 1] + 2, reste = Math.max(0.05, (dernier - (films.image(film) ?? dernier)) / 12);
+  return { duree: reste, maj() {
+    const f = films.image(film), k = f == null ? 1 : traction(F, f);
+    cible.x = dep.x + (fin.x - dep.x) * k; cible.y = dep.y + (fin.y - dep.y) * k; pendant();
+  }, fin() { cible.x = fin.x; cible.y = fin.y; apres(); } };
+}
+
 // --- Les textes qui montent (dégâts, soins, « Raté ! ») ----------------------------------------------------------
 const flottants = [];
-function flottant(a, texte, genre) {
+function flottant(a, texte, genre, haut = 0) {
   if (!a) return;
   const el = Object.assign(document.createElement('div'), { className: `flottant ${genre}`, textContent: texte });
   document.body.append(el);
-  flottants.push({ el, x: a.x, y: a.y - 58, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
+  flottants.push({ el, x: a.x, y: a.y - 58 - haut, t: 0 });   // (au-dessus de la tête ; la barre de vie est sous les pieds)
+}
+
+// le chiffre des dégâts (et « Critique ! » au-dessus)
+function chiffre(a, n, resultat) {
+  flottant(a, `−${n}`, `degats ${resultat}`);
+  if (resultat === 'critique') flottant(a, 'Critique !', 'critique-titre');
+}
+// Un coup porte sur `a` (venu de `att`, s'il y en a un) : l'arrêt sur image, la secousse, l'éclair, le recul, et les
+// extras du style (étincelles, traits, éclair de l'écran, zoom, ralenti, voile).
+function impact(a, att, n, resultat, tombe) {
+  const S = STYLES[style], r = S[resultat] ?? S.autre, poids = Math.min(1.5, 0.6 + n / 25);   // 10 dégâts ≈ 1, 22 ≈ 1,5
+  gel = Math.max(gel, r.gel * (tombe ? 1.6 : 1));
+  a.eclair = 1;
+  for (const id of r.etincelles ?? []) fx.jouer(id, { x: a.x, y: a.y - 26 });
+  if (calme) return;
+  const ech = Math.max(0.5, canvas.clientWidth / rendu.vue.w);             // px d'écran par px du monde
+  secousse.a = Math.max(secousse.a, Math.min(SECOUSSE_MAX, r.secousse * poids * ECRAN) * lire('feel.secousse') / ech); secousse.t = 0;
+  if (att) {
+    const dx = a.x - att.x, dy = a.y - att.y, l = Math.hypot(dx, dy) || 1;
+    a.recul = { x: dx / l, y: dy / l, n: Math.min(RECUL_MAX, r.recul * poids * ECRAN / ech) * lire('feel.recul'), t: 0 };
+  }
+  if (r.ralenti) { ralenti.k = r.ralenti.k; ralenti.reste = r.ralenti.d; }
+  if (r.flash || r.traits || r.voile || r.zoom) {
+    Object.assign(ecran, { cible: a, t: 0, flash: r.flash ?? 0, traits: r.traits ?? 0, voile: r.voile ?? 0, zoom: r.zoom ?? 0,
+      tenue: r.gel * (tombe ? 1.6 : 1) + (r.ralenti?.d ?? 0) });
+  }
+}
+// chaque image (en temps réel) : l'éclair de l'écran, les traits, le voile, le zoom, autour de la cible
+function poserEcran(dt) {
+  if (!voile) return;
+  ecran.t += dt;
+  const t = ecran.t, actif = ecran.cible && t < ecran.tenue + 0.6;
+  voile.hidden = !actif;
+  if (!actif) { if (canvas.style.transform) canvas.style.transform = ''; return; }
+  const p = versEcranBrut(ecran.cible.x, ecran.cible.y - 28);
+  const sortie = (d) => Math.max(0, 1 - Math.max(0, t - ecran.tenue) / d);      // tenu pendant l'arrêt, puis s'efface en d
+  voile.style.setProperty('--x', `${p.x}px`); voile.style.setProperty('--y', `${p.y}px`);
+  voile.style.setProperty('--flash', String(ecran.flash * Math.max(0, 1 - t / 0.14)));
+  voile.style.setProperty('--traits', String(ecran.traits * Math.min(1, t / 0.03) * sortie(0.25)));
+  voile.style.setProperty('--tour', `${(t * 40) % 360}deg`);
+  voile.style.setProperty('--voile', String(ecran.voile * Math.min(1, t / 0.12) * sortie(0.45)));
+  const z = ecran.zoom * Math.min(1, t / 0.07) * sortie(0.35) ** 2;
+  canvas.style.transformOrigin = `${p.x}px ${p.y}px`;
+  canvas.style.transform = z > 0.001 ? `scale(${1 + z})` : '';
+}
+// le décalage du recul (px) : la cible part en arrière et revient, en 0,22 s
+function decalageRecul(a, dt) {
+  const r = a.recul; if (!r) return null;
+  r.t += dt;
+  const k = r.t / 0.22;
+  if (k >= 1) { a.recul = null; return null; }
+  const d = r.n * Math.sin(Math.PI * Math.min(1, k * 1.4)) * (1 - k * 0.3);
+  return { x: r.x * d, y: r.y * d * 0.5 };
+}
+// l'éclair blanc : le matériau du personnage éclairci (la couleur multiplie l'image), puis il revient en 0,12 s
+function teinter(a, base = 1) {
+  const e = Math.max(0, a.eclair ?? 0), v = base * (1 + e * 3.5);
+  for (const sp of [a.s64, a.grand]) {
+    if (!sp) continue;
+    const m = sp.mesh.material;
+    if (m.userData.teinte !== v) { m.color.setScalar(v); m.userData.teinte = v; }
+  }
+}
+function versEcranBrut(x, y) {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  return { x: ((x - rendu.cam.x) / rendu.vue.w) * w, y: ((y - rendu.cam.y) / rendu.vue.h) * h };
 }
 export function versEcran(x, y) {
   const r = canvas.getBoundingClientRect();
@@ -652,7 +909,12 @@ function creerPlaque(u) {
   calquePlaques.append(intention);
   return { el, barre, plein, chiffre, etats, intention, texteIntention: '', pv: null, ko: null, cle: '' };
 }
-const plaqueVisible = (a) => plaques[a.camp === 'p' ? 'h' : a.camp] && !a.cache && !a.mort;
+// Les barres de vie (réglage « Ressenti ») : toujours (V et Maj+V les cachent par camp), au survol (survolé, choisi, ciblé, qui agit), ou jamais.
+const plaqueVisible = (a) => {
+  const mode = lire('feel.barres');
+  if (!plaques[a.camp === 'p' ? 'h' : a.camp] || a.cache || a.mort || mode === 2) return false;
+  return mode === 0 || a.id === marques.survolCible || a.id === marques.selection || a.id === marques.actif || !!marques.cibles?.includes(a.id);
+};
 // Une icône d'état : à l'échelle entière du pixel art (×2 de près, ×1 de loin), les tours qui restent en bas à droite.
 function iconeEtat(e) {
   const box = Object.assign(document.createElement('span'), { className: `etat-icone ${e.genre}` });
@@ -714,17 +976,19 @@ export function basculerPlaques(camp, oui = !plaques[camp]) {
 }
 
 // --- Chaque image ----------------------------------------------------------------------------------------------
-export function update(dt) {
-  if (ralenti > 0) { ralenti -= dt; dt *= 0.35; }      // le ralenti du combo
+export function update(dtReel) {
+  const dt = (gel > 0 ? 0 : ralenti.reste > 0 ? dtReel * ralenti.k : dtReel) * lire('anim.vitesse');   // (le réglage « vitesse des animations » : ×1 par défaut)
+  if (gel > 0) gel = Math.max(0, gel - dtReel); else ralenti.reste = Math.max(0, ralenti.reste - dtReel);
   temps += dt;
   // la file
   if (!courant && file.length) {
     const e = file.shift(), s = scene(e) ?? { duree: 0 };
+    if (e.type === 'phase') phaseVue = e.phase;
     courant = { e, s, t: 0 };
     if (!s.duree) { s.maj?.(0, 1); s.fin?.(); courant = null; }
   }
   if (courant) {
-    courant.t += dt;
+    courant.t += dt * (phaseVue === 'ennemis' ? lire('ennemis.vitesse') : 1);   // la marche et les pauses des ennemis, plus vives ou plus lentes
     const k = Math.min(1, courant.t / courant.s.duree);
     courant.s.maj?.(courant.t, k);
     if (k >= 1) { courant.s.fin?.(); courant = null; if (!file.length && marques.actif) { marques.actif = null; dessinerMarques(); } }
@@ -737,20 +1001,35 @@ export function update(dt) {
   if (camCine) { camCine.t = Math.min(camCine.duree, camCine.t + dt); const k = camCine.t / camCine.duree, e = k * k * (3 - 2 * k); cam.cx = camCine.de.x + (camCine.vers.x - camCine.de.x) * e; cam.cy = camCine.de.y + (camCine.vers.y - camCine.de.y) * e; }
   else if (cam.cible && !cam.glisse) { cam.cx += (cam.cible.x - cam.cx) * Math.min(1, dt * 5); cam.cy += (cam.cible.y - cam.cy) * Math.min(1, dt * 5); }
   bornerCamera();
-  if (secousse > 0) secousse = Math.max(0, secousse - dt);
-  const sx = secousse ? Math.sin(temps * 90) * secousse * 18 : 0, sy = secousse ? Math.cos(temps * 70) * secousse * 12 : 0;
-  rendu.viser(cam.cx - rendu.vue.w / 2 + sx, cam.cy - rendu.vue.h / 2 + sy);
+  let ox = 0, oy = 0;
+  if (secousse.a > 0) {
+    secousse.t += dtReel;
+    const k = Math.max(0, 1 - secousse.t / lire('feel.secousseDuree')), amp = secousse.a * k * k;
+    ox = (Math.random() * 2 - 1) * amp; oy = (Math.random() * 2 - 1) * amp;
+    if (k <= 0) secousse.a = 0;
+  }
+  rendu.viser(cam.cx - rendu.vue.w / 2 + ox, cam.cy - rendu.vue.h / 2 + oy);
+  poserEcran(dtReel);
   // les états sous les barres : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsPlaques = new Map(combat.S.unites.map((u) => [u.id, etatsActifs(u)]));
   // les personnages
   grouperIntentions();
   for (const a of aff.values()) {
     a.t += dt;
+    if (a.eclair > 0) a.eclair = Math.max(0, a.eclair - dt / 0.12);
+    const r = decalageRecul(a, dt);
+    if (r) { a.x += r.x; a.y += r.y; }
     poserPerso(a);
     poserPlaque(a);
+    if (r) { a.x -= r.x; a.y -= r.y; }
   }
   for (const b of tonneaux.values()) { b.s.cacher(b.cache); if (!b.cache) b.s.poser(b.x - 16, b.y - 50, b.y); }
   for (const b of braseros.values()) b.s.poser(b.x - 16, b.y - 60, b.y, (b.renverse ? 4 : Math.floor(temps * 8) % 4) * 32, 0);
+  if (enclume) {
+    const cachee = enclume.cache || FILMS_ENCLUME.some((id) => films.actif(id));
+    enclume.s.cacher(cachee);
+    if (!cachee) enclume.s.poser(enclume.x - ENCLUME_FILM.w / 2, enclume.y - ENCLUME_FILM.h, enclume.y);
+  }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
   for (const [id, liste] of etatsVus) {
@@ -759,8 +1038,11 @@ export function update(dt) {
   }
   fx.update(dt);
   VIE.update(dt);
+  // les films de Baba, et leur secousse de l'écran
+  const [sx, sy] = films.update(dt);
+  if (sx || sy) rendu.viser(cam.cx - rendu.vue.w / 2 + ox - sx, cam.cy - rendu.vue.h / 2 + oy - sy);   // (avec la secousse des coups)
   for (let k = flottants.length - 1; k >= 0; k--) {
-    const f = flottants[k]; f.t += dt;
+    const f = flottants[k]; f.t += dtReel;
     const p = versEcran(f.x, f.y - f.t * 30);
     f.el.style.left = `${p.x}px`; f.el.style.top = `${p.y}px`; f.el.style.opacity = String(Math.max(0, 1 - Math.max(0, f.t - 0.6) / 0.5));
     if (f.t > 1.1) { f.el.remove(); flottants.splice(k, 1); }
@@ -769,11 +1051,19 @@ export function update(dt) {
 
 function poserPerso(a) {
   const k = a.meta.echelle ?? 1;                    // (le gardien de la porte : une fois et demie plus grand, les pieds au même endroit)
-  // (un renfort pas encore arrivé reste caché)
+  if (a.chien) return void poserChien(a);
   if (a.cache || combat.U(a.id)?.cache) { a.s64.cacher(true); a.grand?.cacher(true); a.ombre.cacher(true); return; }
   const ligne = DIR[a.dir];
   let anim = a.anim, rang, col;
+  let decale = 0;
   if (a.ko || a.mort || anim === 'tombe') { rang = ANIM.blesse[0]; col = anim === 'tombe' ? Math.min(5, Math.floor(a.t * 11)) : 5; }
+  else if (anim === 'film' && a.film) {
+    // Baba dans une de ses scènes validées : sa pose image par image (au repos : l'image debout de la marche, comme les esquisses)
+    const p = a.film; decale = p.dx * (p.miroir ? -1 : 1);
+    if (p.anim === 'repos') { rang = ANIM.marche[0] + ligne; col = 0; }
+    else if (p.anim === 'blesse') { rang = ANIM.blesse[0]; col = Math.min(5, p.i); }
+    else { rang = (ANIM[p.anim] ?? ANIM.attaque)[0] + ligne; col = p.i; }
+  }
   else if (anim === 'marche') { rang = ANIM.marche[0] + ligne; col = 1 + (Math.floor(a.t * 10) % 8); }
   else if (anim === 'blesse') { rang = ANIM.blesse[0]; col = Math.min(2, Math.floor(a.t * 10)); }
   else if (anim === 'repos') { rang = ANIM.repos[0] + ligne; col = Math.floor(a.t * 1.6) % 2; }
@@ -786,14 +1076,30 @@ function poserPerso(a) {
       a.grand.mesh.scale.set(k, k, 1);
       a.grand.poser(a.x - s / 2, a.y - 28 * k - s / 2 + a.enfonce * 20, a.y, c * s, bloc.y + ligne * s);
       a.ombre.cacher(false); a.ombre.poser(a.x, a.y - 1);
+      teinter(a);
       return;
     }
     const [r0, n] = ANIM[anim] ?? ANIM.attaque;
     rang = r0 + ligne; col = Math.min(n - 1, Math.floor(a.t * n / 0.45));
   }
   a.grand?.cacher(true); a.s64.cacher(false);
+  teinter(a);
+  // plonge (le Pas dans l'ombre de Shadow) : il descend sous ses pieds, coupé au ras du sol
+  const sous = Math.round((a.plonge ?? 0) * 60);
   a.s64.mesh.scale.set(k, k, 1);
-  a.s64.poser(a.x - 32, a.y - 28 * k - 32 + a.enfonce * 26, a.y, col * 64, rang * 64);
+  a.s64.poser(a.x - 32 + decale, a.y - 28 * k - 32 + a.enfonce * 26 + sous, a.y, col * 64, rang * 64, 64 - sous);
+  a.ombre.cacher(a.enfonce > 0.3 || (a.plonge ?? 0) > 0.2); a.ombre.poser(a.x, a.y - 1);
+}
+
+// Le limier : sa planche à lui (4 rangées : la marche, colonnes 0 à 4 ; l'arrêt, colonne 5) ; à terre, terni.
+function poserChien(a) {
+  if (a.cache) { a.s64.cacher(true); a.ombre.cacher(true); return; }
+  const col = a.anim === 'marche' ? Math.floor(a.t * 10) % 5 : 5;
+  a.s64.cacher(false);
+  a.s64.poser(a.x - 32, a.y - 62 + a.enfonce * 26, a.y, col * 64, LIGNES_CHIEN[a.dir] * 64);
+  const m = a.s64.mesh.material, terni = a.ko || a.mort;
+  if (terni) { if (m.userData.terni !== true) { m.color.setRGB(0.42, 0.42, 0.48); m.userData.terni = true; m.userData.teinte = null; } }   // (assombri, pas transparent : alphaTest)
+  else { m.userData.terni = false; teinter(a); }
   a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);
 }
 
@@ -809,8 +1115,12 @@ function resynchroniser() {
     if (!t) b.cache = true; else { b.x = t.x * T; b.y = t.y * T; b.cache = false; }
   }
   for (const [id, b] of braseros) b.renverse = !!combat.S.braseros.find((o) => o.id === id)?.renverse;
+  const e = combat.S.enclume;
+  if (enclume) { if (!e) enclume.cache = true; else Object.assign(enclume, { x: e.x * T, y: e.y * T, cache: false }); }
 }
 
+// La planche LPC d'un personnage (pour le médaillon de sa fiche).
+export const planche = (type) => images[`perso_${type === 'brt' ? 'brute-ennemie' : type}`] ?? null;
 // Un portrait (la tête, de face) pris sur la planche d'un personnage, pour l'interface.
 export function portrait(type, taille = 64) {
   const nom = type === 'brt' ? 'brute-ennemie' : type, img = images[`perso_${nom}`];
@@ -820,11 +1130,11 @@ export function portrait(type, taille = 64) {
   return c;
 }
 
-export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); VIE.dispose(); }
+export function dispose() { for (const f of flottants) f.el.remove(); calquePlaques?.remove(); films?.retirer(); voile?.remove(); canvas.style.transform = ''; VIE.dispose(); }
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, braseros, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, redessinerSurfaces, remplacer, basculerPlaques, effets,
+  aff, tonneaux, braseros, get enclume() { return enclume; }, get films() { return films; }, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },
@@ -841,7 +1151,9 @@ export const api = {
     if (best) return best;
     for (const [id, b] of tonneaux) { if (!b.cache && Math.abs(b.x / T - x) < 0.5 && y > b.y / T - 1.2 && y < b.y / T + 0.2) return id; }
     for (const [id, b] of braseros) { if (!b.renverse && Math.abs(b.x / T - x) < 0.6 && y > b.y / T - 1.4 && y < b.y / T + 0.4) return id; }
+    if (enclume && !enclume.cache && Math.abs(enclume.x / T - x) < 1 && y > enclume.y / T - 1.15 && y < enclume.y / T + 0.2) return 'enclume';
     return null;
   },
   zoomer, ajusterCamera, contact: CONTACT, vie: VIE.etat, cameraVers, placerCamera, libererCamera, exclamer,
+  get ressenti() { return { style, styles: Object.keys(STYLES), gel, secousse: secousse.a, secousseEcran: secousse.a * (canvas.clientWidth / rendu.vue.w), ralenti: ralenti.reste, ecran: { ...ecran, cible: ecran.cible?.id ?? null }, calme }; },
 };

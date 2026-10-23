@@ -1,0 +1,128 @@
+/* L'onglet « Plans » du tableau des missions (45_plans.js), et les onglets du panneau. Les jetons de DESIGN.fr.md. */
+
+/* Les onglets, en tête du panneau : deux plaques de bois ; l'ouverte est en parchemin */
+.onglets { display: inline-flex; gap: 4px; margin-right: auto; }
+.tete h3 { margin-right: 6px; }
+.onglet { font: 500 .95rem var(--titre); color: var(--creme); background: var(--bois-fonce); border: 2px solid var(--bois-clair); border-radius: 4px 4px 0 0; padding: 4px 14px; cursor: pointer; box-shadow: inset 0 -3px 0 rgba(0,0,0,.25); }
+.onglet[aria-selected="true"] { background: var(--parchemin); color: var(--parchemin-encre); border-color: var(--parchemin); box-shadow: none; }
+.onglet:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+
+.plans { display: grid; gap: 10px; }
+.plans .corps { grid-template-columns: minmax(0, 4fr) minmax(0, 9fr); }
+@media (max-width: 860px) { .plans .corps { grid-template-columns: 1fr; } }
+.sommaire-plans .zone { grid-template-columns: minmax(0, 1fr) auto; }
+.sommaire-plans .zone .reste { grid-column: 1 / 3; }
+.comptes { display: inline-flex; gap: 6px; font: 500 .78rem var(--titre); }
+.ecrire-mission:disabled { opacity: .55; cursor: wait; }
+
+/* La légende des sceaux */
+.legende-plans { display: flex; flex-wrap: wrap; gap: 4px 12px; font: 500 .78rem var(--titre); color: var(--creme-doux); margin: 0; }
+.legende-plans > span { display: inline-flex; align-items: center; gap: 2px; }
+
+/* Les sceaux : chacun sa forme et sa clarté (pas seulement sa teinte) */
+.sceau-plan { display: inline-grid; place-items: center; flex: none; width: 20px; height: 20px; border-radius: 50%; font: 700 12px/1 var(--titre); box-sizing: border-box;
+  border: 2px solid var(--bois-fonce); box-shadow: inset -2px -2px 0 rgba(0,0,0,.2); }
+.sceau-plan.petit { width: 16px; height: 16px; font-size: 10px; border-width: 1px; }
+.s-bati, .s-acquis { background: #3f7a35; color: #fff7e6; }
+.s-acquis { background: #2f5a2a; }
+.s-chantier { background: #e0b04a; color: #2b1c1d; }
+.s-aprendre { background: #fff7e6; color: #2b1c1d; }
+.s-idee { background: #d8c9a4; color: #573726; }
+.s-prevu { background: transparent; color: #7a6a5a; border-style: dashed; border-color: #9b8a6a; box-shadow: none; }
+.s-trancher { background: var(--rouge-cire); color: #fff7e6; }
+.s-remplace, .s-ecarte { background: #8f8a7c; color: #f4ead2; box-shadow: none; }
+.compte.s-prevu, .compte.s-bati, .compte.s-chantier, .compte.s-aprendre, .compte.s-trancher { background: none; border: 0; box-shadow: none; color: inherit; }
+
+/* Le parchemin de la fiche */
+.parchemin-plans { padding: 14px 16px; }
+.tete-fiche { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; border-bottom: 2px dashed #b78c41; padding-bottom: 6px; margin-bottom: 4px; }
+.tete-fiche .source { font-size: .82rem; color: var(--parchemin-doux); margin-right: auto; }
+.tete-fiche .source a { color: #7a3b10; }
+.tete-fiche .actions { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tete-fiche .actions.confirmer > span { font-size: .82rem; font-weight: 600; }
+.tete-fiche > b { font: 700 1rem var(--titre); color: #573726; margin-right: auto; }
+.fiche-cadre, .fiche-plan { display: grid; gap: 12px; color: var(--parchemin-encre); }
+.fiche-plan h4 { font: 700 1.25rem var(--titre); color: #573726; letter-spacing: .02em; }
+.fiche-plan .resume { font-style: italic; color: var(--parchemin-doux); margin-top: -8px; }
+.fiche-plan section { display: grid; gap: 8px; }
+.fiche-plan h5 { font: 700 .95rem var(--titre); color: #573726; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid #cdb68c; padding-bottom: 2px; }
+.fiche-plan p { line-height: 1.45; }
+.fiche-plan b { color: #2a2333; }
+.fiche-plan code { font: 600 .82rem ui-monospace, Consolas, monospace; background: #e8d9b4; padding: 0 4px; border-radius: 2px; }
+
+/* Les choses prévues, une ligne chacune, avec leur sceau et leurs missions */
+.choses { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.chose { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 3px 4px; border-radius: 3px; }
+.chose:nth-child(2n) { background: rgba(205, 182, 140, .22); }
+.chose .texte { line-height: 1.35; }
+.chose.c-remplace .texte, .chose.c-ecarte .texte { text-decoration: line-through; text-decoration-color: #9b8a6a; color: var(--parchemin-doux); }
+.refs { display: inline-flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; align-items: center; }
+.ref-mission { font: 500 .75rem var(--titre); border-radius: 3px; padding: 0 5px; text-decoration: none; border: 1px solid; color: var(--parchemin-encre); }
+.ref-mission.r-bati { background: #cfe3b8; border-color: #6c9a52; }
+.ref-mission.r-chantier { background: #f3dc9a; border-color: #c98a1e; }
+.ref-mission.r-aprendre { background: #fff7e6; border-color: #b89a68; }
+.ref-mission.r-idee, .ref-mission.r-prevu { background: transparent; border-color: #b89a68; border-style: dashed; }
+.ref-mission:hover { text-decoration: underline; }
+.ref-mission:focus-visible, .tete-fiche a:focus-visible { outline: 3px solid var(--or); outline-offset: 1px; }
+.qui-plan { font: 600 .75rem var(--texte); color: #573726; }
+.qui-plan::before { content: "⚒ "; }
+.decide-plan { font: 500 .72rem var(--titre); color: #7a3b10; border: 1px solid #c98f84; border-radius: 8px; padding: 0 6px; }
+.avance { display: inline-flex; align-items: center; gap: 4px; }
+.avance .jauge { display: block; width: 46px; height: 6px; border-radius: 3px; background: #d8c9a4; overflow: hidden; }
+.avance .jauge i { display: block; height: 100%; background: var(--or-jauge); }
+.avance b { font: 500 .72rem var(--titre); color: var(--parchemin-doux); }
+
+/* :: flux et :: cycle : des étapes reliées par des flèches */
+.flux { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 22px; counter-reset: etape; }
+.etape { position: relative; flex: 1 1 104px; max-width: 220px; display: grid; gap: 4px; align-content: start; background: #fbf4e2; border: 2px solid #b78c41; border-radius: 4px; padding: 8px 10px 8px; box-shadow: 0 2px 0 rgba(0,0,0,.15); }
+.etape:not(:last-child)::after { content: "➜"; position: absolute; right: -19px; top: 50%; transform: translateY(-50%); color: #85581b; font: 700 15px var(--titre); }
+.flux.cycle .etape:nth-last-child(2)::after { content: "➜"; }
+.etape b { font: 600 .9rem/1.2 var(--titre); color: #573726; }
+.etape > span:not(.refs):not(.sceau-plan) { font-size: .82rem; line-height: 1.35; }
+.etape > .sceau-plan { position: absolute; top: -8px; right: -8px; }
+.etape .refs { justify-content: flex-start; }
+.etape.e-bati { background: #e7f0da; border-color: #6c9a52; }
+.etape.e-chantier { background: #fbefc8; border-color: #c98a1e; }
+.flux .retour { flex: 1 0 100%; font: 500 .8rem var(--titre); color: #85581b; text-align: center; border-top: 2px dashed #b78c41; padding-top: 4px; }
+
+/* :: cartes : une carte par idée, la teinte de son axe en haut */
+.cartes-plan { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.carte-plan { display: grid; gap: 4px; align-content: start; background: #fbf4e2; border: 1px solid #cdb68c; border-top: 6px solid var(--teinte); border-radius: 3px; padding: 8px 10px; box-shadow: 0 2px 0 rgba(0,0,0,.12); }
+.carte-plan b { font: 600 .92rem/1.2 var(--titre); color: #2a2333; }
+.carte-plan > span:not(.refs) { font-size: .82rem; line-height: 1.35; }
+.carte-plan .refs { justify-content: flex-start; }
+
+/* :: tableau */
+.tableau-plan { overflow-x: auto; }
+.tableau-plan table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.tableau-plan th, .tableau-plan td { border: 1px solid #cdb68c; padding: 4px 8px; text-align: left; vertical-align: top; }
+.tableau-plan thead th { font: 600 .82rem var(--titre); background: #573726; color: var(--creme); border-color: #2b1c1d; }
+.tableau-plan tbody th { font-weight: 600; background: rgba(205, 182, 140, .3); }
+
+/* :: camp : le plan du camp en petit, d'après 01_plan.js */
+.plan-camp { margin: 0; display: grid; gap: 4px; }
+.plan-camp .carte { position: relative; aspect-ratio: 42 / 88; width: 100%; max-width: 330px; background: #4c8a3c; border: 3px solid var(--bois-fonce); border-radius: 4px;
+  box-shadow: inset 0 0 0 10px #2f5a2a; overflow: hidden; }
+.plan-camp .carte > div { position: absolute; box-sizing: border-box; display: grid; align-content: center; justify-items: center; text-align: center; padding: 2px; overflow: hidden; }
+.plan-camp b { font: 600 clamp(8px, 1.5vw, 11px)/1.1 var(--titre); }
+.plan-camp span { font: 500 clamp(7px, 1.3vw, 10px)/1.1 var(--titre); }
+.lieu-plan { background: color-mix(in srgb, var(--teinte) 85%, #fff); color: #fff7e6; border: 2px solid var(--bois-fonce); border-radius: 3px; text-shadow: 0 1px 0 rgba(0,0,0,.6); }
+.lieu-plan.vide { background: transparent; color: #f4ead2; border: 2px dashed #f4ead2; }
+.feu-plan { background: #e8792a; color: #2b1c1d; border: 2px solid #2b1c1d; border-radius: 50%; }
+.muraille-plan { background: #ece6d6; color: #573726; border-top: 3px solid #b7ae97; border-bottom: 3px solid #2f68b8; }
+.plan-camp figcaption { font-size: .78rem; color: var(--parchemin-doux); }
+
+/* L'édition : le texte à gauche, l'aperçu à droite */
+.plans-edition { display: grid; gap: 10px; color: var(--parchemin-encre); }
+.plans-edition .deux { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: start; }
+@media (max-width: 1000px) { .plans-edition .deux { grid-template-columns: 1fr; } }
+.plans-edition .ecrire { display: grid; gap: 4px; font: 600 .82rem var(--titre); color: #573726; }
+.plans-edition textarea { font: 13px/1.45 ui-monospace, Consolas, monospace; color: var(--parchemin-encre); background: #fffaf0; border: 2px solid #b89a68; border-radius: 3px; padding: 8px; resize: vertical; min-height: 360px; box-sizing: border-box; width: 100%; }
+.plans-edition textarea:focus-visible { outline: 3px solid var(--or); outline-offset: 1px; }
+.apercu-plan { border: 2px dashed #b89a68; border-radius: 3px; padding: 10px; max-height: 70vh; overflow: auto; background: rgba(255, 250, 240, .5); }
+.aide-plan summary, .conflit summary { font: 600 .85rem var(--titre); cursor: pointer; color: #573726; }
+.aide-plan dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; margin: 8px 0 0; font-size: .82rem; }
+.aide-plan dt code { font: 600 .78rem ui-monospace, Consolas, monospace; background: #e8d9b4; padding: 0 4px; border-radius: 2px; white-space: nowrap; }
+.aide-plan dd { margin: 0; }
+.conflit pre { white-space: pre-wrap; font: 12px/1.4 ui-monospace, Consolas, monospace; background: #fffaf0; border: 1px solid #c98f84; padding: 8px; max-height: 200px; overflow: auto; }
+@media (max-width: 600px) { .chose { grid-template-columns: auto minmax(0, 1fr); } .chose .refs { grid-column: 2; justify-content: flex-start; } }

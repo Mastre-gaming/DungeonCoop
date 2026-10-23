@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "cyclope",
+  "nom": "Cyclope",
+  "auteur": "",
+  "famille": "etrange",
+  "rang": "elite",
+  "pv": 80,
+  "vitesse": 6,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "charge-faible"
+  },
+  "capacites": [
+    {
+      "nom": "Rocher",
+      "slot": "action",
+      "portee": "12 m",
+      "zone": "1,7 m",
+      "base": 14,
+      "de": 6,
+      "effet": "zone 1,7 m, À terre",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Piétinement",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 12,
+      "de": 6,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      6,
+      12
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_Plump_bronze&clothes=Sleeveless_brown&legs=Pants_brown&weapon=Club_club",
+    "planche": ""
+  },
+  "valide": true
+}

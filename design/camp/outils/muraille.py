@@ -5,8 +5,10 @@
 #   public/assets/lpc/brasero.png    un brasero, 4 images de flamme
 #   src/data/muraille.json           où le jeu pose ces pièces (pixels du monde)
 # Lancer depuis la racine du dépôt : python3 design/camp/outils/muraille.py   (Pillow)
+# MAQUETTE=dossier : dessine aussi des archers de passage (l'éclaireuse du terrain d'entraînement) sur le chemin de ronde,
+# et écrit les images dans ce dossier au lieu du jeu (pour montrer le design avant les vrais archers, #124).
 from PIL import Image
-import json, random
+import json, os, random
 random.seed(7)
 
 T, COLS, ROWS = 32, 42, 38
@@ -133,24 +135,62 @@ def banniere(x, y, h, coul, mot='MASTRES'):
                     px[x + 7 + i, gy + j] = (OR1 if j < 4 else OR0) + (255,)
                     if px[x + 8 + i, gy + j + 1][:3] == coul: px[x + 8 + i, gy + j + 1] = sombre + (255,)
 
-def tour(x, base, w, haut, toit=True, fentes=2, ban=None):
-    prof = 22
+MAQUETTE = os.environ.get('MAQUETTE')
+if MAQUETTE:
+    _arch = Image.open(LPC + 'entrainement/eclaireuse.png').convert('RGBA')
+    ARCHER = [_arch.crop((3 * 64, 18 * 64, 4 * 64, 19 * 64)), _arch.crop((5 * 64, 2 * 64, 6 * 64, 3 * 64))]
+# Un archer debout sur le sol du chemin de ronde : au milieu des dalles (pas sur le rebord), avec son ombre posée sur
+# les dalles ; le rebord et les merlons, dessinés après, cachent le bas de ses jambes.
+def archer(x, pied, salue=False):
+    if not MAQUETTE: return
+    ombre = Image.new('RGBA', (22, 6), (0, 0, 0, 0))
+    po = ombre.load()
+    for j in range(6):
+        for i in range(22):
+            if ((i - 10.5) / 11) ** 2 + ((j - 2.5) / 3) ** 2 <= 1: po[i, j] = (60, 44, 30, 90)
+    coller(ombre, x - 11, pied - 4)
+    coller(ARCHER[salue], x - 32, pied - 61)
+
+# Le sol d'un chemin de ronde vu un peu de dessus (demande de Mope, 18 oct : « voir le sol de l'étage … pour donner du
+# relief ») : des dalles, plus claires au fond (la lumière vient d'en haut), un petit mur bas derrière, côté camp.
+DAL0, DAL1, DAL2, DAL3 = (226, 214, 188), (206, 192, 164), (182, 168, 142), (138, 124, 104)   # les dalles, plus chaudes que le mur
+def dalles(x, y, w, h):
+    cadre(x, y - 6, w, 7, S1); r(x + 1, y - 5, w - 2, 1, S0)                       # le petit mur du fond
+    r(x, y, w, h, DAL1); r(x, y, 1, h, OUT); r(x + w - 1, y, 1, h, OUT)
+    r(x + 1, y + 1, w - 2, 3, DAL3)                                                # son ombre portée sur le sol
+    for k, j in enumerate(range(y + 4, y + h, 6)):
+        fond = j < y + h // 2                                                      # au fond, plus clair (la lumière d'en haut)
+        dec = 0 if k % 2 else 9
+        for i in range(x + 1 + dec - 18, x + w - 1, 18):
+            i0, i1 = max(i, x + 1), min(i + 17, x + w - 1)
+            if i1 - i0 < 2: continue
+            r(i0, j, i1 - i0, 5, DAL0 if fond else DAL1)
+            r(i0, j, i1 - i0, 1, (240, 232, 212) if fond else DAL0)
+            r(i1, j, 1, 5, DAL2)
+        r(x + 1, j + 5, w - 2, 1, DAL2)
+# Le devant : un rebord bas, et des merlons courts : entre eux, on voit le sol, presque jusqu'aux pieds des archers.
+def rebord(x, y, w, pas=14):
+    cadre(x, y, w, 5, S1); r(x + 1, y + 1, w - 2, 1, S0)
+    merlons(x, y + 1, w, pas=pas, mh=8, mw=8)
+
+def tour(x, base, w, haut, toit=True, fentes=2, ban=None, gardes=()):
+    prof = 30
     maconnerie(x, base - haut, w, haut)
     r(x, base - haut, w, 1, OUT); r(x, base - 1, w, 1, OUT); r(x, base - haut, 1, haut, OUT); r(x + w - 1, base - haut, 1, haut, OUT)
     r(x + 1, base - 7, w - 2, 6, S3)
-    cadre(x - 3, base - haut - prof, w + 6, prof - 5, S2)                 # le dessus de la tour (là où se tiendra l'archer, #124)
-    if toit: dome(x + w // 2, base - haut - prof - 2, w // 2 - 8, 16)
-    cadre(x - 3, base - haut - 9, w + 6, 10, S1); r(x - 2, base - haut - 8, w + 4, 2, S0)   # le parapet devant
-    merlons(x - 3, base - haut - 8, w + 6, pas=13)
+    dalles(x - 3, base - haut - prof, w + 6, prof - 4)                    # le dessus de la tour (là où se tiendra l'archer, #124)
+    if toit: dome(x + w // 2, base - haut - prof - 6, w // 2 - 8, 16)
+    for gx, s in gardes: archer(x + gx, base - haut - 12, s)
+    rebord(x - 3, base - haut - 5, w + 6, pas=13)
     debut = 98 if ban else 26
     for k in range(fentes): fente(x + w // 2 - 3, base - haut + debut + k * 30)
     if ban: banniere(x + w // 2 - 10, base - haut + 8, 78, ban)
 
-def courtine(a, b, base, hm):
-    # le chemin de ronde (vu de dessus), puis le parapet crénelé devant, puis la façade et ses contreforts
-    cadre(a, base - hm - 22, b - a, 14, S2); r(a + 1, base - hm - 21, b - a - 2, 2, S3)
-    cadre(a, base - hm - 10, b - a, 11, S1); r(a + 1, base - hm - 9, b - a - 2, 2, S0)
-    merlons(a, base - hm - 10, b - a)
+def courtine(a, b, base, hm, gardes=()):
+    # le chemin de ronde (son sol vu de dessus), les archers, puis le rebord crénelé devant, puis la façade et ses contreforts
+    dalles(a, base - hm - 28, b - a, 24)
+    for gx, s in gardes: archer(gx, base - hm - 13, s)
+    rebord(a, base - hm - 5, b - a)
     maconnerie(a, base - hm, b - a, hm)
     r(a, base - hm, b - a, 1, OUT); r(a, base - 1, b - a, 1, OUT); r(a, base - 8, b - a, 7, S3)
     for xx in range(a + 40, b - 30, 4 * T): contrefort(xx, base, hm - 16)
@@ -158,14 +198,14 @@ def courtine(a, b, base, hm):
 porte_g, porte_d = cx - 2 * T - 52, cx + 2 * T + 52
 for xa in (-10, W - 70):                                       # les tours d'angle, à moitié dans la forêt
     tour(xa, BASE + 4, 80, HM + T, toit=True, fentes=1)
-courtine(60, porte_g, BASE, HM)
-courtine(porte_d, W - 60, BASE, HM)
+courtine(60, porte_g, BASE, HM, gardes=[(6 * T, False)])
+courtine(porte_d, W - 60, BASE, HM, gardes=[(27 * T + 16, True)])
 for col, ban in [(24, (194, 65, 47)), (31, (47, 104, 184)), (38, (142, 92, 194))]:   # les 3 tours de guet, côté droit
     tour(col * T - 8, BASE + 6, 2 * T + 16, HM + 2 * T, fentes=2, ban=ban)
 
 # la grande porte : deux tours à dôme vert, la galerie à trois baies, l'écusson à la flamme, la voûte et sa herse relevée
-for xt in (porte_g - 8, porte_d - 3 * T + 8):
-    tour(xt, BASE + 10, 3 * T, HP, fentes=2)
+for xt, g in ((porte_g - 8, [(48, True)]), (porte_d - 3 * T + 8, [(48, False)])):
+    tour(xt, BASE + 10, 3 * T, HP, fentes=2, gardes=g)
 gx0, gx1 = porte_g - 8 + 3 * T, porte_d - 3 * T + 8
 hc = HM + 2 * T
 maconnerie(gx0, BASE - hc, gx1 - gx0, hc); r(gx0, BASE - hc, gx1 - gx0, 1, OUT)
@@ -215,14 +255,15 @@ for k in range(4):
 
 # ---------------- sortie : on découpe chaque calque à ce qu'il contient
 haut_mur = mur.getbbox()[1]
-mur.crop((0, haut_mur, W, D1 + 6)).save(LPC + 'muraille.png', optimize=True)
+SORTIE = (MAQUETTE + '/') if MAQUETTE else LPC
+mur.crop((0, haut_mur, W, D1 + 6)).save(SORTIE + 'muraille.png', optimize=True)
 haut_sol = sol.getbbox()[1]
-sol.crop((0, haut_sol, W, H)).save(LPC + 'douves.png', optimize=True)
-bras.save(LPC + 'brasero.png', optimize=True)
+sol.crop((0, haut_sol, W, H)).save(SORTIE + 'douves.png', optimize=True)
+bras.save(SORTIE + 'brasero.png', optimize=True)
 pos = {
     'muraille': {'y': haut_mur, 'pied': BASE},
     'douves': {'y': haut_sol},
     'braseros': [[cx - 70, D1 + 14], [cx + 70, D1 + 14]],   # [milieu, haut] de chaque brasero ; son pied est 38 px plus bas
 }
-open('src/data/muraille.json', 'w').write(json.dumps(pos) + '\n')
+open(SORTIE + 'muraille.json' if MAQUETTE else 'src/data/muraille.json', 'w').write(json.dumps(pos) + '\n')
 print('muraille', mur.width, D1 + 6 - haut_mur, 'à y =', haut_mur, '; douves à y =', haut_sol)

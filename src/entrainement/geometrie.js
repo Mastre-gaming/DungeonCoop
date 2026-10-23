@@ -33,17 +33,63 @@ function segmentCoupe(f, a, b, marge = 0) {
   return false;
 }
 
+// --- Le relief (FIGHT_RULES « à l'essai » : la hauteur, comme dans Baldur's Gate 3) -------------------------------
+// salle.relief : des plateaux { x0, y0, x1, y1, haut } (haut : en niveaux de 3 m au-dessus du sol ; un plateau peut en
+// porter un autre) ; salle.rampes : { x0, y0, x1, y1, bas, haut, vers } (vers : 'n', 's', 'e' ou 'w', le côté haut).
+// On ne passe d'un niveau à l'autre que par une rampe (un chemin, une échelle) : partout ailleurs, c'est une falaise.
+// Vue de 3/4, la falaise d'un plateau pend sous son bord sud (FACE cases par niveau) : on ne s'y tient pas. À l'ouest,
+// au nord et à l'est, son pied (PIED) non plus, et le bord du plateau (RAYON) : deux créatures de niveaux différents
+// ne sont donc jamais au contact (on ne frappe pas au corps à corps 3 m plus haut ou plus bas).
+export const NIVEAU_M = 3;                 // un niveau, en mètres
+export const FACE = 2;                     // la hauteur dessinée d'une falaise d'un niveau, en cases
+const PIED = 0.9;                          // le pied d'une falaise, sur ses autres côtés (PIED + 2 RAYON > CONTACT)
+const CORPS = 0.3;                         // la ligne de vue part et arrive à mi-corps (en niveaux : ≈ 1 m)
+const pente = (r, x, y) => {
+  const t = r.vers === 'n' ? (r.y1 - y) / (r.y1 - r.y0) : r.vers === 's' ? (y - r.y0) / (r.y1 - r.y0)
+    : r.vers === 'e' ? (x - r.x0) / (r.x1 - r.x0) : (r.x1 - x) / (r.x1 - r.x0);
+  return r.bas + (r.haut - r.bas) * Math.min(1, Math.max(0, t));
+};
+const surRampe = (salle, x, y) => (salle.rampes ?? []).find((r) => dansForme(r, x, y)) ?? null;
+// Le niveau du sol en (x, y) : 0 en bas ; sur une rampe, entre ses deux bouts.
+export function niveauA(salle, x, y) {
+  const r = surRampe(salle, x, y);
+  if (r) return pente(r, x, y);
+  let n = 0;
+  for (const p of salle.relief ?? []) if (p.haut > n && dansForme(p, x, y)) n = p.haut;
+  return n;
+}
+const DIRS = Array.from({ length: 16 }, (_, k) => [Math.cos((k / 16) * Math.PI * 2), Math.sin((k / 16) * Math.PI * 2)]);
+// Ce que le relief interdit à un pied posé en (x, y) : 'pied' (au pied d'une falaise, ou sur sa face), 'bord' (au bord
+// d'un plateau, le corps dans le vide), ou null. Une rampe n'est jamais interdite : c'est par elle qu'on passe.
+function reliefEn(salle, x, y) {
+  if (!salle.relief?.length || surRampe(salle, x, y)) return null;
+  const h = niveauA(salle, x, y);
+  const plusHaut = (qx, qy) => !surRampe(salle, qx, qy) && niveauA(salle, qx, qy) >= h + 0.75;
+  for (let d = 0.15; d <= FACE * 2 + RAYON; d += 0.15) {               // une falaise au nord : sa face pend jusqu'ici ?
+    if (!plusHaut(x, y - d)) continue;
+    if (d <= FACE * (niveauA(salle, x, y - d) - h) + RAYON) return 'pied';
+  }
+  for (const [dx, dy] of DIRS) for (let d = 0.15; d <= PIED + RAYON; d += 0.15) if (plusHaut(x + dx * d, y + dy * d)) return 'pied';
+  for (const [dx, dy] of DIRS) {
+    const qx = x + dx * RAYON, qy = y + dy * RAYON;
+    if (!surRampe(salle, qx, qy) && niveauA(salle, qx, qy) <= h - 0.75) return 'bord';
+  }
+  return null;
+}
+
 // --- La salle vue par la géométrie -----------------------------------------------------------------------------
-// salle = { l, h (en cases), obstacles: [{ ...forme, marche, vue, eau, fosse }] }
+// salle = { l, h (en cases), obstacles: [{ ...forme, marche, vue, eau, fosse }], relief?, rampes? }
 //   marche : on ne peut pas y entrer ; vue : il coupe la ligne de vue ; eau : eau profonde ; fosse : on y tombe
 export function creerTrame(salle) {
   const nx = Math.round(salle.l / PAS), ny = Math.round(salle.h / PAS);
   const fixe = new Uint8Array(nx * ny);                          // 1 : interdit à un pied, quoi qu'il arrive
+  const relief = new Uint8Array(nx * ny);                        // 1 : au pied d'une falaise ; 2 : au bord d'un plateau
   for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
-    const x = (i + 0.5) * PAS, y = (j + 0.5) * PAS;
-    fixe[j * nx + i] = salle.obstacles.some((o) => (o.marche || o.eau || o.fosse) && dansForme(o, x, y, RAYON)) ? 1 : 0;
+    const x = (i + 0.5) * PAS, y = (j + 0.5) * PAS, r = reliefEn(salle, x, y);
+    relief[j * nx + i] = r === 'pied' ? 1 : r === 'bord' ? 2 : 0;
+    fixe[j * nx + i] = r || salle.obstacles.some((o) => (o.marche || o.eau || o.fosse) && dansForme(o, x, y, RAYON)) ? 1 : 0;
   }
-  return { salle, nx, ny, fixe };
+  return { salle, nx, ny, fixe, relief };
 }
 
 // Un obstacle qui apparaît en cours de partie (un arbre qui tombe sur le chemin) : on le range dans la salle et on bloque
@@ -176,10 +222,23 @@ export function chemin(carte, depart, k, genants = []) {
 }
 export const longueurChemin = (depart, pts) => pts.reduce((s, p, k) => s + dist(k ? pts[k - 1] : depart, p), 0);
 
-// La ligne de vue : rien de ce qui la coupe (murs, rochers) entre les deux centres.
+// La ligne de vue : rien de ce qui la coupe (murs, rochers) entre les deux centres ; et, avec du relief, une ligne en
+// 3D, de mi-corps à mi-corps, que le sol ne doit pas dépasser : d'en bas, on ne voit que ceux qui se tiennent près du
+// bord ; un plateau entre deux créatures d'en bas les cache l'une à l'autre.
 export function vue(salle, a, b) {
-  return !salle.obstacles.some((o) => o.vue && segmentCoupe(o, a, b));
+  if (salle.obstacles.some((o) => o.vue && segmentCoupe(o, a, b))) return false;
+  if (!salle.relief?.length) return true;
+  const ha = niveauA(salle, a.x, a.y) + CORPS, hb = niveauA(salle, b.x, b.y) + CORPS, l = dist(a, b);
+  const n = Math.max(2, Math.ceil(l / 0.1));
+  for (let k = 1; k < n; k++) {
+    const t = k / n;
+    if (t * l < RAYON || (1 - t) * l < RAYON) continue;                // (sous ses propres pieds)
+    if (niveauA(salle, a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t) > ha + (hb - ha) * t + 1e-6) return false;
+  }
+  return true;
 }
+// La hauteur entre deux créatures, en niveaux : > 0 quand a est plus haut que b.
+export const ecartHauteur = (salle, a, b) => niveauA(salle, a.x, a.y) - niveauA(salle, b.x, b.y);
 
 // Un ennemi voit-il ce point ? Dans son champ (r cases, à ± demi radians autour de son regard : l'ouest par défaut) et
 // sans rien qui coupe la vue (l'exploration : chemin-de-la-tour.md §3).
@@ -202,17 +261,32 @@ export function enTenaille(att, cible, allies) {
 }
 
 // Une poussée en ligne droite, depuis `source`, de `longueur` cases. `surGlace(x, y)` : la cible glisse encore.
-// Renvoie { chemin, arret: null | 'mur' | 'creature' | 'fosse', heurte } ; `obstacles` : les créatures et tonneaux.
+// Renvoie { chemin, arret: null | 'mur' | 'creature' | 'fosse' | 'chute', heurte, chute } ; `obstacles` : les créatures
+// et tonneaux. Poussé par-dessus le bord d'un plateau, on tombe (chute : les niveaux perdus) : on file au-delà de la
+// falaise jusqu'au premier sol libre en bas. Poussé contre une falaise, depuis le bas, on la heurte comme un mur.
 export function simulerPoussee(tr, source, cible, longueur, { obstacles = [], surGlace = () => false } = {}) {
   let dx = cible.x - source.x, dy = cible.y - source.y;
   const n = Math.hypot(dx, dy) || 1; dx /= n; dy /= n;
-  const pas = 0.05, pts = [];
-  let x = cible.x, y = cible.y, reste = longueur, arret = null, heurte = null;
+  const pas = 0.05, pts = [], salle = tr.salle;
+  let x = cible.x, y = cible.y, reste = longueur, arret = null, heurte = null, chute = 0;
+  const reliefDe = (px, py) => (tr.relief ? tr.relief[indiceDe(tr, px, py)] : 0);
   for (let garde = 0; garde < 600; garde++) {
     if (reste <= 0 && !surGlace(x, y)) break;
     const nx = x + dx * pas, ny = y + dy * pas;
-    const fosse = tr.salle.obstacles.find((o) => o.fosse && dansForme(o, nx, ny));
+    const fosse = salle.obstacles.find((o) => o.fosse && dansForme(o, nx, ny));
     if (fosse) { arret = 'fosse'; x = nx; y = ny; break; }
+    const ici = niveauA(salle, x, y);
+    if (salle.relief?.length && niveauA(salle, nx, ny) <= ici - 0.75) {   // par-dessus le bord : la chute
+      let fx = nx, fy = ny;
+      for (let g = 0; g < 200 && !(libre(tr, fx, fy) && !obstacles.some((o) => o !== cible && Math.hypot(o.x - fx, o.y - fy) < ECART_MIN)); g++) {
+        if (fx < RAYON || fy < RAYON || fx > salle.l - RAYON || fy > salle.h - RAYON) break;
+        fx += dx * pas; fy += dy * pas;
+      }
+      if (!libre(tr, fx, fy)) ({ x: fx, y: fy } = pointLibreProche(tr, { x: fx, y: fy }, obstacles.filter((o) => o !== cible)));
+      chute = Math.round(ici - niveauA(salle, fx, fy));
+      arret = 'chute'; x = fx; y = fy; break;
+    }
+    if (reliefDe(nx, ny) === 1) { arret = 'mur'; heurte = { falaise: true }; break; }
     const mur = tr.salle.obstacles.find((o) => (o.marche || o.eau) && dansForme(o, nx, ny, RAYON));
     if (mur || nx < RAYON || ny < RAYON || nx > tr.salle.l - RAYON || ny > tr.salle.h - RAYON) { arret = 'mur'; heurte = mur ?? null; break; }
     const autre = obstacles.find((o) => o !== cible && Math.hypot(o.x - nx, o.y - ny) < ECART_MIN);
@@ -222,7 +296,7 @@ export function simulerPoussee(tr, source, cible, longueur, { obstacles = [], su
   }
   if (!pts.length || dist(pts[pts.length - 1], { x, y }) > 0.01) pts.push({ x, y });
   const parcouru = dist(cible, { x, y });
-  return { chemin: parcouru < 0.01 ? [] : pts, arret, heurte, parcouru };
+  return { chemin: parcouru < 0.01 ? [] : pts, arret, heurte, parcouru, chute };
 }
 
 // Le point libre le plus proche (pour remonter du fossé, ou poser un héros relevé).

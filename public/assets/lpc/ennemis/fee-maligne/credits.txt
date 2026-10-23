@@ -1,0 +1,43 @@
+Character: Fée maligne
+Made with the Universal LPC Spritesheet Character Generator: https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=female&body=Body_Color_light&head=Human_Female_Small_light&clothes=Blouse_green&wings=Pixie_Wings_white
+
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/female/walk.png
+
+see details at https://opengameart.org/content/lpc-character-bases
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Benjamin K. Smith (BenCreating), bluecarrot16, TheraHedwig, Evert, MuffinElZangano, Durrani, Pierre Vigier (pvigier), ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/human/female_small/walk.png
+
+original head by Redshrike, reduced size head by ElizaWy
+
+Licenses: OGA-BY 3.0, CC-BY
+
+Authors: ElizaWy, Stephen Challener (Redshrike)
+
+torso/clothes/blouse/female/walk/green.png
+
+original princess.xcf by Sharm, edited to blouse by ElizaWy; adapted to v3 bases by bluecarrot16
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, ElizaWy, Lanea Zimmerman (Sharm)
+
+body/wings/pixie/solid/fg/walk/white.png
+
+In dedication to my grandmother, Sharon Rowe
+
+Licenses: OGA-BY 4.0, CC-BY-SA 4.0
+
+Authors: The Foreman
+
+Download TXT
+Download CSV

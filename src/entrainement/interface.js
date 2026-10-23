@@ -8,11 +8,17 @@
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
-import { CAPACITES, HEROS, ENNEMIS, PNJ, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, equipeDepuis, capacitesDe, VUE } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, PNJ, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour, capacitesDe, VUE } from './regles.js';
+import { monGithub } from './joueur.js';
 import { CONTACT, metres, dist } from './geometrie.js';
-import { icone, TAMPONS, resultats, caracteristiques, effets, resume } from './fiches.js';
+import { calculerBilan } from './bilan.js';
+import { DEBUT_INFINI } from './regles.js';
+import { LISTE as SALLES } from './salles.js';
+import * as REG from './reglages-combat.js';
+import { icone, TAMPONS, resultats, caracteristiques, effets, resume, SORTES, sorteDe, ordreBarre, TOUCHES } from './fiches.js';
 import { curseurCss } from './armes.js';
 import { etatsActifs } from './etats.js';
+import { medaillon } from '../33_cadres.js';
 
 export const name = 'interface';
 export const always = true;
@@ -42,11 +48,13 @@ export function init(g, options) {
   cine = options.cinema ?? null;
   ui.aventure = options.aventure ?? null;           // le nom de l'aventure : pas de fiche de mesure, la route continue
   if (options.horloge) ui.horloge = options.horloge;
+  ui.salle = SALLES.find((x) => x.id === options.salle) ?? null;   // la salle jouée (salles.js) ; sans elle, la salle d'essai
   // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
-  ui.choix = (new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe).slice();
+  ui.choix = equipePour(new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe, monGithub());
   construire();
   if (ui.aventure) { dom.titre.textContent = ui.aventure; dom.boutonFiche.hidden = true; }
   if (options.mode === 'initiative') dom.accueil.querySelector('input[value=initiative]').checked = true;
+  if (options.infini) dom.infiniCase.checked = true;
   if (options.demarrer) commencer();
   vue.surEvenement(surEvenement);
   canvas.addEventListener('pointermove', (e) => { ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.capSurvol = null; ui.sale = true; });
@@ -80,11 +88,17 @@ function construire() {
   dom.coin = el('div', { class: 'coin-phase bois' },
     dom.annuler = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: annuler, title: 'Annuler le dernier déplacement (sans dé)' }, 'Annuler le déplacement'),
     dom.finPhase = el('button', { type: 'button', class: 'bouton-jeu', id: 'fin-phase', onclick: finPhase }, 'Fin de la phase des héros'));
-  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des capacités
+  // en bas : la fiche de la capacité (choisie, ou survolée dans la barre), au-dessus de la barre des sorts
+  const loupSculpte = (cote) => el('div', { class: `loup ${cote}`, 'aria-hidden': 'true' }, el('div', { class: 'loup-bois' }), el('div', { class: 'socle' }));
   dom.bas = el('div', { class: 'bas-terrain' },
     dom.ficheCap = el('section', { class: 'fiche-capacite bois', hidden: true, 'aria-live': 'polite' }),
     dom.basculeFiche = el('button', { type: 'button', class: 'bascule-fiche bouton-jeu discret petit', 'aria-pressed': 'true', title: 'Montrer ou cacher la fiche de la capacité (I)', onclick: () => basculerFiche() }, 'Fiche'),
-    dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les capacités du héros choisi' }, dom.capacites = el('div', { class: 'capacites' })));
+    // la barre des sorts, comme celle du camp (BABA) : entre ses embouts de laiton et ses deux loups sculptés sur leur socle
+    el('div', { class: 'socle-sorts' }, loupSculpte('gauche'), el('span', { class: 'embout gauche', 'aria-hidden': 'true' }),
+      dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les sorts du héros choisi' },
+        ['hg', 'hd', 'bg', 'bd'].map((p) => el('span', { class: `rivet ${p}`, 'aria-hidden': 'true' })),
+        dom.capacites = el('div', { class: 'capacites' })),
+      el('span', { class: 'embout droite', 'aria-hidden': 'true' }), loupSculpte('droite')));
   dom.de = el('div', { class: 'de-grand', hidden: true, 'aria-live': 'polite' });
   dom.banniere = el('div', { class: 'banniere-terrain', hidden: true });
   dom.info = el('div', { class: 'carte-cible bois', hidden: true });
@@ -94,11 +108,18 @@ function construire() {
     ' des alliés · molette : zoom · clic droit glissé : la vue');
   dom.accueil = el('div', { class: 'fond-terrain', id: 'accueil' }, el('section', { class: 'cadre-terrain' },
     el('h1', {}, 'Le terrain d’entraînement'),
-    el('p', {}, 'Le combat D1 du kit papier (la Salle d’essai de Fraps), joué ', el('strong', {}, 'sans cases'),
-      ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
+    ui.salle
+      ? el('p', {}, el('strong', {}, ui.salle.nom), ' : ', el('em', {}, ui.salle.idee), ' Un combat ', el('strong', {}, 'sans cases'), ' : chaque classe a une distance maximale par tour, en mètres.')
+      : el('p', {}, 'Le combat D1 du kit papier (la Salle d’essai de Fraps), joué ', el('strong', {}, 'sans cases'),
+        ' : chaque classe a une distance maximale par tour, en mètres, et la salle est cinq fois plus grande (36 × 24 m). L’eau de l’étang est profonde : on n’y marche pas. Le fossé au sud remplace la corniche.'),
+    // la salle : en changer recharge le terrain (son sol, son décor et ses obstacles se construisent au chargement)
+    dom.salle = el('label', { class: 'choix-salle' }, 'La salle',
+      el('select', { id: 'choix-salle', onchange: (e) => changerSalle(e.target.value) },
+        el('option', { value: '' }, 'La salle d’essai'),
+        ...SALLES.map((x) => el('option', { value: x.id, selected: x.id === ui.salle?.id }, x.nom)))),
     dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
     dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
-    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, ou des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester ; les vraies classes restent celles de chacun). ◀ ▶ pour changer.'),
+    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (le Traqueur de Paolitus, Shadow de Fraps : chacune ne se joue que par son auteur). ◀ ▶ pour changer.'),
     dom.places = el('div', { class: 'places-accueil' }),
     dom.boutonsEquipe = el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { ui.choix = EQUIPE_KIT.slice(); dessinerPlaces(); } }, 'Le kit D1'),
@@ -106,12 +127,16 @@ function construire() {
     dom.mode = el('fieldset', { class: 'mode-tour', onchange: (e) => reseau?.mode(e.target.value) }, el('legend', {}, 'Le mode de tour'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'equipe', checked: true }), ' Tour d’équipe : tous les héros, puis tous les ennemis'),
       el('label', {}, el('input', { type: 'radio', name: 'mode', value: 'initiative' }), ' Ordre d’initiative : d20 + DEX, deux héros qui se suivent jouent ensemble')),
-    el('p', { class: 'objectif' }, 'Objectif : vaincre le chef (les autres s’enfuient).'),
+    el('label', { class: 'mode-infini' }, dom.infiniCase = el('input', { type: 'checkbox', id: 'mode-infini', onchange: (e) => reseau?.infini(e.target.checked) }),
+      ' Mode infini : manche après manche, avec un soin et de l’XP entre deux, et des ennemis de plus en plus durs'),
+    el('p', { class: 'objectif' }, 'Objectif : vaincre tous les ennemis, le chef compris.'),
     dom.attente = el('p', { class: 'attente-lobby', hidden: true }),
     el('div', { class: 'boutons' }, dom.commencer = el('button', { type: 'button', class: 'bouton-jeu', id: 'commencer', onclick: commencer }, 'Commencer le combat'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   dom.fin = el('div', { class: 'fond-terrain', id: 'fin', hidden: true }, el('section', { class: 'cadre-terrain' },
     dom.finTitre = el('h1', {}),
+    dom.infiniRecap = el('p', { class: 'infini-recap', id: 'infini-recap', hidden: true }),
+    dom.bilan = el('div', { class: 'bilan-fin', id: 'bilan' }),
     el('div', { class: 'notes-fin' },
       ...[['fun', 'Fun, sur 10'], ['lent', 'Ce qui a semblé lent'], ['cases', 'Sans cases : mieux ou moins bien qu’avec, et pourquoi'], ['regle', 'Une règle à changer']]
         .map(([k, t]) => el('label', {}, t, el('input', { type: 'text', name: k, oninput: () => { dom.fiche.textContent = combat.fiche(notes()); } })))),
@@ -119,6 +144,7 @@ function construire() {
     el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu', id: 'copier-fiche', onclick: copier }, 'Copier la fiche'),
       dom.continuer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { dom.fin.hidden = true; } }, 'Revenir au combat'),
+      dom.suite = el('button', { type: 'button', class: 'bouton-jeu', id: 'suite', hidden: true, onclick: mancheSuivante }, 'Manche suivante'),
       dom.rejouer = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: rejouer }, 'Rejouer'),
       el('a', { class: 'bouton-jeu discret retour-camp', href: RETOUR_CAMP }, 'Retour au camp'))));
   dom.defaite = el('div', { class: 'fond-terrain', id: 'defaite', hidden: true }, el('section', { class: 'cadre-terrain' },
@@ -146,7 +172,9 @@ const CLE_CHOIX = 'dungeoncoop:equipe-entrainement';
 function lireChoix() { try { return equipeDepuis(localStorage.getItem(CLE_CHOIX)); } catch { return null; } }
 const equipeAffichee = () => (reseau ? reseau.L.equipe : ui.choix);
 function changerClasse(k, sens) {
-  const i = CLASSES_ESSAI.indexOf(equipeAffichee()[k]), type = CLASSES_ESSAI[(i + sens + CLASSES_ESSAI.length) % CLASSES_ESSAI.length];
+  // (seulement les classes que je peux jouer : celle d'un autre joueur n'est qu'à lui)
+  const liste = classesPour(monGithub()), i = liste.indexOf(equipeAffichee()[k]);
+  const type = liste[i < 0 ? (sens > 0 ? 0 : liste.length - 1) : (i + sens + liste.length) % liste.length];
   if (reseau) return void reseau.classe(k, type);
   ui.choix[k] = type;
   dessinerPlaces();
@@ -154,7 +182,7 @@ function changerClasse(k, sens) {
 // à plusieurs : ma place, ou une place libre pour l'hôte (celle d'un ami, non)
 const peutRegler = (k) => !reseau || reseau.L.proprio[k] === reseau.moi || (reseau.hote && reseau.L.proprio[k] === null);
 function auHasard() {
-  const melange = CLASSES_ESSAI.slice().sort(() => Math.random() - 0.5);
+  const melange = classesPour(monGithub()).sort(() => Math.random() - 0.5);
   ui.choix = melange.slice(0, 4);
   dessinerPlaces();
 }
@@ -188,13 +216,15 @@ function proprioPlace(k) {
 function dessinerLobby() {
   dom.groupe.hidden = !reseau;
   dom.boutonsEquipe.hidden = !!reseau;
+  dom.salle.querySelector('select').disabled = !!reseau;   // à plusieurs, tout le groupe joue la salle où il est entré
   dom.titreEquipe.textContent = reseau ? 'Le lobby : chacun prend ses héros et choisit leur classe' : 'Ton équipe : choisis la classe de chacun';
-  for (const i of dom.mode.querySelectorAll('input')) i.disabled = !!reseau && !reseau.hote;
+  for (const i of [...dom.mode.querySelectorAll('input'), dom.infiniCase]) i.disabled = !!reseau && !reseau.hote;
   dom.commencer.hidden = !!reseau && !reseau.hote;
   dom.attente.hidden = !reseau;
   if (!reseau) return;
   const L = reseau.L, joueurs = reseau.joueurs(), hote = joueurs.find((j) => j.id === 'host');
   const radio = dom.mode.querySelector(`input[value=${L.mode}]`); if (radio && !radio.checked) radio.checked = true;
+  dom.infiniCase.checked = !!L.infini;
   dom.groupe.replaceChildren(el('span', {}, `Le groupe${reseau.code ? ` (code ${reseau.code})` : ''} : `),
     ...joueurs.map((j) => el('span', { class: 'joueur', style: `--couleur:${reseau.couleurDe(j.id)}` }, j.nom, j.moi ? ' (toi)' : '', j.id === 'host' ? ' · hôte' : '')),
     ...(reseau.statut ? [el('span', { class: 'statut' }, reseau.statut)] : []));
@@ -207,20 +237,51 @@ export const adresseEquipe = (equipe, mode) => `?equipe=${equipe.join(',')}&mode
 const notes = () => Object.fromEntries([...dom.fin.querySelectorAll('input')].map((i) => [{ fun: 'Fun sur 10', lent: 'Ce qui a semblé lent', cases: 'Sans cases', regle: 'Une règle à changer' }[i.name], i.value.trim()]));
 
 // --- Le déroulé -------------------------------------------------------------------------------------------------
-function vider() { const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true; }
+function vider() {
+  const evs = combat.S.evenements.splice(0); vue.jouer(evs); ui.sale = true;
+  // le réglage « finir la phase quand plus personne n'a rien à faire » (seul ; à plusieurs, c'est l'hôte : multi.js)
+  if (!reseau && REG.oui('phase.autoFin') && combat.rienAFaire()) {
+    banniere('Plus rien à faire : fin de la phase');
+    ui.sel = null; ui.cap = null; ui.annuler = []; ui.portee = null;
+    combat.finPhaseHeros();
+    vider();
+  }
+}
 function commencer() {
   if (reseau) return void (reseau.hote && reseau.commencer());
   const mode = dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe';
   try { localStorage.setItem(CLE_CHOIX, ui.choix.join(',')); } catch {}
   // une autre équipe que celle du combat préparé : un nouveau combat avec elle, sans recharger
-  if (ui.choix.join(',') !== combat.S.equipe.join(',') || combat.S.phase !== 'preparation') nouveauCombat(ui.choix);
+  const infini = dom.infiniCase.checked;
+  if (infini || combat.S.infini || ui.choix.join(',') !== combat.S.equipe.join(',') || combat.S.phase !== 'preparation') nouveauCombat(ui.choix, null, infini ? DEBUT_INFINI : null);
   combat.S.mode = mode;
   lance();
   combat.commencer();
   vider();
 }
+// Une autre salle : la même page, avec ?salle= (et l'équipe, le mode de tour, le mode infini choisis), rechargée.
+function changerSalle(id) {
+  const q = new URLSearchParams(location.search);
+  if (id) q.set('salle', id); else q.delete('salle');
+  q.set('equipe', ui.choix.join(','));
+  q.set('mode', dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe');
+  if (dom.infiniCase.checked) q.set('infini', ''); else q.delete('infini');
+  q.delete('go');
+  location.assign(`${location.pathname}?${q}`);
+}
 function lance() { dom.accueil.hidden = true; dom.fin.hidden = true; ui.fini = false; ui.finMontree = false; ui.sale = true; }
 function accueil() { dom.fin.hidden = true; dom.accueil.hidden = false; ui.fini = false; ui.finMontree = false; dessinerPlaces(); ui.sale = true; }
+// Mode infini : la manche gagnée est suivie d'une autre, plus dure (le récap est dans la fiche de fin) ; à plusieurs, l'hôte la lance.
+function mancheSuivante() {
+  if (reseau) return void (reseau.hote && reseau.suite());
+  const suite = combat.suiteInfini(); if (!suite) return;
+  const mode = combat.S.mode, equipe = combat.S.equipe.slice();
+  nouveauCombat(equipe, null, suite);
+  combat.S.mode = mode;
+  lance();
+  combat.commencer();
+  vider();
+}
 function rejouer() {
   if (reseau) return void (reseau.hote && reseau.rejouer());
   ui.choix = combat.S.equipe.slice();
@@ -287,12 +348,19 @@ function choisirHeros(id) {
 }
 function choisirCapacite(id) {
   const h = herosChoisi();
-  if (id && (!h || !combat.peutUtiliser(h, CAPACITES[id]))) return false;
+  if (id && (!h || !utilisable(h, CAPACITES[id]))) return false;
   ui.cap = id && ui.cap !== id ? id : null;
   // une capacité sans cible (la potion) se lance tout de suite
   if (ui.cap && CAPACITES[ui.cap].type === 'potion') { agir({}); return true; }
   ui.sale = true;
   return true;
+}
+// Se désengager (#231) : l'action commune, sans cible, pour le héros choisi
+function desengager() {
+  const h = herosChoisi();
+  if (!h || vue.occupe() || !utilisable(h, CAPACITES.desengager)) return false;
+  ui.cap = 'desengager';
+  return agir({});
 }
 function agir(cible) {
   const h = herosChoisi(); if (!h || !ui.cap) return false;
@@ -423,6 +491,7 @@ function cliquer(p) {
     const cap = CAPACITES[ui.cap];
     if (cap.type === 'zone') return void agir({ x: p.x, y: p.y });
     if (dessous && combat.cibles(h, cap).some((c) => c.id === dessous)) return void agir({ id: dessous });
+    if (cap.type === 'enclume') return void agir({ x: p.x, y: p.y });          // la Chute d'Enclume sur le sol
     if (cap.el === 'feu' && combat.huileVisable(h, cap, p)) return void agir({ x: p.x, y: p.y });
     return;
   }
@@ -434,7 +503,7 @@ function cliquer(p) {
   const copie = combat.instantane();
   combat.deplacer(h, p.x, p.y, P);
   const evs = combat.S.evenements;
-  if (evs.some((e) => e.type === 'de')) ui.annuler = []; else ui.annuler.push(copie);   // sur la glace, le dé a parlé : pas d'annulation
+  if (evs.some((e) => e.type === 'de' || e.type === 'attaque')) ui.annuler = []; else ui.annuler.push(copie);   // sur la glace, ou une attaque d'opportunité : le dé a parlé, pas d'annulation
   ui.portee = null;
   vider();
 }
@@ -443,6 +512,7 @@ function clavier(e) {
   if (cine?.actif()) { if (e.key === 'Escape') cine.passer(); else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cine.suivant(); } return; }
   if (e.key === 'Escape') { if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; return; }
   if (e.code === 'KeyI' && !e.ctrlKey && !e.metaKey && !e.altKey) { basculerFiche(); return; }
+  if (e.code === 'KeyD' && !e.ctrlKey && !e.metaKey && !e.altKey) { desengager(); return; }
   if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const camp = e.shiftKey ? 'h' : 'e', oui = vue.basculerPlaques(camp);
     banniere(`Barres de vie ${camp === 'h' ? 'des alliés' : 'des ennemis'} : ${oui ? 'affichées' : 'cachées'}`);
@@ -454,9 +524,8 @@ function clavier(e) {
     if (ids.length) choisirHeros(ids[(ids.indexOf(ui.sel) + 1) % ids.length]);
     return;
   }
-  const n = Number(e.key);
-  const h = herosChoisi();
-  if (n >= 1 && n <= 9 && h) { const id = capacitesDe(combat.S, h.type)[n - 1]; if (id) choisirCapacite(id); }
+  const n = TOUCHES.indexOf(e.key), h = herosChoisi();
+  if (n >= 0 && h && !e.ctrlKey && !e.metaKey && !e.altKey) { const id = ordreBarre(capacitesDe(combat.S, h.type), CAPACITES)[n]; if (id) choisirCapacite(id); }
 }
 function portee(h) { if (!ui.portee || ui.portee.id !== h.id || ui.portee.mv !== h.t.mv || ui.portee.x !== h.x || ui.portee.y !== h.y) ui.portee = { id: h.id, mv: h.t.mv, x: h.x, y: h.y, P: combat.portee(h) }; return ui.portee.P; }
 
@@ -466,7 +535,12 @@ export function update() {
   const libre = !vue.occupe();
   if (libre && ui.etaitOccupe) ui.sale = true;          // la file vient de finir : on redessine (boutons, zone de marche)
   ui.etaitOccupe = !libre;
-  if (combat.S.phase === 'heros' && combat.S.debutPhase) dom.chrono.textContent = `phase des héros ${duree(ui.horloge() - combat.S.debutPhase)}`;
+  if (combat.S.phase === 'heros' && combat.S.debutPhase) {
+    const ecoule = ui.horloge() - combat.S.debutPhase, limite = REG.lire('phase.minuteur') * 1000;
+    dom.chrono.textContent = limite > 0 ? `phase des héros · reste ${duree(Math.max(0, limite - ecoule))}` : `phase des héros ${duree(ecoule)}`;
+    // le minuteur de la phase des héros (réglage) : seul, la phase finit toute seule ; à plusieurs, c'est l'hôte (multi.js)
+    if (limite > 0 && ecoule >= limite && !reseau && !vue.occupe() && !ui.fini) { banniere('Temps écoulé : fin de la phase'); finPhase(); }
+  }
   compterCaillasse();
   document.body.classList.toggle('de-ouvert', document.querySelector('#des')?.hidden === false);   // (le journal ne gâche pas le jet : il se cache pendant que le dé roule)
   if (ui.fini && libre && dom.fin.hidden && !ui.finMontree) { ui.finMontree = true; if (ui.aventure) finAventure(); else montrerFin(false); }
@@ -494,6 +568,7 @@ export function update() {
       if (ui.survol) {
         if (cap.type === 'zone') m.zone = { x: ui.survol.x, y: ui.survol.y, r: cap.rayon, surf: cap.surf, ok: combat.zonePossible(h, cap, ui.survol) };
         const d = vue.sous(ui.survol.x, ui.survol.y);
+        if (cap.type === 'enclume' && !(d && m.cibles.includes(d))) m.zone = { x: ui.survol.x, y: ui.survol.y, r: 0.45, surf: 'enclume', ok: combat.zonePossible(h, cap, ui.survol) };
         if (d && m.cibles.includes(d)) { m.survolCible = d; info = combat.apercu(h, ui.cap, d); }
       }
     } else {
@@ -501,8 +576,11 @@ export function update() {
       if (ui.survol && !vue.sous(ui.survol.x, ui.survol.y)) {
         const a = combat.apercuMarche(h, ui.survol.x, ui.survol.y, portee(h));
         if (a.pts.length) {
-          m.chemin = a.pts; m.cheminOk = a.ok;
-          dom.distance.hidden = false; dom.distance.textContent = `${metres(a.longueur)} m${a.ok ? '' : ' : trop loin'}`;
+          // une attaque d'opportunité sur ce chemin (#231) : il passe en rouge, et dit qui frappera, ses chances et ses dégâts
+          m.chemin = a.pts; m.cheminOk = a.ok; m.cheminDanger = a.ok && a.menaces.length > 0;
+          const menaces = a.ok ? a.menaces.map((x) => `${x.nom} (${Math.round(x.touche * 100)} % · ${x.degats})`).join(', ') : '';
+          dom.distance.hidden = false; dom.distance.classList.toggle('danger', !!menaces);
+          dom.distance.textContent = `${metres(a.longueur)} m${a.ok ? '' : ' : trop loin'}${menaces ? ` · attaque d’opportunité : ${menaces}` : ''}`;
           dom.distance.style.left = `${ui.client.x + 14}px`; dom.distance.style.top = `${ui.client.y + 12}px`;
         }
       }
@@ -548,32 +626,49 @@ function joueurFiche(id) {
 // La fiche de la capacité (#85) : ce qu'elle fait, sans avoir besoin d'une cible. Celle qu'on survole dans la barre,
 // sinon celle qu'on a choisie.
 const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
+// Le Pas dans l’ombre de Shadow n’a de sens qu’avec un ennemi tenu par un allié : sans cible, on le montre indisponible.
+const sansCible = (h, cap) => cap.type === 'ombre' && !combat.cibles(h, cap).length;
+const utilisable = (h, cap) => combat.peutUtiliser(h, cap) && !sansCible(h, cap);
 function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
-  if (cap.cout && h.res.v < cap.cout) return `Pas assez de ${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
+  if (cap.type === 'enclume' && h.enclumeTombee) return 'Son enclume est déjà tombée : une fois par combat.';
+  if (cap.type === 'forge' && !combat.presDeLEnclume(h)) return combat.S.enclume ? 'Loin de son enclume : il doit être à son contact pour forger.' : 'Pas d’enclume : la Chute d’Enclume d’abord.';
+  if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m qu’un allié serre à 4,5 m.';
   if (cap.type === 'brasero') return 'Va au contact d’un brasero : il se renverse à portée de main.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
   return 'Pas maintenant.';
 }
+// la tête tient sur une ligne : sans « Sans coût », et la poussée (ou l’attraction) passe aux effets, où elle est souvent déjà
+const puces = (cap, ressource) => caracteristiques(cap, ressource).filter((t) => t !== 'Sans coût' && !/^(Pousse|Attire) de /.test(t));
+function effetsFiche(cap) {
+  const liste = effets(cap).map((e) => (/^[\d,]+ m$/.test(e.texte) ? { ...e, texte: `Pousse de ${e.texte}` } : e));
+  if (cap.longueur && !liste.some((e) => /pousse|attire/i.test(e.texte))) liste.unshift({ texte: `${['attraction', 'tenailles'].includes(cap.type) ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`, genre: '' });
+  return liste;
+}
 function dessinerFiche(h) {
   const id = ui.capSurvol ?? ui.cap, cap = id ? CAPACITES[id] : null;
-  dom.basculeFiche.setAttribute('aria-pressed', String(!ui.ficheCachee)); dom.basculeFiche.textContent = ui.ficheCachee ? 'Fiche : cachée (I)' : 'Fiche (I)';
+dom.basculeFiche.setAttribute('aria-pressed', String(!ui.ficheCachee)); dom.basculeFiche.textContent = ui.ficheCachee ? 'Fiche : cachée (I)' : 'Fiche (I)';
   if (ui.ficheCachee || !cap || !h || !['heros', 'exploration'].includes(combat.S.phase) || vue.occupe()) { dom.ficheCap.hidden = true; return; }
-  const r = resultats(cap), ok = combat.peutUtiliser(h, cap), k = capacitesDe(combat.S, h.type).indexOf(id) + 1;
+  const r = resultats(cap), ok = utilisable(h, cap);
+  const refus = ok ? null : el('span', { class: 'effet refus' }, pourquoiPas(h, cap));
   dom.ficheCap.dataset.capacite = id;
   dom.ficheCap.replaceChildren(
     el('header', { class: 'fc-tete' },
       el('img', { class: 'fc-icone', src: icone(id), alt: '' }),
       el('h2', {}, cap.nom),
       el('span', { class: `tampon ${cap.slot}` }, cap.slot === 'action' ? 'ACTION' : 'BONUS'),
-      el('span', { class: 'fc-carac' }, caracteristiques(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
+      el('span', { class: 'fc-carac' }, puces(cap, h.res.type).map((t) => el('span', { class: 'puce' }, t)))),
     r ? el('div', { class: `fc-resultats n${r.length}` }, r.map((x) => el('div', { class: `fc-res ${x.g}` },
-      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20)))) : '',   // (replaceChildren écrirait « null »)
-    el('div', { class: 'fc-effets' }, effets(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))),
-    el('p', { class: 'fc-aide' }, !ok ? pourquoiPas(h, cap)
-      : ui.cap === id ? (cap.type === 'zone' ? 'Clique là où poser la zone.' : cap.type === 'potion' ? '' : 'Clique sur une cible entourée d’or.')
-        : `${k ? `Touche ${k} ou clic` : 'Clic'} pour la choisir.${r && !cap.auto ? ` Contre un coriace (Brute ennemie, Chef), l’éraflure va jusqu’à d20 ${12 - cap.mod}.` : ''}`));
+      el('span', { class: 'fc-nom' }, NOM_RESULTAT[x.g]), el('strong', {}, x.degats), el('span', { class: 'fc-d20' }, x.d20))))
+      : refus ? el('div', { class: 'fc-effets' }, refus) : '',
+    // pas d’aide en dessous (la touche est sur le bouton, les chances contre un coriace dans la carte de la cible) : la fiche
+    // garde la même hauteur ; quand la capacité est indisponible, la raison passe en tête des effets (ou à la place des
+    // résultats, pour une capacité sans dégâts)
+    el('div', { class: 'fc-effets' }, r ? refus : null,
+      effetsFiche(cap).map((e) => el('span', { class: `effet ${e.genre}` }, e.texte))));
   dom.ficheCap.hidden = false;
 }
 
@@ -582,7 +677,7 @@ const etatsDe = (u) => Object.keys(u.st).map((k) => NOM_ETAT[k]).filter(Boolean)
 // les états d'une créature, dans la carte : l'icône, le nom et les tours qui restent, puis ce que l'état fait
 function listeEtats(u) {
   const liste = etatsActifs(u);
-  if (!liste.length) return null;
+  if (!liste.length) return '';          // (replaceChildren écrirait « null »)
   return el('ul', { class: 'cc-etats' }, liste.map((e) => el('li', { class: e.genre, dataset: { etat: e.id } },
     el('img', { src: e.src, alt: '' }),
     el('span', { class: 'cc-etat-nom' }, e.nom, e.n != null ? el('small', {}, ` · encore ${e.n} tour${e.n > 1 ? 's' : ''}`) : null),
@@ -607,7 +702,7 @@ function dessinerInfo(info) {
     dom.info.replaceChildren(tete,
       el('div', { class: 'cc-jauge' }, el('span', { class: u.camp === 'e' ? 'ennemi' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
       listeEtats(u),
-      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : u.camp === 'p' ? PNJ[u.type]?.habitude ?? '' : HEROS[u.type].role));
+      el('div', { class: 'cc-role' }, u.camp === 'e' ? `Habitude : ${ENNEMIS[u.type].habitude}${u.coriace ? ' · coriace' : ''}` : u.camp === 'p' ? PNJ[u.type]?.habitude ?? '' : (HEROS[u.type] ?? FAMILIERS[u.type]).role));
   }
   dom.info.hidden = false;
   // à droite du pointeur, ou à gauche s'il n'y a pas la place
@@ -615,40 +710,70 @@ function dessinerInfo(info) {
   dom.info.style.left = `${Math.max(8, x)}px`; dom.info.style.top = `${Math.max(8, ui.client.y - 24)}px`;
 }
 
+// Le médaillon d'un héros (33_cadres.js, celui du camp, à ×1), dessiné une fois par classe.
+const medaillons = new Map();
+function medaillonDe(type) {
+  if (!medaillons.has(type)) medaillons.set(type, medaillon(vue.planche(type), { p: 1 }).toDataURL());
+  return medaillons.get(type);
+}
+
 function dessinerTout() {
   const S = combat.S, groupe = S.phase === 'heros' ? combat.groupeCourant()?.ids ?? [] : [];
-  dom.etat.textContent = S.phase === 'exploration' ? 'Exploration' : S.phase === 'preparation' ? 'Prêt' : S.phase === 'fini' ? (S.resultat === 'victoire' ? `Victoire au round ${S.round}` : `Défaite au round ${S.round}`)
-    : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`;
+  dom.etat.textContent = (S.infini ? `Manche ${S.infini.manche} · niv. ${S.infini.niveau} · ` : '') + (S.phase === 'exploration' ? 'Exploration' : S.phase === 'preparation' ? 'Prêt' : S.phase === 'fini' ? (S.resultat === 'victoire' ? `Victoire au round ${S.round}` : `Défaite au round ${S.round}`)
+    : `Round ${S.round} · ${S.phase === 'heros' ? 'phase des héros' : 'phase des ennemis'} · ${S.mode === 'equipe' ? 'tour d’équipe' : 'initiative'}`);
   if (S.phase !== 'heros') dom.chrono.textContent = '';
-  // les fiches des héros
+  // les fiches des héros : le médaillon du héros du camp, en petit, et son bandeau de bois (DESIGN.fr.md §5)
   dom.equipe.replaceChildren(...S.heros.map((id) => {
     const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
     const etats = etatsDe(u);
-    // PV et ressource sur une seule ligne, la jauge dessous (les maquettes)
-    return el('button', { type: 'button', class: `fiche-heros plaque${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id) },
-      vue.portrait(u.type, 40),
-      el('span', { class: 'fh-corps' },
+    const pv = Math.max(0, u.pv), part = (v, max) => `width:${max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0}%`;
+    // une jauge : le texte écrit dedans (court), et le texte entier pour les lecteurs d'écran et au survol
+    const jauge = (classe, v, max, texte, court = texte, extra = {}) => el('span', { class: `fh-jauge ${classe}`, role: 'meter', 'aria-valuemin': '0', 'aria-valuemax': String(max), 'aria-valuenow': String(v), 'aria-label': texte, title: texte, ...extra },
+      el('span', { class: 'rempli', style: part(v, max) }), el('span', { class: 'texte' }, court));
+    return el('button', { type: 'button', class: `fiche-heros${ui.sel === id ? ' choisi' : ''}${u.ko ? ' ko' : ''}${actif ? '' : ' attend'}${aMoi(id) ? '' : ' ami'}`, dataset: { heros: id }, onclick: () => choisirHeros(id),
+      'aria-label': `${H.nom}${u.ko ? ', KO' : ''} : ${pv} sur ${u.pvMax} PV${u.res.max ? `, ${u.res.type} ${u.res.v} sur ${u.res.max}` : ''}` },
+      el('img', { class: 'fh-medaillon', src: medaillonDe(u.type), alt: '' }),
+      el('span', { class: 'fh-bandeau' },
         el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
           el('span', { class: `fh-potion${u.potion ? '' : ' bue'}`, title: u.potion ? 'Sa potion' : 'Potion bue' }, el('img', { src: icone('potion'), alt: u.potion ? 'potion' : 'potion bue' }))),
-        el('span', { class: 'fh-chiffres' }, el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`), el('span', { class: `fh-res ${u.res.type}` }, `${u.res.type} ${u.res.v}/${u.res.max}`)),
-        el('span', { class: 'jauge' }, el('span', { class: u.pv <= u.pvMax * 0.3 ? 'bas' : '', style: `width:${Math.max(0, (u.pv / u.pvMax) * 100)}%` })),
-        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`),
-        etats.length ? el('span', { class: 'fh-etats' }, etats.join(' · ')) : null));
+        // la vie et la ressource sur une ligne (la version compacte) : la ressource se reconnaît à sa couleur
+        el('span', { class: `fh-jauges${u.res.max ? '' : ' seule'}` },
+          jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`, `${pv}/${u.pvMax} PV`),
+          u.res.max ? jauge('res', u.res.v, u.res.max, `${u.res.type} ${u.res.v} / ${u.res.max}`, `${u.res.v}/${u.res.max}`, { dataset: { res: u.res.type } }) : null),
+        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
+          etats.length ? el('span', { class: 'fh-etats' }, ` · ${etats.join(' · ')}`) : null)));
   }));
-  // la barre des capacités : l'icône, le nom, action ou bonus, les dégâts d'un touché (ou ce qu'elle fait), la touche
+  // la barre des sorts : une case par capacité (l'icône, A ou B, son coût, sa touche), rangées par sorte ; le nom et le reste
+  // sont dans la fiche au-dessus, au survol ou au choix
   const h = herosChoisi();
-  dom.capacites.replaceChildren(...(h && ['heros', 'exploration'].includes(S.phase) ? capacitesDe(S, h.type).map((id, k) => {
-    const c = CAPACITES[id], ok = combat.peutUtiliser(h, c);
-    const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
-    return el('button', { type: 'button', class: `capacite ${c.slot}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
-      dataset: { capacite: id }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
-    el('span', { class: 'cap-icone' }, el('img', { src: icone(id), alt: '' }), TAMPONS[id] ? el('span', { class: 'cap-tampon' }, TAMPONS[id]) : null),
-    el('span', { class: 'cap-texte' }, el('span', { class: 'cap-nom' }, c.nom),
-      el('span', { class: 'cap-slot' }, el('span', { class: `tampon ${c.slot}` }, c.slot === 'action' ? 'ACT' : 'BONUS'), el('span', { class: 'cap-resume' }, resume(c)))),
-    el('kbd', {}, String(k + 1)));
-  }) : [el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : '')]));
-  const n = dom.capacites.children.length;
-  dom.capacites.style.setProperty('--col', n <= 5 ? n : Math.ceil(n / 2));
+  if (h && ['heros', 'exploration'].includes(S.phase)) {
+    const ordre = ordreBarre(capacitesDe(S, h.type), CAPACITES);
+    const caseSort = (id) => {
+      const c = CAPACITES[id], ok = utilisable(h, c), touche = TOUCHES[ordre.indexOf(id)] ?? '', s = sorteDe(id, c);
+      const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
+      return el('button', { type: 'button', class: `capacite ${c.slot} s-${s}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
+        'aria-label': `${c.nom}, ${c.slot === 'action' ? 'action' : 'action bonus'}${c.cout ? `, ${c.cout} ${h.res.type}` : ''}${touche ? `, touche ${touche}` : ''}`, title: c.nom,
+        dataset: { capacite: id, sorte: s }, onclick: () => choisirCapacite(id), onmouseenter: survol(true), onmouseleave: survol(false), onfocus: survol(true), onblur: survol(false) },
+      el('img', { class: 'cap-img', src: icone(id), alt: '' }),
+      el('span', { class: `cap-slot ${c.slot}`, 'aria-hidden': 'true' }, c.slot === 'action' ? 'A' : 'B'),
+      TAMPONS[id] ? el('span', { class: 'cap-tampon', 'aria-hidden': 'true' }, TAMPONS[id]) : null,
+      c.cout ? el('span', { class: 'cap-cout', dataset: { res: h.res.type }, 'aria-hidden': 'true' }, String(c.cout)) : null,
+      touche ? el('kbd', {}, touche) : null);
+    };
+    const groupes = SORTES.map((s) => ({ ...s, ids: ordre.filter((id) => sorteDe(id, CAPACITES[id]) === s.id) })).filter((g) => g.ids.length);
+    // la dernière catégorie : le mouvement, l'action commune de tous les héros (#231) : se désengager (partir du contact sans
+    // attaque d'opportunité, pour son action bonus), sur la touche D
+    const dg = CAPACITES.desengager, okD = !vue.occupe() && utilisable(h, dg);
+    const survolD = (oui) => () => { if (oui ? ui.capSurvol !== 'desengager' : ui.capSurvol === 'desengager') { ui.capSurvol = oui ? 'desengager' : null; ui.sale = true; } };
+    dom.desengager = el('button', { type: 'button', id: 'desengager', class: `capacite bonus s-mouvement${okD ? '' : ' indispo'}`, 'aria-disabled': okD ? null : 'true',
+      'aria-label': `${dg.nom}, action bonus, touche D`, title: dg.nom, dataset: { capacite: 'desengager', sorte: 'mouvement' },
+      onclick: () => desengager(), onmouseenter: survolD(true), onmouseleave: survolD(false), onfocus: survolD(true), onblur: survolD(false) },
+    el('img', { class: 'cap-img', src: icone('desengager'), alt: '' }), el('span', { class: 'cap-slot bonus', 'aria-hidden': 'true' }, 'B'), el('kbd', {}, 'D'));
+    dom.capacites.replaceChildren(...groupes.map((g) => el('div', { class: `groupe-sorts s-${g.id}`, role: 'group', 'aria-label': g.nom },
+      el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, g.nom), el('div', { class: 'cases-sorts' }, g.ids.map(caseSort)))),
+      el('div', { class: 'groupe-sorts s-mouvement', role: 'group', 'aria-label': 'Mouvement' },
+        el('span', { class: 'groupe-nom', 'aria-hidden': 'true' }, 'Mouvement'), el('div', { class: 'cases-sorts' }, dom.desengager)));
+  } else dom.capacites.replaceChildren(el('span', { class: 'muet' }, S.phase === 'heros' ? 'Choisis un héros.' : S.phase === 'ennemis' ? 'Les ennemis jouent…' : ''));
   dom.finPhase.disabled = S.phase !== 'heros' || vue.occupe();
   dom.annuler.disabled = !ui.annuler.length || vue.occupe();
   dom.annuler.hidden = !!reseau;          // (à plusieurs, pas d'annulation : les autres ont peut-être déjà joué)
@@ -687,7 +812,7 @@ function montrerDe(e) {
   dom.de.replaceChildren(
     el('span', { class: 'de-qui' }, qui?.nom ?? ''),
     el('span', { class: 'des' }, e.jets.map((j) => el('span', { class: `face${e.jets.length > 1 && j !== e.k ? ' ecarte' : ''}` }, String(j)))),
-    el('span', { class: 'calcul' }, e.mod != null ? `${e.k} + ${e.mod} = ${e.k + e.mod}` : e.fouille ? (e.borne ? `la vieille borne : d20 ${e.k}` : e.piege ? `prudence : d20 ${e.k}` : e.persuasion ? `persuasion : d20 ${e.k}` : `perception : d20 ${e.k}`) : e.glace ? `glace : d20 ${e.k}` : 'critique assuré'),
+    el('span', { class: 'calcul' }, e.mod != null ? `${e.k} ${e.mod < 0 ? '−' : '+'} ${Math.abs(e.mod)} = ${e.k + e.mod}` : e.fouille ? (e.borne ? `la vieille borne : d20 ${e.k}` : e.piege ? `prudence : d20 ${e.k}` : e.persuasion ? `persuasion : d20 ${e.k}` : `perception : d20 ${e.k}`) : e.glace ? `glace : d20 ${e.k}` : 'critique assuré'),
     el('strong', { class: 'resultat' }, res));
   dom.de.hidden = false;
   clearTimeout(minuterieDe); minuterieDe = setTimeout(() => { dom.de.hidden = true; }, 1500);
@@ -806,10 +931,30 @@ function montrerFin(enCours) {
   const S = combat.S;
   dom.rejouer.disabled = !!reseau && !reseau.hote;
   dom.rejouer.title = dom.rejouer.disabled ? 'L’hôte relance le combat pour tout le groupe' : '';
-  dom.finTitre.textContent = S.resultat === 'victoire' ? `Victoire au round ${S.round} !` : S.resultat === 'defaite' ? `Défaite au round ${S.round}` : 'La fiche de mesure (combat en cours)';
+  const I = S.infini, r = I && S.resultat === 'victoire' ? combat.recapInfini() : null;
+  dom.finTitre.textContent = I && S.resultat === 'victoire' ? `Manche ${I.manche} gagnée !` : S.resultat === 'victoire' ? `Victoire au round ${S.round} !` : S.resultat === 'defaite' ? `Défaite au round ${S.round}` : 'La fiche de mesure (combat en cours)';
   dom.continuer.hidden = !enCours || !!S.resultat;
+  // le récap du mode infini : avant la manche suivante, le soin, l'XP gagnée et le niveau
+  dom.infiniRecap.hidden = !I;
+  dom.suite.hidden = !r; dom.suite.disabled = !!reseau && !reseau.hote;
+  dom.infiniRecap.textContent = !I ? '' : r ? `Avant la manche ${I.manche + 1} : les héros reprennent ${r.soin} % de leurs PV (un KO revient à ${r.reveil} %), +${r.gain} XP${r.monte ? ` · niveau ${r.niveau} !` : ` · niveau ${r.niveau}`}. Les ennemis seront plus durs.`
+    : S.resultat === 'defaite' ? `L’équipe est tombée à la manche ${I.manche}, au niveau ${I.niveau}.` : `Manche ${I.manche} · niveau ${I.niveau}`;
   dom.fiche.textContent = combat.fiche(notes());
+  dom.bilan.replaceChildren(...bilanDom(calculerBilan(S, ui.horloge())));
   dom.fin.hidden = false;
+}
+// Le bilan : la durée, les rounds, et pour chaque héros sa part des dégâts (signalée au-dessus de 40 %), ses combos, ses relèves, ses potions.
+function bilanDom(b) {
+  const ligne = (h) => el('tr', { class: h.ecrase ? 'ecrase' : '', dataset: { heros: h.id } },
+    el('th', { scope: 'row' }, h.nom), el('td', {}, String(h.degats)),
+    el('td', { class: 'part' }, el('span', { class: 'jauge-part' }, el('span', { style: `width:${h.pourcent}%` })), ` ${h.pourcent} %`, h.ecrase ? el('span', { class: 'tampon', title: 'Plus de 40 % des dégâts à lui seul (GAME_SPEC)' }, '> 40 %') : null),
+    el('td', {}, `${h.combos}`, h.prepares ? el('span', { class: 'muet' }, ` (+${h.prepares} préparé${h.prepares > 1 ? 's' : ''})`) : null), el('td', {}, String(h.releves)), el('td', {}, String(h.potions)));
+  return [
+    el('p', { class: 'bilan-chiffres' }, el('span', {}, 'Durée ', el('strong', {}, duree(b.duree))), el('span', {}, 'Rounds ', el('strong', {}, String(b.rounds))), el('span', {}, 'Dégâts aux ennemis ', el('strong', {}, String(b.total)))),
+    el('table', { class: 'bilan-table' },
+      el('thead', {}, el('tr', {}, ...['Héros', 'Dégâts', 'Part des dégâts', 'Combos', 'Relèves', 'Potions'].map((t) => el('th', { scope: 'col' }, t)))),
+      el('tbody', {}, b.heros.map(ligne))),
+  ];
 }
 async function copier() {
   const texte = combat.fiche(notes());
@@ -831,7 +976,7 @@ function pointeur() {
 }
 
 export const api = {
-  basculerFiche, ui, dom, majCurseur, finAventure, demanderChemin, demanderIncident, commencer, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
+  basculerFiche, ui, dom, majCurseur, finAventure, demanderChemin, demanderIncident, commencer, mancheSuivante, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
   get selection() { return ui.sel; },
   get reseau() { return reseau; },
   // multi.js : à plusieurs, puis de nouveau seul (l'hôte est parti : tous les héros sont à moi)

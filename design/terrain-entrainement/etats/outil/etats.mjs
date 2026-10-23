@@ -116,6 +116,26 @@ const G = {
     'GGG..GGG',
     'GGG..GGG',
     '.G....G.'],
+  // Lame ardente (la Forge de Baba) : une lame chauffée à blanc, la garde en or
+  lame: [
+    '.....RY.',
+    '....RYR.',
+    '...RYR..',
+    '..RYR...',
+    '.RYR....',
+    'GGR.....',
+    '.GG.....',
+    'W..G....'],
+  // Trempe (la Forge de Baba) : un bouclier de fer, bordé d'or
+  bouclier: [
+    'GGGGGGGG',
+    'GSSSSSSG',
+    'GSSwSSSG',
+    'GSwSSSSG',
+    '.GSSSSG.',
+    '.GSSSSG.',
+    '..GSSG..',
+    '...GG...'],
 };
 
 const images = {};

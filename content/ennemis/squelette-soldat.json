@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "id": "squelette-soldat",
+  "nom": "Squelette soldat",
+  "auteur": "",
+  "famille": "mort-vivant",
+  "rang": "sbire",
+  "pv": 25,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "plus-proche"
+  },
+  "capacites": [
+    {
+      "nom": "Taille",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 8,
+      "de": 4,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [
+    "estoc",
+    "fleches"
+  ],
+  "faiblesse": [
+    "coups"
+  ],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      1,
+      4
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Skeleton_white&head=Skeleton_white&weapon=Arming_Sword_steel&shield=Round_Shield_brown",
+    "planche": ""
+  },
+  "valide": true
+}

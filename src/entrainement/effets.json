@@ -821,5 +821,100 @@
    "Charge au bouclier"
   ],
   "description": "Deux petits nuages qui s'écartent des pieds."
+ },
+ "flaque-ombre": {
+  "nom": "Flaque d'ombre",
+  "famille": "Shadow",
+  "fichier": "flaque-ombre.png",
+  "w": 48,
+  "h": 16,
+  "images": 12,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   24,
+   8
+  ],
+  "calque": "sol",
+  "usage": [
+   "Pas dans l'ombre"
+  ],
+  "description": "Une flaque d'encre au bord violet s'ouvre à ses pieds, ondule, puis se referme. Ancre : les pieds."
+ },
+ "fumee-ombre": {
+  "nom": "Volutes d'ombre",
+  "famille": "Shadow",
+  "fichier": "fumee-ombre.png",
+  "w": 32,
+  "h": 48,
+  "images": 12,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   16,
+   44
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Pas dans l'ombre"
+  ],
+  "description": "Des volutes violettes qui montent et dérivent, en plongeant comme en remontant. Ancre : les pieds."
+ },
+ "ombre-file": {
+  "nom": "Ombre qui file",
+  "famille": "Shadow",
+  "fichier": "ombre-file.png",
+  "w": 56,
+  "h": 10,
+  "images": 4,
+  "fps": 12,
+  "boucle": true,
+  "ancre": [
+   50,
+   5
+  ],
+  "calque": "sol",
+  "usage": [
+   "Pas dans l'ombre"
+  ],
+  "description": "Sa tache d'encre au ras du sol, et sa traînée ; à déplacer du départ à l'arrivée. Pointe à droite (miroir pour la gauche). Ancre : la tête de la tache."
+ },
+ "chevrons-tenaille": {
+  "nom": "Chevrons de la Tenaille",
+  "famille": "Shadow",
+  "fichier": "chevrons-tenaille.png",
+  "w": 48,
+  "h": 8,
+  "images": 12,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   24,
+   4
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Pas dans l'ombre"
+  ],
+  "description": "Deux chevrons violets clignent de part et d'autre de l'ennemi : il est pris entre deux. Ancre : au-dessus de sa tête."
+ },
+ "entaille-x": {
+  "nom": "X d'ombre",
+  "famille": "Shadow",
+  "fichier": "entaille-x.png",
+  "w": 48,
+  "h": 48,
+  "images": 12,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   24,
+   24
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Coup dans le dos"
+  ],
+  "description": "Deux entailles croisées en X violet, l'impact blanc et des éclats d'ombre ; le X reste gravé puis s'éteint. Ancre : le torse de la cible."
  }
 }

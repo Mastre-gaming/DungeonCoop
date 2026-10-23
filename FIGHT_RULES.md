@@ -5,7 +5,7 @@ From the owner's answers on 17 Oct 2026, plus CORE_LOOP.md. Every number is a st
 ## A turn
 - **Move** up to 5 squares (1 square = 1.5 m), then an **action** and a **bonus action**, in any order.
 - **Who acts when:** initiative order, or the team turn. Both are tested on paper (CORE_LOOP.md).
-- **Reactions:** only abilities that say "Reaction" can be used outside your turn, at most one per round.
+- **Reactions:** only abilities that say "Reaction" can be used outside your turn, at most one per round. One reaction belongs to everyone: the opportunity attack (below, on trial).
 - **Playing together** (the training ground, #80): each player plays only their own heroes, in any order with the others. The heroes' phase ends when everyone who has a hero standing in it has said "ready" (playing again takes the "ready" back). A move can't be undone then: the others may already have played after it.
 
 ## Attacks always hit; the d20 decides how well
@@ -59,7 +59,7 @@ Each class picks one resource from the shared list in `CLASS_TEMPLATE.md` (Rage,
 ## Downed and healing
 - At 0 health a hero is **downed**: no turns, and enemies ignore them unless a rule says otherwise.
 - **Revive:** an adjacent teammate spends their action; the hero comes back at 25 health.
-- **Healing comes from:** healer abilities, potions (bonus action; bought in the shop or looted), and rest rooms on the map. Nothing heals automatically after a fight.
+- **Healing comes from:** healer abilities, potions (bonus action; refilled in rest and treasure rooms: there is no shop and no gold, owner, 20 Oct), and rest rooms on the map. Nothing heals automatically after a fight.
 - **The fight is lost** when all four heroes are down at once.
 
 ## Enemies
@@ -68,6 +68,12 @@ Each class picks one resource from the shared list in `CLASS_TEMPLATE.md` (Rage,
   - archer: keeps 4 squares away;
   - brute: charges the hero with the least health;
   - leader: helps the others for 2 turns, then makes a big attack.
+- **Enemies play their habit with common sense** (on trial, #247, after the enemy playtest of 21 Oct): the habit picks the target, unless something clearly better is in reach this turn. Players can still read them:
+  - **they count opportunity attacks**: an enemy weighs the hits it would take on its way, like fire. An enemy in contact with a hero who can still react stays and fights; an archer in that spot shoots from where it stands instead of backing away;
+  - **they finish a hero off**: a hero they can knock out this turn comes first;
+  - **they surround**: in contact, a grunt or a brute picks the side opposite one of its allies (a flank: advantage);
+  - **they don't give up a fight for little**: a brute leaves the hero it is hitting only for one clearly weaker, worth the opportunity attack it will take;
+  - **archers keep out of reach**: 4 squares away, if possible where no melee hero can reach them next turn; they shoot the hero they can knock out, otherwise the nearest they see.
 - Enemies use statuses, surfaces and shoves too.
 
 ## Winning a fight
@@ -88,6 +94,14 @@ The team asked on 18 Oct to try a mode **without squares**, where each class has
 - **Surfaces** are patches on the ground, drawn without squares. A creature is in a surface when its centre is.
 - **Shoves** go straight away from the shover: 2 squares become 3 m (Hurl: 4.5 m, 7.5 m with 20 Rage). Hitting a wall, rock, barrel or creature: +8 damage. Into the pit: as off the ledge (a grunt is out, anything bigger takes 20 and climbs back out). On ice, the target slides on until it hits something.
 - **Flank:** an ally in contact with the target, on its far side: the angle attacker, target, ally is 135° or more.
+- **Opportunity attacks (on trial, #231, as in Baldur's Gate 3):** walking out of contact with a standing enemy gives that enemy a free hit with its melee attack: it spends its reaction (one per round, shared with Taunt), and the walk goes on unless the walker drops. It works both ways: an enemy walking away from a hero takes the hero's melee attack, played on its own. Only walking provokes it: a shove, a pull, a slide on ice or a teleport (Shadow's Shadow Step) does not. Who has no melee attack (Archers; the Mage, the Scout, the Druid, the Tracker) makes none, nor does the Tracker's hound, which only bites on its master's order (following its master is not a walk either). **Disengage** (bonus action, every hero): walk away freely for the rest of the turn. Before you click, the path turns red and names who will hit you, with the odds and the damage.
+- **Height (on trial, as in Baldur's Gate 3):** some rooms have plateaus, 1 or 2 levels high (a level is 3 m), and a plateau can sit on another one.
+  - **Getting up:** only by a ramp (a path cut into the cliff) or a ladder. Everywhere else the edge is a cliff: nobody stands on its face or at its foot. Two creatures on different levels are therefore never in contact, so there is no melee between levels.
+  - **High ground:** an attack from a level or more above the target adds +2 to the d20, and an attack from below takes −2, melee or ranged. The hover panel shows it in the odds.
+  - **Line of sight:** it runs from mid-body to mid-body (about 1 m above the ground), and the ground must not rise above it. From below, you see whoever stands near the edge, but not someone who steps back. A plateau between two creatures on the ground hides them from each other.
+  - **Falling:** a shove over the edge makes the target fall to the first free ground below. It takes 10 damage per level fallen and is Prone. A barrel shoved off bursts where it lands. Shoved against a cliff from below, the target hits it like a wall (+8).
+  - **Enemies:** an archer keeps the high ground, and leaves it only when it has nothing to shoot at from up there.
+  - **To test in the training ground:** `?salle=butte` (classic size, 24 × 18) and `?salle=col` (twice as big, 34 × 26).
 - **Deep water is scenery:** nobody walks in it (players' note after D1). A puddle made by a spell is a surface you walk through.
 - **The training room:** 24 × 16 squares (36 × 24 m), with the D1 fight's heroes, enemies and objective (defeat the leader). Each hero's d20 shows big on the board (players' note after D1).
 

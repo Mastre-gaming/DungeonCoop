@@ -47,7 +47,7 @@ Story stays in fixed slots, so a fight is never interrupted.
 | Before room 1 | **opening**: where we are, why we go in | yes: a new variant each time the chain moves on |
 | 3 (event) | the **next story link**, or a flavour event | yes |
 | 4 and 8 (rest) | one **campfire line** between heroes | yes, and by the archetypes present |
-| 7 (shop) | shopkeeper lines (optional) | can react to flags |
+| 7 (stall) | stallkeeper lines (optional) | can react to flags |
 | 9 (boss) | **boss intro** before, **after-beat** once won; sets the boss's flag | the intro can mention earlier runs |
 | After the boss | the End boss's wear goes up (section 3) | |
 
@@ -77,7 +77,7 @@ The file format is set in `docs/REGLES_CONTENU.md` at M2. A beat holds:
 | Field | What it is |
 |---|---|
 | id, chapter, author | what it is, where it goes, who wrote it |
-| kind | opening · story link · flavour · campfire · shop · boss intro · boss after |
+| kind | opening · story link · flavour · campfire · stall · boss intro · boss after |
 | needs | flags it waits for (none for flavour) |
 | sets | flags it sets once played |
 | order | its place in the chain (story links only) |

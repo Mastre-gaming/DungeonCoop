@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "pretre-du-culte",
+  "nom": "Prêtre du culte",
+  "auteur": "",
+  "famille": "humain",
+  "rang": "soldat",
+  "pv": 35,
+  "vitesse": 7.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "soigneur"
+  },
+  "capacites": [
+    {
+      "nom": "Bénédiction noire",
+      "slot": "action",
+      "portee": "9 m",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "un allié +12 PV et Inspiré",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Flamme sombre",
+      "slot": "action",
+      "portee": "9 m",
+      "zone": "aucune",
+      "base": 8,
+      "de": 4,
+      "effet": "Brûlure",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      3,
+      8
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_Elderly_light&clothes=Longsleeve_black&legs=Pants_black&weapon=Simple_staff_simple",
+    "planche": ""
+  },
+  "valide": true
+}

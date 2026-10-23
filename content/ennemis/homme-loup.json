@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "id": "homme-loup",
+  "nom": "Homme-loup",
+  "auteur": "",
+  "famille": "bete",
+  "rang": "elite",
+  "pv": 65,
+  "vitesse": 10.5,
+  "dex": 0,
+  "coriace": false,
+  "habitude": {
+    "type": "meute"
+  },
+  "capacites": [
+    {
+      "nom": "Griffes",
+      "slot": "action",
+      "portee": "contact",
+      "zone": "aucune",
+      "base": 12,
+      "de": 6,
+      "effet": "",
+      "cree": [],
+      "utilise": [],
+      "recharge": 0
+    },
+    {
+      "nom": "Bond",
+      "slot": "action",
+      "portee": "9 m",
+      "zone": "aucune",
+      "base": 0,
+      "de": 0,
+      "effet": "saute sur une cible isolée, avantage",
+      "cree": [],
+      "utilise": [],
+      "recharge": 2
+    }
+  ],
+  "resiste": [],
+  "faiblesse": [],
+  "phases": [],
+  "mecanique_combo": "",
+  "butin": {
+    "or": [
+      6,
+      12
+    ]
+  },
+  "look": {
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_brown&head=Wolf_male_brown&clothes=Sleeveless_brown&legs=Pants_brown",
+    "planche": ""
+  },
+  "valide": true
+}

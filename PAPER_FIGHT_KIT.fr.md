@@ -65,7 +65,7 @@ On joue un combat avec de vrais dés avant d'écrire la moindre ligne de code, *
 7 4 . . . . . . g . #      g sbire  a archer  B brute  L chef
 8 _ _ _ _ _ _ _ _ _ _
 ```
-**Objectif : vaincre le chef** (les autres s'enfuient).
+**Objectif : vaincre tous les ennemis**, le chef compris.
 
 ## Les héros de test (niveau 1, faits avec `CLASS_TEMPLATE.fr.md` ; uniquement pour ce test)
 Chacun créera sa propre classe ; celles-ci servent à tester les règles maintenant. Les mouvements d'équipe arrivent au niveau 6, donc ils ne sont pas dans ce test.
@@ -103,7 +103,7 @@ Chacun créera sa propre classe ; celles-ci servent à tester les règles mainte
 |---|---|---|---|
 | Sbire × 3 | 30 | 8 + d4, au contact | attaque le héros le plus proche |
 | Archer × 2 | 25 | 8 + d4, portée 8 | reste à 4 cases ; tire sur le héros le plus proche qu'il voit |
-| Brute (coriace) | 60 | 14 + d6, au contact, pousse | charge le héros qui a le moins de PV |
+| Brute (coriace) | 60 | 14 + d6, au contact, pousse | charge le héros le plus blessé, en part de ses PV (PV ÷ PV max ; à égalité, le plus proche) |
 | Chef (coriace) | 90 | tours 1–2 : donne l'avantage à tous les ennemis ; tour 3 : 22 + d8 sur une zone 3x3 | recommence |
 
 Les ennemis lancent la même table de d20 que les héros, avec +2.

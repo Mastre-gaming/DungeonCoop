@@ -57,9 +57,21 @@ export function creerRendu(canvas) {
     cam: { x: 0, y: 0 },         // le coin haut-gauche de la vue, dans le monde
 
     // Le sol : une seule image, tout au fond.
-    sol(canvasSol) {
+    sol(canvasSol, x0 = 0, y0 = 0) {   // (x0, y0) : le coin haut-gauche du sol dans le monde (négatif : le monde monte vers le nord)
       const m = new THREE.Mesh(new THREE.PlaneGeometry(canvasSol.width, canvasSol.height), new THREE.MeshBasicMaterial({ map: tex('sol', canvasSol) }));
-      m.position.set(canvasSol.width / 2, -canvasSol.height / 2, -100);
+      m.position.set(x0 + canvasSol.width / 2, -(y0 + canvasSol.height / 2), -100);
+      scene.add(m);
+      return m;
+    },
+
+    // Ce qui est à plat sur l'herbe, en transparence (des ombres, des tranchées) : sous tout le reste, juste au-dessus du sol.
+    // (x, y : son coin haut-gauche dans le monde ; sx, sy, w, h : la partie de la source à poser, toute la source par défaut)
+    calqueSol(source, nomTexture, x = 0, y = 0, sx = 0, sy = 0, w = source.width, h = source.height) {
+      const t = tex(nomTexture, source), geo = new THREE.PlaneGeometry(w, h), a = geo.attributes.uv;
+      const u0 = sx / source.width, u1 = (sx + w) / source.width, v0 = 1 - sy / source.height, v1 = 1 - (sy + h) / source.height;
+      a.setXY(0, u0, v0); a.setXY(1, u1, v0); a.setXY(2, u0, v1); a.setXY(3, u1, v1);
+      const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false }));
+      m.position.set(x + w / 2, -(y + h / 2), -60);
       scene.add(m);
       return m;
     },
@@ -89,9 +101,11 @@ export function creerRendu(canvas) {
       scene.add(mesh);
       return {
         mesh,
-        poser(x, y, pied, sx = 0, sy = 0) {
-          mesh.position.set(Math.round(x) + w / 2, -(Math.round(y) + h / 2), pied * PROFONDEUR);
-          const u0 = sx / tw, u1 = (sx + w) / tw, v0 = 1 - sy / th, v1 = 1 - (sy + h) / th, a = geo.attributes.uv;
+        // hv : la hauteur montrée (le haut de l'image seulement, ex. un personnage qui s'enfonce dans le sol) ; h par défaut
+        poser(x, y, pied, sx = 0, sy = 0, hv = h) {
+          mesh.scale.y = hv / h;
+          mesh.position.set(Math.round(x) + w / 2, -(Math.round(y) + hv / 2), pied * PROFONDEUR);
+          const u0 = sx / tw, u1 = (sx + w) / tw, v0 = 1 - sy / th, v1 = 1 - (sy + hv) / th, a = geo.attributes.uv;
           a.setXY(0, u0, v0); a.setXY(1, u1, v0); a.setXY(2, u0, v1); a.setXY(3, u1, v1); a.needsUpdate = true;
         },
         rafraichir() { t.needsUpdate = true; },

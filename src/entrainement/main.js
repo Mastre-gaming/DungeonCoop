@@ -8,21 +8,25 @@
 import { createGame } from '../skills/core/module/06_game.js';
 import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
-import * as SALLE from './salle.js';
+import * as ESSAI from './salle.js';
+import { construire as construireSalle } from './salles.js';
 import { creerTrame } from './geometrie.js';
-import { creerCombat, equipeDepuis, EQUIPE_KIT, HEROS } from './regles.js';
+import { creerCombat, equipeDepuis, equipePour, EQUIPE_KIT, HEROS } from './regles.js';
+import { monGithub } from './joueur.js';
 import * as vueSkill from './vue.js';
 import * as interfaceSkill from './interface.js';
 import * as multiSkill from './multi.js';
+import * as reglagesSkill from './panneau-reglages.js';
 import * as cinemaSkill from './cinema.js';
 import * as SAISON from './saison.js';
-import * as desSkill from '../61_des.js';   // le jet de d20 (le dé de cristal, fusionné sur main)
+import * as desSkill from '../61_des.js';   // le jet de d20 (le dé de cristal)
 import CHEMIN from './chemin.json';
 import * as tests from './tests.js';
 import * as AVENTURE from './aventure.js';
 import { demanderLancer } from './entree.js';
 import PERSOS from './persos.json';
 import { PLANCHES as EFFETS } from './effets.js';
+import { PLANCHES as FILMS } from './films.js';
 import { habiller } from '../33_cadres.js';
 import '../panneau.css';
 import '../jeu.css';
@@ -33,6 +37,9 @@ habiller();   // le bois veiné, les coins de laiton, le parchemin (DESIGN.fr.md
 
 const query = new URLSearchParams(location.search);
 const graine = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+
+// la salle : celle d'essai, ou une salle de la route (?salle=gue|lisiere|pillards|butte|col : salles.js)
+const SALLE = construireSalle(query.get('salle')) ?? ESSAI;
 
 const game = createGame({ storage: { prefix: 'dungeoncoop:' } });
 
@@ -58,13 +65,15 @@ async function entrerNiveau(equipe) {
 
 async function demarrer() {
   // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
-  const equipe = equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT;
+  const equipe = equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (la classe d'un autre joueur : pas pour moi)
   const niveau = query.has('aventure') ? await entrerNiveau(equipe) : null;
   const MONDE = niveau ? niveau.plan : SALLE;                 // le module de la salle : D1 (salle.js) ou un fichier de l'aventure
   const planches = {
-    herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png', brasero: 'brasero_sentier_f.png', cimes: 'treetop.png', troncs: 'trunk.png', haute: 'herbe_haute.png', surfaces: 'surfaces.png', surfaces_lpc: 'surfaces_lpc.png', chemin: 'chemin.png', etal: 'etal.png',
+    limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
+    brasero: 'brasero_sentier_f.png', haute: 'herbe_haute.png', surfaces: 'surfaces.png', surfaces_lpc: 'surfaces_lpc.png', chemin: 'chemin.png', etal: 'etal.png',   // (le chemin de la tour)
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
+    ...FILMS,                     // les animations validées de Baba Brisenclume (films.js)
   };
   const images = await chargerImages('./assets/lpc/', planches);
   const canvas = document.querySelector('#jeu');
@@ -81,16 +90,18 @@ async function demarrer() {
 
   const salle = MONDE.salle(), trame = creerTrame(salle);
   const alea = query.has('graine') || query.has('test') ? graine(Number(query.get('graine')) || 20261018) : Math.random;
-  const monde = niveau ? niveau.options : { departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE };
-  const creer = (eq) => {
-    const c = creerCombat({ trame, salle, ...monde, equipe: eq, alea });
-    if (saison === 'hiver') c.S.curiosites = c.S.curiosites.filter((o) => o.sorte !== 'canard');   // (en hiver, pas de canard à taquiner)
-    return c;
-  };
+    // la salle jouée : celle d'une aventure (un tronçon), ou celle d'essai / de la route (salles.js)
+    const monde = niveau ? niveau.options : { departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null };
+    const creer = (eq, infini = null) => {
+      const c = creerCombat({ trame, salle, ...monde, equipe: eq, alea, infini });
+      if (saison === 'hiver') c.S.curiosites = c.S.curiosites.filter((o) => o.sorte !== 'canard');   // (en hiver, pas de canard à taquiner)
+      return c;
+    };
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.
-  const nouveauCombat = (eq, copie = null) => {
-    combat = creer(eq);
+  // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)
+  const nouveauCombat = (eq, copie = null, infini = null) => {
+    combat = creer(eq, infini);
     if (copie) combat.restaurer(copie);
     vueSkill.remplacer(combat); interfaceSkill.remplacer(combat); multiSkill.api.remplacer(combat);
     if (niveau?.plan.troncon) explorer();
@@ -102,13 +113,14 @@ async function demarrer() {
   const des = !query.has('test') && query.get('des') !== '0' ? game.use(desSkill, {}) : null;
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas, plan: niveau?.plan ?? null, pont, saison, des });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-  // les cinématiques de l'aventure (cinema.js) ; ?cinema=0 sans elles (les captures), ?cinema=auto sans attendre les clics
-  const cine = niveau?.plan.troncon && query.get('cinema') !== '0' ? game.use(cinemaSkill, { vue, images, heros: () => combat.S.unites.filter((u) => u.camp === 'h'), aventure: query.get('aventure'), auto: query.get('cinema') === 'auto' }) : null;
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, cinema: cine, demarrer: query.has('go'), mode: query.get('mode'),
-    aventure: niveau?.plan.troncon ? AVENTURE.aventure(query.get('aventure'))?.nom ?? null : null });
+    // les cinématiques de l'aventure (cinema.js) ; ?cinema=0 sans elles (les captures), ?cinema=auto sans attendre les clics
+    const cine = niveau?.plan.troncon && query.get('cinema') !== '0' ? game.use(cinemaSkill, { vue, images, heros: () => combat.S.unites.filter((u) => u.camp === 'h'), aventure: query.get('aventure'), auto: query.get('cinema') === 'auto' }) : null;
+    const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, cinema: cine, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null,
+      aventure: niveau?.plan.troncon ? AVENTURE.aventure(query.get('aventure'))?.nom ?? null : null });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
+  const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();
-  Object.assign(game.dbg, { combat, vue, ihm, multi, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
+    Object.assign(game.dbg, { combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
   game.use(tests, { combat, vue, ihm, multi, trame, salle, game, images, SALLE });
 
   // un tronçon du chemin : on commence à pied, sans écran d'accueil (chemin-sentier-f.md §0)
