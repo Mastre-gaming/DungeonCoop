@@ -1,0 +1,18 @@
+<!doctype html><meta charset="utf-8"><title>analyse</title>
+<body><pre id="o">…</pre>
+<script type="module">
+  // décode le son de l'enregistrement d'écran et cherche les silences / les attaques
+  const buf = await (await fetch('../dl/suno.mp4')).arrayBuffer();
+  const ctx = new OfflineAudioContext(2, 44100, 44100);
+  const a = await ctx.decodeAudioData(buf);
+  const sr = a.sampleRate, n = a.length, L = a.getChannelData(0), R = a.numberOfChannels > 1 ? a.getChannelData(1) : L;
+  const pas = Math.round(sr * 0.05), env = [];
+  for (let i = 0; i + pas <= n; i += pas) { let s = 0; for (let k = 0; k < pas; k++) { const v = (L[i + k] + R[i + k]) / 2; s += v * v; } env.push(Math.sqrt(s / pas)); }
+  window.__a = a; window.__env = env;
+  // segments : suites de pas au-dessus d'un seuil, séparées d'au moins 0,3 s de calme
+  const max = Math.max(...env), seuil = max * 0.03, segs = []; let deb = -1, calme = 0;
+  env.forEach((e, i) => { if (e > seuil) { if (deb < 0) deb = i; calme = 0; } else if (deb >= 0 && ++calme >= 6) { segs.push([deb * 0.05, (i - calme + 1) * 0.05]); deb = -1; } });
+  if (deb >= 0) segs.push([deb * 0.05, env.length * 0.05]);
+  document.getElementById('o').textContent = JSON.stringify({ duree: n / sr, sr, canaux: a.numberOfChannels, crete: max, segments: segs.map(s => s.map(x => +x.toFixed(2))) });
+  window.__fini = true;
+</script>

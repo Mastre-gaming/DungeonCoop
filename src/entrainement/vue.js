@@ -12,6 +12,8 @@ import PERSOS from './persos.json';
 import SURF from './surfaces.json';
 import { terrain } from './salle.js';
 import { CONTACT } from './geometrie.js';
+import { sonDe, jouerSon } from './sons.js';
+import { jouerSynthese } from './sons-synthese.js';
 import { lire, surChangement } from './reglages-combat.js';
 import { creerEffets, effetsAttaque, effetsLance, ETATS } from './effets.js';
 import { etatsActifs } from './etats.js';
@@ -23,7 +25,8 @@ export const always = true;
 
 const DIR = { haut: 0, gauche: 1, bas: 2, droite: 3 };
 // Les rangées LPC (64 px) et leur nombre d'images : sort, estoc, marche, taille, tir, blessé, repos.
-const ANIM = { sort: [0, 7], estoc: [4, 8], marche: [8, 9], attaque: [12, 6], tir: [16, 13], blesse: [20, 6], repos: [22, 2] };
+// (riff, contact, ballade, course : les animations de Riff Ossel, une par sort, sous les rangées LPC de sa planche)
+const ANIM = { sort: [0, 7], estoc: [4, 8], marche: [8, 9], attaque: [12, 6], tir: [16, 13], blesse: [20, 6], repos: [22, 2], riff: [26, 9], contact: [30, 13], ballade: [34, 12], course: [38, 9] };
 const VITESSE_MARCHE = 5 * T;          // 5 cases par seconde à l'écran (le temps réel du jeu, pas la règle)
 const COULEURS = {
   eau: [[46, 120, 196], [70, 150, 220], [148, 206, 244], [24, 78, 140]],
@@ -600,6 +603,7 @@ function scene(e) {
       }
       tourner(att, cible);
       att.anim = e.anim ?? 'attaque'; att.t = 0;
+      jouerSon(sonDe(att.type, e.cap, e.anim));
       coup = e.type === 'attaque' ? { de: e.de, vers: e.vers, resultat: e.resultat } : null;
       viser((att.x + cible.x) / 2, (att.y + cible.y) / 2);
       if (e.type === 'attaque' && !e.jetMontre) pourEcouteurs({ ...e, type: 'de' });
@@ -621,6 +625,7 @@ function scene(e) {
       return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj(t) { if (!porte && t >= quand) toucher(); }, fin() { if (!porte) toucher(); att.anim = 'repos'; } };
     }
     case 'degats': {
+      if (a.type === 'riff-ossel' && e.pv > 0) jouerSynthese('blesse');
       a.pv = e.pv; if (e.forme != null) a.formePv = e.forme;
       if (e.porte) return { duree: 0.2, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };   // (déjà montré à l'impact)
       a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
@@ -635,7 +640,8 @@ function scene(e) {
       fx.jouer('croix-soin', { x: a.x, y: a.y });
       if (e.potion) { fx.jouer('bulles-potion', { x: a.x, y: a.y }); fx.jouer('coeur', { x: a.x, y: a.y - 50, duree: 0.8 }); }
       return { duree: 0.3 };
-    case 'ko': a.anim = 'tombe'; a.t = 0; if (a.camp === 'h') a.ko = true; else a.mort = true; return { duree: 0.55 };
+    case 'rythme': jouerSynthese(e.v >= e.max ? 'rythme-max' : 'rythme'); return { duree: 0 };
+    case 'ko': if (a.type === 'riff-ossel') jouerSynthese('ko'); a.anim = 'tombe'; a.t = 0; if (a.camp === 'h') a.ko = true; else a.mort = true; return { duree: 0.55 };
     case 'ranime':
       a.ko = false; a.pv = e.pv; a.anim = 'repos'; flottant(a, `+${e.pv}`, 'soin');
       fx.jouer('colonne-doree', { x: a.x, y: a.y }); fx.jouer('croix-soin', { x: a.x, y: a.y, retard: 0.2 });

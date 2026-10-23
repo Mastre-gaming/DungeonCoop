@@ -21,6 +21,7 @@ const ICONES = {
   batonNoue: 'baton', mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
   crocs: 'crocs', bond: 'bond', curee: 'curee', poing: 'poing', etreinte: 'liane', devorer: 'devorer',
   braise: 'etincelle', embrasement: 'embrasement', armesArdentes: 'lameArdente',
+  riff: 'tirRapide', ballade: 'soin', courseEffrenee: 'chant',          // (en attendant leurs icônes à eux)
 };
 // La sorte de chaque capacité, pour la barre des sorts (les sortes de CLASS_TEMPLATE.fr.md, plus le familier et le commun).
 // Une capacité absente d'ici prend sa sorte d'après ce qu'elle fait (sorteDe).
@@ -113,6 +114,7 @@ export function resume(cap) {
     case 'huileCible': return 'Huilé';
     case 'attraction': return `attire ${metres(cap.longueur)} m`;
     case 'inspiration': return 'avantage';
+    case 'course': return '+3 m · désengagé';
     case 'forge': return cap.forge === 'lame' ? '+d6 · feu' : 'bouclier 10';
     case 'tenailles': return `attire ${metres(cap.longueur)} m`;
     case 'moquerie': return 'Exposé';

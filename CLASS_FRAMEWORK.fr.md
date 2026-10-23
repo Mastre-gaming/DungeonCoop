@@ -77,6 +77,7 @@ C'est ce qui garde les classes comparables, quelle que soit leur saveur. Une cap
 | Foi | +1 par soin ou protection | 3 |
 | Énergie | 3 à chaque tour, perdue si elle n'est pas dépensée | 3 |
 | Élan | +1 par case parcourue, se vide si on reste immobile | 5 |
+| Rythme | +1 à chaque attaque d'un allié ; se vide si aucun allié n'attaque pendant un tour complet | 4 |
 
 Une nouvelle ressource entre dans la liste seulement avec l'accord du groupe : elle devient alors disponible pour tout le monde.
 

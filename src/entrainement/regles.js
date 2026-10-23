@@ -20,7 +20,7 @@ export const EQUIPE_KIT = ['brute', 'mage', 'voleur', 'gardien'];
 // la 10e : Shadow, la classe de FrapsFTW (content/classes/shadow.json, #198) ; la 11e : Baba Brisenclume, la classe de DonBabaa
 // (content/classes/baba-brisenclume.json) ; la 12e : le Changepeau, la classe de DevMope (content/classes/changepeau.json).
 // Chacune ne se joue que par son auteur (peutJouer).
-export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'traqueur-au-limier', 'shadow', 'baba-brisenclume', 'changepeau'];
+export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'traqueur-au-limier', 'shadow', 'baba-brisenclume', 'changepeau', 'riff-ossel'];
 export const PLACES = ['h1', 'h2', 'h3', 'h4'];            // les 4 héros : une place, une classe choisie à l'entrée
 // « brute,chevalier,druide,barde » (l'adresse : ?equipe=…) → une équipe valable de 4 classes, ou null.
 export function equipeDepuis(texte) {
@@ -81,7 +81,16 @@ export const HEROS = {
     faiblesse: 'La chute : quand les PV de sa forme tombent à 0, il redevient orc, À terre et Exposé, et le reste des dégâts passe sur ses PV d’orc.',
     passif: 'Rage : +10 par coup donné ou reçu, 50 au plus ; elle ne sert qu’à muer. La Mue (action bonus) : 20 Rage ; redevenu orc, la même forme 20, une autre 30.',
     capacites: ['batonNoue', 'mueBete', 'mueCosa', 'mueIllumine', 'pousser', 'potion', 'relever'] },
+  // Riff Ossel (content/classes/riff-ossel.json, par DonBabaa) : DEX 14 (+2), SAG 12 (+1), CHA 15 (+2), 110 PV, 6 cases (9 m),
+  // le Rythme (+1 chaque fois qu'un allié attaque, 4 au plus, il retombe à 0 si aucun allié n'a attaqué de tout un tour).
+  // Riff (base, à 9 m ; au contact, le même coup à la hache) · Ballade (soutien) · Course effrénée (préparation). Pas de Power chord
+  // ni de Solo ici : ils viennent aux niveaux 2 et 5.
+  'riff-ossel': { nom: 'Riff Ossel', court: 'RIF', auteur: 'DonBabaa', pv: 110, vitesse: 6, dex: 2, res: { type: 'Rythme', v: 1, max: 4 }, role: 'Soutien · rock à distance',
+    faiblesse: 'Os fragiles : les dégâts de poussée, de mur et de chute lui font ×2.',
+    passif: 'Rythme : +1 chaque fois qu’un allié attaque (4 au plus) ; il retombe à 0 si aucun allié n’a attaqué de tout un tour.',
+    capacites: ['riff', 'ballade', 'courseEffrenee', 'pousser', 'potion', 'relever'] },
 };
+export const RIFF = 'riff-ossel';
 // Les trois formes du Changepeau : leurs PV à elles et leur kit, qui remplace Bâton noué et la Mue (Pousser, la Potion et
 // Relever restent) ; « Quitter la forme » le rend orc, debout. Chacune a sa faiblesse.
 export const CHANGEPEAU = 'changepeau';
@@ -208,6 +217,12 @@ export const CAPACITES = {
   braise: { nom: 'Braise', slot: 'action', type: 'attaque', portee: 5, mod: 2, base: 8, de: 4, anim: 'sort', ds: 'Portée 7,5 m · 5–7 / 11–14 / 22–28' },
   embrasement: { nom: 'Embrasement', slot: 'action', type: 'zone', surf: 'feu', rayon: R2, portee: 5, anim: 'sort', ds: 'Une petite zone de feu (1,7 m) à 7,5 m ; ceux dedans ont la Brûlure ; elle enflamme l’huile' },
   armesArdentes: { nom: 'Armes ardentes', slot: 'bonus', type: 'ardent', portee: 5, anim: 'sort', ds: 'L’arme d’un allié à 7,5 m brûle 2 tours : ses coups donnent la Brûlure et enflamment l’huile' },
+  // Riff Ossel : le riff à 9 m (au contact, la guitare-hache tenue comme une hache : le Fracas) · la Ballade soigne, retire un état,
+  // et relève un allié KO à distance (2 Rythme, une fois par combat) · la Course effrénée donne 3 m et le désengagement à un allié
+  riff: { nom: 'Riff', slot: 'action', type: 'attaque', portee: 6, mod: 2, base: 8, de: 4, anim: 'riff', animContact: 'contact', contact: true, ds: 'Portée 9 m · 5–7 / 11–14 / 22–28 ; au contact, le même coup à la hache (attaque d’opportunité)' },
+  ballade: { nom: 'Ballade', slot: 'action', type: 'soin', portee: 6, soin: { base: 8, de: 4, mod: 1 }, retire: true, releve: true, anim: 'ballade',
+    ds: 'Un allié à 9 m · 10–13 PV, sans jet ; retire Brûlure, Gelé ou Huilé · un allié KO : relevé à distance (2 Rythme, une fois par combat)' },
+  courseEffrenee: { nom: 'Course effrénée', slot: 'bonus', type: 'course', portee: 6, cout: 1, anim: 'course', ds: '1 Rythme · un allié à 9 m gagne 3 m de déplacement ce tour et s’éloigne sans attaque d’opportunité' },
 };
 export const BABA = 'baba-brisenclume';
 // L'exploration (chemin-de-la-tour.md §3) : un ennemi voit à VUE cases (vueLoin s'il en a une), à ±35° de son regard.
@@ -392,6 +407,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (!o.sansMult) n = finalDeg(n, campMult(U(par)));
     if (!o.sansFaiblesse && u.type === 'mage' && surfaceA(u)?.t === 'eau') { n *= 2; log('La Mage est dans l’eau : dégâts ×2.', 'muet'); }
     if (o.melee && u.type === 'barde') { n += 3; log(`${u.nom} est fragile au contact : +3.`, 'muet'); }
+    if (o.choc && u.type === RIFF) { n *= 2; log(`${u.nom} a les os fragiles : ×2.`, 'muet'); }
     if (u.st.bouclier) {                             // la Trempe de Baba : le bouclier prend les coups d'abord
       const b = Math.min(u.st.bouclier.v, n);
       u.st.bouclier.v -= b; n -= b;
@@ -686,7 +702,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const f = (v) => degatsDe(g, v, c);
     return g === 'rate' ? '0' : `${f(lo)}–${f(hi)}`;
   }
-  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, expose: !!cap.expose, dansLeDos: !!cap.dansLeDos, curee: !!cap.curee, anim: cap.anim });
+  const attaqueHeros = (cap) => ({ nom: cap.nom, mod: cap.mod, dmod: cap.mod, base: cap.base, de: cap.de, el: cap.el, melee: cap.portee === CONTACT, auto: !!cap.auto, aTerre: !!cap.aTerre, contreGele: !!cap.contreGele, expose: !!cap.expose, dansLeDos: !!cap.dansLeDos, curee: !!cap.curee, anim: cap.anim, animContact: cap.animContact });
   const attaqueEnnemi = (e) => { const a = ENNEMIS[e.type].atk; return { nom: a.nom, mod: lire('des.bonusEnnemis'), dmod: 0, base: a.base, de: a.de, melee: a.portee === CONTACT, anim: a.anim, aTerreSur: a.aTerreSur }; };
   function rate(u) {
     const r = d(6);
@@ -698,8 +714,19 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (r === 6) u.expose = true;
     flotter(u, 'Raté !', 'info');
   }
+  // Le Rythme de Riff Ossel : +1 chaque fois qu'un autre héros attaque ; s'il n'en a vu aucun de tout un tour, il retombe (finTour)
+  function rythme(att) {
+    if (att.camp !== 'h') return;
+    for (const r of S.unites) {
+      if (r.camp !== 'h' || r.type !== RIFF || r.ko || r.mort || r === att) continue;
+      r.rythmeVu = true;
+      if (r.res.v < r.res.max) { r.res.v++; flotter(r, '+1 Rythme', 'info'); ev({ type: 'rythme', id: r.id, v: r.res.v, max: r.res.max }); }
+    }
+  }
   function attaquer(att, cible, A) {
     A = armer(att, A);
+    rythme(att);
+    if (A.animContact && dist(att, cible) <= CONTACT + 0.15) A = { ...A, anim: A.animContact, melee: true };      // le Riff au contact : le coup de hache
     if (A.lame) {                                      // la Lame ardente ne sert qu'une fois, touché ou raté
       delete att.st.lame;
       if (A.lame !== att.id) combo(A.lame, att.id, 'lame ardente');
@@ -813,7 +840,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       chute(cible, trame.salle.obstacles.find((x) => x.fosse && dansForme(x, cible.x, cible.y)) ?? trame.salle.obstacles.find((x) => x.fosse), parHeros);
     } else if (sim.arret === 'mur' && sim.heurte?.roue) {             // contre la roue du moulin : le choc, puis elle le jette à l'eau
       log(`${cible.nom} heurte la roue du moulin : +8, et elle le jette à l’eau !`, 'combo');
-      blesser(cible, 8, parHeros);
+      blesser(cible, 8, parHeros, { choc: true });
       if (!cible.mort && !cible.ko) {
         const fo = trame.salle.obstacles.filter((x) => x.fosse).sort((a, b) => distForme(a, sim.heurte) - distForme(b, sim.heurte))[0];
         if (fo) chute(cible, fo, parHeros);
@@ -831,12 +858,12 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       // poussé du haut d'un plateau : 10 par niveau de chute (3 m), et À terre (FIGHT_RULES, la hauteur, à l'essai)
       const n = 10 * Math.max(1, sim.chute);
       log(`${cible.nom} tombe de ${Math.max(1, sim.chute) * NIVEAU_M} m : ${n} dégâts, et À terre.`, cible.camp === 'h' ? 'mauvais' : 'bon');
-      blesser(cible, n, src.id);
+      blesser(cible, n, src.id, { choc: true });
       if (!cible.mort && !cible.ko) cible.st.aTerre = { par: parHeros };
     } else if (sim.arret && !(o.attire && sim.heurte === o.attire)) {      // attiré jusqu'au lanceur : il arrive, sans choc
       log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : sim.heurte?.falaise ? 'la falaise' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +${lire('poussee.degatsMur')}.`);
       if (sim.heurte === S.enclume && S.enclume.par !== parHeros) combo(S.enclume.par, parHeros, 'poussé contre l’enclume');
-      blesser(cible, lire('poussee.degatsMur'), src.id);
+      blesser(cible, lire('poussee.degatsMur'), src.id, { choc: true });
       if (o.proj && !cible.mort && !cible.ko) { cible.st.aTerre = { par: parHeros }; log(`${cible.nom} est À terre.`, 'muet'); }
     }
   }
@@ -852,7 +879,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       tomber(cible); return;
     }
     log(`${cible.nom} tombe dans ${ou} et remonte : ${lire('poussee.degatsFosse')} dégâts.`);
-    blesser(cible, lire('poussee.degatsFosse'), parHeros);
+    blesser(cible, lire('poussee.degatsFosse'), parHeros, { choc: true });
     if (cible.mort || cible.ko) return;
     const p = pointLibreProche(trame, fo.riviere ? { x: cible.x, y: cible.y } : { x: cible.x, y: fo.y0 - 0.5 }, S.unites.filter((u) => u !== cible && !u.mort && !u.ko));
     cible.x = p.x; cible.y = p.y;
@@ -889,8 +916,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   function attaqueReflexe(o) {
     if (o.familier) return null;          // le limier n'a pas de tour à lui : il ne frappe que sur l'ordre de son maître
     if (o.camp === 'h') {
-      const id = capacitesDe(o).find((k) => { const c = CAPACITES[k]; return c.type === 'attaque' && c.portee === CONTACT && !c.cout && !c.auto && !c.devorer; });
-      return id ? { ...attaqueHeros(CAPACITES[id]), id } : null;
+      const id = capacitesDe(o).find((k) => { const c = CAPACITES[k]; return c.type === 'attaque' && (c.portee === CONTACT || c.contact) && !c.cout && !c.auto && !c.devorer; });
+      return id ? { ...attaqueHeros(CAPACITES[id]), id, ...(CAPACITES[id].contact ? { anim: CAPACITES[id].animContact, melee: true } : {}) } : null;
     }
     const a = ENNEMIS[o.type].atk;
     return a.portee == null || a.portee === CONTACT ? { ...attaqueEnnemi(o), melee: true } : null;
@@ -1346,6 +1373,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const f = familierDe(u); if (f) finTour(f);
     if (u.mort || u.ko) return;
     if (u.camp === 'h' && u.res.type === 'Élan' && !(u.t.parcouru > 0) && !u.t.ombre && u.res.v > 0) { u.res.v = 0; log(`${u.nom} est resté immobile : son Élan retombe à 0.`, 'muet'); }
+    if (u.type === RIFF && u.camp === 'h') { if (!u.rythmeVu && u.res.v > 0) { u.res.v = 0; log(`${u.nom} n’a vu aucun allié attaquer : son Rythme retombe à 0.`, 'muet'); } u.rythmeVu = false; }
     const s = surfaceA(u);
     if (s && s.t === 'feu') { log(`${u.nom} finit son tour dans le feu.`, u.camp === 'h' ? 'mauvais' : ''); toucheFeu(u, lire('feu.degats'), s.par); }
     if (u.st.gele && !u.mort && !u.ko) { u.st.gele.n--; if (u.st.gele.n <= 0) delete u.st.gele; }
@@ -1738,6 +1766,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     return null;
   }
+  // La Ballade relève un allié KO à distance : 2 Rythme, une fois par combat
+  const RELEVE_RYTHME = 2;
+  const peutReleverAuLoin = (h) => !h.releveFait && h.res.v >= RELEVE_RYTHME;
   const coutDe = (h, cap) => (cap.type === 'mue' && h.formePassee && h.formePassee !== cap.forme ? 30 : cap.cout ?? 0);
   function peutUtiliser(h, cap) {
     if (!peutAgir(h)) return false;
@@ -1805,7 +1836,10 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     } else if (cap.type === 'poussee') {
       S.unites.filter((u) => !u.mort && !u.ko && u !== h && (!cap.ennemi || u.camp === 'e') && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
       if (!cap.ennemi) S.tonneaux.filter((b) => dist(h, b) <= CONTACT).forEach((b) => out.push({ id: b.id, tonneau: true }));
-    } else if (cap.type === 'soin') herosVivants().filter((u) => u !== h && !(cap.chien && u.familier) && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+    } else if (cap.type === 'soin') {
+      herosVivants().filter((u) => u !== h && !(cap.chien && u.familier) && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+      if (cap.releve && peutReleverAuLoin(h)) S.unites.filter((u) => u.camp === 'h' && u.ko && !u.familier && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+    }
     else if (cap.type === 'relever') S.unites.filter((u) => u.camp === 'h' && u.ko && dist(h, u) <= CONTACT).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'huileCible') S.unites.filter((u) => !u.mort && !u.ko && u !== h && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'brasero') S.braseros.filter((b) => !b.renverse && dist(h, b) <= CONTACT + 0.3).forEach((b) => out.push({ id: b.id, brasero: true }));
@@ -1813,7 +1847,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     else if (cap.type === 'ombre') ennemisVivants().filter((u) => aPortee(h, cap, u) && sortieOmbre(h, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'bond') ennemisVivants().filter((u) => aPortee(h, cap, u) && atterrissage(h, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'ardent') herosVivants().filter((u) => u !== h && !u.familier && aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
-    else if (cap.type === 'inspiration') herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
+    else if (['inspiration', 'course'].includes(cap.type)) herosVivants().filter((u) => u !== h && dist(h, u) <= cap.portee).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'enclume') ennemisVivants().filter((u) => aPortee(h, cap, u)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'forge') herosVivants().filter((u) => !u.familier && (u === h || dist(h, u) <= CONTACT)).forEach((u) => out.push({ id: u.id }));
     else if (cap.type === 'tenailles') {
@@ -1980,6 +2014,16 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (t.charge) recalerCharge(t, h.id);
       return true;
     }
+    if (cap.type === 'soin' && cap.releve && u && u.camp === 'h' && u.ko && !u.familier && dist(h, u) <= cap.portee) {       // la Ballade relève un KO
+      if (!peutReleverAuLoin(h)) return false;
+      payer(h, cap); h.res.v -= RELEVE_RYTHME; h.releveFait = true;
+      const pvRelve = lire('releve.pv');
+      u.ko = false; u.pv = pvRelve; u.t = { mv: 0, action: false, bonus: false, reaction: false }; S.stats.releves++; S.stats.reles[h.id] = (S.stats.reles[h.id] ?? 0) + 1;
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'ranime', id: u.id, pv: pvRelve });
+      log(`${h.nom} joue une ballade : ${u.nom} se relève à ${metres(dist(h, u))} m (${pvRelve} PV). Il rejouera au prochain tour.`, 'bon');
+      return true;
+    }
     if (cap.type === 'soin' && u && u.camp === 'h' && !u.ko && u !== h && !(cap.chien && u.familier) && dist(h, u) <= cap.portee) {
       payer(h, cap);
       const q = cap.soin ?? { base: 15, de: 6, mod: 2 };
@@ -1992,7 +2036,11 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         const k = ['brulure', 'gele', 'huile'].find((e) => u.st[e]);
         if (k) { delete u.st[k]; ev({ type: 'texte', id: u.id, texte: `${NOM_ETAT[k]} : retiré` }); log(`${u.nom} n’est plus ${NOM_ETAT[k]}.`, 'muet'); }
         ev({ type: 'limier', id: familierDe(h).id, retour: true });
-      } else h.res.v = Math.min(h.res.max, h.res.v + lire('foi.gain'));
+      } else if (h.res.type === 'Foi') h.res.v = Math.min(h.res.max, h.res.v + lire('foi.gain'));
+      if (cap.retire) {                               // la Ballade retire aussi un état : Brûlure, Gelé ou Huilé
+        const k = ['brulure', 'gele', 'huile'].find((e) => u.st[e]);
+        if (k) { delete u.st[k]; ev({ type: 'texte', id: u.id, texte: `${NOM_ETAT[k]} : retiré` }); log(`${u.nom} n’est plus ${NOM_ETAT[k]}.`, 'muet'); }
+      }
       return true;
     }
     if (cap.type === 'relever' && u && u.camp === 'h' && u.ko && dist(h, u) <= CONTACT) {
@@ -2063,6 +2111,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       log(`${h.nom} chante pour ${u.nom} : avantage à sa prochaine attaque.`, 'bon');
       return true;
     }
+    if (cap.type === 'course' && u && u.camp === 'h' && !u.ko && !u.familier && u !== h && dist(h, u) <= cap.portee) {       // la Course effrénée
+      payer(h, cap); u.t.mv += 2; u.t.desengage = true;
+      ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
+      ev({ type: 'texte', id: u.id, texte: '+3 m !' });
+      log(`${h.nom} emballe le tempo : ${u.nom} gagne 3 m de déplacement et s’éloigne sans attaque d’opportunité.`, 'bon');
+      return true;
+    }
     if (cap.type === 'huileCible' && u && !u.mort && !u.ko && u !== h && aPortee(h, cap, u)) {
       payer(h, cap); u.st.huile = { ttl: lire('etat.huile.duree'), par: h.id };
       ev({ type: 'lance', id: h.id, cap: capId, anim: 'tir', x: u.x, y: u.y });
@@ -2124,6 +2179,6 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     instantane: () => JSON.stringify({ ...S, evenements: [] }, (k, v) => (v === Infinity ? '∞' : v)),          // (à pied, le déplacement est sans limite : JSON ne sait pas écrire l'infini)
     restaurer(copie) { const o = JSON.parse(copie, (k, v) => (v === '∞' ? Infinity : v)); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
-    _: { agirGardien, annoncerCharge, charger, recalerCharge, blesser, chuteForme, attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
+    _: { agirGardien, finTour, annoncerCharge, charger, recalerCharge, blesser, chuteForme, attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
   };
 }

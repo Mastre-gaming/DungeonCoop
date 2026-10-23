@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Les sons de Riff Ossel</title>
+<style>
+  :root { --fond: #1c1620; --carte: #2b2230; --texte: #f1e8dc; --rouge: #e6332e; --or: #f2c24b; --os: #d9cdb6; }
+  body { margin: 0; padding: 24px 16px; background: var(--fond); color: var(--texte); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 26px; margin: 0 0 4px; } p { color: var(--os); margin: 0 0 18px; }
+  .grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+  button { all: unset; box-sizing: border-box; cursor: pointer; background: var(--carte); border: 2px solid #4a3a52; border-radius: 10px; padding: 12px 14px; }
+  button:hover, button:focus-visible { border-color: var(--rouge); }
+  button b { display: block; font-size: 17px; } button span { color: var(--os); font-size: 13px; }
+  #etat { margin: 18px 0 8px; color: var(--or); } table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td, th { text-align: left; padding: 4px 8px; border-bottom: 1px solid #3a2e42; } .ok { color: #7fe07f; } .mal { color: #ff7a6e; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Les sons de Riff Ossel</h1>
+  <p>Hard rock, tout en code (synth-audio). Clique pour écouter ; le son démarre au premier clic. Le test mesure chaque son hors-ligne.</p>
+  <p><label><input type="checkbox" id="boucle"> Écouter en boucle (les sons marqués ●) ; cliquer un autre son arrête le précédent.</label></p>
+  <div class="grille" id="grille"></div>
+  <p id="etat">Test hors-ligne en cours…</p>
+  <table id="table"><thead><tr><th>Son</th><th>Crête</th><th>Moyenne</th><th>Fin silencieuse</th><th></th></tr></thead><tbody></tbody></table>
+</main>
+<script type="module">
+  import { createAudio, measure } from './module/02_audio.js';
+  import { definirSons, DUREES } from './sons.js';
+  const NOMS = {
+    'riff': ['Riff', 'la note perçante, avec écho'], 'riff-melee': ['Riff au contact', 'le Fracas : souffle, choc, terre qui s’effondre'],
+    'ballade': ['Ballade', 'l’arpège clair du soin'], 'course': ['Course effrénée', 'trois accords vite, éclair'],
+    'power': ['Power chord', 'l’accord grave et son larsen'], 'solo': ['Solo de la hache', 'le cri, l’impact énorme, le bond'],
+    'rythme': ['Rythme +1', 'un coup de grosse caisse'], 'rythme-max': ['Rythme au maximum', 'caisse claire'],
+    'blesse': ['Blessé', 'os qui claquent'], 'ko': ['K.O.', 'tout s’effondre en tas'],
+  };
+  const audio = createAudio({ space: 'hall' });
+  definirSons(audio);
+  // les sons enregistrés (Suno, découpés) ; les autres restent synthétisés en attendant
+  const FICHIERS = new Set(['riff', 'riff-melee', 'ballade', 'course', 'power', 'solo']);
+  const lecteurs = {};
+  const boucle = document.getElementById('boucle');
+  const grille = document.getElementById('grille');
+  for (const [id, [nom, sous]] of Object.entries(NOMS)) {
+    const b = document.createElement('button'), reel = FICHIERS.has(id);
+    b.innerHTML = `<b>${nom}${reel ? ' ●' : ''}</b><span>${reel ? 'enregistré' : 'synthèse (à remplacer)'} · ${sous}</span>`;
+    b.onclick = () => {
+      Object.values(lecteurs).forEach((l) => l.pause());
+      if (!reel) { audio.unlock(); audio.play(id); return; }
+      const l = lecteurs[id] ??= new Audio(`./audio/${id}.wav`);
+      l.loop = boucle.checked; l.currentTime = 0; l.play();
+    };
+    grille.append(b);
+  }
+  // le test hors-ligne : chaque son est calculé sans haut-parleur ; on regarde la crête (jamais au plafond) et le silence à la fin
+  window.__resultats = [];
+  const corps = document.querySelector('tbody');
+  let tousOk = true;
+  for (const id of Object.keys(NOMS)) {
+    const dur = DUREES[id] ?? 2, buf = await audio.render(id, dur + 1.5);
+    const tout = measure(buf), fin = measure(buf, dur + 1.0, dur + 1.5);
+    const ok = tout.peak > 0.05 && tout.peak <= 1 && fin.peak < 0.02;
+    tousOk &&= ok;
+    window.__resultats.push({ id, peak: +tout.peak.toFixed(3), rms: +tout.rms.toFixed(4), fin: +fin.peak.toFixed(4), ok });
+    corps.insertAdjacentHTML('beforeend', `<tr><td>${NOMS[id][0]}</td><td>${tout.peak.toFixed(2)}</td><td>${tout.rms.toFixed(3)}</td><td>${fin.peak.toFixed(3)}</td><td class="${ok ? 'ok' : 'mal'}">${ok ? 'ok' : 'à revoir'}</td></tr>`);
+  }
+  document.getElementById('etat').textContent = tousOk ? `${window.__resultats.length}/${window.__resultats.length} sons : jamais au plafond, silence à la fin.` : 'Un son est à revoir (voir le tableau).';
+  window.__fini = true;
+</script>
+</body>
+</html>

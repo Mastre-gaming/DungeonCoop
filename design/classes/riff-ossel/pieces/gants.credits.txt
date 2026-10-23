@@ -1,0 +1,16 @@
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+arms/hands/gloves/male/walk.png
+
+metal gloves by wulax, recolors by bigbeargames, adapted to v3 bases by bluecarrot16, added to expanded animations by JaidynReiman
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: Michael Whitlock (bigbeargames), Matthew Krohn (makrohn), Johannes Sjölund (wulax), bluecarrot16, JaidynReiman
+
+Download TXT
+Download CSV
