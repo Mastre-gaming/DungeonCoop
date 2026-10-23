@@ -1522,6 +1522,15 @@ export async function selfTest(t, game) {
   const ana = ami('Ana'); ana.party.join('KXQZB'); jouer(0.4);
   t.eq(multi.L.proprio[1], ana.party.id, 'Ana arrive : la place 2 est à elle');
   t.ok(ana.dernier('salon')?.L.proprio[1] === ana.party.id, 'elle reçoit le lobby');
+  {
+    // la salle : l'hôte la choisit au lobby, le groupe le sait, et sa page s'y recharge (avec le même groupe)
+    const choix = document.querySelector('#choix-salle');
+    t.ok(!choix.disabled && multi.L.salle === '' && ana.dernier('salon')?.L.salle === '', 'au lobby, l’hôte choisit la salle (la liste n’est pas grisée chez lui) ; le lobby dit laquelle');
+    choix.value = 'butte'; choix.dispatchEvent(new Event('change')); jouer(0.3);
+    const url = String(allees.pop());
+    t.ok(ana.dernier('salon')?.L.salle === 'butte' && url.includes('salle=butte') && !url.includes('go'), 'l’hôte prend la butte : Ana l’apprend par le lobby, et la page de l’hôte s’y recharge');
+    multi.L.salle = ''; choix.value = '';
+  }
   REG._raz();
   ana.recus.length = 0; REG.regler('ennemis.pv', 0.5); jouer(0.3);
   t.ok(ana.dernier('reglages')?.R?.['ennemis.pv'] === 0.5, 'réglages : l’hôte règle les PV ennemis, Ana reçoit ses valeurs aussitôt');
@@ -1603,6 +1612,9 @@ export async function selfTest(t, game) {
   const cy = ami('Cy'); cy.party.host('QWERT'); jouer(0.1);
   const p2 = multi.brancherTest(hub, { comme: 'invite', avec: 'QWERT', aller: (u) => allees.push(u) }); jouer(0.4);
   t.ok(p2.active && !p2.hosting && cy.party.others.size === 1, 'cette page rejoint le terrain de Cy');
+  t.ok(document.querySelector('#choix-salle').disabled, 'chez un ami, la salle est grisée : c’est l’hôte qui la choisit');
+  cy.party.toAll({ t: 'salon', L: { phase: 'lobby', equipe: ['brute', 'mage', 'voleur', 'gardien'], proprio: ['host', p2.id, null, null], mode: 'equipe', pret: [], absents: {}, salle: 'col' } }); jouer(0.2);
+  t.ok(String(allees.pop()).includes('salle=col'), 'Cy joue le col, et nous la salle d’essai : on le suit dans sa salle (la page se recharge avec ?salle=col)');
   const moi = p2.id, L2 = { phase: 'lobby', equipe: ['brute', 'mage', 'voleur', 'gardien'], proprio: ['host', moi, null, null], mode: 'equipe', pret: [], absents: {} };
   cy.party.toAll({ t: 'salon', L: L2, R: { 'ennemis.pv': 0.5, 'multi.invites': 0 } }); jouer(0.2);
   cy.recus.length = 0;
