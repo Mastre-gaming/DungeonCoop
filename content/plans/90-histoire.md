@@ -20,6 +20,7 @@ Un moment fait **4 lignes courtes au plus**, parfois un choix (3 options au plus
 
 ## À faire
 - + Le cadre de l'histoire (la structure seulement) #103
+- + Le départ du camp : le contrat au tableau, la réunion du village à l'estrade du nord, le vote de ceux qui partent #271
 - Valider le cadre @Paolitus #16
 - La séance « monde », 1 h, toute l'équipe #17
 - La fiche du monde (D3) : le monde en 5 lignes, le Boss final, les lieux #18
