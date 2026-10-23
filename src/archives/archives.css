@@ -41,6 +41,11 @@ body { color: var(--creme); font: 14px/1.45 var(--texte); }
 .groupe h2 { margin: 0 0 6px; font: 700 1rem var(--titre); color: var(--bois-fonce); display: flex; gap: 8px; align-items: center; border-bottom: 2px solid #cdb68c; padding-bottom: 3px; }
 .cartes { display: grid; gap: 8px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
 .cartes.sorts, .cartes.animations { grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); }
+/* les décors : la planche entière, réduite dans sa case ; en grand, à l'échelle ×2, qu'on fait défiler */
+.planche-mini { display: grid; place-items: center; width: 96px; height: 96px; background: #3a2a1a; border-radius: 3px; }
+.planche-mini img { max-width: 96px; max-height: 96px; image-rendering: pixelated; }
+.planche-defile { max-height: 420px; overflow: auto; justify-items: start; }
+.planche-grande { display: block; image-rendering: pixelated; }
 /* une carte : une case de bois creux (DESIGN §5), son aperçu, son nom */
 .carte { display: grid; justify-items: center; align-content: start; gap: 3px; padding: 6px 6px 7px; cursor: pointer; text-align: center; font: inherit;
   background: var(--bois-creux); color: var(--creme); border: 2px solid var(--bois-nuit); border-radius: 4px;
@@ -75,6 +80,7 @@ body { color: var(--creme); font: 14px/1.45 var(--texte); }
 .info dd { margin: 0; overflow-wrap: anywhere; }
 .info code { font: 12px ui-monospace, Consolas, monospace; }
 .detail-archives a { color: var(--accent-parchemin); }
+.detail-archives a.bouton-jeu { color: #fff7e6; text-decoration: none; text-align: center; }
 .phrase { margin: 0; font-style: italic; }
 .puces { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; }
 .puce { font: 500 .8rem var(--titre); padding: 2px 7px; background: var(--bois-creux); color: var(--creme); border: 1px solid var(--bois-nuit); }

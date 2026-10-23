@@ -6,7 +6,7 @@
 //
 // L'écran : en haut, la salle (nom, fichiers, essai) ; à gauche, les outils par famille ; au milieu, la salle dessinée
 // comme au terrain ; à droite, ce qui est choisi, la salle elle-même et ce qui est à revoir.
-import { construireDepuis, SALLES, CLE_ESSAI } from '../entrainement/salles.js';
+import { construireDepuis, SALLES, CLE_ESSAI, PLANCHES_SALLES, DECORS_SALLES, SOLS, TERRAINS, MURS, HAUT_MUR } from '../entrainement/salles.js';
 import { ENNEMIS } from '../entrainement/regles.js';
 import { chargerImages } from '../02_images.js';
 import * as M from './modele.js';
@@ -32,6 +32,8 @@ export const PIECES = [
   { id: 'ratelier', nom: 'Râtelier d’armes', d: [0, 47, 2, 1], f: { x0: 0.1, x1: 1.9, y0: 0.4, y1: 1.0 } },
 ];
 
+// Les planches où l'on prend une pièce (un tampon) : les décors médiévaux, et tout le château et le donjon (LPC Base Assets)
+export const NOMS_PLANCHES = { deco: 'Les décors médiévaux', ...Object.fromEntries(Object.entries(DECORS_SALLES).map(([id, d]) => [id, d.nom])) };
 // Les outils, par famille. sorte : pinceau (des coins de sol), rect (un rectangle à tirer), point (un clic), choisir, gomme.
 export const OUTILS = [
   { famille: 'Main', liste: [
@@ -43,6 +45,8 @@ export const OUTILS = [
     { id: 'eau', nom: 'Eau peu profonde', sorte: 'pinceau', calque: 'peu' },
     { id: 'eau-profonde', nom: 'Eau profonde', sorte: 'pinceau', calque: 'profonde' },
     { id: 'eau-x', nom: 'Effacer l’eau', sorte: 'pinceau', calque: 'eaux', effacer: true },
+    ...Object.entries(TERRAINS).map(([t, d]) => ({ id: `terrain-${t}`, nom: d.bloque ? `${d.nom} (bloque)` : d.nom, sorte: 'pinceau', calque: `terrain:${t}` })),
+    { id: 'terrain-x', nom: 'Effacer pavés, lave, roche, fosse', sorte: 'pinceau', calque: 'terrains', effacer: true },
     { id: 'pont', nom: 'Pont', sorte: 'rect' }] },
   { famille: 'Nature', liste: [
     { id: 'arbre', nom: 'Arbre', sorte: 'point' },
@@ -53,7 +57,12 @@ export const OUTILS = [
     { id: 'feu', nom: 'Feu de camp', sorte: 'point' },
     { id: 'tente', nom: 'Tente', sorte: 'point' },
     ...PIECES.map((p) => ({ id: `piece-${p.id}`, nom: p.nom, sorte: 'point', piece: p })),
-    { id: 'piece-planche', nom: 'Une pièce de la planche…', sorte: 'point', planche: true }] },
+    { id: 'tampon', nom: 'Une pièce de n’importe quelle planche…', sorte: 'point', planche: true }] },
+  { famille: 'Château et donjon', liste: [
+    ...Object.entries(MURS).map(([m, d]) => ({ id: `mur-${m}`, nom: d.nom, sorte: 'rect', mur: m })),
+    { id: 'tampon-chateau', nom: 'Une pièce du château…', sorte: 'point', planche: true, defaut: 'murs-chateau' },
+    { id: 'tampon-donjon', nom: 'Une pièce du donjon…', sorte: 'point', planche: true, defaut: 'donjon' },
+    { id: 'tampon-interieur', nom: 'Une pièce de l’intérieur…', sorte: 'point', planche: true, defaut: 'interieur' }] },
   { famille: 'Surfaces', liste: ['eau', 'huile', 'feu', 'glace'].map((t) => ({ id: `surface-${t}`, nom: { eau: 'Flaque d’eau', huile: 'Huile', feu: 'Feu', glace: 'Glace' }[t], sorte: 'point', surface: t })) },
   { famille: 'Relief', liste: [
     { id: 'plateau-1', nom: 'Plateau de 3 m', sorte: 'rect', haut: 1 },
@@ -69,7 +78,7 @@ const OUTIL = Object.fromEntries(OUTILS.flatMap((f) => f.liste).map((o) => [o.id
 
 // --- L'état --------------------------------------------------------------------------------------------------------------
 let game, images = null, canvas, g, dom = {}, naviguer = (url) => { location.href = url; };
-const ui = { outil: 'choisir', sel: null, zoom: 2, aimant: false, grille: true, obstacles: false, taille: 1, rayon: 1, piece: [0, 47, 2, 1],
+const ui = { outil: 'choisir', sel: null, zoom: 2, aimant: false, grille: true, obstacles: false, taille: 1, rayon: 1, piece: [0, 47, 2, 1], planche: 'deco', aplat: false, pieces: { deco: [0, 47, 2, 1] },
   souris: null, appui: null, rect: null, bouge: false, sols: null, avant: [], apres: [], sale: true, solCle: '', solImg: null, notes: [] };
 let S = M.vide();
 
@@ -114,19 +123,28 @@ function zoomQuiTient() {
 
 // --- Les sols : la terre et l'eau, peintes coin par coin (le temps d'un trait), puis rangées en rectangles --------------
 function sols() {
-  if (!ui.sols) { const e = M.eauxDe(S); ui.sols = { terre: M.coinsDe(S.terre), peu: e.peu, profonde: e.profonde }; }
+  if (!ui.sols) {
+    const e = M.eauxDe(S);
+    ui.sols = { terre: M.coinsDe(S.terre), peu: e.peu, profonde: e.profonde,
+      terrains: Object.fromEntries(Object.keys(TERRAINS).map((t) => [t, M.coinsDe(S.terrains.filter((x) => x.t === t).map((x) => x.c))])) };
+  }
   return ui.sols;
 }
 function peindre(o, x, y) {
   const s = sols();
   let change = false;
   if (o.calque === 'eaux') change = M.pinceau(s.peu, x, y, ui.taille, true) | M.pinceau(s.profonde, x, y, ui.taille, true);
-  else {
+  else if (o.calque === 'terrains') for (const e of Object.values(s.terrains)) change = M.pinceau(e, x, y, ui.taille, true) || change;
+  else if (o.calque.startsWith('terrain:')) {
+    const t = o.calque.slice(8);
+    change = M.pinceau(s.terrains[t], x, y, ui.taille, !!o.effacer);
+    if (!o.effacer) for (const [u, e] of Object.entries(s.terrains)) if (u !== t) M.pinceau(e, x, y, ui.taille, true);
+  } else {
     change = M.pinceau(s[o.calque], x, y, ui.taille, !!o.effacer);
     if (!o.effacer && o.calque === 'peu') M.pinceau(s.profonde, x, y, ui.taille, true);
     if (!o.effacer && o.calque === 'profonde') M.pinceau(s.peu, x, y, ui.taille, true);
   }
-  if (change) { S.terre = M.rectsDe(s.terre); S.eau = M.eauDepuis(s); ui.sale = true; ui.solCle = ''; }
+  if (change) { S.terre = M.rectsDe(s.terre); S.eau = M.eauDepuis(s); S.terrains = Object.entries(s.terrains).flatMap(([t, e]) => M.rectsDe(e).map((c) => ({ t, c }))); ui.sale = true; ui.solCle = ''; }
   return change;
 }
 
@@ -139,11 +157,14 @@ function poser(o, x, y) {
   else if (o.id === 'feu') { S.feux.push([x, y]); S.surfaces.push({ x, y, r: 0.55, t: 'feu' }); }
   else if (o.id === 'tente') S.tentes.push({ x: r1(x - 2.5), y: r1(y - 4.5) });
   else if (o.surface) S.surfaces.push({ x, y, r: ui.rayon, t: o.surface });
-  else if (o.piece || o.planche) {
+  else if (o.planche && ui.aplat) {
+    const [sx, sy, w, h] = ui.piece;
+    S.tapis.push({ p: ui.planche, d: [sx, sy, w, h, r1(x - w / 2), r1(y - h / 2)] });
+  } else if (o.piece || o.planche) {
     const [sx, sy, w, h] = o.piece ? o.piece.d : ui.piece, px = r1(x - w / 2), py = r1(y - h + 0.5);
     const f = o.piece ? o.piece.f : { x0: 0.1, x1: w - 0.1, y0: h - 0.8, y1: h - 0.1 };
     const forme = f.r != null ? { x: r1(px + f.x), y: r1(py + f.y), r: f.r } : { x0: r1(px + f.x0), x1: r1(px + f.x1), y0: r1(py + f.y0), y1: r1(py + f.y1) };
-    S.objets.push({ forme, marche: true, ...(o.piece?.vue ? { vue: true } : {}), dessin: [sx, sy, w, h, px, py] });
+    S.objets.push({ forme, marche: true, ...(o.piece?.vue ? { vue: true } : {}), ...(o.planche && ui.planche !== 'deco' ? { p: ui.planche } : {}), dessin: [sx, sy, w, h, px, py] });
   } else if (o.id === 'rampe' || o.id === 'echelle') {
     const i = S.relief.findIndex((p) => x > p.x0 && x < p.x1 && Math.abs(y - p.y1) < 1.6);
     if (i < 0) { banniere('Une rampe ou une échelle se pose au bord sud d’un plateau.'); return false; }
@@ -159,6 +180,7 @@ function tirer(o, a, b) {
   if (x1 - x0 < 0.5 || y1 - y0 < 0.5) return false;
   if (o.id === 'bois') S.bois.push({ x0, x1, y0, y1 });
   else if (o.id === 'pont') S.pont = { x0, x1, y0, y1 };
+  else if (o.mur) S.murs.push({ style: o.mur, x0: Math.round(x0), x1: Math.max(Math.round(x0) + 1, Math.round(x1)), y: y0 });
   else if (o.haut) S.relief.push({ x0, y0, x1, y1, haut: o.haut });
   else return false;
   return true;
@@ -197,7 +219,10 @@ function lacher() {
   else if (o.sorte === 'choisir' && ui.sel) { if (ui.bouge) apresChangement(); else ui.avant.pop(); }
   ui.appui = null; ui.sale = true;
 }
-function choisirOutil(id) { if (!OUTIL[id]) return; ui.outil = id; ui.rect = null; if (id !== 'choisir') ui.sel = null; dessinerPanneaux(); ui.sale = true; }
+function choisirOutil(id) {
+  if (!OUTIL[id]) return;
+  if (OUTIL[id].defaut) { ui.planche = OUTIL[id].defaut; ui.piece = ui.pieces[ui.planche] ??= [0, 0, 1, 1]; }   // (les tampons du château, du donjon, de l'intérieur : leur planche)
+  ui.outil = id; ui.rect = null; if (id !== 'choisir') ui.sel = null; dessinerPanneaux(); ui.sale = true; }
 
 // --- Le dessin : la salle comme au terrain, puis les repères de l'atelier ------------------------------------------------
 function dimensionner() {
@@ -205,7 +230,7 @@ function dimensionner() {
   canvas.style.width = `${S.l * T * ui.zoom}px`; canvas.style.height = `${S.h * T * ui.zoom}px`;
   ui.solCle = ''; ui.sale = true;
 }
-const cleSol = () => JSON.stringify([S.l, S.h, S.sol, S.terre, S.eau, S.pont, S.relief, S.rampes]);
+const cleSol = () => JSON.stringify([S.l, S.h, S.sol, S.interieur, S.terre, S.eau, S.terrains, S.tapis, S.pont, S.relief, S.rampes]);
 function personnage(gg, img, x, y) { if (img) gg.drawImage(img, 0, 10 * 64, 64, 64, Math.round(x * T - 32), Math.round(y * T - 60), 64, 64); }
 const planche = (type) => images[`perso_${KIT[type] ?? ''}`] ?? images[`mob_${type}`];
 // Dessine la salle (sans les repères : c'est aussi le plan qu'on exporte)
@@ -275,6 +300,8 @@ function boite({ k, i }) {
   if (k === 'objets') { const d = S.objets[i].dessin; return d ? { x0: d[4], x1: d[4] + d[2], y0: d[5], y1: d[5] + d[3] } : null; }
   if (k === 'rampes') { const r = S.rampes[i], p = S.relief[r.plateau]; return p ? { x0: r.x0, x1: r.x1, y0: p.y1 - 0.5, y1: p.y1 + 2 * p.haut } : null; }
   if (k === 'pont') return S.pont;
+  if (k === 'murs') { const m = S.murs[i]; return { x0: m.x0, x1: m.x1, y0: m.y, y1: m.y + HAUT_MUR }; }
+  if (k === 'tapis') { const d = S.tapis[i].d; return { x0: d[4], x1: d[4] + d[2], y0: d[5], y1: d[5] + d[3] }; }
   return S[k]?.[i] ?? null;
 }
 
@@ -298,7 +325,10 @@ function apercu(o) {
   if (o.ennemi) ss(planche(o.ennemi), 16, 10 * 64 + 10, 32, 46);
   else if (o.heros != null) ss(images[`perso_${HEROS_KIT[o.heros]}`], 16, 10 * 64 + 10, 32, 46);
   else if (o.piece) ss(images.deco, o.piece.d[0] * T, o.piece.d[1] * T, o.piece.d[2] * T, o.piece.d[3] * T);
-  else if (o.planche) ss(images.deco, ui.piece[0] * T, ui.piece[1] * T, ui.piece[2] * T, ui.piece[3] * T);
+  else if (o.planche) { const [pl, pc] = o.defaut ? [o.defaut, ui.pieces[o.defaut] ?? [0, 0, 3, 3]] : [ui.planche, ui.piece]; if (images[pl]) ss(images[pl], pc[0] * T, pc[1] * T, pc[2] * T, pc[3] * T); }
+  else if (o.mur) ss(images[MURS[o.mur].p], 0, 0, 96, MURS[o.mur].h);
+  else if (o.calque?.startsWith('terrain:')) ss(images[o.calque.slice(8)], T, 3 * T, T, T);
+  else if (o.calque === 'terrains') ss(images.lave, T, 3 * T, T, T);
   else if (o.id === 'arbre' || o.id === 'bois') ss(images.cimes, 0, 0, 96, 96);
   else if (o.id === 'rocher') ss(images.roche, 0, 0, 32, 32);
   else if (o.id === 'tonneau') ss(images.tonneau, 0, 0, 32, 64);
@@ -331,7 +361,11 @@ function dessinerPanneaux() {
   const reglages = [el('p', { class: 'outil-courant' }, o.nom)];
   if (o.sorte === 'pinceau') reglages.push(el('div', { class: 'boutons-ligne' }, el('span', {}, 'Pinceau :'), [1, 2, 3].map((n) => el('button', { type: 'button', class: `bouton-jeu petit${ui.taille === n ? ' choisi' : ''}`, onclick: () => { ui.taille = n; dessinerPanneaux(); } }, `${n} × ${n}`))));
   if (o.surface) reglages.push(nombre('Rayon (cases)', ui.rayon, (v) => { ui.rayon = Math.max(0.4, Math.min(3, v)); }, { min: '0.4', max: '3' }));
-  if (o.planche) reglages.push(el('button', { type: 'button', class: 'bouton-jeu', onclick: () => ouvrirPlanche() }, 'Choisir la pièce sur la planche'));
+  if (o.planche) reglages.push(el('p', { class: 'note' }, NOMS_PLANCHES[ui.planche] ?? ui.planche),
+    el('button', { type: 'button', class: 'bouton-jeu', onclick: () => ouvrirPlanche() }, 'Choisir la pièce sur la planche'),
+    el('div', { class: 'boutons-ligne' }, [[false, 'Debout'], [true, 'À plat sur le sol']].map(([v, n]) => el('button', { type: 'button', class: `bouton-jeu petit${ui.aplat === v ? ' choisi' : ''}`, onclick: () => { ui.aplat = v; dessinerPanneaux(); } }, n))),
+    el('p', { class: 'note' }, ui.aplat ? 'À plat : sous les personnages, ne bloque rien (tapis, dalles, motifs).' : 'Debout : trié avec les personnages ; bloque le passage par son pied (à régler une fois posée).'));
+  if (o.mur) reglages.push(el('p', { class: 'note' }, 'Tire un rectangle : la façade se pose en haut, sur toute sa largeur ; elle bloque le passage et la vue.'));
   if (o.ennemi && !o.jouable) reglages.push(el('p', { class: 'note' }, 'Il n’a pas encore ses règles : au terrain, il est joué par une doublure (', M.doublure(FICHES[o.ennemi]), ').'));
   blocs.push(el('section', { class: 'bloc' }, el('h2', {}, 'L’outil'), reglages));
   // ce qui est choisi
@@ -361,9 +395,20 @@ function dessinerPanneaux() {
     champ('Nom', S.nom, (v) => modifier(() => { const auto = S.id === M.idDe(S.nom) || S.id === 'nouvelle-salle'; S.nom = v; if (auto) S.id = M.idDe(v); })),
     champ('Fichier', S.id, (v) => modifier(() => { S.id = M.idDe(v); })),
     champ('La question qu’elle pose', S.idee, (v) => modifier(() => { S.idee = v; }), { placeholder: 'Forcer le pont, ou piéger le gué ?' }),
-    el('div', { class: 'boutons-ligne' }, nombre('Largeur', S.l, (v) => modifier(() => { S.l = Math.max(12, Math.min(48, Math.round(v))); dimensionner(); }), { step: '1', min: '12', max: '48' }),
-      nombre('Hauteur', S.h, (v) => modifier(() => { S.h = Math.max(10, Math.min(36, Math.round(v))); dimensionner(); }), { step: '1', min: '10', max: '36' })),
-    el('div', { class: 'boutons-ligne' }, el('span', {}, 'Sol :'), ['herbe', 'terre'].map((t) => el('button', { type: 'button', class: `bouton-jeu petit${S.sol === t ? ' choisi' : ''}`, onclick: () => modifier(() => { S.sol = t; }) }, t === 'herbe' ? 'Herbe' : 'Terre partout')))));
+    el('label', { class: 'champ' }, el('span', {}, 'Le sol de la salle'), el('select', { onchange: (e) => modifier(() => { S.sol = e.target.value; }) },
+      Object.entries(SOLS).map(([id, d]) => el('option', { value: id, selected: S.sol === id ? true : null }, id === 'terre' ? 'Terre battue partout' : d.nom)))),
+    el('label', { class: 'champ' }, el('span', {}, 'Dehors ou dedans'), el('select', { onchange: (e) => modifier(() => { S.interieur = e.target.value === 'non' ? false : e.target.value; }) },
+      el('option', { value: 'non', selected: !S.interieur ? true : null }, 'Dehors (la forêt autour)'),
+      Object.entries(MURS).map(([id, d]) => el('option', { value: id, selected: S.interieur === id ? true : null }, ({ brique: 'Dedans : brique du donjon', bleu: 'Dedans : murs bleus' })[id] ?? `Dedans : ${d.nom}`))))));
+  // la taille : de chaque côté (le contenu reste à sa place), ou une taille toute faite (autour du centre)
+  const cote = (nom, cle, ou) => el('div', { class: 'taille-cote' }, el('span', {}, nom),
+    el('button', { type: 'button', class: 'bouton-jeu petit', 'aria-label': `Réduire ${ou}`, onclick: () => redimensionner({ [cle]: -1 }) }, '−'),
+    el('button', { type: 'button', class: 'bouton-jeu petit', 'aria-label': `Agrandir ${ou}`, onclick: () => redimensionner({ [cle]: 1 }) }, '+'));
+  blocs.push(el('section', { class: 'bloc' }, el('h2', {}, 'La taille'),
+    el('p', { class: 'taille-actuelle' }, `${S.l} × ${S.h} cases (${(S.l * 1.5).toLocaleString('fr-FR')} × ${(S.h * 1.5).toLocaleString('fr-FR')} m)`),
+    el('div', { class: 'taille-cotes' }, cote('Nord', 'nord', 'au nord'), cote('Sud', 'sud', 'au sud'), cote('Ouest', 'ouest', 'à l’ouest'), cote('Est', 'est', 'à l’est')),
+    el('div', { class: 'boutons-ligne' }, M.TAILLES.map(([n, l, h]) => el('button', { type: 'button', class: `bouton-jeu petit${S.l === l && S.h === h ? ' choisi' : ''}`, title: `${l} × ${h} cases`,
+      onclick: () => { const dl = l - S.l, dh = h - S.h; redimensionner({ ouest: Math.trunc(dl / 2), est: dl - Math.trunc(dl / 2), nord: Math.trunc(dh / 2), sud: dh - Math.trunc(dh / 2) }); } }, n)))));
   // ce qui est à revoir
   const B = construireDepuis(S, S.id);
   ui.notes = M.verifier(S, B.salle().obstacles);
@@ -374,11 +419,14 @@ function dessinerPanneaux() {
   dom.titre.textContent = S.nom || 'Sans nom';
   for (const [b, v] of [[dom.aimant, ui.aimant], [dom.grille, ui.grille], [dom.obstacles, ui.obstacles]]) b.setAttribute('aria-pressed', String(v));
 }
+// Agrandir ou réduire la salle de chaque côté (le contenu suit au nord et à l'ouest)
+function redimensionner(cotes) { retenir(); M.redimensionner(S, cotes); ui.zoom = zoomQuiTient(); dimensionner(); apresChangement(); }
 function supprimer() { if (!ui.sel) return; retenir(); if (M.retirer(S, ui.sel)) { ui.sel = null; apresChangement(); } else ui.avant.pop(); }
 
 // La planche des décors : on y choisit une pièce (un rectangle de cases), qu'on pose ensuite
-function ouvrirPlanche() {
-  const img = images.deco, k = 1, c = el('canvas', { width: img.width, height: img.height, class: 'planche-deco' }), q = c.getContext('2d');
+function ouvrirPlanche(planche = ui.planche) {
+  ui.planche = planche;
+  const img = images[planche], k = 1, c = el('canvas', { width: img.width, height: img.height, class: 'planche-deco' }), q = c.getContext('2d');
   let a = null, b = null;
   const redessiner = () => {
     q.clearRect(0, 0, c.width, c.height); q.drawImage(img, 0, 0);
@@ -387,13 +435,15 @@ function ouvrirPlanche() {
     const [sx, sy, w, h] = ui.piece; q.strokeStyle = '#ffd35a'; q.lineWidth = 2; q.strokeRect(sx * T, sy * T, w * T, h * T); q.lineWidth = 1;
   };
   const caseDe = (e) => { const r = c.getBoundingClientRect(); return [Math.floor((e.clientX - r.left) / r.width * img.width / T), Math.floor((e.clientY - r.top) / r.height * img.height / T)]; };
-  const maj = () => { if (!a || !b) return; ui.piece = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]) + 1, Math.abs(b[1] - a[1]) + 1]; redessiner(); };
+  ui.piece = ui.pieces[planche] ??= [0, 0, 1, 1];
+  const maj = () => { if (!a || !b) return; ui.piece = ui.pieces[planche] = [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.abs(b[0] - a[0]) + 1, Math.abs(b[1] - a[1]) + 1]; redessiner(); };
   c.addEventListener('pointerdown', (e) => { a = b = caseDe(e); maj(); });
   c.addEventListener('pointermove', (e) => { if (a && e.buttons) { b = caseDe(e); maj(); } });
   c.addEventListener('pointerup', () => { a = null; });
   redessiner();
   const fermer = () => { dom.planche.hidden = true; dessinerPanneaux(); };
-  dom.planche.replaceChildren(el('header', {}, el('h2', {}, 'La planche des décors'), el('p', {}, 'Tire un rectangle sur la pièce à poser, puis « Prendre cette pièce ».'),
+  const choix = el('select', { onchange: (e) => ouvrirPlanche(e.target.value) }, Object.entries(NOMS_PLANCHES).map(([id, n]) => el('option', { value: id, selected: id === planche ? true : null }, n)));
+  dom.planche.replaceChildren(el('header', {}, el('h2', {}, 'Choisir une pièce'), el('label', { class: 'champ' }, el('span', {}, 'La planche'), choix), el('p', {}, 'Tire un rectangle sur la pièce à poser, puis « Prendre cette pièce ».'),
     el('button', { type: 'button', class: 'bouton-jeu', onclick: fermer }, 'Prendre cette pièce')), el('div', { class: 'planche-defile' }, c));
   dom.planche.hidden = false;
   void k;
@@ -430,6 +480,7 @@ function menuOuvrir() {
 // --- Le skill -----------------------------------------------------------------------------------------------------------
 // Les images de l'atelier (chargées par main.js avant de l'ouvrir) : le terrain, les pièces, les héros et tous les ennemis
 export const PLANCHES = {
+  ...PLANCHES_SALLES,
   herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
   ...Object.fromEntries([...Object.values(KIT), ...HEROS_KIT].map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
   ...Object.fromEntries(Object.keys(FICHES).map((id) => [`mob_${id}`, `ennemis/${id}/planche.png`])),

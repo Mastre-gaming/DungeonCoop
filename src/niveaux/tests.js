@@ -1,6 +1,6 @@
 // Les vérifications de l'atelier des niveaux (?test) : le modèle d'une salle, les gestes de l'écran, l'export, l'essai.
 import * as M from './modele.js';
-import { construire, construireDepuis, SALLES, CLE_ESSAI } from '../entrainement/salles.js';
+import { construire, construireDepuis, SALLES, CLE_ESSAI, PLANCHES_SALLES } from '../entrainement/salles.js';
 
 export const name = 'tests-atelier';
 export const always = true;
@@ -78,5 +78,49 @@ export function selfTest(t) {
   t.ok(allee === './entrainement.html?salle=essai' && S2 && S2.ENNEMIS.find((e) => e.look === 'troll')?.type === 'brt', '« Essayer au terrain » : la salle passe au terrain (?salle=essai), le troll joué par sa doublure');
   A.testerNavigation(null);
   try { if (avant == null) localStorage.removeItem(CLE_ESSAI); else localStorage.setItem(CLE_ESSAI, avant); } catch {}
+
+  t.group('l’atelier : le château et le donjon');
+  t.ok(Object.keys(PLANCHES_SALLES).every((n) => A.images[n]?.width > 0), `les ${Object.keys(PLANCHES_SALLES).length} planches du château et du donjon sont chargées`);
+  const dehors = construireDepuis(M.vide()).composerDecor();
+  A.charger({ ...M.vide(), interieur: 'brique', sol: 'dalles' }, { garde: false });
+  const dedans = construireDepuis(A.salle).composerDecor();
+  t.ok(dedans.some((o) => o.img === 'donjon') && !dedans.some((o) => o.img === 'troncs') && dehors.some((o) => o.img === 'troncs'), 'une salle dedans : le mur de brique au nord, pas de forêt autour');
+  t.ok(construireDepuis(A.salle).composerSol(A.images).width === A.salle.l * 32, 'son sol de dalles se compose');
+  A.choisirOutil('mur-brique'); A.geste(4, 5, 10, 7);
+  const mur = A.salle.murs[0];
+  t.ok(mur?.style === 'brique' && mur.x0 === 4 && mur.x1 === 10 && construireDepuis(A.salle).salle().obstacles.some((o) => o.mur && o.x0 === 4 && o.vue), 'on tire un mur de brique : il bloque le pas et la vue');
+  A.choisirOutil('terrain-paves'); A.geste(13, 10, 18, 10);
+  A.choisirOutil('terrain-lave'); A.geste(16, 10);
+  const peint = (n) => M.coinsDe(A.salle.terrains.filter((x) => x.t === n).map((x) => x.c));
+  t.ok(peint('lave').size > 0 && peint('paves').size > 0 && ![...peint('lave')].some((c) => peint('paves').has(c)), 'des pavés, puis de la lave par-dessus : un coin n’a qu’un sol');
+  const Bl = construireDepuis(A.salle).salle().obstacles;
+  t.ok(Bl.some((o) => o.lave && o.eau) && !Bl.some((o) => o.paves), 'la lave bloque comme l’eau profonde, les pavés non');
+  A.choisirOutil('terrain-fosse'); A.geste(6, 13);
+  t.ok(construireDepuis(A.salle).salle().obstacles.some((o) => o.fosse), 'la fosse bloque (on peut y pousser un ennemi)');
+  A.choisirOutil('terrain-x'); A.geste(6, 13);
+  t.ok(!construireDepuis(A.salle).salle().obstacles.some((o) => o.fosse), 'la gomme des sols l’efface');
+  A.choisirOutil('tampon-donjon'); A.geste(12, 4);
+  A.ui.aplat = true; A.geste(12, 15); A.ui.aplat = false;
+  const ob = A.salle.objets.at(-1), tp = A.salle.tapis[0];
+  t.ok(ob?.p === 'donjon' && tp?.p === 'donjon' && construireDepuis(A.salle).composerDecor().some((o) => o.img === 'donjon' && o.x === ob.dessin[4] * 32), 'une pièce du donjon : debout (un objet), puis à plat sur le sol (un tampon)');
+  const jc = JSON.parse(A.json());
+  t.ok(jc.interieur === 'brique' && jc.sol === 'dalles' && jc.murs.length === 1 && jc.terrains.length >= 2 && jc.tapis.length === 1, 'le fichier garde le dedans, le sol, le mur, les sols peints et les tampons');
+  A.choisirOutil('gomme'); A.geste(7, 6);
+  t.eq(A.salle.murs.length, 0, 'la gomme retire le mur');
+
+  t.group('l’atelier : agrandir ou réduire la salle');
+  A.charger(M.vide(), { garde: false });
+  A.choisirOutil('ennemi-sbire'); A.geste(14, 7);
+  const h0 = A.salle.departs.heros[0].slice();
+  A.dom.droite.querySelector('[aria-label="Agrandir au nord"]').click();
+  t.ok(A.salle.h === 19 && Math.abs(A.salle.ennemis[0].y - 8) < 0.01 && A.salle.departs.heros[0][1] === h0[1] + 1, 'Agrandir au nord : une rangée de plus, et tout descend d’une case avec elle');
+  A.dom.droite.querySelector('[aria-label="Réduire à l’est"]').click();
+  t.ok(A.salle.l === 23 && Math.abs(A.salle.ennemis[0].x - 14) < 0.01, 'Réduire à l’est : une colonne de moins, rien ne bouge');
+  [...A.dom.droite.querySelectorAll('.bouton-jeu')].find((b) => b.textContent === 'Grande').click();
+  t.ok(A.salle.l === 34 && A.salle.h === 26 && Math.abs(A.salle.ennemis[0].x - 19) < 0.01, 'la taille « Grande » : 34 × 26 cases, le contenu reste au milieu');
+  A.annuler();
+  t.ok(A.salle.l === 23 && A.salle.h === 19, 'Annuler rend la taille d’avant');
+  const petite = M.redimensionner(M.normaliser(M.vide()), { ouest: -100, nord: -100 }), immense = M.redimensionner(M.normaliser(M.vide()), { est: 100, sud: 100 });
+  t.ok(petite.l === M.TAILLE.lmin && petite.h === M.TAILLE.hmin && immense.l === M.TAILLE.lmax && immense.h === M.TAILLE.hmax, `ni moins de ${M.TAILLE.lmin} × ${M.TAILLE.hmin} cases, ni plus de ${M.TAILLE.lmax} × ${M.TAILLE.hmax}`);
   A.charger(M.vide(), { garde: false });
 }

@@ -3,6 +3,7 @@
 // enregistre se joue tel quel au terrain d'entraînement (?salle=<id>, une fois le fichier dans content/salles/).
 // Tout est en cases de 32 px ; les positions ont un dixième de case de précision.
 import { ENNEMIS } from '../entrainement/regles.js';
+import { dansForme, RAYON } from '../entrainement/geometrie.js';
 
 export const VERSION = 1;
 const arrondi = (v) => Math.round(v * 10) / 10;
@@ -12,7 +13,7 @@ export function vide({ l = 24, h = 18, auteur = '' } = {}) {
   return {
     version: VERSION, id: 'nouvelle-salle', nom: 'Nouvelle salle', idee: '', auteur, sol: 'herbe', l, h,
     terre: [], eau: [], pont: null, bois: [], arbres: [], rochers: [], tentes: [], objets: [], surfaces: [], feux: [], tonneaux: [],
-    relief: [], rampes: [],
+    relief: [], rampes: [], terrains: [], murs: [], tapis: [], interieur: false,
     departs: { heros: [[3, Math.round(h / 2) - 2], [3, Math.round(h / 2)], [3, Math.round(h / 2) + 2], [4.4, Math.round(h / 2) + 3.6]] },
     ennemis: [],
   };
@@ -102,7 +103,8 @@ export function normaliser(S0) {
     S.ennemis = Object.entries(S.departs.ennemis).map(([id, [x, y]]) => ({ id, type: TYPE[id] ?? TYPE[id[0]] ?? 'sbire', x, y }));
   }
   S.departs = { heros: (S.departs?.heros ?? vide({ h: S.h }).departs.heros).map((p) => [...p]) };
-  for (const k of ['terre', 'eau', 'bois', 'arbres', 'rochers', 'tentes', 'objets', 'surfaces', 'feux', 'tonneaux', 'relief', 'rampes', 'ennemis']) S[k] ??= [];
+  for (const k of ['terre', 'eau', 'bois', 'arbres', 'rochers', 'tentes', 'objets', 'surfaces', 'feux', 'tonneaux', 'relief', 'rampes', 'ennemis', 'terrains', 'murs', 'tapis']) S[k] ??= [];
+  S.interieur ??= false;
   S.version = VERSION;
   return S;
 }
@@ -111,7 +113,7 @@ export function normaliser(S0) {
 export function exporter(S) {
   const o = {};
   for (const [k, v] of Object.entries(S)) {
-    if (v == null || (Array.isArray(v) && !v.length) || v === '') continue;
+    if (v == null || v === false || (Array.isArray(v) && !v.length) || v === '') continue;
     o[k] = v;
   }
   o.version = VERSION; o.id = S.id; o.nom = S.nom; o.l = S.l; o.h = S.h; o.sol = S.sol;
@@ -129,11 +131,13 @@ export function sous(S, x, y) {
   for (let i = S.arbres.length - 1; i >= 0; i--) { const [ax, ay] = S.arbres[i]; if (x > ax - 1 && x < ax + 1 && y > ay - 3.2 && y < ay + 0.3) return { k: 'arbres', i }; }
   for (let i = S.tentes.length - 1; i >= 0; i--) { const t = S.tentes[i]; if (dans({ x0: t.x, x1: t.x + 5, y0: t.y, y1: t.y + 5 }, x, y)) return { k: 'tentes', i }; }
   for (let i = S.surfaces.length - 1; i >= 0; i--) if (pres(S.surfaces[i].x, S.surfaces[i].y, S.surfaces[i].r)) return { k: 'surfaces', i };
+  for (let i = S.murs.length - 1; i >= 0; i--) { const m = S.murs[i]; if (dans({ x0: m.x0, x1: m.x1, y0: m.y, y1: m.y + 3.25 }, x, y)) return { k: 'murs', i }; }
   for (let i = S.objets.length - 1; i >= 0; i--) {
     const o = S.objets[i], d = o.dessin;
     if (d && dans({ x0: d[4], x1: d[4] + d[2], y0: d[5], y1: d[5] + d[3] }, x, y)) return { k: 'objets', i };
   }
   for (let i = S.bois.length - 1; i >= 0; i--) if (dans(S.bois[i], x, y)) return { k: 'bois', i };
+  for (let i = S.tapis.length - 1; i >= 0; i--) { const d = S.tapis[i].d; if (dans({ x0: d[4], x1: d[4] + d[2], y0: d[5], y1: d[5] + d[3] }, x, y)) return { k: 'tapis', i }; }
   if (S.pont && dans(S.pont, x, y)) return { k: 'pont', i: 0 };
   for (let i = S.rampes.length - 1; i >= 0; i--) { const r = S.rampes[i], p = S.relief[r.plateau]; if (p && x >= r.x0 && x <= r.x1 && y >= p.y1 - 0.5 && y <= p.y1 + 2.5 * p.haut) return { k: 'rampes', i }; }
   for (let i = S.relief.length - 1; i >= 0; i--) if (dans(S.relief[i], x, y)) return { k: 'relief', i };
@@ -155,6 +159,8 @@ export function deplacer(S, sel, dx, dy) {
   if (k === 'bois' || k === 'relief') { rect(S[k][i]); return; }
   if (k === 'pont') { rect(S.pont); return; }
   if (k === 'rampes') { const q = S.rampes[i]; q.x0 = r(q.x0 + dx); q.x1 = r(q.x1 + dx); return; }
+  if (k === 'murs') { const m = S.murs[i]; m.x0 = r(m.x0 + dx); m.x1 = r(m.x1 + dx); m.y = r(m.y + dy); return; }
+  if (k === 'tapis') { const d = S.tapis[i].d; d[4] = r(d[4] + dx); d[5] = r(d[5] + dy); return; }
   if (k === 'objets') {
     const o = S.objets[i];
     if (o.forme.r != null) { o.forme.x = r(o.forme.x + dx); o.forme.y = r(o.forme.y + dy); } else rect(o.forme);
@@ -172,11 +178,42 @@ export function retirer(S, sel) {
   return true;
 }
 
+// --- La taille : agrandir ou réduire de chaque côté (en cases) ------------------------------------------------------------
+// Au nord et à l'ouest, tout le contenu se décale, pour rester à sa place dans la salle. Ce qui sort de la salle reste
+// dans le fichier (la liste « à revoir » le signale) : on peut la ré-agrandir sans rien perdre.
+export const TAILLE = { lmin: 12, lmax: 64, hmin: 10, hmax: 48 };
+export const TAILLES = [['Petite', 18, 14], ['Normale', 24, 18], ['Grande', 34, 26], ['Immense', 44, 32]];
+export function redimensionner(S, { nord = 0, sud = 0, ouest = 0, est = 0 }) {
+  const borne = (v, a, b) => Math.max(a, Math.min(b, v));
+  // chaque côté à son tour, dans les bornes : ce qui a vraiment été ajouté (ou retiré) à l'ouest et au nord décale tout
+  const l1 = borne(S.l + ouest, TAILLE.lmin, TAILLE.lmax), l2 = borne(l1 + est, TAILLE.lmin, TAILLE.lmax);
+  const h1 = borne(S.h + nord, TAILLE.hmin, TAILLE.hmax), h2 = borne(h1 + sud, TAILLE.hmin, TAILLE.hmax);
+  deplacerTout(S, l1 - S.l, h1 - S.h);
+  S.l = l2; S.h = h2;
+  return S;
+}
+// Tout décaler de (dx, dy) cases entières
+export function deplacerTout(S, dx, dy) {
+  if (!dx && !dy) return;
+  const c = (r) => [r[0] + dx, r[1] + dx, r[2] + dy, r[3] + dy];
+  S.terre = S.terre.map(c); S.eau = S.eau.map((e) => ({ ...e, c: c(e.c) })); S.terrains = S.terrains.map((t) => ({ ...t, c: c(t.c) }));
+  const rect = (o) => { o.x0 += dx; o.x1 += dx; o.y0 += dy; o.y1 += dy; };
+  if (S.pont) rect(S.pont);
+  S.bois.forEach(rect); S.relief.forEach(rect);
+  S.rampes.forEach((q) => { q.x0 += dx; q.x1 += dx; });
+  for (const k of ['arbres', 'rochers', 'tonneaux', 'feux']) S[k].forEach((q) => { q[0] += dx; q[1] += dy; });
+  S.departs.heros.forEach((q) => { q[0] += dx; q[1] += dy; });
+  for (const k of ['ennemis', 'surfaces', 'tentes']) S[k].forEach((q) => { q.x += dx; q.y += dy; });
+  S.objets.forEach((o) => { if (o.forme.r != null) { o.forme.x += dx; o.forme.y += dy; } else rect(o.forme); if (o.dessin) { o.dessin[4] += dx; o.dessin[5] += dy; } });
+  S.murs.forEach((m) => { m.x0 += dx; m.x1 += dx; m.y += dy; });
+  S.tapis.forEach((t) => { t.d[4] += dx; t.d[5] += dy; });
+}
+
 // --- Ce qui est à revoir avant de l'essayer ---------------------------------------------------------------------------
 export function verifier(S, obstacles = []) {
   const Z = zoneDe(S), notes = [];
   const horsZone = (x, y) => x < Z.x0 || x > Z.x1 || y < Z.y0 || y > Z.y1;
-  const bloque = (x, y) => obstacles.some((o) => (o.r != null ? Math.hypot(o.x - x, o.y - y) < o.r : x > o.x0 && x < o.x1 && y > o.y0 && y < o.y1) && (o.marche || o.eau || o.fosse));
+  const bloque = (x, y) => obstacles.some((o) => (o.marche || o.eau || o.fosse) && dansForme(o, x, y, RAYON));   // (le corps entier, comme au terrain)
   if (!S.nom?.trim()) notes.push('La salle n’a pas de nom.');
   if (!S.ennemis.length) notes.push('Personne en face : pose au moins un ennemi.');
   S.departs.heros.forEach(([x, y], k) => { if (horsZone(x, y)) notes.push(`Le départ du héros ${k + 1} est hors de la zone jouable.`); else if (bloque(x, y)) notes.push(`Le départ du héros ${k + 1} est dans un obstacle.`); });

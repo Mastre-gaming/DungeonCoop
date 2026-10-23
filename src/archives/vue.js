@@ -1,4 +1,4 @@
-// Les archives du camp : quatre onglets (Personnages, Classes, Sorts, Animations), des cartes avec un petit aperçu
+// Les archives du camp : cinq onglets (Personnages, Classes, Sorts, Animations, Décors), des cartes avec un petit aperçu
 // animé, une recherche, et à droite le détail de ce qu'on a choisi (un grand aperçu, ses réglages et tout ce qu'on sait).
 // L'adresse garde l'onglet et le choix (?onglet=sorts&id=foudre), pour partager un lien vers un asset.
 import { catalogue, classesDuNavigateur, joueForge, RANGS, ANIMS_LPC, DIRECTIONS, ESQUISSES, BRIQUES, HEROS, CAPACITES } from './catalogue.js';
@@ -13,7 +13,7 @@ export const always = true;
 
 const RETOUR_CAMP = './index.html?spot=archives';
 export const ONGLETS = [
-  ['personnages', 'Personnages'], ['classes', 'Classes'], ['sorts', 'Sorts'], ['animations', 'Animations'],
+  ['personnages', 'Personnages'], ['classes', 'Classes'], ['sorts', 'Sorts'], ['animations', 'Animations'], ['decors', 'Décors'],
 ];
 const el = (tag, attrs = {}, ...enfants) => {
   const n = document.createElement(tag);
@@ -74,7 +74,7 @@ function construire() {
   dom.recherche = el('input', { type: 'search', class: 'recherche', placeholder: 'Chercher un nom…', 'aria-label': 'Chercher dans les archives',
     oninput: (e) => { recherche = norm(e.target.value); dessinerListe(); } });
   dom.haut = cadre('header', { class: 'haut-archives' },
-    el('div', { class: 'titres' }, el('h1', {}, 'Les archives du camp'), el('p', {}, 'Tous les assets du projet : les personnages, les classes, les sorts et les animations.')),
+    el('div', { class: 'titres' }, el('h1', {}, 'Les archives du camp'), el('p', {}, 'Tous les assets du projet : les personnages, les classes, les sorts, les animations et les décors.')),
     dom.recherche,
     el('a', { class: 'bouton-jeu', href: RETOUR_CAMP, id: 'retour-camp' }, 'Retour au camp'));
   dom.onglets = el('nav', { class: 'onglets-archives', 'aria-label': 'Les rayons des archives' },
@@ -122,6 +122,8 @@ function carte(x) {
     const scene = x.scene ? ESQUISSES.effets.find((e) => e.id === x.scene) : null;
     b.append(scene ? apercuScene(scene, 192, 96).canvas : el('span', { class: 'sans-scene' }, el('img', { src: x.icone, alt: '' })),
       el('span', { class: 'ligne' }, el('img', { class: 'icone', src: x.icone, alt: '' }), titre), el('span', { class: 'petit' }, `${x.moment}${x.resume ? ` · ${x.resume}` : ''}`));
+  } else if (onglet === 'decors') {
+    b.append(el('span', { class: 'planche-mini' }, el('img', { src: x.planche, alt: '' })), titre, el('span', { class: 'petit' }, x.origine));
   } else {
     const w = x.genre === 'scene' ? 192 : 96, h = 96;
     b.append(creerApercu({ genre: 'planche', ...x }, { w, h }).canvas, titre, el('span', { class: 'petit' }, x.genre === 'scene' ? `${x.images} images · ${x.classe}` : `${x.w} × ${x.h} · ${x.images} images`));
@@ -160,7 +162,7 @@ function choisir(id, maj = true) {
 function dessinerDetail(x) {
   retirer(dom.detail);
   if (!x) { dom.detail.replaceChildren(el('p', { class: 'vide' }, 'Choisis une carte à gauche.')); return; }
-  const corps = { personnages: detailPerso, classes: detailClasse, sorts: detailSort, animations: detailAnimation }[onglet](x);
+  const corps = { personnages: detailPerso, classes: detailClasse, sorts: detailSort, animations: detailAnimation, decors: detailDecor }[onglet](x);
   dom.detail.replaceChildren(el('header', {}, el('p', { class: 'surtitre' }, x.groupe), el('h2', { id: 'detail-nom' }, x.nom)), ...corps.filter(Boolean));
   dom.detail.scrollTop = 0;
 }
@@ -292,6 +294,22 @@ function detailAnimation(x) {
         ligne('La planche', el('code', {}, x.planche.replace('./', 'public/')))));
   }
   return items;
+}
+// une planche de décor : en grand (×2), ce qu'on en fait dans l'atelier, d'où elle vient
+function detailDecor(x) {
+  const img = el('img', { src: x.planche, alt: x.nom, class: 'planche-grande' });
+  img.addEventListener('load', () => { img.style.width = `${img.naturalWidth * 2}px`; }, { once: true });
+  return [
+    el('div', { class: 'scene-grande planche-defile' }, img),
+    el('p', { class: 'phrase' }, x.texte),
+    el('dl', { class: 'infos' },
+      ligne('Sert à', x.usage.join(' ; ')),
+      ligne('La planche', el('code', {}, x.planche.replace('./', 'public/'))),
+      ligne('L’original', el('code', {}, `LPC Base Assets, tiles/${x.origine}`)),
+      ligne('Dessinée par', x.auteur),
+      ligne('Les crédits', el('a', { href: 'https://opengameart.org/content/liberated-pixel-cup-lpc-base-assets-sprites-map-tiles', target: '_blank', rel: 'noopener' }, x.credits))),
+    el('a', { class: 'bouton-jeu', href: './niveaux.html' }, 'L’ouvrir dans l’atelier des niveaux'),
+  ];
 }
 // lecture, pause, et image par image
 function lecture(a, n) {

@@ -4,6 +4,7 @@
 //             et celles qu'on a créées dans ce navigateur (l'armurerie les garde sous « dungeoncoop:classes »).
 //   Sorts : les capacités (regles.js, CAPACITES), leurs icônes et leurs fiches (fiches.js).
 //   Animations : les 25 scènes de Fraps (design/animations/esquisses/) et les briques jouées en combat (effets.json).
+//   Décors : les planches des salles, le château et le donjon (salles.js, DECORS_SALLES), qu'utilise l'atelier des niveaux.
 import PERSOS from '../entrainement/persos.json';
 import BRIQUES from '../entrainement/effets.json';
 import ESQUISSES from '../../design/animations/esquisses/esquisses.json';
@@ -12,6 +13,7 @@ import { icone, TAMPONS, caracteristiques, effets, resume } from '../entrainemen
 import { metres } from '../entrainement/geometrie.js';
 import { ESPECES } from '../30_rats.js';
 import FORGERON from '../data/forgeron.json';
+import { DECORS_SALLES, PLANCHES_SALLES, SOLS, TERRAINS, MURS } from '../entrainement/salles.js';
 
 // les planches des scènes de Fraps, servies avec le build (Vite les copie et leur donne une adresse)
 const PLANCHES_ESQUISSES = import.meta.glob('../../design/animations/esquisses/*.png', { eager: true, query: '?url', import: 'default' });
@@ -148,7 +150,25 @@ function briques() {
   }));
 }
 
+// --- Les décors -----------------------------------------------------------------------------------------------------
+// À quoi sert chaque planche dans l'atelier : un sol plein, un sol qu'on peint, un mur ; et toujours, des pièces à poser.
+function usagesDe(id) {
+  return [
+    ...Object.values(SOLS).filter((x) => x.p === id).map((x) => `le sol de la salle « ${x.nom} »`),
+    ...(TERRAINS[id] ? [`le pinceau « ${TERRAINS[id].nom} »${TERRAINS[id].bloque ? ' (il bloque)' : ''}`] : []),
+    ...Object.values(MURS).filter((x) => x.p === id).map((x) => `le mur « ${x.nom} »`),
+    'des pièces à poser, debout ou à plat',
+  ];
+}
+function decors() {
+  return Object.entries(DECORS_SALLES).map(([id, d]) => ({
+    id, nom: d.nom, groupe: 'Le château et le donjon', planche: `${LPC}${PLANCHES_SALLES[id]}`, origine: d.origine, auteur: d.auteur,
+    texte: 'Une planche de tuiles de 32 px pour les salles de la tour, dans l’atelier des niveaux.', usage: usagesDe(id),
+    credits: 'LPC Base Assets (OpenGameArt), CC-BY-SA 3.0 ou GPL 3.0',
+  }));
+}
+
 export function catalogue() {
-  return { personnages: personnages(), classes: classes(), sorts: sorts(), animations: [...scenes(), ...briques()] };
+  return { personnages: personnages(), classes: classes(), sorts: sorts(), animations: [...scenes(), ...briques()], decors: decors() };
 }
 export { PERSOS, BRIQUES, ESQUISSES, HEROS, CAPACITES };
