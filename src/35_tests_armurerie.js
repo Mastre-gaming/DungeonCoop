@@ -12,14 +12,14 @@ export function testsArmurerie(t, ctx) {
   t.group('l’armurerie (5 niveaux, livrée au niveau 2)');
   t.eq(niveaux.length, 5, 'cinq niveaux : piquets, tente, tente et abri de forge, atelier de pierre, grand atelier');
   t.eq(lieux.niveau('classes'), 2, 'sans mission rentrée, l’armurerie est déjà au niveau 2 (la tente et son abri de forge)');
-  const attendu = (n) => niveaux[n].pieces.length + niveaux[n].dalles.length;
+  const attendu = (n) => niveaux[n].pieces.length;   // (plus de dalles : le sol est de la terre, 22 oct)
   const poses = [];
   for (let n = 0; n < 5; n++) {
     lieux.forcer('classes', n);
     poses.push(lieux.pieces('classes') === attendu(n));
     const s = e().sprites;
     const dalles = s.filter((x) => x.pied < -1000), autres = s.filter((x) => x.pied > -1000);
-    t.ok(dalles.length === niveaux[n].dalles.length && autres.every((x) => x.pied > 0), `niveau ${n} : ses ${dalles.length} dalles sous tout le reste`);
+    t.ok(dalles.length === 0 && autres.every((x) => x.pied > 0), `niveau ${n} : pas de dalles de pierre (le sol est de la terre)`);
     t.ok(collision.libre(...devant), `niveau ${n} : le devant de l’armurerie reste libre`);
     t.ok(!!collision.chemin(APPARITION[0] * T, APPARITION[1] * T, ...devant), `niveau ${n} : on y va à pied depuis l’apparition`);
     t.ok(autres.every((x) => x.pied <= devant[1]), `niveau ${n} : debout devant, le héros passe devant chaque pièce`);

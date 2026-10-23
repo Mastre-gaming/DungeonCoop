@@ -7,7 +7,7 @@
 // Le hasard passe par `alea` (une graine en ?test, pour que tout se rejoue pareil).
 import {
   CONTACT, ECART_MIN, dist, metres, vue, enTenaille, carteDistances, chemin, longueurChemin, indiceDe, pointDe,
-  libre, simulerPoussee, pointLibreProche, trajetLibre,
+  libre, simulerPoussee, pointLibreProche, trajetLibre, ecartHauteur, niveauA, NIVEAU_M,
 } from './geometrie.js';
 import { lire } from './reglages-combat.js';   // les nombres qu'on règle à la main (panneau) ; leurs défauts sont les valeurs d'avant
 
@@ -26,6 +26,8 @@ export function equipeDepuis(texte) {
   const ids = String(texte ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   return ids.length === 4 && ids.every((id) => CLASSES_ESSAI.includes(id)) ? ids : null;
 }
+// Le mode infini : la première manche (puis suiteInfini() donne la suivante : son numéro, l'XP, le niveau, les PV de départ des héros).
+export const DEBUT_INFINI = { manche: 1, xp: 0, niveau: 1 };
 export const ORDRE_ENNEMIS = ['s1', 's2', 's3', 'a1', 'a2', 'br', 'chef'];
 export const HEROS = {
   brute: { nom: 'Brute', court: 'BRU', pv: 145, vitesse: 5, dex: 0, res: { type: 'Rage', v: 0, max: 50 }, role: 'Tank · lance les ennemis',
@@ -167,8 +169,8 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 
 // equipe : la classe de chacun des 4 héros (deux fois la même, c'est permis : on teste).
 // ennemis : le groupe d'une salle du donjon, [{ id, type, x, y }] (type : une clé d'ENNEMIS) ; sans lui, les 7 du kit D1
-// placés par departs.ennemis. Victoire : le chef vaincu s'il y en a un (les autres s'enfuient), sinon tous les ennemis.
-export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now }) {
+// placés par departs.ennemis. Victoire : tous les ennemis vaincus, le chef compris (#260).
+export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -177,13 +179,18 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], enclume: null, surfaces: {}, journal: [], evenements: [],
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
     heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
+    infini: infini ? { manche: infini.manche, xp: infini.xp, niveau: infini.niveau } : null,
     stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [], reles: {}, potions: {} },
   };
+  // Le mode infini : les ennemis montent à chaque manche (PV et dégâts), les héros gagnent un bonus par niveau.
+  const facteurManche = () => (S.infini ? 1 + (lire('infini.montee') / 100) * (S.infini.manche - 1) : 1);
+  const facteurNiveau = () => (S.infini ? 1 + (lire('infini.bonusNiveau') / 100) * (S.infini.niveau - 1) : 1);
+  const manchePatron = () => !!S.infini && S.infini.manche % lire('infini.chefTous') === 0;
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
   PLACES.forEach((id, k) => {
-    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv')));
+    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv') * facteurNiveau())), pvDep = infini?.fractions?.[PLACES[k]] != null ? Math.max(1, Math.round(infini.fractions[PLACES[k]] * pvH)) : pvH;
     const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
-    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvH, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: lire('potion.nb') }));
+    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvDep, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: lire('potion.nb') }));
   });
   for (const [type, f] of Object.entries(FAMILIERS)) {
     for (const m of S.unites.filter((u) => u.camp === 'h' && u.type === f.maitre)) {
@@ -197,7 +204,9 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   // ceux en plus se mettent près du premier de leur sorte.
   function groupeDuKit() {
     const kit = { sbire: ['s1', 's2', 's3'], archer: ['a1', 'a2'], brt: ['br'], chef: ['chef'] };
-    const nb = { sbire: lire('ennemis.sbire'), archer: lire('ennemis.archer'), brt: lire('ennemis.brute'), chef: lire('ennemis.chef') };
+    // en mode infini : un ennemi de plus toutes les N manches, un sbire puis un archer (au plus 9 sbires et 9 archers : leur numéro tient en un chiffre)
+    const plus = S.infini ? Math.floor((S.infini.manche - 1) / lire('infini.sbirePar')) : 0;
+    const nb = { sbire: Math.min(9, lire('ennemis.sbire') + Math.ceil(plus / 2)), archer: Math.min(9, lire('ennemis.archer') + Math.floor(plus / 2)), brt: lire('ennemis.brute'), chef: lire('ennemis.chef') };
     const pos = (id) => ({ x: departs.ennemis[id][0], y: departs.ennemis[id][1] });
     const out = [];
     for (const id of ORDRE_ENNEMIS) { const type = TYPE[id] ?? TYPE[id[0]]; if (kit[type].indexOf(id) < nb[type]) out.push({ id, type, ...pos(id) }); }
@@ -212,13 +221,15 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   const groupe = ennemis ?? groupeDuKit();
   for (const { id, type, x, y } of groupe) {
-    const df = ENNEMIS[type], pvE = Math.max(1, Math.round(df.pv * lire('ennemis.pv')));
+    const df = ENNEMIS[type], boss = type === 'chef' && manchePatron(), pvE = Math.max(1, Math.round(df.pv * lire('ennemis.pv') * facteurManche() * (boss ? lire('infini.chefForce') : 1)));
     const n = id.match(/\d$/)?.[0];
     S.ennemis.push(id);
-    S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: pvE, pvMax: pvE, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace }));
+    S.unites.push(unite({ id, camp: 'e', type, nom: n ? `${df.nom} ${n}` : df.nom, court: n ? `${df.nom[0]}${n}` : (type === 'chef' ? 'CHEF' : 'BR'), x, y, pv: pvE, pvMax: pvE, vitesse: df.vitesse, dex: df.dex, coriace: !!df.coriace, boss }));
   }
   tonneaux.forEach(([x, y], k) => S.tonneaux.push({ id: `t${k}`, x, y }));
   if (flaque) peindre(flaque.x, flaque.y, flaque.r, () => ({ t: 'eau', ttl: null, par: null }));
+  // les surfaces d'une salle (salles.js) : le gué, un feu de camp, une flaque d'huile… là dès le début, sans fin
+  for (const sf of surfaces) peindre(sf.x, sf.y, sf.r, () => ({ t: sf.t, ttl: null, par: null }));
 
   const U = (id) => S.unites.find((u) => u.id === id);
   const herosVivants = () => S.unites.filter((u) => u.camp === 'h' && !u.ko);
@@ -290,7 +301,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (['voleur', 'traqueur-au-limier'].includes(v.type) && v.res.v < v.res.max) { v.res.v = Math.min(v.res.max, v.res.v + lire('concentration.gain')); log(`${v.nom} gagne ${lire('concentration.gain')} Concentration.`, 'muet'); }
   }
   // Les multiplicateurs d'essai (panneau de réglages) : ceux des héros ou des ennemis, et celui de la classe du héros qui frappe.
-  const campMult = (u) => (!u ? 1 : u.camp === 'h' ? lire('degats.heros') * (lire(`classe.${u.type}`) ?? 1) : lire('degats.ennemis'));
+  const campMult = (u) => (!u ? 1 : u.camp === 'h' ? lire('degats.heros') * (lire(`classe.${u.type}`) ?? 1) * facteurNiveau() : lire('degats.ennemis') * facteurManche() * (u.boss ? lire('infini.chefForce') : 1));
   const finalDeg = (n, m) => (m === 1 || n <= 0 ? n : Math.max(1, Math.round(n * m)));
   const degatsDe = (g, v, c) => finalDeg(Math.round((g === 'eraflure' ? Math.floor(v / 2) : g === 'critique' ? Math.round(v * lire('des.critMult')) : v) * c.mult), c.dm);
   const rage = (u, n) => { if (u && u.camp === 'h' && u.res?.type === 'Rage') u.res.v = Math.min(u.res.max, u.res.v + n); };
@@ -323,8 +334,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       if (!herosVivants().some((x) => !x.familier)) finir('defaite');
     } else {
       u.mort = true; ev({ type: 'ko', id: u.id });
-      log(u.type === 'chef' ? 'Le chef est vaincu ! Les autres s’enfuient.' : `${u.nom} est vaincu.`, 'bon');
-      if (u.type === 'chef' || !ennemisVivants().length) finir('victoire');
+      log(u.type === 'chef' ? 'Le chef est vaincu !' : `${u.nom} est vaincu.`, 'bon');
+      if (!ennemisVivants().length) finir('victoire');
     }
   }
   function finir(r) {
@@ -486,9 +497,13 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (A.el === 'foudre' && surfaceA(cible)?.t === 'eau') notes.push('la cible est dans l’eau : électrise toute la flaque (8 à chacun)');
     if (A.el === 'feu' && surfaceA(cible)?.t === 'huile') notes.push('la cible est dans l’huile : tout s’enflamme');
     if (A.aTerre) notes.push('la cible sera À terre');
-    return { av: av && !des ? 1 : des && !av ? -1 : 0, mult, dm: campMult(att), notes, aCombos, tenaille, huile, coriace: !!cible.coriace };
+    // la hauteur (à l'essai, comme dans Baldur's Gate 3) : +2 au d20 d'en haut, −2 d'en bas (un niveau de 3 m ou plus)
+    const ecart = ecartHauteur(trame.salle, att, cible), haut = ecart >= 0.75 ? 2 : ecart <= -0.75 ? -2 : 0;
+    if (haut > 0) notes.push(`d’en haut (${Math.round(ecart * NIVEAU_M)} m) : +2 au d20`);
+    if (haut < 0) notes.push(`d’en bas (${Math.round(-ecart * NIVEAU_M)} m) : −2 au d20`);
+    return { av: av && !des ? 1 : des && !av ? -1 : 0, mult, dm: campMult(att), notes, aCombos, tenaille, huile, haut, coriace: !!cible.coriace };
   }
-  const noter = (k, A, c) => (A.auto ? 'critique' : k <= lire('des.rate') ? 'rate' : k >= lire('des.critique') ? 'critique' : k + A.mod <= (c.coriace ? lire('des.eraflureCoriace') : lire('des.eraflure')) ? 'eraflure' : 'touche');
+  const noter = (k, A, c) => (A.auto ? 'critique' : k <= lire('des.rate') ? 'rate' : k >= lire('des.critique') ? 'critique' : k + A.mod + (c.haut ?? 0) <= (c.coriace ? lire('des.eraflureCoriace') : lire('des.eraflure')) ? 'eraflure' : 'touche');
   function chances(A, c) {
     const o = { rate: 0, eraflure: 0, touche: 0, critique: 0 };
     if (A.auto) { o.critique = 1; return o; }
@@ -530,7 +545,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (att.st.inspire) delete att.st.inspire;          // le chant ne sert qu'une fois
     const qui = `${att.nom} → ${cible.nom} · ${A.nom}`;
     const label = A.auto ? 'critique assuré' : c.av ? `${jets[0]} et ${jets[1]} (${c.av === 1 ? 'avantage' : 'désavantage'}) → ${k}` : String(k);
-    ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : A.mod, resultat: g, av: c.av });
+    const mod = A.mod + c.haut;                         // (la hauteur s'ajoute au d20, comme la caractéristique)
+    ev({ type: 'attaque', de: att.id, vers: cible.id, cap: A.id, anim: A.anim, jets, k, mod: A.auto ? null : mod, resultat: g, av: c.av });
     if (g === 'rate') { log(`${qui} · d20 ${label} : Raté !`, att.camp === 'e' ? 'ennemi' : 'mauvais'); if (lire('des.ratesComiques') >= 0.5) rate(att); else flotter(att, 'Raté !', 'info'); return g; }
     const jet = d(A.de) + (A.de2 ? d(A.de2) : 0);
     let n = A.base + jet + A.dmod;
@@ -539,7 +555,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     n = finalDeg(Math.round(n * c.mult), c.dm);
     c.aCombos.forEach(([a, w]) => combo(a, att.id, w));
     if (c.tenaille && att.camp === 'h') S.stats.tenailles++;
-    log(`${qui} · d20 ${label}${A.auto ? '' : ` + ${A.mod} = ${k + A.mod}`} : ${NOM_RESULTAT[g]} · ${n} dégâts${c.mult > 1 ? ` (×${c.mult})` : ''}`, att.camp === 'e' ? 'ennemi' : '');
+    log(`${qui} · d20 ${label}${A.auto ? '' : ` ${mod < 0 ? '−' : '+'} ${Math.abs(mod)} = ${k + mod}`} : ${NOM_RESULTAT[g]} · ${n} dégâts${c.mult > 1 ? ` (×${c.mult})` : ''}`, att.camp === 'e' ? 'ennemi' : '');
     blesser(cible, n, att.id, { sansFaiblesse: true, melee: A.melee, sansMult: true });
     rage(att, lire('rage.gain')); rage(cible, lire('rage.gain'));
     if (!cible.mort && !cible.ko) {
@@ -560,7 +576,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const autres = [...S.unites.filter((u) => !u.mort && !u.ko && u !== cible), ...S.tonneaux.filter((b) => b !== cible), ...enclumes()];
     const sim = simulerPoussee(trame, src, cible, longueur, { obstacles: autres, surGlace: (x, y) => S.surfaces[cle(x, y)]?.t === 'glace' });
     log(`${src.nom} ${o.attire ? 'attire' : o.proj ? 'projette' : 'pousse'} ${estUnite ? cible.nom : 'le tonneau'} de ${metres(sim.parcouru)} m.`, src.camp === 'e' ? 'ennemi' : '');
-    ev({ type: 'poussee', id: cible.id, tonneau: !estUnite, chemin: sim.chemin.map((p) => ({ ...p })) });
+    ev({ type: 'poussee', id: cible.id, tonneau: !estUnite, chemin: sim.chemin.map((p) => ({ ...p })), chute: sim.chute });
     let vu = surfaceA(cible);
     for (const p of sim.chemin) {
       cible.x = p.x; cible.y = p.y;
@@ -586,8 +602,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
         cible.x = p.x; cible.y = p.y;
         ev({ type: 'place', id: cible.id, x: p.x, y: p.y });
       }
+    } else if (sim.arret === 'chute') {
+      // poussé du haut d'un plateau : 10 par niveau de chute (3 m), et À terre (FIGHT_RULES, la hauteur, à l'essai)
+      const n = 10 * Math.max(1, sim.chute);
+      log(`${cible.nom} tombe de ${Math.max(1, sim.chute) * NIVEAU_M} m : ${n} dégâts, et À terre.`, cible.camp === 'h' ? 'mauvais' : 'bon');
+      blesser(cible, n, src.id);
+      if (!cible.mort && !cible.ko) cible.st.aTerre = { par: parHeros };
     } else if (sim.arret && !(o.attire && sim.heurte === o.attire)) {      // attiré jusqu'au lanceur : il arrive, sans choc
-      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +${lire('poussee.degatsMur')}.`);
+      log(`${cible.nom} heurte ${sim.arret === 'mur' ? (sim.heurte?.rocher ? 'un rocher' : sim.heurte?.falaise ? 'la falaise' : 'la barrière') : sim.heurte === S.enclume ? 'l’enclume' : 'un obstacle'} : +${lire('poussee.degatsMur')}.`);
       if (sim.heurte === S.enclume && S.enclume.par !== parHeros) combo(S.enclume.par, parHeros, 'poussé contre l’enclume');
       blesser(cible, lire('poussee.degatsMur'), src.id);
       if (o.proj && !cible.mort && !cible.ko) { cible.st.aTerre = { par: parHeros }; log(`${cible.nom} est À terre.`, 'muet'); }
@@ -983,7 +1005,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       let pres = Infinity, voit = false;
       for (const h of herosVivants()) { const dd = dist(p, h); pres = Math.min(pres, dd); if (!voit && dd <= 8 && vue(trame.salle, p, h)) voit = true; }
       const atteint = frappeurs.filter((h) => dist(p, h) <= h.vitesse + CONTACT).length;
-      return (voit ? Math.abs(pres - 4) * 3 + (pres < 4 ? 6 : 0) : 100 + pres) + atteint * 8 + dg(p.x, p.y) * 4 + cout * 0.15;
+      // (la hauteur : un archer la garde, +2 au d20 et caché à qui recule ; il ne la quitte que s'il n'y a rien à viser de là-haut)
+      return (voit ? Math.abs(pres - 4) * 3 + (pres < 4 ? 6 : 0) : 100 + pres) + atteint * 8 - niveauA(trame.salle, p.x, p.y) * 10 + dg(p.x, p.y) * 4 + cout * 0.15;
     }, 3);
     if (e.mort || S.resultat) return;
     const A = attaqueEnnemi(e);
@@ -1289,6 +1312,23 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     return { chances: o, degats: Object.fromEntries(Object.keys(o).map((g) => [g, fourchette(A, c, g)])), notes: c.notes, av: c.av };
   }
 
+  // --- Le mode infini : ce que la manche rapporte, et la manche d'après -------------------------------------------
+  // L'XP de la manche (réglable, × son numéro), les niveaux gagnés (le premier coûte `seuil`, le suivant le double…), le soin.
+  function recapInfini() {
+    const I = S.infini; if (!I) return null;
+    const gain = Math.round(lire('infini.xp') * I.manche), seuil = lire('infini.seuil');
+    let xp = I.xp + gain, niveau = I.niveau;
+    while (xp >= seuil * niveau) { xp -= seuil * niveau; niveau++; }
+    return { manche: I.manche, gain, xp, niveau, monte: niveau - I.niveau, soin: lire('infini.soin'), reveil: lire('infini.reveil') };
+  }
+  // La manche suivante : à donner à creerCombat({ infini }) ; les PV de départ de chaque héros (soigné, ou relevé s'il était KO).
+  function suiteInfini() {
+    const r = recapInfini(); if (!r) return null;
+    const fractions = {};
+    for (const id of S.heros) { const h = U(id); fractions[id] = h.ko ? r.reveil / 100 : Math.min(1, h.pv / h.pvMax + r.soin / 100); }
+    return { manche: r.manche + 1, xp: r.xp, niveau: r.niveau, fractions };
+  }
+
   // --- La fiche de mesure (comme la Salle d'essai, pour comparer) -----------------------------------------------
   function fiche(notes = {}) {
     const fmt = (ms) => { const s = Math.round(Math.max(0, ms || 0) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
@@ -1304,13 +1344,14 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       `Équipe : ${S.heros.map((id) => nomHeros(id)).join(', ')}`,
       `Dégâts : ${S.heros.map((id) => `${nomHeros(id)} ${S.stats.degats[id]} (${Math.round((S.stats.degats[id] / tot) * 100)} %)`).join(' · ')}`,
       `Héros KO : ${S.stats.ko} · relevés : ${S.stats.releves}`,
+      ...(S.infini ? [`Mode infini : manche ${S.infini.manche}, niveau ${S.infini.niveau}`] : []),
       ...Object.entries(notes).filter(([, v]) => v).map(([k, v]) => `${k} : ${v}`),
     ].join('\n');
   }
 
   return {
     S, U, herosVivants, ennemisVivants, trahiParLaLumiere, sortieOmbre, presDeLEnclume, poseEnclume, derriereEnclume, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
-    portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, rienAFaire, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
+    portee, apercuMarche, deplacer, utiliser, apercu, commencer, finPhaseHeros, rienAFaire, recapInfini, suiteInfini, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }),
     restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },

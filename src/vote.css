@@ -1,0 +1,29 @@
+/* Le menu de vote de la salle suivante (même cadre que le HUD du camp). */
+#vote {
+  position: fixed; top: 16%; left: 50%; transform: translateX(-50%); z-index: 40;
+  width: min(720px, 94vw); padding: 14px 16px 12px; box-sizing: border-box;
+  background: rgba(30, 22, 14, .96); border: 3px solid #c9a24a; border-radius: 4px; color: #f3e6c4;
+  font: 14px/1.35 system-ui, sans-serif; text-align: center; box-shadow: 0 6px 24px rgba(0, 0, 0, .55);
+}
+#vote[hidden] { display: none; }
+#vote h2 { margin: 0 0 8px; font-size: 18px; color: #e8c25a; }
+#vote .vote-temps { height: 8px; background: #4a3b28; border-radius: 2px; overflow: hidden; margin: 0 auto 4px; }
+#vote .vote-temps i { display: block; height: 100%; background: #e8c25a; transition: width .25s linear; }
+#vote .vote-temps i.presse { background: #d0705a; }
+#vote .vote-secondes { font-size: 12px; color: #d8c89a; min-height: 16px; margin-bottom: 8px; }
+#vote .vote-cartes { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+#vote .carte {
+  flex: 1 1 190px; max-width: 320px; cursor: pointer; text-align: left; padding: 10px 12px; font: inherit; color: #f3e6c4;
+  background: #3a2c1c; border: 2px solid #6a5232; border-radius: 4px;
+}
+#vote .carte:hover { border-color: #e8c25a; background: #46351f; }
+#vote .carte.mien { border-color: #e8c25a; box-shadow: inset 0 0 0 1px #e8c25a; }
+#vote .carte.gagne { border-color: #8fd05a; background: #3d4a22; }
+#vote .carte.perdu { opacity: .45; }
+#vote .carte .touche { float: right; font-size: 11px; color: #a8966a; }
+#vote .carte strong { display: block; font-size: 16px; margin-bottom: 4px; }
+#vote .carte .ligne { font-size: 12px; color: #d8c89a; }
+#vote .carte .ligne b { color: #f3e6c4; font-weight: 600; }
+#vote .carte .votes { margin-top: 8px; min-height: 22px; display: flex; gap: 4px; flex-wrap: wrap; }
+#vote .carte .votes span { padding: 1px 7px; font-size: 12px; background: #e8c25a; color: #2a1d0e; border-radius: 10px; }
+#vote .vote-pied { margin-top: 10px; font-size: 12px; color: #d8c89a; min-height: 16px; }

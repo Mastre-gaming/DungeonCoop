@@ -5,7 +5,7 @@
 // quand il se rapproche, et redevient pleine quand il ressort. En visite (la carte du dashboard), elle reste pleine.
 // Le flou est préparé une fois : la même image à plusieurs flous, et on fond entre deux voisines.
 // Les deux braseros du pont brûlent ici aussi.
-import { T, MURAILLE } from './01_plan.js';
+import { T, MURAILLE, CAMP } from './01_plan.js';
 import ENTREE from './data/muraille.json';
 
 export const name = 'muraille';
@@ -22,6 +22,8 @@ let voile = 0;   // 1 dedans (la muraille un peu transparente), 0 dehors : d'un 
 
 // Le héros est dedans dès que ses pieds passent au nord du pied de la muraille (il entre sous la voûte).
 export const dedans = (y) => y < MURAILLE.pied * T;
+// Dans le camp, entre ses murs (et pas dans les clairières du dehors, qui sont aussi au nord de la grande muraille).
+export const dedansCamp = (x, y) => x > T && x < (CAMP.x1 - 1) * T && y > CAMP.y0 * T + 40 && y < MURAILLE.pied * T;
 // Où en est l'estompe pour des pieds en y : 0 dehors ; dedans, de presque 0 collé au mur à 1 à LOIN cases.
 export function estompe(y) {
   if (!dedans(y)) return 0;
@@ -96,5 +98,5 @@ export const api = {
     couches.forEach((c, n) => { if (c.mesh.visible && (!best || c.mesh.material.opacity > best.o)) best = { o: c.mesh.material.opacity, f: FLOUS[n] }; });
     return best ? best.f : 0;
   },
-  dedans,
+  dedans, dedansCamp,
 };

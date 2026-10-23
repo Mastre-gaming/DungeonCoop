@@ -21,8 +21,8 @@ import { buildSchedule, livePosition, nextSongShift, prevSongShift } from './aud
 export const name = 'radio';
 export const always = true;
 
-export const POSTE = { x: 17.3 * T, y: 15.3 * T };       // les pieds du barde, à l'ouest du feu, hors des sentiers
-export const ENCEINTE = { x: 16.1 * T, y: 15.2 * T };    // le pied de l'enceinte, à sa droite (à gauche à l'écran)
+export const POSTE = { x: 356, y: 398 };                 // les pieds du barde, sur son estrade à l'ouest du feu (design/camp/outils/lieux_jeu.py, centre)
+export const ENCEINTE = { x: 228, y: 398 };              // le pied de l'enceinte, à l'autre bout de l'estrade
 export const STATION = 'deadlock-records';
 const IMAGES = { barde: './assets/lpc/barde.png', enceinte: './assets/lpc/enceinte.png', notes: './assets/lpc/notes.png' };
 const REPLIQUES = [                                      // (provisoires)

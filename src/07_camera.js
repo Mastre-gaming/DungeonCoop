@@ -66,7 +66,8 @@ function appliquer(tout = false) {
   rendu.ajuster({ zoom: cfg.zoom, echelle: echelleVue });
 }
 
-const borner = (v, taille, vue) => (vue >= taille ? (taille - vue) / 2 : Math.max(0, Math.min(taille - vue, v)));
+// (le monde commence en (monde.x0, monde.y0), négatifs vers le nord et l'ouest : `debut` est le bord de ce côté)
+const borner = (v, taille, vue, debut = 0) => (vue >= taille ? debut + (taille - vue) / 2 : Math.max(debut, Math.min(debut + taille - vue, v)));
 
 // Un cran de zoom : +1 rapproche, -1 éloigne. Le but change tout de suite ; l'image y glisse (update).
 function zoomer(sens) {
@@ -91,7 +92,7 @@ function glisserZoom(dt) {
   echelleVue = e;
   rendu.ajuster({ zoom: cfg.zoom, echelle: e });
   const vue = rendu.vue;
-  cam.x = borner(mx - fx * vue.w, monde.w, vue.w); cam.y = borner(my - fy * vue.h, monde.h, vue.h);
+  cam.x = borner(mx - fx * vue.w, monde.w, vue.w, monde.x0 ?? 0); cam.y = borner(my - fy * vue.h, monde.h, vue.h, monde.y0 ?? 0);
 }
 
 export function update(dt) {
@@ -102,7 +103,7 @@ export function update(dt) {
 
   const vue = rendu.vue;
   if (!visite && cadre) {
-    const tx = borner(cadre.x - vue.w / 2, monde.w, vue.w), ty = borner(cadre.y - vue.h * cfg.hautCadre, monde.h, vue.h);
+    const tx = borner(cadre.x - vue.w / 2, monde.w, vue.w, monde.x0 ?? 0), ty = borner(cadre.y - vue.h * cfg.hautCadre, monde.h, vue.h, monde.y0 ?? 0);
     const k = 1 - Math.exp(-cfg.douceurCadre * dt);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   } else if (!visite && cible) {
@@ -112,7 +113,7 @@ export function update(dt) {
     let tx = cam.x, ty = cam.y;
     if (x < zx) tx -= zx - x; if (x > zx + zw) tx += x - (zx + zw);
     if (hy < zy) ty -= zy - hy; if (hy > zy + zh) ty += hy - (zy + zh);
-    tx = borner(tx, monde.w, vue.w); ty = borner(ty, monde.h, vue.h);
+    tx = borner(tx, monde.w, vue.w, monde.x0 ?? 0); ty = borner(ty, monde.h, vue.h, monde.y0 ?? 0);
     const k = 1 - Math.exp(-cfg.douceur * dt);
     cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
   }
@@ -140,8 +141,8 @@ export const api = {
   // Recentre d'un coup (après une téléportation de test, au démarrage).
   snap() {
     const vue = rendu.vue;
-    if (visite || !cible) { cam.x = borner(0, monde.w, vue.w); cam.y = borner(0, monde.h, vue.h); }
-    else { const { x, y } = cible(); cam.x = borner(x - vue.w / 2, monde.w, vue.w); cam.y = borner(y - 24 - vue.h / 2, monde.h, vue.h); }
+    if (visite || !cible) { cam.x = borner(0, monde.w, vue.w, monde.x0 ?? 0); cam.y = borner(0, monde.h, vue.h, monde.y0 ?? 0); }
+    else { const { x, y } = cible(); cam.x = borner(x - vue.w / 2, monde.w, vue.w, monde.x0 ?? 0); cam.y = borner(y - 24 - vue.h / 2, monde.h, vue.h, monde.y0 ?? 0); }
     rendu.viser(cam.x, cam.y);
   },
 };

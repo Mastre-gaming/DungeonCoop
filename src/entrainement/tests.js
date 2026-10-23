@@ -5,7 +5,8 @@ import { adresseEquipe } from './interface.js';
 import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
-import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT } from './geometrie.js';
+import { construire, NOMS } from './salles.js';
+import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT, niveauA } from './geometrie.js';
 import { testsHabillage } from '../34_tests_hud.js';
 import * as REG from './reglages-combat.js';
 import { calculerBilan } from './bilan.js';
@@ -61,6 +62,40 @@ export async function selfTest(t, game) {
   const versFosse = simulerPoussee(trame, { x: 12, y: 14.6 }, { x: 12, y: 15.6 }, 3);
   t.eq(versFosse.arret, 'fosse', 'une poussée vers le sud finit dans le fossé');
 
+  // --- La hauteur (FIGHT_RULES, à l'essai) : un plateau de 3 m, sa falaise au sud, une rampe au milieu --------------
+  t.group('la hauteur : plateaux, falaises, rampes');
+  {
+    const sh = { l: 20, h: 14, obstacles: [], relief: [{ x0: 8, y0: 2, x1: 16, y1: 6, haut: 1 }],
+      rampes: [{ x0: 11, x1: 13, y0: 5.5, y1: 8.35, bas: 0, haut: 1, vers: 'n' }] };
+    const th = creerTrame(sh);
+    t.ok(niveauA(sh, 12, 3) === 1 && niveauA(sh, 4, 4) === 0 && niveauA(sh, 12, 7) > 0.2 && niveauA(sh, 12, 7) < 0.8, 'le niveau : 1 sur le plateau, 0 en bas, entre les deux sur la rampe');
+    t.ok(libre(th, 12, 3) && libre(th, 12, 7) && libre(th, 4, 4) && !libre(th, 9.5, 7) && !libre(th, 7.4, 4) && !libre(th, 12, 1.4), 'la falaise (au sud) et le pied du plateau (ailleurs) sont interdits ; la rampe, non');
+    const bas = { x: 5, y: 4 }, haut = { x: 10, y: 3 }, ch = carteDistances(th, [bas]);
+    const p = chemin(ch, bas, indiceDe(th, haut.x, haut.y));
+    t.ok(ch.longueur[indiceDe(th, haut.x, haut.y)] < Infinity && p.some((q) => q.x > 10.8 && q.x < 13.2 && q.y > 6), `on monte par la rampe : ${longueurChemin(bas, p).toFixed(1)} cases au lieu de ${dist(bas, haut).toFixed(1)}`);
+    let proche = Infinity;
+    for (let y = 2.5; y < 6; y += 0.25) for (let x = 6; x < 9; x += 0.05) for (let x2 = 8; x2 < 11; x2 += 0.05) {
+      if (niveauA(sh, x, y) === 0 && niveauA(sh, x2, y) === 1 && libre(th, x, y) && libre(th, x2, y)) proche = Math.min(proche, x2 - x);
+    }
+    t.ok(proche > CONTACT, `jamais au contact d'un niveau à l'autre : ${proche.toFixed(2)} cases au plus près (contact : ${CONTACT})`);
+    t.ok(vue(sh, { x: 12, y: 12 }, { x: 14, y: 5.4 }) && !vue(sh, { x: 12, y: 12 }, { x: 14, y: 2.5 }), 'd’en bas, on voit celui qui se tient au bord, pas celui qui recule');
+    t.ok(!vue(sh, { x: 5, y: 4 }, { x: 18, y: 4 }) && vue(sh, { x: 9, y: 3 }, { x: 15, y: 5 }), 'le plateau cache ceux d’en bas l’un à l’autre ; en haut, on se voit');
+    const chute = simulerPoussee(th, { x: 9.5, y: 4.4 }, { x: 9.5, y: 5.4 }, 2);
+    t.ok(chute.arret === 'chute' && chute.chute === 1 && chute.chemin.at(-1).y > 6 + 2 && libre(th, chute.chemin.at(-1).x, chute.chemin.at(-1).y), `poussé par-dessus le bord : il tombe au pied de la falaise (y ${chute.chemin.at(-1).y.toFixed(1)})`);
+    const contre = simulerPoussee(th, { x: 9.5, y: 9.6 }, { x: 9.5, y: 8.6 }, 2);
+    t.ok(contre.arret === 'mur' && contre.heurte?.falaise, 'poussé contre la falaise, depuis le bas : il la heurte');
+    // les règles : +2 d'en haut, −2 d'en bas ; la chute : 10 par niveau, et À terre
+    const C = creerCombat({ trame: th, salle: sh, departs: SALLE.DEPARTS, alea: graine(3), horloge: () => 0 });
+    const v = poser(C, 'voleur', 14, 5.3), s = poser(C, 's1', 14, 9.2), A = C._.attaqueHeros(CAPACITES.fleche);
+    for (const u of C.S.unites) if (u !== v && u !== s) { u.x = 1 + C.S.unites.indexOf(u) * 0.9; u.y = 12.5; }
+    const cH = C._.calculer(v, s, A), cB = C._.calculer(s, v, A), plat = C._.calculer(v, s, { ...A, melee: true });
+    t.ok(cH.haut === 2 && cH.notes.some((n) => n.startsWith('d’en haut (3 m)')) && cB.haut === -2 && plat.haut === 2, 'd’en haut : +2 au d20 (noté) ; d’en bas : −2');
+    t.ok(C._.chances(A, cH).touche > C._.chances(A, { ...cH, haut: 0 }).touche, 'le +2 se voit dans les chances');
+    const e = poser(C, 's2', 10, 5.2), pv = e.pv;
+    C._.pousser({ id: 'h1', nom: 'test', camp: 'h', x: 10, y: 4.2 }, e, { longueur: 2 });
+    t.ok(e.pv === pv - 10 && e.st.aTerre && e.y > 8 && niveauA(sh, e.x, e.y) === 0, `poussé du haut du plateau : −10 et À terre, en bas (${e.pv}/${pv})`);
+  }
+
   // --- Les règles du kit, sans cases -----------------------------------------------------------------------------
   t.group('sans cases : les règles');
   {
@@ -111,6 +146,15 @@ export async function selfTest(t, game) {
     C.S.chefTour = 3; C.S.phase = 'ennemis'; chef.t.mv = 5;
     C._.agirEnnemi(chef);
     t.eq(C.S.journal.filter((l) => l.t.includes('Frappe du chef')).length, 2, 'au 3e tour, le chef frappe une zone : les deux héros proches sont visés');
+  }
+  {
+    // la victoire : tous les ennemis vaincus, le chef compris (#260) ; un critique assuré pour ne dépendre d'aucun dé
+    const C = neuf(), b = trouver(C, 'brute'), A = { ...C._.attaqueHeros(CAPACITES.fracas), auto: true }, chef = C.U('chef');
+    C.commencer();
+    chef.pv = 1; C._.attaquer(b, chef, A);
+    t.ok(chef.mort && !C.S.resultat && C.ennemisVivants().length === 6, 'le chef tombe : le combat continue, les six autres ennemis restent');
+    for (const e of C.ennemisVivants()) { e.pv = 1; C._.attaquer(b, e, A); }
+    t.eq(C.S.resultat, 'victoire', 'le dernier ennemi tombe : victoire');
   }
   {
     const C = neuf();
@@ -164,7 +208,16 @@ export async function selfTest(t, game) {
     t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${mode === 'equipe' ? 'tour d’équipe' : 'ordre d’initiative'} : le combat va jusqu’au bout (${C.S.resultat} au round ${C.S.round}, ${Math.round(performance.now() - debut)} ms)`);
   }
 
-  t.eq(empreintes(), ['c2103c7f', 'a0437e3a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
+  t.eq(empreintes(), ['de314d1d', '839ecd4a'], 'les réglages par défaut rejouent à l’identique deux combats à graine (tour d’équipe, initiative) : journal, PV, places, dégâts');
+
+  // Chaque salle de salles.js se joue jusqu'au bout (on la choisit à l'accueil du terrain).
+  t.group('les salles : des combats entiers');
+  for (const [k, id] of NOMS.entries()) {
+    const S = construire(id), sa = S.salle(), tr = creerTrame(sa);
+    const C = creerCombat({ trame: tr, salle: sa, departs: S.DEPARTS, tonneaux: S.TONNEAUX, surfaces: S.SURFACES, ennemis: S.ENNEMIS, alea: graine(5 + k), horloge: () => 0 });
+    jouerJusquAuBout(C);
+    t.ok(['victoire', 'defaite'].includes(C.S.resultat), `${S.nom} : jouée jusqu’au bout (${C.S.resultat} au round ${C.S.round})`);
+  }
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
@@ -1026,6 +1079,20 @@ export async function selfTest(t, game) {
   t.ok(multi.L.proprio[1] === 'host' && multi.attendus().join() === 'host' && !document.querySelector('.curseur-ami:not([hidden])'), 'Ana part : l’hôte joue son Druide, son pointeur disparaît');
   ihm.montrerFin(true); ihm.dom.rejouer.click(); jouer(0.2);
   t.ok(multi.L.phase === 'lobby' && !ihm.dom.accueil.hidden && game.dbg.combat.S.phase === 'preparation', 'Rejouer (l’hôte) : retour au lobby, pour tout le groupe');
+  {
+    const bo = ami('Bo'); bo.party.join('KXQZB'); jouer(0.4);
+    document.querySelector('#mode-infini').click(); jouer(0.3);
+    t.ok(multi.L.infini === true && bo.dernier('salon')?.L.infini === true, 'mode infini à plusieurs : l’hôte coche la case, le lobby de l’invité le sait');
+    document.querySelector('#commencer').click(); jouer(0.3); jouerFile();
+    const M1 = game.dbg.combat, vu = (m) => JSON.parse(m.copie).infini;
+    t.ok(M1.S.infini?.manche === 1 && vu(bo.dernier('debut'))?.manche === 1, 'l’hôte lance : la manche 1 chez les deux');
+    for (const e of M1.S.unites.filter((u) => u.camp === 'e')) { e.mort = true; e.pv = 0; }
+    M1.S.resultat = 'victoire'; M1.S.phase = 'fini'; M1.S.fin = Date.now(); ihm.montrerFin(false);
+    bo.recus.length = 0; ihm.dom.suite.click(); jouer(0.3); jouerFile();
+    t.ok(game.dbg.combat.S.infini.manche === 2 && vu(bo.dernier('debut'))?.manche === 2 && multi.L.phase === 'combat', 'Manche suivante (l’hôte) : la manche 2 démarre chez l’hôte, et l’invité la reçoit');
+    bo.party.leave(); amis.splice(amis.indexOf(bo), 1); jouer(0.4);
+    ihm.dom.fin.hidden = true;
+  }
   document.querySelector('a.retour-camp').click(); jouer(0.1);
   t.eq(allees.pop(), './index.html?spot=combat&hote=KXQZB', '« Retour au camp » : l’hôte rouvre le groupe du camp avec le même code');
 
@@ -1263,6 +1330,58 @@ export async function selfTest(t, game) {
     const toujours = barres({}), cachees = barres({ 'feel.barres': 2 }), survol = barres({ 'feel.barres': 1 });
     t.ok(toujours > 0 && cachees === 0 && survol < toujours, `barres de vie : toujours (${toujours}), au survol (${survol}), cachées (${cachees})`);
     REG._raz();
+  }
+
+  // --- Le mode infini : manche après manche, de plus en plus dur -------------------------------------------------------------
+  t.group('le mode infini');
+  {
+    const R2 = (reglages, f) => { REG._raz(); for (const [k, v] of Object.entries(reglages)) REG.regler(k, v); try { return f(); } finally { REG._raz(); } };
+    const inf = (manche, o = {}) => neuf({ infini: { manche, xp: 0, niveau: 1, ...o } });
+    const ennemis = (C) => C.S.unites.filter((u) => u.camp === 'e');
+    t.ok(neuf().S.infini === null && ennemis(neuf()).every((u) => !u.boss), 'sans mode infini : rien ne change (aucune manche, aucun chef renforcé)');
+    t.eq(ennemis(inf(1)).map((u) => [u.id, u.pvMax]), ennemis(neuf()).map((u) => [u.id, u.pvMax]), 'la manche 1 est le combat de toujours');
+    t.ok(ennemis(inf(4)).find((u) => u.id === 's1').pvMax === 48 && ennemis(inf(4)).length === 8, 'manche 4 : PV +60 % (30 → 48) et un sbire de plus');
+    t.ok(ennemis(inf(7)).length === 9 && ennemis(inf(7)).filter((u) => u.type === 'archer').length === 3, 'manche 7 : deux ennemis de plus (un sbire et un archer)');
+    const patron = ennemis(inf(5)).find((u) => u.type === 'chef');
+    t.ok(patron.boss && patron.pvMax === Math.round(90 * 1.8 * 1.5) && !ennemis(inf(4)).find((u) => u.type === 'chef').boss, 'manche 5 : le chef est renforcé (PV ×1,5 en plus de la montée) ; pas à la manche 4');
+    const coup = (C) => { const e = C.U('s1'), A = C._.attaqueReflexe(e); return C._.fourchette(A, C._.calculer(e, C.U('h1'), A), 'touche'); };
+    const [lo, hi] = coup(neuf()).split('–').map(Number);
+    t.eq(coup(inf(3)).split('–').map(Number), [Math.round(lo * 1.4), Math.round(hi * 1.4)], 'manche 3 : leurs dégâts ×1,4 (le survol l’annonce)');
+    t.ok(inf(1, { niveau: 3 }).U('h1').pvMax === Math.round(HEROS.brute.pv * 1.2), 'niveau 3 : les héros ont 20 % de PV en plus');
+    const heros = (C) => C.apercu(C.U('h1'), 'fracas', 's1').degats.touche.split('–').map(Number);
+    t.eq(heros(inf(1, { niveau: 3 })), heros(neuf()).map((v) => Math.round(v * 1.2)), 'et 20 % de dégâts en plus');
+    t.ok(R2({ 'infini.montee': 50, 'infini.sbirePar': 1 }, () => ennemis(inf(3)).find((u) => u.id === 's1').pvMax === 60 && ennemis(inf(3)).length === 9), 'les réglages du mode : +50 % par manche, un ennemi de plus à chaque manche');
+    // la fin d'une manche : récap, soin, XP, niveaux
+    const finie = () => { const C = inf(1); C.commencer(); C.U('h1').pv = 50; C.U('h2').ko = true; C.U('h2').pv = 0; C.S.resultat = 'victoire'; return C; };
+    const C1 = finie(), rec = C1.recapInfini();
+    t.ok(rec.gain === 40 && rec.xp === 40 && rec.niveau === 1 && rec.monte === 0 && rec.soin === 30 && rec.reveil === 50, 'récap de la manche 1 : 40 XP, pas encore de niveau, soin 30 %, un KO revient à 50 %');
+    t.ok(R2({ 'infini.xp': 200 }, () => { const r = finie().recapInfini(); return r.niveau === 2 && r.xp === 100 && r.monte === 1; }), '200 XP : on passe niveau 2 (il en reste 100, le niveau 3 en demande 200)');
+    const suite = C1.suiteInfini(), C2 = neuf({ infini: suite });
+    t.ok(suite.manche === 2 && suite.xp === 40 && C2.S.infini.manche === 2, 'la manche suivante est la 2, avec l’XP gardée');
+    t.ok(C2.U('h1').pv === Math.round(Math.min(1, 50 / 145 + 0.3) * 145) && C2.U('h2').pv === Math.round(0.5 * C2.U('h2').pvMax) && C2.U('h3').pv === C2.U('h3').pvMax, 'les héros repartent soignés (+30 %), le KO relevé à 50 %, les PV pleins restent pleins');
+    t.ok(C2.U('h1').potion === 1 && ennemis(C2).every((u) => u.pv === u.pvMax && u.pvMax > 30 * 0.9), 'potions rendues, et des ennemis en pleine forme, plus costauds');
+    t.ok(neuf().recapInfini() === null && neuf().suiteInfini() === null, 'hors mode infini : pas de récap ni de suite');
+    // l'interface : la case, le récap, « Manche suivante », la défaite
+    ihm.rejouer();
+    const case_ = document.querySelector('#mode-infini');
+    t.ok(case_ && !case_.checked, 'l’accueil a sa case « Mode infini », décochée par défaut');
+    case_.checked = true; document.querySelector('#commencer').click(); jouerFile();
+    let CI = game.dbg.combat;
+    t.ok(CI.S.infini?.manche === 1 && document.querySelector('.etat-terrain').textContent.startsWith('Manche 1 · niv. 1'), 'Commencer avec la case : manche 1, écrite dans le bandeau');
+    for (const e of CI.S.unites.filter((u) => u.camp === 'e')) { e.mort = true; e.pv = 0; }
+    CI.U('h1').pv = 60; CI.S.resultat = 'victoire'; CI.S.phase = 'fini'; CI.S.fin = Date.now();
+    ihm.montrerFin(false);
+    t.ok(document.querySelector('#fin h1').textContent === 'Manche 1 gagnée !' && !document.querySelector('#suite').hidden && document.querySelector('#infini-recap').textContent.includes('+40 XP') && document.querySelector('#infini-recap').textContent.includes('30 %'),
+      'la manche gagnée : un récap (soin, XP), le bilan, et le bouton « Manche suivante »');
+    document.querySelector('#suite').click(); jouerFile();
+    CI = game.dbg.combat;
+    t.ok(CI.S.infini.manche === 2 && CI.S.infini.xp === 40 && document.querySelector('#fin').hidden && CI.S.phase === 'heros' && CI.U('s1').pvMax === 36 && CI.U('h1').pv === Math.round(Math.min(1, 60 / 145 + 0.3) * 145),
+      'Manche suivante : la manche 2 démarre, ennemis +20 %, les héros soignés gardent leurs PV');
+    t.ok(document.querySelector('.etat-terrain').textContent.startsWith('Manche 2'), 'le bandeau dit « Manche 2 »');
+    for (const h of CI.S.unites.filter((u) => u.camp === 'h')) { h.ko = true; h.pv = 0; }
+    CI.S.resultat = 'defaite'; CI.S.phase = 'fini'; ihm.montrerFin(false);
+    t.ok(document.querySelector('#fin h1').textContent.startsWith('Défaite') && document.querySelector('#suite').hidden && document.querySelector('#infini-recap').textContent.includes('manche 2'), 'la défaite : « tombée à la manche 2 », pas de suite');
+    ihm.dom.fin.hidden = true; ihm.rejouer(); ihm.dom.infiniCase.checked = false;
   }
 
   t.group('Shadow à l’écran (#198)');

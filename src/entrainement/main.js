@@ -6,7 +6,8 @@
 import { createGame } from '../skills/core/module/06_game.js';
 import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
-import * as SALLE from './salle.js';
+import * as ESSAI from './salle.js';
+import { construire as construireSalle } from './salles.js';
 import { creerTrame } from './geometrie.js';
 import { creerCombat, equipeDepuis, equipePour, EQUIPE_KIT } from './regles.js';
 import { monGithub } from './joueur.js';
@@ -29,11 +30,14 @@ habiller();   // le bois veiné, les coins de laiton, le parchemin (DESIGN.fr.md
 const query = new URLSearchParams(location.search);
 const graine = (s) => () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
 
+// la salle : celle d'essai, ou une salle de la route (?salle=gue|lisiere|pillards|butte|col : salles.js)
+const SALLE = construireSalle(query.get('salle')) ?? ESSAI;
+
 const game = createGame({ storage: { prefix: 'dungeoncoop:' } });
 
 async function demarrer() {
   const planches = {
-    limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
+    limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
     ...FILMS,                     // les animations validées de Baba Brisenclume (films.js)
@@ -49,11 +53,12 @@ async function demarrer() {
   const alea = query.has('graine') || query.has('test') ? graine(Number(query.get('graine')) || 20261018) : Math.random;
   // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
   const equipe = equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (la classe d'un autre joueur : pas pour moi)
-  const creer = (eq) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, equipe: eq, alea });
+  const creer = (eq, infini = null) => creerCombat({ trame, salle, departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null, equipe: eq, alea, infini });
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.
-  const nouveauCombat = (eq, copie = null) => {
-    combat = creer(eq);
+  // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)
+  const nouveauCombat = (eq, copie = null, infini = null) => {
+    combat = creer(eq, infini);
     if (copie) combat.restaurer(copie);
     vueSkill.remplacer(combat); interfaceSkill.remplacer(combat); multiSkill.api.remplacer(combat);
     game.dbg.combat = combat;
@@ -62,7 +67,7 @@ async function demarrer() {
 
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode') });
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();

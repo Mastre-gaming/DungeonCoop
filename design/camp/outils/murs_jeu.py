@@ -13,10 +13,15 @@ Image.new('RGBA', (2240, 1216), (0, 0, 0, 0)).save(vide)      # (les outils de d
 sys.argv = [sys.argv[0], vide, tempfile.mkdtemp(), vide]
 exec(open(os.path.join(ICI, 'murs_montent.py'), encoding='utf-8').read().split('def etape(')[0])
 
-S, N = 880, 98                                   # les murs ouest et est : du chemin de ronde de la grande muraille au coin nord
-x0, wO, porte_O = 34, 38, (232, 272)
-xE, wE, porte_E = 1290, 30, (590, 630)
-W0, E1, PN, porte_N = 34, 1310, 72, (305, 345)
+# Le camp agrandi (CAMP.fr.md, plan par quartiers) : le mur nord est 800 px (25 cases) plus haut dans le monde, et les murs ouest
+# et est sont 800 px plus longs. On dessine toujours dans le même repère (le coin nord à y 98) ; le jeu décale tout de DECAL
+# (src/45_murs.js). Les portes ouest et est sont à la hauteur que leur donne le plan : y du monde 160 et 288, donc 960 et 1088 ici.
+DECAL = 800
+H = 1800                                          # (la toile des pièces : assez haute pour les murs plus longs)
+S, N = 880 + DECAL, 98                            # les murs ouest et est : du chemin de ronde de la grande muraille au coin nord
+x0, wO, porte_O = 34, 38, (940, 980)
+xE, wE, porte_E = 1290, 30, (1068, 1108)
+W0, E1, PN, porte_N = 34, 1310, 72, (652, 692)
 PIECES = {}
 
 def piece(nom, dessin, seed=5):
@@ -127,7 +132,7 @@ for nom, imgs in GENS.items():
 planche.save('public/assets/lpc/murs.png')
 donnees = {
     '_lisez_moi': 'Fabriqué par design/camp/outils/murs_jeu.py : ne pas modifier à la main.',
-    'haut': HAUT, 'front': FRONT,
+    'haut': HAUT, 'front': FRONT, 'decal': DECAL,
     'ouest': {'x': x0, 'w': wO, 'sud': S, 'nord': N, 'porte': porte_O},
     'est': {'x': xE, 'w': wE, 'sud': S, 'nord': N, 'porte': porte_E},
     'nord': {'ouest': W0, 'est': E1, 'pied': PN, 'porte': porte_N},

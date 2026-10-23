@@ -21,7 +21,7 @@ const PORTE = { gauche: 384, droite: 576 }, PAS = 26, PAR_COTE = 12, RANGS = [11
 const W = 22, H = 52, PIED = 48, MAT = 11;      // une case de la planche des étendards ; le pied du mât en (MAT, PIED)
 const PRES = 26, BULLE = 7, VENT = 0.45;        // E à moins de 26 px d'un étendard ; on le lit 7 s ; le drapeau ondule
 
-let game, rendu, images, sol, solMesh, missions, heros, collision, visite;
+let game, rendu, images, sol, solMesh, camp, missions, heros, collision, visite;
 const S = { usure: null, etendards: [], t: 0, lit: null, parle: 0, maintenant: () => Date.now() };
 let planche = null, bulle = null, parler = null;
 
@@ -119,7 +119,7 @@ function lire(issues = missions?.etat?.issues ?? []) {
   const u = usures(issues, maintenant), cle = JSON.stringify(u);
   if (cle !== S.cle && sol && images) {
     S.cle = cle; S.usure = u;
-    composerSol(images, usureDe(u), sol);
+    composerSol(images, camp?.solPlat ?? [], usureDe(u), sol);
     reteindreSol(sol);
     if (solMesh?.material?.map) solMesh.material.map.needsUpdate = true;
     game?.bus.emit('sol:maj');
@@ -145,7 +145,7 @@ const echapper = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<'
 
 export function init(g, options) {
   game = g;
-  ({ rendu, images, sol, solMesh, missions, heros, collision, visite } = options);
+  ({ rendu, images, sol, solMesh, camp, missions, heros, collision, visite } = options);
   planche = dessinerPlanche();
   bulle = document.createElement('div');
   bulle.className = 'bulle-perso bulle-etendard'; bulle.hidden = true;
@@ -201,7 +201,7 @@ export function selfTest(t) {
   t.ok(place(2).x < place(0).x && place(3).x > place(1).x && place(1).x > place(0).x && place(0).y === place(1).y && place(24).y !== place(0).y && place(72) === null,
     'les étendards : à gauche puis à droite de la route, en s’éloignant de la porte, rang après rang');
   // le sol : moins de terre là où personne ne va, plus là où on va tout le temps (et jamais dans l'emprise d'un lieu)
-  const canvas = (u0) => { const c = composerSol(images, () => u0); return c.getContext('2d').getImageData(0, 0, c.width, c.height).data; };
+  const canvas = (u0) => { const c = composerSol(images, [], () => u0); return c.getContext('2d').getImageData(0, 0, c.width, c.height).data; };
   const terre = (p) => { let n = 0; for (let i = 0; i < p.length; i += 16) if (p[i] > p[i + 1] + 10 && p[i + 1] > p[i + 2]) n++; return n; };
   if (images?.herbe && images?.terre) {
     const [t0, t1, t3] = [canvas(0), canvas(1), canvas(3)].map(terre);
