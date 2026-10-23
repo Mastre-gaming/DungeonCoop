@@ -10,7 +10,7 @@ import { createGame } from '../skills/core/module/06_game.js';
 import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
 import * as ESSAI from './salle.js';
-import { construire as construireSalle } from './salles.js';
+import { construire as construireSalle, PLANCHES_SALLES } from './salles.js';
 import { creerTrame } from './geometrie.js';
 import { creerCombat, equipeDepuis, equipePour, EQUIPE_KIT, HEROS } from './regles.js';
 import { monGithub } from './joueur.js';
@@ -72,6 +72,7 @@ async function demarrer() {
   const planches = {
     limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     brasero: 'brasero_sentier_f.png', haute: 'herbe_haute.png', surfaces: 'surfaces.png', surfaces_lpc: 'surfaces_lpc.png', chemin: 'chemin.png', etal: 'etal.png',   // (le chemin de la tour)
+    ...PLANCHES_SALLES,           // le château et le donjon (les salles de l'atelier des niveaux)
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
     ...FILMS,                     // les animations validées de Baba Brisenclume (films.js)
@@ -115,10 +116,10 @@ async function demarrer() {
   const des = !query.has('test') && query.get('des') !== '0' ? game.use(desSkill, {}) : null;
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas, plan: niveau?.plan ?? null, pont, saison, des });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-    // les cinématiques de l'aventure (cinema.js) ; ?cinema=0 sans elles (les captures), ?cinema=auto sans attendre les clics
-    const cine = niveau?.plan.troncon && query.get('cinema') !== '0' ? game.use(cinemaSkill, { vue, images, heros: () => combat.S.unites.filter((u) => u.camp === 'h'), aventure: query.get('aventure'), auto: query.get('cinema') === 'auto' }) : null;
-    const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, cinema: cine, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null,
-      aventure: niveau?.plan.troncon ? AVENTURE.aventure(query.get('aventure'))?.nom ?? null : null });
+  // les cinématiques de l'aventure (cinema.js) ; ?cinema=0 sans elles (les captures), ?cinema=auto sans attendre les clics
+  const cine = niveau?.plan.troncon && query.get('cinema') !== '0' ? game.use(cinemaSkill, { vue, images, heros: () => combat.S.unites.filter((u) => u.camp === 'h'), aventure: query.get('aventure'), auto: query.get('cinema') === 'auto' }) : null;
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, cinema: cine, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null, salleNom: SALLE.nom, salleIdee: SALLE.idee,
+    aventure: niveau?.plan.troncon ? AVENTURE.aventure(query.get('aventure'))?.nom ?? null : null });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();

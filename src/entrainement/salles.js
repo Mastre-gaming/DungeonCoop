@@ -38,6 +38,49 @@ const coins = (liste) => { const s = new Set(); for (const [i0, i1, j0, j1] of l
 const rectDeCoins = ([i0, i1, j0, j1]) => ({ x0: i0 - 0.45, x1: i1 + 0.45, y0: j0 - 0.45, y1: j1 + 0.45 });
 
 // Une pièce de la planche des décorations médiévales, en cases (sx, sy, w, h) posée en (x, y) cases ; `pied` : son tri.
+// --- Le château et le donjon (LPC Base Assets : Sharm ; le château : HughSpectrum), public/assets/lpc/chateau/ ---------
+// L'atelier des niveaux s'en sert pour dessiner l'intérieur de la tour ; le terrain les charge (PLANCHES_SALLES).
+// Chaque planche : son nom, son fichier dans le pack (tiles/, recopié sans retouche), qui l'a dessinée (CREDITS.md, les archives).
+const SHARM = 'Lanea Zimmerman (Sharm)', HUGH = 'Daniel Armstrong (HughSpectrum)';
+export const DECORS_SALLES = {
+  'murs-chateau': { nom: 'Le château : murs, portes, fenêtres', origine: 'castlewalls.png', auteur: HUGH },
+  'chateau-dehors': { nom: 'Le château vu du dehors', origine: 'castle_outside.png', auteur: HUGH },
+  'sols-chateau': { nom: 'Le château : sols et tapis', origine: 'castlefloors.png', auteur: HUGH },
+  'sols-chateau-dehors': { nom: 'Le château : dalles du dehors', origine: 'castlefloors_outside.png', auteur: HUGH },
+  'lumieres-chateau': { nom: 'Le château : torches et lanternes', origine: 'castle_lightsources.png', auteur: HUGH },
+  donjon: { nom: 'Le donjon : murs de brique, grilles, colonnes', origine: 'dungeon.png', auteur: SHARM },
+  interieur: { nom: 'L’intérieur : murs bleus, portes, parquet', origine: 'inside.png', auteur: SHARM },
+  'interieur-riche': { nom: 'L’intérieur riche', origine: 'victoria.png', auteur: 'les auteurs du pack (elle n’est pas nommée dans ses crédits)' },
+  meubles: { nom: 'Les meubles', origine: 'cabinets.png', auteur: SHARM },
+  cuisine: { nom: 'La cuisine', origine: 'kitchen.png', auteur: SHARM },
+  coffres: { nom: 'Les coffres', origine: 'chests.png', auteur: SHARM },
+  escaliers: { nom: 'Les escaliers', origine: 'stairs.png', auteur: SHARM },
+  'escaliers-pierre': { nom: 'Les escaliers de pierre', origine: 'cementstair.png', auteur: SHARM },
+  paves: { nom: 'Les pavés', origine: 'cement.png', auteur: SHARM },
+  lave: { nom: 'La lave', origine: 'lava.png', auteur: SHARM },
+  'roche-volcanique': { nom: 'La roche volcanique', origine: 'lavarock.png', auteur: SHARM },
+  fosse: { nom: 'La fosse', origine: 'holemid.png', auteur: SHARM },
+  enseignes: { nom: 'Les enseignes', origine: 'signs.png', auteur: SHARM },
+};
+export const PLANCHES_SALLES = Object.fromEntries(Object.keys(DECORS_SALLES).map((n) => [n, `chateau/${n}.png`]));
+// Le sol plein d'une salle (S.sol) : une case d'une planche, répétée sur toute la zone jouable (herbe et terre : comme avant)
+export const SOLS = {
+  herbe: { nom: 'Herbe' }, terre: { nom: 'Terre battue' },
+  paves: { nom: 'Pavés', p: 'paves', c: [1, 3] }, dalles: { nom: 'Dalles grises', p: 'sols-chateau', c: [8, 5] },
+  carrelage: { nom: 'Carrelage bleu', p: 'sols-chateau', c: [7, 2] }, 'tapis-violet': { nom: 'Tapis violet', p: 'sols-chateau', c: [2, 2] },
+  'tapis-rouge': { nom: 'Tapis rouge', p: 'sols-chateau', c: [2, 7] }, parquet: { nom: 'Parquet', p: 'interieur', c: [0, 4] },
+  'roche-volcanique': { nom: 'Roche volcanique', p: 'roche-volcanique', c: [1, 3] },
+};
+// Les sols qu'on peint coin par coin, comme la terre et l'eau (des planches LPC de 3 × 6 cases) ; la lave et la fosse bloquent
+// (la lave comme l'eau profonde ; la fosse comme le fossé : on y pousse les ennemis)
+export const TERRAINS = { paves: { nom: 'Pavés' }, 'roche-volcanique': { nom: 'Roche volcanique' }, lave: { nom: 'Lave', bloque: 'eau' }, fosse: { nom: 'Fosse', bloque: 'fosse' } };
+// Les murs : une façade vue de face (une planche ; ses colonnes de gauche, du milieu, de droite ; sa hauteur en px), posée en
+// haut d'un rectangle (S.murs : { style, x0, x1, y }) ; elle bloque le pas et la vue. En mode intérieur, le mur du nord.
+export const MURS = {
+  brique: { nom: 'Mur de brique (donjon)', p: 'donjon', cols: [0, 32, 64], h: 104 },
+  bleu: { nom: 'Mur bleu (intérieur)', p: 'interieur', cols: [0, 32, 64], h: 104 },
+};
+export const HAUT_MUR = 104 / 32;   // en cases
 const deco = (sx, sy, w, h, x, y, pied) => ({ img: 'deco', sx: sx * T, sy: sy * T, sw: w * T, sh: h * T, x: x * T, y: y * T, pied: (pied ?? y + h) * T });
 // Un arbre (tronc et cime, comme au camp) dont le pied est en (x, y) cases ; feuillu ou sapin selon l'endroit.
 const CIMES = [[0, 0, 96, 96, 80, 30], [96, 0, 96, 96, 96, 30], [0, 96, 96, 128, 96, 42], [96, 96, 96, 128, 112, 42]];
@@ -173,6 +216,13 @@ const SALLES = {
     ],
   },
 };
+// Les salles dessinées à l'atelier des niveaux (niveaux.html, la table des cartes du camp) : un fichier chacune dans
+// content/salles/<id>.json, au même format qu'ici ; elles s'ajoutent à la liste toutes seules.
+for (const S of Object.values(import.meta.glob('../../content/salles/*.json', { eager: true, import: 'default' }))) if (S?.id && !SALLES[S.id]) SALLES[S.id] = S;
+export { SALLES };
+// La salle que l'atelier fait essayer (« Essayer au terrain ») : ?salle=essai, gardée dans ce navigateur.
+export const CLE_ESSAI = 'dungeoncoop:salle-essai';
+function salleEssai() { try { return JSON.parse(localStorage.getItem(CLE_ESSAI)); } catch { return null; } }
 export const NOMS = Object.keys(SALLES);
 // pour l'accueil du terrain : chaque salle, son nom et sa question
 export const LISTE = NOMS.map((id) => ({ id, nom: SALLES[id].nom, idee: SALLES[id].idee }));
@@ -203,7 +253,11 @@ function rampeDe(relief, r) {
 
 // Construit une salle : la géométrie, les départs, et son dessin.
 export function construire(id) {
-  const S = SALLES[id];
+  const S = id === 'essai' ? salleEssai() : SALLES[id];
+  return S ? construireDepuis(S, id) : null;
+}
+// La même chose depuis les données d'une salle (l'atelier des niveaux la dessine ainsi, à chaque retouche).
+export function construireDepuis(S, id = S?.id ?? 'essai') {
   if (!S) return null;
   const L = S.l ?? 24, H = S.h ?? 18, ZONE = { x0: 1, y0: 2, x1: L - 1, y1: H - 2 };
   const relief = S.relief ?? [], rampes = (S.rampes ?? []).map((r) => rampeDe(relief, r));
@@ -221,6 +275,8 @@ export function construire(id) {
     ...(S.rochers ?? []).map(([x, y]) => ({ x, y, r: 0.42, marche: true, vue: true, rocher: true })),
     ...(S.tentes ?? []).map((t) => ({ ...formeTente(t), marche: true, vue: true, tente: true })),
     ...(S.objets ?? []).map((o) => ({ ...o.forme, marche: !!o.marche, vue: !!o.vue })),
+    ...(S.terrains ?? []).filter((t) => TERRAINS[t.t]?.bloque).map((t) => ({ ...rectDeCoins(t.c), [TERRAINS[t.t].bloque]: true, [t.t]: true })),
+    ...(S.murs ?? []).map((m) => ({ x0: m.x0, x1: m.x1, y0: m.y, y1: m.y + HAUT_MUR, marche: true, vue: true, mur: true })),
   ];
 
   // Un plateau : son dessus (le sol de la salle, un peu plus clair à chaque niveau), son rebord, son ombre, et sa falaise.
@@ -311,12 +367,20 @@ export function construire(id) {
         if (h % 9 === 0) gg.drawImage(im.herbe, (h >>> 4) % 3 * T, 5 * T, T, T, i * T, j * T, T, T);
       }
     };
-    herbe(g);
+    if (S.interieur) { g.fillStyle = '#140e0b'; g.fillRect(0, 0, L * T, H * T); } else herbe(g);
     const dansZone = (i, j) => i >= ZONE.x0 && i <= ZONE.x1 && j >= ZONE.y0 && j <= ZONE.y1;
+    const plein = SOLS[S.sol]?.p ? SOLS[S.sol] : null;
+    if (plein) for (let j = ZONE.y0; j < ZONE.y1; j++) for (let i = ZONE.x0; i < ZONE.x1; i++) g.drawImage(im[plein.p], plein.c[0] * T, plein.c[1] * T, T, T, i * T, j * T, T, T);
+    else if (S.interieur && S.sol !== 'terre') herbe(g, ZONE.x0, ZONE.y0, ZONE.x1, ZONE.y1);
+    const peints = (t) => coins((S.terrains ?? []).filter((x) => x.t === t).map((x) => x.c));
+    for (const t of ['paves', 'roche-volcanique']) { const e = peints(t); if (e.size) terrain(g, im[t], (i, j) => e.has(`${i},${j}`), (tuile, h) => (h % 5 === 0 ? tuile((h >>> 3) % 3, 5) : tuile(1, 3)), L, H); }
     const terre = coins(S.terre ?? []);
     terrain(g, im.terre, (i, j) => (S.sol === 'terre' ? dansZone(i, j) : terre.has(`${i},${j}`)), (tuile, h) => (h % 5 === 0 ? tuile((h >>> 3) % 3, 5) : tuile(1, 3)), L, H);
     const eau = coins((S.eau ?? []).map((e) => e.c));
     terrain(g, im.eau, (i, j) => eau.has(`${i},${j}`), (tuile, h) => tuile((h >>> 3) % 3, 5), L, H);
+    for (const t of ['lave', 'fosse']) { const e = peints(t); if (e.size) terrain(g, im[t], (i, j) => e.has(`${i},${j}`), (tuile, h) => (h % 5 === 0 ? tuile((h >>> 3) % 3, 5) : tuile(1, 3)), L, H); }
+    // les tampons à plat (des pièces de n'importe quelle planche, posées sur le sol : tapis, dalles, motifs)
+    for (const t of S.tapis ?? []) { const [sx, sy, w, h, x, y] = t.d; if (im[t.p]) g.drawImage(im[t.p], sx * T, sy * T, w * T, h * T, x * T, y * T, w * T, h * T); }
     // le pont : les planches des douves du camp, tournées d'un quart (elles enjambent la rivière d'ouest en est)
     if (S.pont) {
       const p = S.pont, w = (p.x1 - p.x0) * T, h = (p.y1 - p.y0) * T;
@@ -334,14 +398,22 @@ export function construire(id) {
 
   function composerDecor() {
     const objets = [];
+    // une façade de mur, colonne par colonne (32 px), de x0 à x1, le haut en y (cases) ; triée par son pied
+    const facade = (style, x0, x1, y) => {
+      const m = MURS[style] ?? MURS.brique, n = Math.max(1, Math.round(x1 - x0)), pied = (y + HAUT_MUR) * T;
+      for (let k = 0; k < n; k++) objets.push({ img: m.p, sx: k === 0 ? m.cols[0] : k === n - 1 ? m.cols[2] : m.cols[1], sy: 0, sw: T, sh: m.h, x: (x0 + k) * T, y: y * T, pied });
+    };
+    for (const m of S.murs ?? []) facade(m.style, m.x0, m.x1, m.y);
+    // en intérieur : pas de forêt autour, le mur du nord au-dessus de la zone (le reste est dans le noir)
+    if (S.interieur) facade(MURS[S.interieur] ? S.interieur : 'brique', ZONE.x0, ZONE.x1, ZONE.y0 - HAUT_MUR);
     // la lisière autour (hors de la zone) : des arbres serrés au nord et au sud, plus clairsemés à l'ouest et à l'est
-    for (let x = -0.4; x <= L + 0.4; x += 1.45) {
+    if (!S.interieur) for (let x = -0.4; x <= L + 0.4; x += 1.45) {
       if (!(S.eau ?? []).some((e) => e.profond && x > e.c[0] - 1.4 && x < e.c[1] + 1.4)) {
         arbre(objets, x + ((hash(Math.round(x * 7), 1) % 5) - 2) * 0.08, 1.9, 0.5);
         arbre(objets, x + ((hash(Math.round(x * 7), 2) % 5) - 2) * 0.08, H + 0.9, 0.5);
       }
     }
-    for (let y = 3.6; y <= H + 0.5; y += 2.2) { arbre(objets, -0.6, y, 0.6); arbre(objets, L + 0.6, y + 1.1, 0.6); }
+    if (!S.interieur) for (let y = 3.6; y <= H + 0.5; y += 2.2) { arbre(objets, -0.6, y, 0.6); arbre(objets, L + 0.6, y + 1.1, 0.6); }
     // les bois : des arbres serrés, en quinconce, dans chaque rectangle
     for (const b of S.bois ?? []) {
       rangees(b).forEach((y, r) => { for (let x = b.x0 + 0.6 + (r % 2) * 0.6; x <= b.x1 - 0.3; x += 1.25) arbre(objets, x, y, 0.4); });
@@ -349,7 +421,7 @@ export function construire(id) {
     for (const [x, y] of S.arbres ?? []) arbre(objets, x, y, 0.3);
     for (const [x, y] of S.rochers ?? []) objets.push({ img: 'roche', sx: 0, sy: 0, sw: T, sh: T, x: (x - 0.5) * T, y: (y - 0.75) * T, pied: (y + 0.3) * T });
     for (const t of S.tentes ?? []) { objets.push(deco(8, 50, 4, 1, t.x, t.y, t.y + 4.9)); objets.push(deco(8, 51, 5, 4, t.x, t.y + 1, t.y + 4.9)); }   // (sans la case verte de la planche)
-    for (const o of S.objets ?? []) if (o.dessin) { const [sx, sy, w, h, x, y] = o.dessin; objets.push(deco(sx, sy, w, h, x, y)); }
+    for (const o of S.objets ?? []) if (o.dessin) { const [sx, sy, w, h, x, y] = o.dessin; objets.push({ ...deco(sx, sy, w, h, x, y), img: o.p ?? 'deco' }); }   // (o.p : une autre planche que celle des décors)
     // les feux : le bois du foyer, une broche à côté (la flamme, c'est la surface « feu », animée par la vue)
     for (const [x, y] of S.feux ?? []) { objets.push(deco(10, 49, 1, 1, x - 0.5, y - 0.6, y + 0.2)); objets.push(deco(13, 47, 1, 2, x + 0.5, y - 1.6, y + 0.3)); }
     // le camp des pillards : sa palissade au nord et au sud

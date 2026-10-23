@@ -2,6 +2,7 @@
 // (chaque planche se charge, chaque aperçu dessine), puis la page pilotée comme une personne (onglets, cartes,
 // recherche, réglages, liens d'un rayon à l'autre).
 import { catalogue, MOBS, sceneDe, utilise, ANIMS_LPC, ESQUISSES, BRIQUES, HEROS, CAPACITES, PERSOS } from './catalogue.js';
+import { DECORS_SALLES } from '../entrainement/salles.js';
 import { cadreDe, image, etat } from './apercus.js';
 import { texteDe } from './vue.js';
 
@@ -34,10 +35,13 @@ export async function selfTest(t, game) {
   t.ok(filet.briques.includes('etat-gele') && filet.briques.includes('filet-pose') && utilise(BRIQUES['etat-gele'], 'Garde de givre'), 'le Filet : l’état Gelé et le filet posé (lus dans « Gelé (Garde de givre, Filet) »)');
   t.ok(epee.briques.includes('croissant-taille'), 'le Coup d’épée retrouve sa traînée (apostrophes droite et courbe)');
   t.ok(C.sorts.find((s) => s.id === 'pousser').classes[0] === 'tous les héros', 'Pousser, la Potion, Relever : les gestes de tous');
+  t.eq(C.decors.length, Object.keys(DECORS_SALLES).length, `les ${Object.keys(DECORS_SALLES).length} planches du château et du donjon`);
+  t.ok(C.decors.every((d) => d.origine.endsWith('.png') && d.auteur && d.usage.length) && C.decors.find((d) => d.id === 'lave').usage.some((u) => u.includes('bloque')),
+    'chacune : son original dans le pack, qui l’a dessinée, à quoi elle sert (la lave : un pinceau qui bloque)');
 
   // --- Les images -------------------------------------------------------------------------------------------------
   t.group('les planches : chacune se charge');
-  const planches = [...new Set([...C.personnages.map((p) => p.planche), ...C.animations.map((a) => a.planche), ...C.sorts.map((s) => s.icone)])];
+  const planches = [...new Set([...C.personnages.map((p) => p.planche), ...C.animations.map((a) => a.planche), ...C.sorts.map((s) => s.icone), ...C.decors.map((d) => d.planche)])];
   const ok = await Promise.all(planches.map(charge));
   t.ok(ok.every(Boolean), `les ${planches.length} planches et icônes se chargent${ok.every(Boolean) ? '' : ` (pas : ${planches.filter((_, k) => !ok[k]).join(', ')})`}`);
   const brute = C.personnages.find((p) => p.id === 'brute');
@@ -51,7 +55,7 @@ export async function selfTest(t, game) {
 
   // --- La page --------------------------------------------------------------------------------------------------
   t.group('la page : comme une personne');
-  t.eq(qa('.onglet').map((o) => o.textContent.replace(/\d+/g, '').trim()), ['Personnages', 'Classes', 'Sorts', 'Animations'], 'quatre rayons : Personnages, Classes, Sorts, Animations');
+  t.eq(qa('.onglet').map((o) => o.textContent.replace(/\d+/g, '').trim()), ['Personnages', 'Classes', 'Sorts', 'Animations', 'Décors'], 'cinq rayons : Personnages, Classes, Sorts, Animations, Décors');
   t.ok(q('#retour-camp')?.getAttribute('href') === './index.html?spot=archives', '« Retour au camp » ramène devant la tente des archives');
   t.eq(qa('.liste-archives .carte').length, vue.C.personnages.length, 'au départ, les personnages, une carte chacun');
   game.dbg.advance(0.2);
@@ -103,5 +107,9 @@ export async function selfTest(t, game) {
   t.ok(forge.joue.sy === 64 && forge.cadre?.sw === 96 && !q('.detail-archives [data-valeur="gauche"]'), 'il attise le feu : sa rangée, sans flèches de direction');
   clic(q('.detail-archives [data-valeur="marche"]')); clic(q('.detail-archives [data-valeur="gauche"]')); game.dbg.advance(0.1);
   t.ok(forge.joue.sy === 5 * 64 && forge.cadre.sx >= 96, 'il marche vers la gauche : sa rangée, la boucle commence à l’image 1');
+  vue.changerOnglet('decors');
+  vue.choisir('donjon');
+  t.ok(q('#detail-nom').textContent.startsWith('Le donjon') && q('.detail-archives').textContent.includes('tiles/dungeon.png') && q('.detail-archives').textContent.includes('Sharm')
+    && q('.detail-archives a[href="./niveaux.html"]') && qa('.cartes.decors .carte').length === C.decors.length, 'le rayon des décors : le donjon, son original, son auteur, et le lien vers l’atelier');
   vue.changerOnglet('personnages');
 }

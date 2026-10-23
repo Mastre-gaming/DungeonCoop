@@ -50,6 +50,8 @@ export function init(g, options) {
   ui.aventure = options.aventure ?? null;           // le nom de l'aventure : pas de fiche de mesure, la route continue
   if (options.horloge) ui.horloge = options.horloge;
   ui.salle = SALLES.find((x) => x.id === options.salle) ?? null;   // la salle jouée (salles.js) ; sans elle, la salle d'essai
+  // la salle que l'atelier des niveaux fait essayer (?salle=essai : niveaux.html) : son nom et sa question viennent d'elle
+  if (options.salle === 'essai') ui.salle = { id: 'essai', nom: `${options.salleNom || 'Sans nom'} (de l’atelier)`, idee: options.salleIdee || '' };
   // l'équipe à choisir : celle de l'adresse (?equipe=), sinon la dernière choisie dans ce navigateur, sinon le kit D1
   ui.choix = equipePour(new URLSearchParams(location.search).has('equipe') ? combat.S.equipe : lireChoix() ?? combat.S.equipe, monGithub());
   construire();
@@ -117,7 +119,8 @@ function construire() {
     dom.salle = el('label', { class: 'choix-salle' }, 'La salle',
       el('select', { id: 'choix-salle', onchange: (e) => changerSalle(e.target.value) },
         el('option', { value: '' }, 'La salle d’essai'),
-        ...SALLES.map((x) => el('option', { value: x.id, selected: x.id === ui.salle?.id }, x.nom)))),
+        ...SALLES.map((x) => el('option', { value: x.id, selected: x.id === ui.salle?.id }, x.nom)),
+        ui.salle?.id === 'essai' ? el('option', { value: 'essai', selected: true }, ui.salle.nom) : null)),
     dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
     dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
     el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (le Traqueur de Paolitus, Shadow de Fraps : chacune ne se joue que par son auteur). ◀ ▶ pour changer.'),
