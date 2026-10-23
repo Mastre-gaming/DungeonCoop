@@ -1,0 +1,44 @@
+/* Le contrat et la réunion du départ (61_contrat.js) : les recettes de DESIGN.fr.md §5 (parchemin, cadre de bois, dialogue) */
+.contrat-bulle { pointer-events: auto; cursor: pointer; border: 0; font: inherit; }
+.contrat-excl { animation: none; }
+
+/* lire le contrat : un parchemin au centre, cadre fin à coins de laiton */
+.contrat-lecture { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -55%); z-index: 20; width: min(460px, calc(100vw - 32px)); box-sizing: border-box;
+  padding: 18px 22px 16px; display: grid; gap: 8px; color: var(--parchemin-encre); image-rendering: pixelated;
+  background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); border: 8px solid var(--bois-fonce); border-image: var(--cadre-fin) 20 / 20px / 4px repeat;
+  box-shadow: 0 6px 0 rgba(0, 0, 0, .35); font: 15px/1.45 var(--texte); }
+.contrat-lecture[hidden] { display: none; }
+.contrat-lecture h2 { margin: 0 0 2px; font: 700 18px var(--titre); color: #7a3b10; text-align: center; letter-spacing: .03em; }
+.contrat-lecture p { margin: 0; }
+.contrat-lecture .signature { margin-top: 4px; text-align: right; font-style: italic; color: #5a3b22; }
+.contrat-boutons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 6px; }
+
+/* la cinématique : le noir qui tombe et se lève, deux bandes noires, le HUD qui s'efface */
+.contrat-voile { position: fixed; inset: 0; z-index: 18; background: #000; opacity: 1; transition: opacity .4s; pointer-events: none; }
+.contrat-voile.leve { opacity: 0; }
+.contrat-voile[hidden], .contrat-bandes[hidden] { display: none; }
+.contrat-bandes span { position: fixed; left: 0; right: 0; height: 56px; z-index: 12; background: #000; pointer-events: none; }
+.contrat-bandes .haut { top: 0; } .contrat-bandes .bas { bottom: 0; }
+body.cinematique .socle-barre, body.cinematique .colonne-gauche, body.cinematique .colonne-droite, body.cinematique .banniere-campagne,
+body.cinematique #aide, body.cinematique .crieur, body.cinematique .bulle-panneau:not(.contrat-bulle), body.cinematique .bulle-perso { visibility: hidden; }
+
+/* celui qui parle : le dialogue du jeu, son médaillon (33_cadres.js, ×1) */
+.contrat-dialogue { bottom: 72px; z-index: 19; }
+.contrat-dialogue .contrat-portrait { width: 60px; height: 60px; image-rendering: pixelated; align-self: center; }
+.contrat-dialogue .contrat-joueur { font: 500 12px var(--titre); color: #7a3b10; }
+.contrat-suite { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.contrat-attente, .contrat-bilan { font: 500 12px var(--titre); color: var(--parchemin-doux); }
+.contrat-bilan { margin: 0; }
+
+/* le choix : chacun dit s'il en est */
+.contrat-choix { position: fixed; left: 50%; bottom: 72px; transform: translateX(-50%); z-index: 19; width: min(520px, calc(100vw - 32px)); box-sizing: border-box;
+  padding: 12px 16px; display: grid; gap: 10px; justify-items: center; color: var(--creme); image-rendering: pixelated;
+  background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); border: 14px solid var(--bois-fonce); border-image: var(--cadre-bois) 32 / 32px / 6px repeat; box-shadow: 0 6px 0 rgba(0, 0, 0, .4); }
+.contrat-choix[hidden] { display: none; }
+.contrat-choix h2 { margin: 0; font: 700 18px var(--titre); color: var(--or); text-shadow: var(--contour-or); }
+.contrat-choix .bouton-jeu.choisi { outline: 3px solid var(--or); outline-offset: 2px; }
+.contrat-votants { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; font: 500 13px var(--titre); }
+.contrat-votants li { display: flex; gap: 6px; }
+.contrat-votants li span { color: var(--laiton-clair); }
+.contrat-votants li.pour span { color: #8fe07a; } .contrat-votants li.contre span { color: #e8a070; }
+.contrat-temps { margin: 0; font: 700 13px var(--titre); color: var(--laiton-clair); }
