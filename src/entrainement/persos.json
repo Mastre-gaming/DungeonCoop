@@ -119,5 +119,11 @@
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_bronze&head=Human_Male_bronze&expression=Neutral_bronze&hair=Plain_raven&beard=5_O'clock_Shadow_raven&hat=Hood_brown&neck=Scarf_black&quiver=Quiver_quiver&weapon=Normal_medium&shoulders=Mantal_forest&jacket=Santa_coat_brown&bauldron=Bauldron_black&belt=Leather_Belt_leather&legs=Pants_forest&shoes=Rimmed_Boots_black",
     "attaque": null,
     "anims": ["marche", "sort", "estoc", "taille", "tir", "blesse"]
+  },
+  "changepeau": {
+    "nom": "Mope, l'ancien changepeau",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_pale_green&head=Orc_male_pale_green&clothes=TShirt_tan&legs=Pants_brown&cape=Tattered_charcoal&hat=Hood_charcoal&wrists=Cuffs_white&weapon=Gnarled_staff_medium",
+    "attaque": null,
+    "anims": ["marche", "sort", "estoc", "taille", "tir", "blesse"]
   }
 }
