@@ -135,6 +135,7 @@ export function effetsLance(fx, cap, a, p, u) {
     case 'courseEffrenee': { const q = tete({ x: p.x, y: p.y }); fx.jouer('impact-etoile', { x: p.x, y: p.y - 24, retard: 0.45 }); fx.jouer('note', { ...m, vers: q, retard: 0.3, duree: vol(m, q) * 1.2, arc: 6 }); return 0.55; }
     case 'chant': { const q = tete({ x: p.x, y: p.y }); let fin = 0; for (let k = 0; k < 3; k++) { const d = vol(m, q) * 1.4; fx.jouer('note', { ...m, vers: q, retard: 0.2 + k * 0.15, duree: d, arc: 10 }); fin = 0.2 + k * 0.15 + d; } return fin; }
     case 'moquerie': { const q = tete({ x: p.x, y: p.y }), d = vol(m, q) * 1.3; fx.jouer('bulle-moquerie', { x: a.x, y: a.y - 56, vers: q, retard: 0.2, duree: d, arc: 12 }); fx.jouer('colere', { x: q.x + 8, y: q.y - 4, retard: 0.2 + d, duree: 0.9 }); return 0.2 + d + 0.1; }
+    case 'renverser': fx.jouer('poussiere', { x: p.x, y: p.y, retard: 0.25 }); fx.jouer('impact-etoile', { x: p.x, y: p.y - 18, retard: 0.3 }); return 0.4;
     case 'machoires': case 'glu': case 'collet': { const d = vol(m, p); fx.jouer('fiole-vol', { ...m, vers: p, retard: 0.3, duree: d, arc: 18 }); fx.jouer('poussiere', { ...p, retard: 0.3 + d }); return 0.3 + d + 0.1; }
     case 'lecher': fx.jouer('coeur', { x: p.x, y: p.y - 50, duree: 0.8 }); return 0.25;
     case 'rabattre': fx.jouer('impact-etoile', { x: p.x, y: p.y - 24, retard: 0.05 }); return 0.15;

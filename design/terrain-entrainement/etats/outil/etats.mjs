@@ -95,6 +95,17 @@ const G = {
     'HNHHHHNH',
     '.HNNNNH.',
     '..HHHH..'],
+  // Étourdi (le gardien qui percute un pilier) : trois étoiles qui tournent au-dessus d'un cercle
+  etourdi: [
+    '.Y.....Y.',
+    'YYY...YYY',
+    '.Y..Y..Y.',
+    '...YYY...',
+    '....Y....',
+    '.SS...SS.',
+    'S.......S',
+    '.SS...SS.',
+    '...SSS...'],
   // Inspiré (le Chant de bataille) : deux notes liées, en or
   inspire: [
     '..GGGGGG',

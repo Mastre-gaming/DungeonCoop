@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/sentier-f-b",
+  "nom": "",
+  "unite": "cases",
+  "note": "La meule : un grand tas de foin, le brasero collé à son flanc ouest (gabarit B).",
+  "taille": [
+    24,
+    16
+  ],
+  "decor": {
+    "rochers": [
+      [
+        6.5,
+        13.5
+      ]
+    ],
+    "tonneaux": [],
+    "foin": [
+      {
+        "x0": 10,
+        "y0": 7,
+        "x1": 15,
+        "y1": 13
+      }
+    ],
+    "braseros": [
+      [
+        8.2,
+        10
+      ]
+    ]
+  },
+  "departs": {
+    "heros": [
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        9
+      ],
+      [
+        3,
+        11
+      ],
+      [
+        3,
+        13
+      ]
+    ],
+    "ennemis": {
+      "avant": [
+        [
+          16.5,
+          7.5
+        ],
+        [
+          16.5,
+          10
+        ],
+        [
+          16.5,
+          12.5
+        ]
+      ],
+      "loin": [
+        [
+          20.5,
+          5
+        ],
+        [
+          20.5,
+          15
+        ]
+      ],
+      "fond": [
+        [
+          22,
+          9
+        ],
+        [
+          22,
+          11
+        ]
+      ]
+    }
+  },
+  "tuiles": "prairie"
+}

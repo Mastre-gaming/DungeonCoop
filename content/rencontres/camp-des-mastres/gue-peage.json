@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/gue-peage",
+  "nom": "",
+  "sorte": "combat",
+  "note": "Le gué, « le péage » (chemin-combats.md §2) : des bandits tiennent le bout est du pont, un arbalétrier sur chaque rive, un loup de garde ; deux bandits sortent de la cabane du péage au tour 3. Si le groupe est passé par le colporteur (au nord), le péage est prévenu : un bandit de plus (« alerte »), et pas de surprise.",
+  "objectif": {
+    "type": "vaincre-tous"
+  },
+  "ennemis": [
+    {
+      "type": "bandit",
+      "n": 3,
+      "depart": "gue-pont"
+    },
+    {
+      "type": "arbaletrier",
+      "n": 1,
+      "depart": "gue-rive-nord"
+    },
+    {
+      "type": "arbaletrier",
+      "n": 1,
+      "depart": "gue-rive-sud"
+    },
+    {
+      "type": "loup",
+      "n": 1,
+      "depart": "gue-garde",
+      "ronde": [
+        0,
+        3
+      ]
+    },
+    {
+      "type": "bandit",
+      "n": 2,
+      "depart": "gue-cabane",
+      "renfort": 3
+    },
+    {
+      "type": "bandit",
+      "n": 1,
+      "depart": "gue-alerte",
+      "renfort": "alerte"
+    }
+  ],
+  "renforts": [],
+  "recompenses": {
+    "caillasse": [
+      15,
+      25
+    ]
+  }
+}

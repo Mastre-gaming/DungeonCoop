@@ -16,7 +16,9 @@ export const always = true;
 
 const T = 32;
 const FICHES = Object.fromEntries(Object.values(import.meta.glob('../../content/ennemis/*.json', { eager: true, import: 'default' })).map((f) => [f.id, f]));
-const KIT = { sbire: 'sbire', archer: 'archer', brt: 'brute-ennemie', chef: 'chef' };   // le type → sa planche au terrain
+// Le type → sa planche au terrain, pour chaque ennemi du jeu (comme vue.js : la planche porte le nom du type, sauf la
+// brute ennemie). Une liste écrite à la main oubliait les nouveaux ennemis, et leur aperçu plantait la palette.
+const KIT = Object.fromEntries(Object.keys(ENNEMIS).map((t) => [t, t === 'brt' ? 'brute-ennemie' : t]));
 const HEROS_KIT = ['brute', 'mage', 'voleur', 'gardien'];
 const CLE_SALLES = 'dungeoncoop:atelier-salles', CLE_COURANTE = 'dungeoncoop:atelier-courante';
 
@@ -321,7 +323,8 @@ function apercu(o) {
   const c = el('canvas', { width: 32, height: 32, class: 'outil-image', 'aria-hidden': 'true' }), q = c.getContext('2d');
   q.imageSmoothingEnabled = false;
   if (!images) return c;
-  const ss = (img, sx, sy, sw, sh) => { const k = Math.min(32 / sw, 32 / sh); q.drawImage(img, sx, sy, sw, sh, (32 - sw * k) / 2, (32 - sh * k) / 2, sw * k, sh * k); };
+  // (une planche absente : l'aperçu reste vide, au lieu de faire planter toute la palette)
+  const ss = (img, sx, sy, sw, sh) => { if (!img) return; const k = Math.min(32 / sw, 32 / sh); q.drawImage(img, sx, sy, sw, sh, (32 - sw * k) / 2, (32 - sh * k) / 2, sw * k, sh * k); };
   if (o.ennemi) ss(planche(o.ennemi), 16, 10 * 64 + 10, 32, 46);
   else if (o.heros != null) ss(images[`perso_${HEROS_KIT[o.heros]}`], 16, 10 * 64 + 10, 32, 46);
   else if (o.piece) ss(images.deco, o.piece.d[0] * T, o.piece.d[1] * T, o.piece.d[2] * T, o.piece.d[3] * T);

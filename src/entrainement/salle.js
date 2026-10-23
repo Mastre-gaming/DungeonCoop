@@ -52,12 +52,12 @@ export function salle() {
 }
 
 // --- Le dessin ------------------------------------------------------------------------------------------------
-const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;
+export const hash = (i, j) => ((i * 73856093) ^ (j * 19349663)) >>> 0;
 // La planche LPC d'un terrain (3 x 6 cases) : quelle case pour quel masque de coins (comme src/03_carte.js).
-const BORD = { 8: [0, 2], 12: [1, 2], 4: [2, 2], 10: [0, 3], 5: [2, 3], 2: [0, 4], 3: [1, 4], 1: [2, 4], 7: [1, 0], 11: [2, 0], 13: [1, 1], 14: [2, 1] };
+export const BORD = { 8: [0, 2], 12: [1, 2], 4: [2, 2], 10: [0, 3], 5: [2, 3], 2: [0, 4], 3: [1, 4], 1: [2, 4], 7: [1, 0], 11: [2, 0], 13: [1, 1], 14: [2, 1] };
 
-function terrain(g, planche, estCoin, plein) {
-  for (let j = 0; j < H; j++) for (let i = 0; i < L; i++) {
+export function terrain(g, planche, estCoin, plein, l = L, h = H) {        // (l, h : la taille du monde, en cases)
+  for (let j = 0; j < h; j++) for (let i = 0; i < l; i++) {
     const m = (estCoin(i, j) ? 1 : 0) | (estCoin(i + 1, j) ? 2 : 0) | (estCoin(i, j + 1) ? 4 : 0) | (estCoin(i + 1, j + 1) ? 8 : 0);
     if (!m) continue;
     const tuile = (cx, cy) => g.drawImage(planche, cx * T, cy * T, T, T, i * T, j * T, T, T);
@@ -86,7 +86,7 @@ export function composerSol(im) {
 }
 
 // Une pièce de la planche des décorations médiévales, en cases (sx, sy, w, h) posée en (x, y) cases ; `pied` : son tri.
-const deco = (sx, sy, w, h, x, y, pied) => ({ img: 'deco', sx: sx * T, sy: sy * T, sw: w * T, sh: h * T, x: x * T, y: y * T, pied: (pied ?? y + h) * T });
+export const deco = (sx, sy, w, h, x, y, pied) => ({ img: 'deco', sx: sx * T, sy: sy * T, sw: w * T, sh: h * T, x: x * T, y: y * T, pied: (pied ?? y + h) * T });
 
 // Le décor qui ne bouge pas : les cordes du terrain, les poteaux, et l'équipement d'entraînement le long du nord.
 export function composerDecor() {
