@@ -19,6 +19,8 @@ const IMAGES = 9;          // images de marche par seconde
 let game, rendu, heros, visite, reseau = null, image = null;
 const local = creer();                 // le limier de mon héros
 const amis = new Map();                // id d'une copie d'ami → son limier
+// Une scène peut lui donner une place (61_contrat.js : la réunion) : placeDe(id du joueur) → { x, y, dir } ou null.
+let placeDe = () => null;
 
 function creer() { return { actif: false, x: 0, y: 0, dir: 'bas', bouge: false, t: 0, traces: [], sprite: null, ombre: null }; }
 
@@ -54,7 +56,24 @@ function cible(ch, hx, hy) {
     if (d >= reste) { const f = reste / d; return { x: px + (tr[k].x - px) * f, y: py + (tr[k].y - py) * f }; }
     reste -= d; px = tr[k].x; py = tr[k].y;
   }
-  return { x: px, y: py };
+  // des traces trop courtes (il vient de le rejoindre d'un saut) : il reste où il est, ou s'approche à ECART de lui
+  const d = Math.hypot(ch.x - hx, ch.y - hy);
+  if (d <= ECART) return { x: ch.x, y: ch.y };
+  return { x: hx + ((ch.x - hx) / d) * ECART, y: hy + ((ch.y - hy) / d) * ECART };
+}
+
+// à sa place dans une scène : immobile, à l'arrêt (colonne 5), tourné vers où on lui dit ; à la fin, il repart de là
+function placer(ch, p) {
+  Object.assign(ch, { x: p.x, y: p.y, dir: p.dir ?? 'bas', bouge: false, t: 0, enScene: true });
+  habiller(ch);
+  ch.sprite?.poser(ch.x - 32, ch.y - 62, ch.y, 5 * 64, LIGNES[ch.dir] * 64);
+  ch.ombre?.poser(ch.x, ch.y - 1);
+}
+function suivreOuPlacer(ch, id, hx, hy, dt) {
+  const p = placeDe(id);
+  if (p) { placer(ch, p); return; }
+  if (ch.enScene) { ch.enScene = false; ch.traces = [{ x: hx, y: hy }]; }   // la scène finie : il suit de nouveau, de là où il est
+  suivre(ch, hx, hy, dt);
 }
 
 // un pas : il suit son héros (hx, hy)
@@ -81,7 +100,7 @@ export function update(dt) {
   // le mien
   const actif = !visite && heros.incarne?.id === CLASSE, h = heros.heros;
   if (actif !== local.actif) { local.actif = actif; if (actif) rejoindre(local, h.x, h.y, h.dir); }
-  if (actif) { suivre(local, h.x, h.y, dt); cacher(local, false); } else cacher(local, true);
+  if (actif) { suivreOuPlacer(local, reseau?.party?.id ?? 'me', h.x, h.y, dt); cacher(local, false); } else cacher(local, true);
   // ceux des amis : une copie qui incarne le Traqueur (et qui se montre : pas pendant la colonne dorée)
   const copies = visite ? new Map() : reseau?.copies ?? new Map();
   for (const [id, ch] of amis) if (copies.get(id)?.heros?.id !== CLASSE) { retirer(ch); amis.delete(id); }
@@ -90,7 +109,7 @@ export function update(dt) {
     let ch = amis.get(id);
     if (!ch) { ch = creer(); ch.actif = true; rejoindre(ch, c.x, c.y); amis.set(id, ch); }
     if (c.montre > 0) { cacher(ch, true); rejoindre(ch, c.x, c.y, ch.dir); continue; }
-    suivre(ch, c.x, c.y, dt); cacher(ch, false);
+    suivreOuPlacer(ch, id, c.x, c.y, dt); cacher(ch, false);
   }
 }
 
@@ -132,4 +151,6 @@ export const api = {
   CLASSE,
   // le réseau arrive après (main.js) : on le branche ensuite
   brancherReseau(r) { reseau = r; },
+  // une scène qui place les limiers (61_contrat.js) : f(id du joueur) → { x, y, dir } ou null
+  brancherScene(f) { placeDe = f ?? (() => null); },
 };
