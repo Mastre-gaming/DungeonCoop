@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/moulin-envahi",
+  "nom": "",
+  "sorte": "combat",
+  "note": "Le moulin, « le moulin envahi » (chemin-combats.md §3) : des loups le long du canal, des rats dans les sacs, un rat géant ; le meunier est resté devant sa porte. Le protéger 4 tours.",
+  "objectif": {
+    "type": "proteger",
+    "pnj": "meunier",
+    "tours": 4,
+    "bonus": 20
+  },
+  "ennemis": [
+    {
+      "type": "loup",
+      "n": 2,
+      "depart": "moulin-canal",
+      "ronde": [
+        6,
+        0
+      ]
+    },
+    {
+      "type": "nuee-rats",
+      "n": 1,
+      "depart": "moulin-sacs"
+    },
+    {
+      "type": "nuee-rats",
+      "n": 1,
+      "depart": "moulin-sacs-est"
+    },
+    {
+      "type": "rat-geant",
+      "n": 1,
+      "depart": "moulin-cour"
+    },
+    {
+      "type": "loup",
+      "n": 1,
+      "depart": "moulin-bois",
+      "renfort": 2
+    }
+  ],
+  "renforts": [],
+  "recompenses": {
+    "caillasse": [
+      15,
+      25
+    ]
+  }
+}

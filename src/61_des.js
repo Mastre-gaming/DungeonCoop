@@ -155,6 +155,7 @@ function creerEcran({ lancer, passer }) {
   function monter(jet) {
     const o = jet.opts, r = jet.res;
     const gm = o.grazeMax ?? 9, plage = plages(gm), ch = chances(r.mod, r.avantage, gm);
+    const PAL = Object.fromEntries(ORDRE.map((id) => [id, { ...PALIERS[id], ...(o.paliers?.[id] ?? {}) }]));   // (un jet de fouille a ses mots : Raté, Réussi…)
     const couleur = COULEURS[o.couleur] ?? o.couleur ?? couleurDe(o.qui);   // un nom de pierre (« saphir »), un #hex, ou la couleur du héros
     const des = r.des.map((_, i) => creerDe(i + (o.graine ?? 0), couleur));
     const mods = [
@@ -163,7 +164,7 @@ function creerEcran({ lancer, passer }) {
       el('li', { class: 'mod total' }, el('span', {}, 'Bonus total'), el('b', {}, signe(r.mod))),
     ];
     const lignes = ORDRE.map((id) => el('li', { class: id, 'data-palier': id },
-      el('span', { class: 'plage' }, plage[id]), el('span', { class: 'nom-p' }, PALIERS[id].nom), el('span', { class: 'chance' }, pct(ch[id]))));
+      el('span', { class: 'plage' }, plage[id]), el('span', { class: 'nom-p' }, PAL[id].nom), el('span', { class: 'chance' }, pct(ch[id]))));
     const calcul = { nat: el('span', { class: 'nat' }), mod: el('span', { class: 'mod-c' }, ` ${signe(r.mod)}`), egal: el('span', { class: 'egal' }), total: el('b', { class: 'tot' }) };
     const verdict = el('p', { class: 'verdict' }), effet = el('p', { class: 'effet' });
     const ruban = r.avantage ? el('p', { class: `ruban ${r.avantage}` }, r.avantage === 'avantage' ? 'Avantage' : 'Désavantage') : null;
@@ -191,6 +192,7 @@ function creerEcran({ lancer, passer }) {
     if (!refs) return;
     const { des, calcul, verdict, effet, bouton, lignes, jet } = refs, r = v.res, o = jet.opts;
     const apres = (p) => PHASES.indexOf(v.phase) >= PHASES.indexOf(p);
+    const PAL = Object.fromEntries(ORDRE.map((id) => [id, { ...PALIERS[id], ...(o.paliers?.[id] ?? {}) }]));
     racine.dataset.phase = v.phase;
     racine.dataset.palier = apres('pose') ? r.palier : '';
     racine.classList.toggle('regard', !!o.auto);
@@ -230,8 +232,8 @@ function creerEcran({ lancer, passer }) {
     calcul.egal.textContent = montre ? ' =' : '';
     calcul.total.textContent = montre ? ` ${compte}` : '';
     const dit = apres('verdict');
-    verdict.textContent = dit ? PALIERS[r.palier].nom : '';
-    effet.textContent = dit ? PALIERS[r.palier].effet : '';
+    verdict.textContent = dit ? PAL[r.palier].nom : '';
+    effet.textContent = dit ? PAL[r.palier].effet : '';
     // Pendant que le dé roule, la lumière court sur la table comme sur une roulette, de plus en plus lentement, puis s'arrête sur le verdict.
     const course = v.phase === 'roule' ? Math.floor(16 * (1 - (1 - v.p) ** 2.4)) % ORDRE.length : -1;
     lignes.forEach((l, k) => {
@@ -241,7 +243,7 @@ function creerEcran({ lancer, passer }) {
     const texte = v.phase === 'attente' ? (o.auto ? `${o.qui || 'Un ami'} lance le dé…` : 'Lancer le dé') : v.phase === 'verdict' ? 'Continuer' : o.auto ? `${o.qui || 'Un ami'} lance…` : 'Passer';
     if (refs.derniere !== texte) {
       refs.derniere = texte;
-      bouton.replaceChildren(texte, !o.auto ? el('kbd', {}, 'Espace') : null);
+      bouton.replaceChildren(texte, ...(!o.auto ? [el('kbd', {}, 'Espace')] : []));   // (replaceChildren écrirait « null »)
       bouton.hidden = !!o.auto && v.phase !== 'verdict';
     }
   }

@@ -102,6 +102,47 @@
       "images": 6
     }
   },
+  "bandit": {
+    "nom": "Bandit",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_taupe&head=Human_Male_taupe&expression=Neutral_taupe&hat=Hood_charcoal&clothes=Longsleeve_maroon&legs=Pants_brown&shoes=Basic_Boots_black&weapon=Dagger_dagger",
+    "attaque": null
+  },
+  "arbaletrier": {
+    "nom": "Arbalétrier",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&hat=Leather_Cap_leather&clothes=Longsleeve_brown&legs=Pants_leather&shoes=Basic_Boots_brown&weapon=Crossbow_crossbow",
+    "attaque": null
+  },
+  "loup": {
+    "nom": "Loup",
+    "planche": "LPC Wolf Animation (design/terrain-entrainement/outils/ennemis_chemin.py)",
+    "attaque": null
+  },
+  "rat": {
+    "nom": "Rat",
+    "planche": "le rat gris de rats.png (design/terrain-entrainement/outils/ennemis_chemin.py)",
+    "attaque": null
+  },
+  "rat-geant": {
+    "nom": "Rat géant",
+    "planche": "le rat gris de rats.png, agrandi deux fois (design/terrain-entrainement/outils/ennemis_chemin.py)",
+    "attaque": null
+  },
+  "meunier": {
+    "nom": "Meunier",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&hair=Plain_white&clothes=Longsleeve_white&legs=Pants_brown&shoes=Basic_Boots_brown",
+    "attaque": null
+  },
+  "gardien-porte": {
+    "nom": "Gardien de la porte",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_light&head=Human_Male_light&expression=Neutral_light&armour=Plate_steel&legs=Armour_steel&shoes=Armour_steel&arms=Armour_steel&gloves=Gloves_steel&hat=Greathelm_steel&cape=Solid_red&weapon=Arming_Sword_steel",
+    "attaque": {
+      "nom": "slash_128",
+      "taille": 128,
+      "y": 1664,
+      "images": 6
+    },
+    "echelle": 1.5
+  },
   "baba-brisenclume": {
     "nom": "Baba Brisenclume",
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=muscular&body=Body_Color_amber&head=Human_Male_Elderly_amber&expression=Angry_amber&hair=Balding_white&beard=Winter_Beard_white&bauldron=Bauldron_leather&shoulders=Pauldrons_black&bracers=Bracers_copper&legs=Pants_charcoal&shoes=Rimmed_Boots_brown&mustache=Mustache_white",

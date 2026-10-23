@@ -17,6 +17,7 @@ const ICONES = {
   arc: 'tirRapide', machoires: 'fracas', glu: 'vase', collet: 'liane', lecher: 'soin', mordre: 'dague', rabattre: 'pousser',
   pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos', desengager: 'desengager',
   marteau: 'marteau', chuteEnclume: 'enclume', lameArdente: 'lameArdente', trempe: 'trempe', tenailles: 'tenailles',
+  renverser: 'fleche',      // (le brasero du sentier F)
   batonNoue: 'baton', mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
   crocs: 'crocs', bond: 'bond', curee: 'curee', poing: 'poing', etreinte: 'liane', devorer: 'devorer',
   braise: 'etincelle', embrasement: 'embrasement', armesArdentes: 'lameArdente',
@@ -55,7 +56,7 @@ export function ordreBarre(ids, CAPACITES) {
 }
 // Les touches de la barre, dans l'ordre : 1 à 9, puis 0, - et = (une classe qui a plus de sorts, comme le Traqueur)
 export const TOUCHES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
-export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×', mueBete: 'BÊTE', mueCosa: 'COSA', mueIllumine: 'FEU', quitterForme: 'ORC' };
+export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×', renverser: 'FEU', mueBete: 'BÊTE', mueCosa: 'COSA', mueIllumine: 'FEU', quitterForme: 'ORC' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
 // une attaque contre une cible ordinaire : raté sur 1, critique sur 20, éraflure jusqu'à d20 + bonus = 9 (12 contre un coriace)
@@ -115,6 +116,7 @@ export function resume(cap) {
     case 'forge': return cap.forge === 'lame' ? '+d6 · feu' : 'bouclier 10';
     case 'tenailles': return `attire ${metres(cap.longueur)} m`;
     case 'moquerie': return 'Exposé';
+    case 'brasero': return 'allume le foin';
     case 'mue': return { bete: '40 PV · Bête', cosa: '60 PV · Cosa', illumine: '30 PV · Illuminé' }[cap.forme];
     case 'quitterForme': return 'redevient orc';
     case 'bond': return 'saute · À terre';

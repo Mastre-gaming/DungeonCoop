@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/porte-gardien",
+  "nom": "",
+  "sorte": "boss",
+  "note": "La porte de la tour, « le gardien de la porte » (chemin-combats.md §4) : le gardien (mini-boss), deux bandits, un arbalétrier ; à mi-vie, deux bandits sortent de la porte.",
+  "objectif": {
+    "type": "vaincre-chef"
+  },
+  "ennemis": [
+    {
+      "type": "gardien-porte",
+      "n": 1,
+      "depart": "porte-gardien",
+      "ronde": [
+        3,
+        0
+      ]
+    },
+    {
+      "type": "bandit",
+      "n": 2,
+      "depart": "porte-garde"
+    },
+    {
+      "type": "arbaletrier",
+      "n": 1,
+      "depart": "porte-mur"
+    },
+    {
+      "type": "bandit",
+      "n": 2,
+      "depart": "porte-renfort",
+      "renfort": "mi-vie"
+    }
+  ],
+  "renforts": [],
+  "recompenses": {
+    "caillasse": [
+      25,
+      35
+    ]
+  }
+}

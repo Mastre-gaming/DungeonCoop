@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/champs-embuscade",
+  "nom": "",
+  "sorte": "combat",
+  "note": "Les champs, l'embuscade (chemin-combats.md §5) : des bandits cachés dans les blés barrent la route ; on paie, on négocie ou on combat.",
+  "objectif": {
+    "type": "vaincre-tous"
+  },
+  "ennemis": [
+    {
+      "type": "bandit",
+      "n": 3,
+      "depart": "champs-bles",
+      "renfort": "embuscade"
+    },
+    {
+      "type": "arbaletrier",
+      "n": 1,
+      "depart": "champs-nord",
+      "renfort": "embuscade"
+    }
+  ],
+  "renforts": [],
+  "recompenses": {
+    "caillasse": [
+      15,
+      25
+    ]
+  }
+}

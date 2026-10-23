@@ -6,12 +6,15 @@
 // On voit où pointe chacun, et ce qu'il prépare (« Fraps : Foudre → Sbire 2 ») : le combo se voit avant d'être joué.
 //   ?groupe=ABCDE&hote   l'hôte : le code du groupe du camp, sur un autre préfixe (les deux salles ne se mélangent pas)
 //   ?groupe=ABCDE        les autres (on réessaie tant que l'hôte n'est pas arrivé)
+// L'exploration (le sentier F) passe par le même chemin : chacun mène ses héros, l'hôte arbitre la marche, les gestes et les
+// choix du groupe (la fourche, l'embuscade), joue les scènes chez tous et renvoie l'état.
 // Sans ?groupe, rien de tout ça : on joue seul, comme avant. Si l'hôte s'en va, chacun continue seul.
 import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
 import { fr } from '../13_reseau.js';
 import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer, DEBUT_INFINI, capacitesDe } from './regles.js';
 import { monGithub } from './joueur.js';
+import { arbitrerExploration } from './explo.js';
 import { arme } from './armes.js';
 import * as REG from './reglages-combat.js';   // les réglages du combat : seules les valeurs de l'hôte comptent, il les envoie à tous
 
@@ -80,7 +83,7 @@ export function arbitrer(combat, L, qui, a) {
     return combat.deplacer(h, x, y, combat.portee(h));
   }
   if (a.type === 'capacite') {
-    if (!capacitesDe(h).includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
+    if (!capacitesDe(combat.S, h).includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
     const c = a.cible ?? {}, cible = c.id ? { id: String(c.id) } : Number.isFinite(c.x) && Number.isFinite(c.y) ? { x: c.x, y: c.y } : {};
     return combat.utiliser(h, a.cap, cible);
   }
@@ -125,7 +128,7 @@ function brancher(transport) {
       if (party !== ce) return;          // (un ancien groupe qui se ferme : plus rien à faire)
       if (type === 'status') surStatut(d);
       else if (type === 'game') surMessage(d.from, d.m);
-      else if (type === 'join' && hote) { arrivee(L, d.id); envoyerSalon(); if (L.phase === 'combat') party.to(d.id, { t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs: [] }); }
+      else if (type === 'join' && hote) { arrivee(L, d.id); envoyerSalon(); if (L.phase === 'combat') party.to(d.id, { t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs: [], rejoint: true }); }
       else if (type === 'leave' && hote) { depart(L, d.id); verifierPrets(); envoyerSalon(); }
       else if (type === 'welcome') relie = true;
       ihm.redessiner();
@@ -178,7 +181,10 @@ function surMessage(de, m) {
         if (faits.length) ihm.banniere(`${api.nomDe(de)} règle : ${faits[0].label}${faits.length > 1 ? ` (+${faits.length - 1})` : ''}`);
       }
     }
-    else if (m.t === 'action' && L.phase === 'combat') { if (arbitrer(combat, L, de, m.a)) { L.pret = L.pret.filter((p) => p !== de); diffuser(); } else party.to(de, { t: 'refus' }); }
+    else if (m.t === 'action' && L.phase === 'combat') {
+      if (m.a?.type === 'explo') { if (explorer(de, m.a)) diffuser(); else party.to(de, { t: 'refus' }); }
+      else if (arbitrer(combat, L, de, m.a)) { L.pret = L.pret.filter((p) => p !== de); diffuser(); } else party.to(de, { t: 'refus' });
+    }
     else if (m.t === 'pret' && L.phase === 'combat' && combat.S.phase === 'heros') {
       L.pret = L.pret.filter((p) => p !== de);
       if (m.oui) L.pret.push(de);
@@ -198,6 +204,7 @@ function surMessage(de, m) {
     combat = nouveauCombat(L.equipe, m.copie);
     ihm.lance();
     vue.jouer(m.evs ?? []);
+    if (combat.S.phase === 'exploration' && m.t === 'debut' && !m.rejoint) ihm.jouerScene('depart', {});
   } else if (m.t === 'etat') {
     Object.assign(L, m.L);
     combat.restaurer(m.copie);
@@ -205,17 +212,34 @@ function surMessage(de, m) {
     ihm.etatRecu();
   } else if (m.t === 'refus') ihm.banniere('Action impossible : la situation a changé entre-temps');
   else if (m.t === 'camp') naviguer(adresseCamp());
+  else if (m.t === 'scene') ihm.jouerScene(m.scene, m.opts ?? {});
+  else if (m.t === 'chemin') ihm.apresChoixChemin(m.fourche, m.branche, m.evs ?? []);
   ihm.redessiner();
 }
 function envoyerSalon() { party?.toAll({ t: 'salon', L, R: REG.instantane() }); ihm.redessiner(); }
 // L'hôte : les événements du combat à montrer ici, et à tous avec l'état.
 function diffuser() {
   // le réglage « finir la phase quand plus personne n'a rien à faire »
-  if (hote && L.phase === 'combat' && REG.oui('phase.autoFin') && combat.rienAFaire()) { L.pret = []; combat.finPhaseHeros(); }
+  if (hote && L.phase === 'combat' && combat.S.phase === 'heros' && REG.oui('phase.autoFin') && combat.rienAFaire()) { L.pret = []; combat.finPhaseHeros(); }
   const evs = combat.S.evenements.splice(0);
   vue.jouer(evs);
   ihm.etatRecu();
   party?.toAll({ t: 'etat', L, R: REG.instantane(), copie: combat.instantane(), evs });
+}
+// L'hôte : une action d'exploration d'un joueur (ou la sienne). Les scènes et l'éboulis du chemin choisi sont joués chez tous.
+function explorer(qui, a) {
+  const avant = combat.S.question?.fourche ?? null;
+  const ok = arbitrerExploration(combat, L, qui, a, { hote: HOTE, joueurs: joueurs().length });
+  if (!ok) return false;
+  if (a.op === 'marche') {
+    const scene = ihm.sceneDeZone(combat.U(a.id));
+    if (scene) { party.toAll({ t: 'scene', scene }); ihm.jouerScene(scene, {}); }
+  } else if (a.op === 'choix' && a.quoi === 'chemin' && avant) {
+    const evs = combat.S.evenements.splice(0);      // (l'éboulis arrive après la scène, et non avec l'état)
+    ihm.apresChoixChemin(a.fourche, a.branche, evs);
+    party.toAll({ t: 'chemin', fourche: a.fourche, branche: a.branche, evs });
+  }
+  return true;
 }
 // L'hôte : tous ceux qu'on attend sont prêts ? la phase des héros finit (les ennemis jouent).
 function verifierPrets() {
@@ -232,11 +256,12 @@ function lancer() {
   L.phase = 'combat'; L.pret = []; L.absents = {};
   combat = nouveauCombat(L.equipe, null, L.infini ? DEBUT_INFINI : null);
   combat.S.mode = L.mode;
-  combat.commencer();
+  if (combat.S.phase !== 'exploration') combat.commencer();       // (un tronçon d'aventure commence à pied)
   ihm.lance();
   const evs = combat.S.evenements.splice(0);
   vue.jouer(evs);
   party.toAll({ t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs });
+  if (combat.S.phase === 'exploration') ihm.jouerScene('depart', {});
 }
 // Mode infini : la manche gagnée, la suivante (plus dure) : l'hôte la crée et l'envoie à tous, comme le début du combat.
 function suivante() {
@@ -295,7 +320,7 @@ export function update(dt) {
 function intention(s) {
   const h = combat.U(PLACES[Math.round(s.h) - 1]);
   if (!h) return '';
-  const cap = CAPACITES[capacitesDe(h)[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
+  const cap = CAPACITES[capacitesDe(combat.S, h)[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
   if (!cap) return '';
   return `${cap.nom}${cible ? ` → ${cible.nom}` : ''}`;
 }

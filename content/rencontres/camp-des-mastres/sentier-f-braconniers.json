@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/sentier-f-braconniers",
+  "nom": "",
+  "sorte": "combat",
+  "objectif": {
+    "type": "vaincre-tous"
+  },
+  "ennemis": [
+    {
+      "type": "loup",
+      "n": 1,
+      "depart": "avant"
+    },
+    {
+      "type": "bandit",
+      "n": 2,
+      "depart": "avant"
+    },
+    {
+      "type": "arbaletrier",
+      "n": 1,
+      "depart": "loin"
+    }
+  ],
+  "renforts": [],
+  "recompenses": {
+    "caillasse": [
+      15,
+      25
+    ]
+  }
+}

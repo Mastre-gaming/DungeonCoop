@@ -1,0 +1,498 @@
+{
+  "_lisez_moi": "Les moments du niveau 1 « Le chemin de la tour » (le sentier F, jusqu'à la porte), dans le gabarit du départ du camp (content/moments/depart.json, Paolitus) : une scène est une suite d'étapes ; une réplique fait 4 lignes courtes au plus (STORY_STRUCTURE.md). {heros}, {heros2}, {heros3}, {heros4} : le nom du 1er, 2e, 3e, 4e héros du groupe ; {partants} : les noms de ceux qui partent. Une réplique avec \"qui\": \"{heros}\" est dite par ce héros (son médaillon), \"Le conteur\" et \"Le colporteur\" ont le leur. Les répliques marquées \"brouillon\": true sont des BROUILLONS de Claude (ton : aventure épique, pointe d'humour) : l'histoire est à l'équipe, qui les réécrit ou les retire ici, sans toucher au code. Celles sans \"brouillon\" expliquent le jeu. Étapes : camera [x, y] ou un point nommé (ennemis, brasero, branche-perdue) + duree ; coupe (fondu au noir, la caméra ailleurs) ; titre / sous ; texte (qui, brouillon, si : nord ou sud) ; marqueur ; gros_plan (\"etal\" ou null) et etiquette ({x, y, texte, bas}, pixels de l'image 240 x 150) ; eboulis ; attendre. « declencheurs » : une scène quand le groupe passe x. « combats » : le titre de chaque combat et sa scène.",
+  "id": "camp-des-mastres",
+  "combats": {
+    "principal": {
+      "titre": "Les bandits du sentier F",
+      "scene": "premier-combat"
+    },
+    "gue": {
+      "titre": "Le péage du gué",
+      "scene": "gue"
+    },
+    "champs": {
+      "titre": "L’embuscade des blés"
+    },
+    "moulin": {
+      "titre": "Le moulin envahi"
+    },
+    "porte": {
+      "titre": "Le gardien de la porte"
+    }
+  },
+  "declencheurs": [
+    {
+      "scene": "champs",
+      "x": 141
+    },
+    {
+      "scene": "moulin",
+      "x": 184
+    },
+    {
+      "scene": "montee",
+      "x": 226
+    },
+    {
+      "scene": "porte",
+      "x": 262
+    }
+  ],
+  "scenes": {
+    "depart": [
+      {
+        "coupe": [
+          283,
+          9
+        ]
+      },
+      {
+        "titre": "Le camp des mastres",
+        "sous": "Niveau 1 · Le chemin de la tour"
+      },
+      {
+        "texte": "Au-delà de la lisière, du gué et du vieux moulin, une tour attend. Le contrat promet une renommée à faire pâlir tous les camps.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "marqueur": {
+          "x": 283,
+          "y": 7.5,
+          "texte": "La porte de la tour : le but du niveau"
+        }
+      },
+      {
+        "texte": "{partants} l’ont lu, signé, et découvert trop tard qu’il n’y avait pas de petites lignes. Que des grosses.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "coupe": [
+          16,
+          12.5
+        ]
+      },
+      {
+        "texte": "Le sentier F ? Quelqu’un a vraiment appelé un sentier « F » ?",
+        "qui": "{heros}",
+        "brouillon": true
+      },
+      {
+        "texte": "Ça veut dire « fort dangereux ». Ou « fait par un stagiaire ». Je n’ai pas décidé.",
+        "qui": "{heros2}",
+        "brouillon": true
+      },
+      {
+        "texte": "Une seule règle, là-haut : pas d’échec critique. Je note.",
+        "qui": "{heros3}",
+        "brouillon": true
+      },
+      {
+        "texte": "Vous partez à pied. Cliquez pour marcher ; les autres héros suivent."
+      },
+      {
+        "camera": [
+          46,
+          12.5
+        ],
+        "duree": 2.6
+      },
+      {
+        "texte": "Les ennemis regardent vers l’ouest. Leur champ de vue apparaît quand vous approchez : restez dehors, et frappez le premier pour les surprendre."
+      },
+      {
+        "camera": [
+          16,
+          12.5
+        ],
+        "duree": 1.6
+      }
+    ],
+    "premier-combat": [
+      {
+        "camera": "ennemis",
+        "duree": 1.0
+      },
+      {
+        "texte": "Des bandits. Évidemment. Le sentier F a toujours eu mauvaise réputation : c’est pour ça qu’on ne lui a jamais donné de vrai nom.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "camera": "brasero",
+        "duree": 1.0
+      },
+      {
+        "marqueur": {
+          "ou": "brasero",
+          "texte": "Le brasero : renversé, il met le feu au foin"
+        }
+      },
+      {
+        "texte": "Un combo : poussez un bandit dans le foin, puis qu’un autre héros renverse le brasero (ou y tire une flèche de feu)."
+      }
+    ],
+    "fourche-avant": [
+      {
+        "camera": [
+          70.5,
+          12
+        ],
+        "duree": 0.8
+      },
+      {
+        "texte": "Le sentier se sépare en deux. Le poteau indicateur a été planté par quelqu’un de très sûr de lui : ses deux flèches disent « par ici ».",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "camera": [
+          86,
+          8.5
+        ],
+        "duree": 1.4
+      },
+      {
+        "marqueur": {
+          "x": 86,
+          "y": 7.6,
+          "texte": "Au nord : l’étal du colporteur"
+        }
+      },
+      {
+        "gros_plan": "etal"
+      },
+      {
+        "texte": "Psst ! Approchez, approchez ! Potions du matin, huile de première qualité, corde qui tient, conversation gratuite !",
+        "qui": "Le colporteur",
+        "brouillon": true
+      },
+      {
+        "etiquette": {
+          "x": 170,
+          "y": 106,
+          "texte": "Potion : 20 Caillasse · +20 PV, à boire en combat"
+        }
+      },
+      {
+        "texte": "Une potion : 20 Caillasse. Elle rend 20 PV, à boire en combat (action bonus)."
+      },
+      {
+        "etiquette": {
+          "x": 41,
+          "y": 92,
+          "texte": "Tonneau d’huile : 25 Caillasse · un seul"
+        }
+      },
+      {
+        "texte": "Un tonneau d’huile : 25 Caillasse, un seul. Posez-le avant un combat : un coup ou du feu, et l’huile s’étend (l’huile enflammée, c’est un combo)."
+      },
+      {
+        "etiquette": {
+          "x": 120,
+          "y": 50,
+          "texte": "Le colporteur : un grand bavard",
+          "bas": true
+        }
+      },
+      {
+        "texte": "Mais attention : je parle beaucoup. Tout ce que je vois passer, le péage du gué le saura avant vous.",
+        "qui": "Le colporteur",
+        "brouillon": true
+      },
+      {
+        "etiquette": null
+      },
+      {
+        "gros_plan": null
+      },
+      {
+        "camera": [
+          85.5,
+          18.5
+        ],
+        "duree": 1.4
+      },
+      {
+        "marqueur": {
+          "x": 85.5,
+          "y": 19.6,
+          "texte": "Au sud : la vieille borne"
+        }
+      },
+      {
+        "texte": "Au sud, la vieille borne : elle veille sur qui la touche. Le groupe gagne une relance (le premier d20 raté d’un héros se rejoue), et un d20 pour un peu de Caillasse."
+      },
+      {
+        "texte": "Et par le sud, personne ne vous voit venir : au gué, la surprise reste possible.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "camera": [
+          70.5,
+          12
+        ],
+        "duree": 1.2
+      },
+      {
+        "texte": "La pente au-dessus des deux chemins ne tient plus qu’à un caillou. Un seul passage tiendra : celui que vous laisserez s’effondrera derrière vous.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "texte": "Le nord : des potions et un tonneau, mais le péage vous attendra (pas de surprise, un bandit de plus). Le sud : une relance, et la surprise au gué."
+      }
+    ],
+    "fourche-apres": [
+      {
+        "camera": "branche-perdue",
+        "duree": 1.0
+      },
+      {
+        "eboulis": true
+      },
+      {
+        "texte": "La pente cède dans un grondement épique. Quelque part, un caillou se sent très important.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "texte": "Ce chemin est fermé pour toute la partie. Le groupe continue vers le gué."
+      }
+    ],
+    "gue": [
+      {
+        "camera": "ennemis",
+        "duree": 1.0
+      },
+      {
+        "texte": "Au gué, des bandits ont inventé un impôt : le péage. Ils acceptent la Caillasse et les potions. Pas les excuses.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "si": "nord",
+        "texte": "Quatre héros, un colporteur bavard… Les bandits vous attendaient. L’un d’eux a même amené son cousin.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "si": "nord",
+        "texte": "Le péage était prévenu : pas de surprise, et un bandit de plus."
+      },
+      {
+        "si": "sud",
+        "texte": "Personne ne vous attendait par le sud. Les bandits comptent encore leur Caillasse.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "camera": [
+          119.5,
+          12.5
+        ],
+        "duree": 0.9
+      },
+      {
+        "marqueur": {
+          "x": 116.7,
+          "y": 11.0,
+          "texte": "La corde du pont"
+        }
+      },
+      {
+        "texte": "La corde du pont : coupez-la quand des bandits sont dessus, ils tomberont à l’eau. La rivière est profonde ; plus au sud, un haut-fond se traverse à pied."
+      }
+    ],
+    "champs": [
+      {
+        "camera": [
+          158,
+          13
+        ],
+        "duree": 1.4
+      },
+      {
+        "texte": "Les champs de blé de l’est. Calmes. Trop calmes. Le genre de calme qui finit en embuscade… ou en chariot abandonné. Avec ce sentier, on ne sait jamais.",
+        "qui": "Le conteur",
+        "brouillon": true
+      }
+    ],
+    "moulin": [
+      {
+        "camera": [
+          202,
+          14
+        ],
+        "duree": 1.4
+      },
+      {
+        "texte": "Le moulin. Des loups le long du canal, des rats dans les sacs… et le meunier, resté devant sa porte, armé d’un balai et d’une détermination admirable.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "marqueur": {
+          "x": 202,
+          "y": 15.6,
+          "texte": "Le meunier : à protéger"
+        }
+      },
+      {
+        "texte": "Protégez le meunier pendant 4 tours : les bêtes s’enfuiront (et lui saura vous remercier). Arrivez par le nord, derrière le moulin, pour les surprendre."
+      },
+      {
+        "camera": [
+          206,
+          14.5
+        ],
+        "duree": 0.8
+      },
+      {
+        "marqueur": {
+          "x": 206,
+          "y": 13.7,
+          "texte": "La vanne du bief"
+        }
+      },
+      {
+        "texte": "La vanne du bief inonde la cour : tout le monde dedans est Trempé. La Foudre adore ça."
+      }
+    ],
+    "montee": [
+      {
+        "camera": [
+          246,
+          11.5
+        ],
+        "duree": 1.6
+      },
+      {
+        "texte": "L’allée des statues. Elles ont l’air de vous juger. Les statues font toujours ça.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "texte": "Au pied de l’une d’elles, quelque chose de petit, gris et couronné a l’air de vous attendre. Ou de vous fuir. C’est difficile à dire avec les rats.",
+        "qui": "Le conteur",
+        "brouillon": true
+      }
+    ],
+    "porte": [
+      {
+        "camera": [
+          283,
+          10.5
+        ],
+        "duree": 1.6
+      },
+      {
+        "texte": "La porte de la tour. Devant, un gardien taillé comme une armoire. Une armoire qui charge.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "marqueur": {
+          "x": 283,
+          "y": 9.6,
+          "texte": "Le gardien"
+        }
+      },
+      {
+        "texte": "Quand il annonce sa Charge (la ligne rouge au sol), écartez-vous : s’il finit contre un pilier, il est Étourdi. Poussez-le pour déplacer sa ligne."
+      },
+      {
+        "camera": [
+          285.4,
+          8.5
+        ],
+        "duree": 0.8
+      },
+      {
+        "marqueur": {
+          "x": 285.4,
+          "y": 7.3,
+          "texte": "Le treuil de la herse"
+        }
+      },
+      {
+        "texte": "Le treuil, à droite de l’arche, lâche la herse sur qui se tient dessous."
+      }
+    ],
+    "porte-ouverte": [
+      {
+        "camera": [
+          283,
+          8
+        ],
+        "duree": 1.0
+      },
+      {
+        "texte": "Le gardien s’effondre dans un fracas de ferraille. La herse se lève en grinçant, comme si elle n’attendait que ça.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "texte": "Quelqu’un a pensé à sonner ?",
+        "qui": "{heros}",
+        "brouillon": true
+      },
+      {
+        "texte": "Marchez jusqu’à la porte pour la passer."
+      }
+    ],
+    "arrivee": [
+      {
+        "camera": [
+          283,
+          6
+        ],
+        "duree": 1.2
+      },
+      {
+        "titre": "Le chemin de la tour",
+        "sous": "est derrière vous"
+      },
+      {
+        "texte": "Les héros franchissent la porte, couverts de poussière, de gloire et d’un peu de farine.",
+        "qui": "Le conteur",
+        "brouillon": true
+      },
+      {
+        "texte": "Ce qui les attend à l’intérieur ? Les caves, la garnison, les hauteurs. Une autre histoire.",
+        "qui": "Le conteur",
+        "brouillon": true
+      }
+    ],
+    "colporteur": [
+      {
+        "gros_plan": "etal"
+      },
+      {
+        "texte": "Tiens, un client ! Regardez-moi ça : tout est fait main, la plupart du temps par quelqu’un d’autre.",
+        "qui": "Le colporteur",
+        "brouillon": true
+      },
+      {
+        "etiquette": {
+          "x": 170,
+          "y": 106,
+          "texte": "Potion : 20 Caillasse"
+        }
+      },
+      {
+        "texte": "Qu’est-ce que ce sera ? Une potion (20 Caillasse) ou le tonneau d’huile (25, un seul) ?",
+        "qui": "Le colporteur",
+        "brouillon": true
+      },
+      {
+        "etiquette": null
+      },
+      {
+        "gros_plan": null
+      }
+    ]
+  }
+}

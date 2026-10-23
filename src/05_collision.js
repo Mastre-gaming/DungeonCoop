@@ -50,10 +50,33 @@ export function creerCollision({ obstacles, bloquees }) {
   for (const o of obstacles) marquer(o.x, o.y, o.x + o.w, o.y + o.h);
   for (let j = 0; j < gh; j++) for (let i = 0; i < gw; i++) if (i < 3 || j < 3 || i >= gw - 3 || j >= gh - 3) libre[j * gw + i] = bloque(OX + (i + 0.5) * CASE, OY + (j + 0.5) * CASE + 3) ? 0 : 1;
 
-  // Peut-on aller tout droit de a à b ? (on vérifie le pied tous les 3 px)
+  // Peut-on aller tout droit de a à b ? Le pied glisse le long du segment, et on cherche, exactement, s'il touche une case
+  // bloquée ou un obstacle en chemin. (Avant, on vérifiait le pied tous les 3 px : en biais, il pouvait frôler le coin d'un
+  // obstacle fin, un piquet de 6 px, entre deux vérifications, et les promeneurs passaient dans le coin.)
+  // Le pied en (x, y) touche le rectangle [rx0, rx1] × [ry0, ry1] (ouvert, comme dans bloque) quand x est dans
+  // ]rx0 - w/2, rx1 + w/2[ et y dans ]ry0, ry1 + h[ : on coupe le segment par ces deux bandes.
+  function touche(ax, ay, bx, by, rx0, ry0, rx1, ry1) {
+    let t0 = 0, t1 = 1;
+    for (const [a, d, lo, hi] of [[ax, bx - ax, rx0 - PIED.w / 2, rx1 + PIED.w / 2], [ay, by - ay, ry0, ry1 + PIED.h]]) {
+      if (Math.abs(d) < 1e-9) { if (!(a > lo && a < hi)) return false; continue; }
+      let u = (lo - a) / d, v = (hi - a) / d; if (u > v) [u, v] = [v, u];
+      t0 = Math.max(t0, u); t1 = Math.min(t1, v);
+      if (t0 >= t1) return false;
+    }
+    return true;
+  }
   function droit(ax, ay, bx, by) {
-    const n = Math.ceil(Math.hypot(bx - ax, by - ay) / 3);
-    for (let k = 1; k <= n; k++) if (bloque(ax + (bx - ax) * k / n, ay + (by - ay) * k / n)) return false;
+    if (bloque(bx, by)) return false;   // (l'arrivée libre, donc dans le monde ; le départ, comme avant, n'est pas jugé)
+    const x0 = Math.min(ax, bx) - PIED.w / 2, x1 = Math.max(ax, bx) + PIED.w / 2, y0 = Math.min(ay, by) - PIED.h, y1 = Math.max(ay, by);
+    for (let j = Math.floor(y0 / T); j <= Math.floor(y1 / T); j++)
+      for (let i = Math.floor(x0 / T); i <= Math.floor(x1 / T); i++)
+        if (tuile(i, j) && touche(ax, ay, bx, by, i * T, j * T, (i + 1) * T, (j + 1) * T)) return false;
+    const vus = new Set();
+    for (let j = Math.floor(y0 / PAQUET); j <= Math.floor(y1 / PAQUET); j++)
+      for (let i = Math.floor(x0 / PAQUET); i <= Math.floor(x1 / PAQUET); i++) {
+        const l = paquets.get(clePaquet(i, j));
+        if (l) for (const o of l) { if (vus.has(o)) continue; vus.add(o); if (touche(ax, ay, bx, by, o.x, o.y, o.x + o.w, o.y + o.h)) return false; }
+      }
     return true;
   }
 

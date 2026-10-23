@@ -1,0 +1,109 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/sentier-f-c",
+  "nom": "",
+  "unite": "cases",
+  "note": "Le champ fauché : deux bottes de foin et deux braseros, un de chaque côté (gabarit C).",
+  "taille": [
+    24,
+    16
+  ],
+  "decor": {
+    "rochers": [
+      [
+        15.5,
+        5
+      ],
+      [
+        15.5,
+        15
+      ],
+      [
+        7,
+        10
+      ]
+    ],
+    "tonneaux": [],
+    "foin": [
+      {
+        "x0": 10,
+        "y0": 6,
+        "x1": 13,
+        "y1": 9
+      },
+      {
+        "x0": 10,
+        "y0": 11,
+        "x1": 13,
+        "y1": 14
+      }
+    ],
+    "braseros": [
+      [
+        8.3,
+        7.5
+      ],
+      [
+        8.3,
+        12.5
+      ]
+    ]
+  },
+  "departs": {
+    "heros": [
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        9
+      ],
+      [
+        3,
+        11
+      ],
+      [
+        3,
+        13
+      ]
+    ],
+    "ennemis": {
+      "avant": [
+        [
+          17.5,
+          8
+        ],
+        [
+          17.5,
+          10
+        ],
+        [
+          17.5,
+          12
+        ]
+      ],
+      "loin": [
+        [
+          20.5,
+          5.5
+        ],
+        [
+          20.5,
+          14.5
+        ]
+      ],
+      "fond": [
+        [
+          22,
+          10
+        ],
+        [
+          22,
+          8.5
+        ]
+      ]
+    }
+  },
+  "tuiles": "prairie"
+}
