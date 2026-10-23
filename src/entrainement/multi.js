@@ -10,7 +10,7 @@
 import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
 import { fr } from '../13_reseau.js';
-import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer, DEBUT_INFINI } from './regles.js';
+import { HEROS, CAPACITES, PLACES, CLASSES_ESSAI, EQUIPE_KIT, peutJouer, DEBUT_INFINI, capacitesDe } from './regles.js';
 import { monGithub } from './joueur.js';
 import { arme } from './armes.js';
 import * as REG from './reglages-combat.js';   // les réglages du combat : seules les valeurs de l'hôte comptent, il les envoie à tous
@@ -80,7 +80,7 @@ export function arbitrer(combat, L, qui, a) {
     return combat.deplacer(h, x, y, combat.portee(h));
   }
   if (a.type === 'capacite') {
-    if (!HEROS[h.type].capacites.includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
+    if (!capacitesDe(h).includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
     const c = a.cible ?? {}, cible = c.id ? { id: String(c.id) } : Number.isFinite(c.x) && Number.isFinite(c.y) ? { x: c.x, y: c.y } : {};
     return combat.utiliser(h, a.cap, cible);
   }
@@ -295,7 +295,7 @@ export function update(dt) {
 function intention(s) {
   const h = combat.U(PLACES[Math.round(s.h) - 1]);
   if (!h) return '';
-  const cap = CAPACITES[HEROS[h.type].capacites[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
+  const cap = CAPACITES[capacitesDe(h)[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
   if (!cap) return '';
   return `${cap.nom}${cible ? ` → ${cible.nom}` : ''}`;
 }

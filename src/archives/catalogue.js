@@ -66,6 +66,11 @@ function personnages() {
       classe: H ? id : null, fiche: fiche ? `fiche-${fiche.id}` : null,
     });
   }
+  // les trois formes du Changepeau de Mope (au terrain : la Mue) : une image par face, qui tourne
+  for (const [f, nom, texte] of [['bete', 'La Bête', 'dégâts et mobilité : Crocs, Bond, Curée · 40 PV de forme'], ['cosa', 'La Cosa', 'dégâts et résistance : Poing de chair, Étreinte, Dévorer · 60 PV de forme'], ['illumine', 'L’Illuminé', 'zone et coup de main : Braise, Embrasement, Armes ardentes · 30 PV de forme']]) {
+    liste.push({ id: `changepeau-${f}`, nom: `Le Changepeau : ${nom}`, groupe: 'Les classes de l’armurerie', planche: `${LPC}entrainement/formes/${f}.png`, format: 'bande', w: 64, h: 64, images: 4, fps: 2,
+      credits: './assets/credits/entrainement-changepeau-formes.txt', texte: `Une forme de Mope, l’ancien changepeau (la Mue) : ${texte}.`, classe: 'changepeau', fiche: 'fiche-changepeau', forme: f });
+  }
   for (const m of MOBS) {
     const dossier = `${LPC}ennemis/${m.id}/`;
     liste.push({

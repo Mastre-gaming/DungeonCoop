@@ -37,7 +37,7 @@ const game = createGame({ storage: { prefix: 'dungeoncoop:' } });
 
 async function demarrer() {
   const planches = {
-    limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
+    limier: 'compagnons/limier.png', forme_bete: 'entrainement/formes/bete.png', forme_cosa: 'entrainement/formes/cosa.png', forme_illumine: 'entrainement/formes/illumine.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     ...PLANCHES_SALLES,           // le château et le donjon (les salles de l'atelier des niveaux)
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)

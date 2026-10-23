@@ -37,6 +37,10 @@ const COULEURS = {
 const LIGNES_CHIEN = { haut: 0, gauche: 1, bas: 2, droite: 3 };
 const VITESSE_CHIEN = 9 * T;
 const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' };
+// Les trois formes du Changepeau de Mope (public/assets/lpc/entrainement/formes/, réduites des planches de design/classes/changepeau/formes/) :
+// une image debout par face (bas, gauche, haut, droite), animée par le jeu (elle respire, marche, bondit, frappe en se jetant en avant).
+const FACES_FORME = { bas: 0, gauche: 1, haut: 2, droite: 3 };
+const NOMS_FORME = { bete: 'La Bête !', cosa: 'La Cosa !', illumine: 'L’Illuminé !' };
 
 let game, rendu, images, combat, salle, canvas;
 const aff = new Map();                 // ce que la vue montre de chaque créature (ça suit la file, pas l'état final)
@@ -173,6 +177,8 @@ function peupler() {
       id: u.id, type: u.type, camp: u.camp, x: u.x * T, y: u.y * T, dir: u.camp === 'h' ? 'droite' : 'gauche', anim: 'repos', t: Math.random(),
       pv: u.pv, ko: u.ko, mort: u.mort, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20, 5),
       pvMax: u.pvMax, plaque: creerPlaque(u), chien,
+      formes: u.type === 'changepeau' ? Object.fromEntries(['bete', 'cosa', 'illumine'].map((f) => { const sp = rendu.sprite(images[`forme_${f}`], `forme-${f}`, 64, 64); sp.cacher(true); return [f, sp]; })) : null,
+      forme: u.forme?.id ?? null, formePv: u.forme?.pv ?? 0, formeMax: u.forme?.max ?? 0,
     });
   }
   for (const b of combat.S.tonneaux) tonneaux.set(b.id, { x: b.x * T, y: b.y * T, s: rendu.sprite(images.tonneau, 'tonneau', 32, 64), cache: false });
@@ -182,7 +188,7 @@ function peupler() {
 
 // Un autre combat (une autre équipe, choisie à l'accueil ou dans le lobby) : on retire tout et on recommence, sans recharger.
 export function remplacer(nouveau) {
-  for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); }
+  for (const a of aff.values()) { a.s64.retirer(); a.grand?.retirer(); a.ombre.retirer(); a.plaque.el.remove(); for (const sp of Object.values(a.formes ?? {})) sp.retirer(); }
   for (const b of tonneaux.values()) b.s.retirer();
   enclume?.s.retirer(); films.vider();
   aff.clear(); tonneaux.clear(); file = []; courant = null; phaseVue = null; fx.vider(); etatsVus = new Map(); etatsPlaques = new Map();
@@ -405,7 +411,7 @@ function scene(e) {
       return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj(t) { if (!porte && t >= quand) toucher(); }, fin() { if (!porte) toucher(); att.anim = 'repos'; } };
     }
     case 'degats': {
-      a.pv = e.pv;
+      a.pv = e.pv; if (e.forme != null) a.formePv = e.forme;
       if (e.porte) return { duree: 0.2, maj() {}, fin() { if (!a.ko && !a.mort) a.anim = 'repos'; } };   // (déjà montré à l'impact)
       a.anim = a.ko || a.mort ? a.anim : 'blesse'; a.t = 0;
       const jet = coup?.vers === e.id ? coup : null; coup = null;
@@ -425,6 +431,20 @@ function scene(e) {
       fx.jouer('colonne-doree', { x: a.x, y: a.y }); fx.jouer('croix-soin', { x: a.x, y: a.y, retard: 0.2 });
       return { duree: 0.5 };
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
+    // la Mue du Changepeau (ou la chute, ou quitter sa forme) : un éclat, un nuage de poussière, et l'autre corps
+    case 'mue':
+      fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-dore', { x: a.x, y: a.y - 30 });
+      a.eclair = 1; a.anim = 'repos'; a.t = 0;
+      return { duree: 0.4, maj(t, k) { if (k >= 0.35 && a.forme !== (e.forme ?? null)) { a.forme = e.forme ?? null; if (e.forme) { a.formePv = e.pv; a.formeMax = e.max; flottant(a, NOMS_FORME[e.forme], 'info'); } } },
+        fin() { a.forme = e.forme ?? null; if (e.forme) { a.formePv = e.pv; a.formeMax = e.max; } } };
+    case 'forme': a.formePv = e.pv; flottant(a, `+${e.n} forme`, 'soin'); return { duree: 0.25 };
+    // le Bond de la Bête : un saut en cloche jusqu'au contact de sa cible, de la poussière à l'arrivée
+    case 'bond': {
+      const dep = { x: a.x, y: a.y }, arr = { x: e.x * T, y: e.y * T }, c = aff.get(e.vers);
+      tourner(a, c ?? arr); a.anim = 'attaque'; a.t = 0;
+      return { duree: 0.42, maj(t, k) { a.x = dep.x + (arr.x - dep.x) * k; a.y = dep.y + (arr.y - dep.y) * k; a.saut = Math.sin(Math.PI * k) * 26; viser(a.x, a.y); },
+        fin() { a.x = arr.x; a.y = arr.y; a.saut = 0; a.anim = 'repos'; fx.jouer('poussiere', { x: arr.x, y: arr.y }); if (c) { c.anim = 'blesse'; c.t = 0; fx.jouer('impact-etoile', { x: c.x, y: c.y - 24 }); } } };
+    }
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
     // le Pas dans l’ombre de Shadow : il s’enfonce dans son ombre, et en ressort derrière la cible
@@ -636,13 +656,15 @@ function poserPlaque(a) {
   if (p.el.hidden === voir) p.el.hidden = !voir;
   if (!voir) return;
   if (p.barre.hidden === barre) p.barre.hidden = !barre;
-  if (p.pv !== a.pv || p.ko !== a.ko) {
-    p.pv = a.pv; p.ko = a.ko;
-    const k = Math.max(0, Math.min(1, a.pv / a.pvMax));
+  const forme = a.forme && !a.ko ? `${a.formePv}/${a.formeMax}` : '';
+  if (p.pv !== a.pv || p.ko !== a.ko || p.forme !== forme) {
+    p.pv = a.pv; p.ko = a.ko; p.forme = forme;
+    const k = forme ? Math.max(0, Math.min(1, a.formePv / a.formeMax)) : Math.max(0, Math.min(1, a.pv / a.pvMax));
     p.plein.style.width = `${Math.round(k * 100)}%`;
-    p.el.classList.toggle('bas', k <= 0.3);
+    p.el.classList.toggle('bas', !forme && k <= 0.3);
+    p.el.classList.toggle('forme', !!forme);
     p.el.classList.toggle('ko', a.ko);
-    p.chiffre.textContent = a.ko ? 'KO' : `${Math.max(0, a.pv)}/${a.pvMax}`;
+    p.chiffre.textContent = a.ko ? 'KO' : forme || `${Math.max(0, a.pv)}/${a.pvMax}`;
   }
   const cle = etats.map((e) => `${e.id}${e.n ?? ''}`).join(',');
   if (cle !== p.cle) { p.cle = cle; p.etats.replaceChildren(...etats.map(iconeEtat)); }
@@ -730,6 +752,8 @@ export function update(dtReel) {
 
 function poserPerso(a) {
   if (a.chien) return void poserChien(a);
+  if (a.formes) { for (const [f, sp] of Object.entries(a.formes)) if (f !== a.forme || a.cache || a.ko || a.mort) sp.cacher(true); }
+  if (a.formes && a.forme && !a.cache && !a.ko && !a.mort) return void poserForme(a);
   if (a.cache) { a.s64.cacher(true); a.grand?.cacher(true); a.ombre.cacher(true); return; }
   const ligne = DIR[a.dir];
   let anim = a.anim, rang, col;
@@ -767,6 +791,23 @@ function poserPerso(a) {
   a.ombre.cacher(a.enfonce > 0.3 || (a.plonge ?? 0) > 0.2); a.ombre.poser(a.x, a.y - 1);
 }
 
+// Une forme du Changepeau : sa face selon la direction ; elle respire au repos, rebondit en marchant, se jette en avant
+// pour frapper, tremble quand elle est touchée.
+function poserForme(a) {
+  const sp = a.formes[a.forme];
+  a.s64.cacher(true); a.grand?.cacher(true); sp.cacher(false);
+  const v = { haut: [0, -1], bas: [0, 1], gauche: [-1, 0], droite: [1, 0] }[a.dir] ?? [0, 1];
+  let dx = 0, dy = 0;
+  if (a.anim === 'marche') dy = -Math.abs(Math.sin(a.t * 10)) * 3;
+  else if (a.anim === 'blesse') dx = Math.sin(a.t * 60) * 2 * Math.max(0, 1 - a.t * 3);
+  else if (a.anim === 'repos') dy = Math.round(Math.sin(a.t * 2.4));
+  else { const k = Math.min(1, a.t / 0.45), l = Math.sin(Math.PI * Math.min(1, k * 1.6)) * 9; dx = v[0] * l; dy = v[1] * l * 0.6; }
+  sp.poser(Math.round(a.x - 32 + dx), Math.round(a.y - 60 + dy - (a.saut ?? 0) + a.enfonce * 26), a.y, FACES_FORME[a.dir] * 64, 0);
+  const m = sp.mesh.material, b = 1 + Math.max(0, a.eclair ?? 0) * 3.5;
+  if (m.userData.teinte !== b) { m.color.setScalar(b); m.userData.teinte = b; }
+  a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);
+}
+
 // Le limier : sa planche à lui (4 rangées : la marche, colonnes 0 à 4 ; l'arrêt, colonne 5) ; à terre, terni.
 function poserChien(a) {
   if (a.cache) { a.s64.cacher(true); a.ombre.cacher(true); return; }
@@ -784,6 +825,7 @@ function resynchroniser() {
   for (const u of combat.S.unites) {
     const a = aff.get(u.id); if (!a) continue;
     a.x = u.x * T; a.y = u.y * T; a.pv = u.pv; a.ko = u.ko; a.mort = u.mort;
+    if (a.formes) { a.forme = u.forme?.id ?? null; a.formePv = u.forme?.pv ?? 0; a.formeMax = u.forme?.max ?? 0; a.saut = 0; }
     if (a.anim === 'tombe' && !u.ko && !u.mort) a.anim = 'repos';
   }
   for (const [id, b] of tonneaux) {
