@@ -1,6 +1,6 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
-import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour } from './regles.js';
+import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, FORMES, equipeDepuis, peutJouer, classesPour, equipePour, capacitesDe } from './regles.js';
 import { adresseEquipe } from './interface.js';
 import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
@@ -221,8 +221,8 @@ export async function selfTest(t, game) {
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
-  t.eq(CLASSES_ESSAI.length, 11, 'onze classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier, Shadow et Baba Brisenclume');
-  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9, 6], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.eq(CLASSES_ESSAI.length, 12, 'douze classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier, Shadow, Baba Brisenclume et le Changepeau');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9, 6, 7.5], 'une distance par tour selon la classe (6 m à 10,5 m)');
   t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
@@ -230,7 +230,7 @@ export async function selfTest(t, game) {
   // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
   t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
     'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
-  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 3 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 2, 'les classes du kit et d’essai, par tout le monde');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 4 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 3, 'les classes du kit et d’essai, par tout le monde');
   t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
   {
     const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
@@ -603,6 +603,90 @@ export async function selfTest(t, game) {
   }
 
   // --- Les attaques d'opportunité, et Se désengager (#231) ------------------------------------------------------------
+  t.group('le Changepeau de Mope');
+  {
+    const H = HEROS.changepeau;
+    t.ok(CLASSES_ESSAI.includes('changepeau') && peutJouer('changepeau', 'DevMope') && peutJouer('changepeau', 'devmope') && !peutJouer('changepeau', 'PCrrfng') && !peutJouer('changepeau', null),
+      'le Changepeau se choisit à l’entrée, et ne se joue que par DevMope, son auteur');
+    t.ok(H.pv === 110 && H.vitesse * 1.5 === 7.5 && H.res.type === 'Rage' && H.res.max === 50, 'sa fiche : 110 PV, 7,5 m par tour, la Rage (50 au plus)');
+    t.eq(Object.values(FORMES).map((f) => f.pv), [40, 60, 30], 'trois formes : la Bête 40 PV, la Cosa 60, l’Illuminé 30');
+    t.eq(resultats(CAPACITES.curee).map((r) => r.degats), ['0', '8–11', '17–22', '34–44'], 'la Curée et Dévorer : 14 + d6 + 2, comme leur description');
+    const ids = [...H.capacites, ...Object.values(FORMES).flatMap((f) => f.capacites)];
+    t.ok(ids.every((k) => CAPACITES[k] && !icone(k).endsWith('enseigne-epee.png')), 'chaque capacité de l’orc et des formes a son icône');
+    t.eq(ordreBarre(H.capacites, CAPACITES).slice(0, 4), ['batonNoue', 'mueBete', 'mueCosa', 'mueIllumine'], 'sa barre d’orc : Bâton noué, puis les trois Mues');
+  }
+  // la scène : le Changepeau au milieu du terrain, une Brute ennemie à 1,5 m ; la Brute, le Voleur et la Mage autour ; les autres loin
+  const mope = (o = {}) => {
+    const C = essai(['changepeau', 'brute', 'voleur', 'mage'], { alea: des(Array(60).fill(15)), ...o });
+    C.commencer();
+    const c = trouver(C, 'changepeau'), b = trouver(C, 'brute'), v = trouver(C, 'voleur'), m = trouver(C, 'mage');
+    for (const u of C.S.unites) if (![c, b, v, m].includes(u)) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    poser(C, c.id, 6, 10); poser(C, b.id, 6, 11.5); poser(C, v.id, 3, 13); poser(C, m.id, 3, 8); const s = poser(C, 'br', 7, 10);
+    return { C, c, b, v, m, s };
+  };
+  {
+    const { C, c, s } = mope();
+    t.ok(!C.peutUtiliser(c, CAPACITES.mueBete), 'sans Rage, pas de Mue');
+    c.res.v = 50;
+    const pv = c.pv;
+    t.ok(C.utiliser(c, 'mueBete', {}) && c.forme?.id === 'bete' && c.forme.pv === 40 && c.res.v === 30, 'la Mue : 20 Rage, la Bête et ses 40 PV de forme');
+    t.eq(capacitesDe(c).slice(0, 4), ['crocs', 'bond', 'curee', 'quitterForme'], 'en Bête, ses capacités : Crocs, Bond, Curée, Quitter la forme');
+    C._.blesser(c, 15, s.id, { sansMult: true });
+    t.ok(c.forme.pv === 25 && c.pv === pv, 'les coups vident la forme d’abord : 15 sur la Bête, l’orc intact');
+    C._.blesser(c, 40, s.id, { sansMult: true });
+    t.ok(!c.forme && c.pv === pv - 15 && c.st.aTerre && c.expose, 'la chute : à 0 PV de forme, il redevient orc, À terre et Exposé ; les 15 en trop passent sur l’orc');
+    t.ok(C.S.evenements.some((e) => e.type === 'mue' && e.chute), 'la vue le montre (l’événement « mue »)');
+    t.ok(C._.calculer(s, c, { nom: 'Charge', mod: 0, dmod: 0, base: 8, de: 4, melee: true }).notes.some((n) => n.includes('vient de chuter')), 'Exposé par sa chute : l’ennemi a l’avantage');
+    c.t.bonus = true; c.res.v = 25;
+    t.ok(C.peutUtiliser(c, CAPACITES.mueBete) && !C.peutUtiliser(c, CAPACITES.mueCosa) && C.coutDe(c, CAPACITES.mueCosa) === 30 && C.coutDe(c, CAPACITES.mueBete) === 20,
+      'redevenu orc : la même forme coûte 20 Rage, une autre 30');
+    delete c.st.aTerre; c.expose = false;
+    C.utiliser(c, 'mueBete', {}); c.t.bonus = true;
+    t.ok(C.utiliser(c, 'quitterForme', {}) && !c.forme && !c.st.aTerre && !c.expose, 'Quitter la forme : il redevient orc, debout, sans la chute');
+  }
+  {
+    // la Bête : le Bond met À terre, la Curée fait ×2 puis recule sans riposte ; brûlante, plus de Bond
+    const { C, c, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueBete', {}); c.t.bonus = true;          // (la Mue a pris l'action bonus : on la rend pour le Bond)
+    poser(C, c.id, 4, 10);
+    t.ok(C.cibles(c, CAPACITES.bond).some((x) => x.id === s.id), 'le Bond vise la Brute ennemie à 4,5 m');
+    t.ok(C.utiliser(c, 'bond', { id: s.id }) && dist(c, s) < 1.3 && s.st.aTerre && C.S.evenements.some((e) => e.type === 'bond'), 'la Bête bondit à son contact : À terre');
+    t.eq(C._.calculer(c, s, { ...C._.attaqueHeros(CAPACITES.curee), id: 'curee' }).mult, 2, 'sur une cible À terre, la Curée fait ×2');
+    const pv = s.pv;
+    t.ok(C.utiliser(c, 'curee', { id: s.id }) && s.pv < pv, `la Curée : ${pv - s.pv} dégâts`);
+    t.ok(dist(c, s) > 2 && c.forme.pv === c.forme.max, `puis elle recule (à ${(dist(c, s) * 1.5).toFixed(1)} m de sa cible), sans attaque d’opportunité`);
+    c.t.bonus = true; c.st.brulure = { n: 2, par: null };
+    t.ok(!C.peutUtiliser(c, CAPACITES.bond), 'brûlante, la Bête ne peut plus bondir');
+  }
+  {
+    // la Cosa : l'Étreinte attire, Dévorer nourrit la forme ; le feu lui fait ×2
+    const { C, c, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueCosa', {}); c.t.bonus = true;
+    poser(C, c.id, 5, 10);
+    t.ok(!C.cibles(c, CAPACITES.devorer).length && !C.utiliser(c, 'devorer', { id: s.id }), 'Dévorer : personne à dévorer (ni À terre, ni étreint)');
+    t.ok(C.utiliser(c, 'etreinte', { id: s.id }) && dist(c, s) <= CONTACT + 0.01 && s.st.attire, `l’Étreinte l’attire jusqu’à son contact (${(dist(c, s) * 1.5).toFixed(1)} m)`);
+    c.forme.pv = 30; const pv = s.pv;
+    t.ok(C.utiliser(c, 'devorer', { id: s.id }), 'Dévorer, sur l’ennemi étreint');
+    const fait = pv - Math.max(0, s.pv);
+    t.ok(fait > 0 && c.forme.pv === Math.min(60, 30 + Math.floor(fait / 2)), `ses PV de forme regagnent la moitié des ${fait} dégâts`);
+    t.eq(C._.calculer(s, c, { nom: 'Feu', mod: 0, dmod: 0, base: 8, de: 4, el: 'feu' }).mult, 2, 'sa chair huileuse : le feu fait ×2 à la Cosa');
+  }
+  {
+    // l'Illuminé : l'Embrasement, les Armes ardentes ; l'eau l'éteint
+    const { C, c, b, m, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueIllumine', {}); c.t.bonus = true;
+    poser(C, 'br', 9, 12);
+    t.ok(C.utiliser(c, 'embrasement', { x: 9, y: 12 }) && C.surfaceA({ x: 9, y: 12 })?.t === 'feu' && s.st.brulure, 'l’Embrasement : une zone de feu à 7,5 m, la Brute ennemie dedans a la Brûlure');
+    t.ok(C.utiliser(c, 'armesArdentes', { id: b.id }) && b.st.ardent?.n === 2, 'les Armes ardentes : l’arme de la Brute brûle 2 tours');
+    const e = poser(C, 's1', b.x + 1, b.y);
+    C._.attaquer(b, e, { ...C._.attaqueHeros(CAPACITES.fracas), id: 'fracas' });
+    t.ok(e.mort || !!e.st.brulure, 'ses coups donnent la Brûlure');
+    C._.poserZone(m, CAPACITES.eclaboussure, { x: c.x, y: c.y });
+    t.ok(!c.forme && c.st.aTerre, 'Trempé, l’Illuminé s’éteint : la chute');
+    c.t.bonus = true; c.res.v = 50;
+    t.ok(!C.peutUtiliser(c, CAPACITES.mueIllumine) && C.peutUtiliser(c, CAPACITES.mueBete), 'dans l’eau, il ne peut pas redevenir l’Illuminé (les autres formes, oui)');
+  }
+
   t.group('les attaques d’opportunité (#231)');
   // la scène : la Brute au contact d'un sbire, au milieu du terrain ; les autres loin
   const opp = (o = {}) => {
@@ -1431,6 +1515,24 @@ export async function selfTest(t, game) {
     t.ok(C4.S.enclume && Math.abs(C4.S.enclume.x - p.x) < 0.05 && E && !E.cache && Math.abs(E.x / 32 - p.x) < 0.05 && !V.films.actif('chute-enclume'),
       'un clic sur le sol : l’enclume tombe là, et la vue la dessine posée');
     t.eq(V.sous(C4.S.enclume.x, C4.S.enclume.y - 0.3), 'enclume', 'on peut la viser (les Tenailles)');
+    try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
+  t.group('le Changepeau à l’écran');
+  {
+    // la Mue au clic : la Bête remplace l'orc à l'écran, sa fiche montre les PV de la forme, sa barre les capacités de la Bête
+    let garde = null; try { garde = localStorage.getItem(CLE); } catch {}
+    ihm.rejouer(); ihm.ui.choix = ['changepeau', 'brute', 'mage', 'gardien'];
+    document.querySelector('#commencer').click(); jouerFile();
+    const C5 = game.dbg.combat, ch = C5.U('h1');
+    t.eq(ch.type, 'changepeau', 'le Changepeau entre au terrain');
+    ch.res.v = 20; ihm.choisirHeros('h1'); game.dbg.advance(0.05);
+    t.ok(document.querySelector('.capacite[data-capacite="mueBete"] .cap-tampon')?.textContent === 'BÊTE' && document.querySelector('.groupe-sorts.s-mue'), 'sa barre : la Mue, une case par forme (tamponnée)');
+    ihm.choisirCapacite('mueBete'); jouerFile();
+    const A = V.aff.get('h1');
+    t.ok(ch.forme?.id === 'bete' && A.forme === 'bete' && A.formes.bete.mesh.visible && !A.s64.mesh.visible, 'la Mue : la Bête remplace l’orc à l’écran');
+    t.ok(document.querySelector('.fiche-heros .fh-jauge.pv.forme') && document.querySelector('.capacite[data-capacite="bond"]') && !document.querySelector('.capacite[data-capacite="batonNoue"]'),
+      'sa fiche montre les PV de la Bête, sa barre ses capacités');
+    t.ok(A.plaque.el.classList.contains('forme') && A.plaque.chiffre.textContent === `${ch.forme.pv}/${ch.forme.max}`, 'la barre sous ses pieds : les PV de la forme, en violet');
     try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
   }
   ihm.rejouer();

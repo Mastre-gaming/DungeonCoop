@@ -10,13 +10,15 @@ export const DOSSIER_ETATS = './assets/lpc/etats/';
 const SENS = [
   { id: 'inspire', genre: 'bonus', effet: () => 'Avantage à sa prochaine attaque.', compte: () => null },
   { id: 'lame', genre: 'bonus', effet: () => 'Sa prochaine attaque fait +d6 et compte comme du feu (Huilé ×2, enflamme l’huile).', compte: () => null },
+  { id: 'ardent', genre: 'bonus', icone: 'lame', effet: () => 'Ses coups donnent la Brûlure et enflamment l’huile (les Armes ardentes de l’Illuminé).', compte: (u) => u.st.ardent?.n ?? null },
   { id: 'bouclier', genre: 'bonus', effet: (u) => `Les ${u.st.bouclier?.v ?? 0} prochains dégâts sont pour le bouclier.`, compte: (u) => u.st.bouclier?.v ?? null },
+  { id: 'attire', genre: 'malus', icone: 'aTerre', effet: () => 'Étreint par la Cosa : elle peut le Dévorer ce round.', compte: () => null },
   { id: 'expose', genre: 'malus', effet: () => 'La prochaine attaque contre lui a l’avantage.', compte: () => null },
   { id: 'aTerre', genre: 'malus', effet: () => 'Les attaques contre lui ont l’avantage ; se relever coûte la moitié de son déplacement.', compte: () => null },
   { id: 'gele', genre: 'malus', effet: () => '−3 m de déplacement, désavantage à ses attaques ; une poussée l’envoie 3 m plus loin.', compte: (u) => u.st.gele?.n ?? null },
   { id: 'trempe', genre: 'malus', effet: () => 'La foudre lui fait ×2. Le feu ne le fait pas brûler.', compte: (u) => u.st.trempe?.ttl ?? null },
   { id: 'huile', genre: 'malus', effet: () => 'Le feu lui fait ×2 et l’enflamme.', compte: (u) => u.st.huile?.ttl ?? null },
-  { id: 'brulure', genre: 'malus', effet: (u) => `${u.type === 'voleur' ? 10 : 5} dégâts au début de son tour.`, compte: (u) => u.st.brulure?.n ?? null },
+  { id: 'brulure', genre: 'malus', effet: (u) => `${u.type === 'voleur' || u.forme?.id === 'cosa' ? 10 : 5} dégâts au début de son tour.`, compte: (u) => u.st.brulure?.n ?? null },
 ];
 export const ORDRE_ETATS = SENS.map((s) => s.id);
 
@@ -26,6 +28,6 @@ const present = (u, id) => (id === 'expose' ? !!(u.expose || u.st.expose) : !!u.
 export function etatsActifs(u) {
   if (!u || u.mort) return [];
   return SENS.filter((s) => present(u, s.id)).map((s) => ({
-    id: s.id, nom: NOM_ETAT[s.id], src: `${DOSSIER_ETATS}${s.id}.png`, effet: s.effet(u), n: s.compte(u), genre: s.genre,
+    id: s.id, nom: NOM_ETAT[s.id], src: `${DOSSIER_ETATS}${s.icone ?? s.id}.png`, effet: s.effet(u), n: s.compte(u), genre: s.genre,
   }));
 }

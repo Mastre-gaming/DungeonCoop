@@ -40,6 +40,7 @@ Chaque niveau | +5 PV et le modificateur de CON
 - Shadow, la classe de Fraps : jouable au terrain d'entraînement, avec ses règles (Pas dans l'ombre, Coup dans le dos, Élan) #198
 - Shadow rééquilibré : le Coup dans le dos à 8 + d4 + 2, et le Pas ne donne plus d'Élan #237
 - Baba Brisenclume, la classe de DonBabaa : jouable au terrain d'entraînement, avec ses règles (Marteau, Chute d'Enclume, Forge, Tenailles, Vieux Os)
+- Le Changepeau, la classe de Mope : jouable au terrain d'entraînement, avec ses règles (Bâton noué, la Mue vers la Bête, la Cosa ou l'Illuminé, leurs PV de forme, la chute)
 - Créer sa classe, pour chacun des quatre #30 #31 #32 #33
 - Vérifier le budget de chaque fiche #34
 - Décrire l'apparence de son héros, et envoyer son lien du générateur LPC #37 #38 #39 #40
