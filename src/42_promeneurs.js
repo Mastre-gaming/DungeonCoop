@@ -85,10 +85,15 @@ function remplir() {
   joignable = (x, y) => { const i = Math.floor((x - MONDE.x0) / PAS), j = Math.floor((y - MONDE.y0) / PAS); return i >= 0 && j >= 0 && i < gw && j < gh && vu[j * gw + i] === 1; };
 }
 const atteignable = ([x, y]) => !collision.bloque(x, y) && !collision.bloque(x - 8, y) && !collision.bloque(x + 8, y) && joignable(x, y);
+// Un but de promenade a, en plus, un peu de place tout autour du pied, coins compris : collé à un obstacle, le premier pas en
+// frôlait le coin. Vérifié au calcul des buts, et encore au moment de partir (un obstacle a pu être posé depuis : un mur du
+// chantier qui monte, un lieu qui change de niveau). Les activités, elles, restent tout contre leur décor.
+const AUTOUR = [[0, 0], [-8, 0], [8, 0], [0, -8], [0, 8], [-8, -8], [8, -8], [-8, 8], [8, 8]];
+const degage = ([x, y]) => AUTOUR.every(([dx, dy]) => !collision.bloque(x + dx, y + dy));
 function lesButs() {
   const pts = [];
   for (let cy = Y0 + 2.5; cy < MURAILLE.mur[0] - 1; cy += 3) for (let cx = X0 + 1.5; cx < X1 - 1; cx += 3) pts.push([cx * T, cy * T]);
-  return pts.filter(atteignable);
+  return pts.filter((p) => atteignable(p) && degage(p));
 }
 // son foyer : l'activité de son lieu de prédilection (la première, s'il y en a plusieurs du même nom)
 const foyer = (id) => activites.find((a) => a.nom === FOYERS[id]) ?? null;
@@ -113,7 +118,7 @@ function nouveauBut(p) {
   const proches = buts.filter(([x, y]) => Math.hypot(x - p.x, y - p.y) < 15 * T);
   for (let k = 0; k < 10 && proches.length; k++) {
     const [x, y] = proches[Math.floor(S.aleat() * proches.length)];
-    if (!libre(x, y, 3 * T)) continue;
+    if (!libre(x, y, 3 * T) || !degage([x, y])) continue;
     const r = collision.chemin(p.x, p.y, x, y, 20000);
     if (r && r.length) { p.route = r; p.but = [x, y]; return true; }
   }
