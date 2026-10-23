@@ -1,0 +1,125 @@
+/* Le jet de d20 : le panneau de bois et de parchemin du HUD (idée : le menu de jet de Baldur's Gate 3, à notre sauce). */
+#des { position: fixed; inset: 0; z-index: 35; display: grid; place-items: end center; padding-bottom: 112px; pointer-events: none;
+  background: radial-gradient(ellipse at 50% 70%, rgba(20, 12, 8, .55), rgba(20, 12, 8, 0) 70%); animation: des-fond .3s ease-out; }
+#des[hidden] { display: none; }
+@keyframes des-fond { from { opacity: 0; } to { opacity: 1; } }
+
+.des-cadre { position: relative; pointer-events: auto; width: min(700px, calc(100vw - 24px)); box-sizing: border-box; display: grid; gap: 8px;
+  background: var(--bois); border: 5px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 2px var(--bois-clair), 0 6px 0 rgba(0,0,0,.3);
+  padding: 10px 12px 12px; color: #fff3dc; font: 14px/1.4 var(--texte); animation: des-monte .35s cubic-bezier(.2, .9, .3, 1.2); }
+@keyframes des-monte { from { opacity: 0; transform: translateY(26px) scale(.96); } to { opacity: 1; transform: none; } }
+
+#des header { text-align: center; }
+#des h2 { margin: 0; font: 700 1.25rem var(--titre); color: var(--creme); letter-spacing: .02em; }
+#des .sous { margin: 0; font: 500 .9rem var(--titre); color: var(--creme-doux); min-height: 1.2em; }
+
+.des-corps { display: grid; grid-template-columns: minmax(120px, .8fr) minmax(250px, 1.5fr) minmax(150px, .85fr); gap: 10px; align-items: stretch; }
+
+/* les bonus, à gauche : des lignes de parchemin */
+.des-mods { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; align-content: center; }
+.des-mods .mod { display: flex; justify-content: space-between; gap: 8px; background: var(--parchemin); color: var(--parchemin-encre); border-radius: 2px; padding: 3px 8px; box-shadow: 0 2px 0 rgba(0,0,0,.25); font: 600 .9rem var(--texte); }
+.des-mods .mod b { font: 700 .95rem var(--titre); color: #2f6b2a; }
+.des-mods .mod.avantage { background: #e2efc9; } .des-mods .mod.avantage b { color: #2f6b2a; }
+.des-mods .mod.desavantage { background: #f1d3c8; } .des-mods .mod.desavantage b { color: #a3261c; }
+.des-mods .mod.total { background: #3b2716; color: var(--creme); border: 2px solid #1e130c; box-shadow: none; }
+.des-mods .mod.total b { color: #ffd35a; }
+
+/* la scène : un plateau de casino, tapis vert, rebord de bois, ampoules qui courent quand le dé roule */
+.des-scene { position: relative; min-height: 250px; display: grid; place-items: center; border-radius: 10px; margin: 6px;
+  background: radial-gradient(ellipse at 50% 38%, #3a8a52 0%, #26683c 52%, #174a29 100%), repeating-linear-gradient(45deg, rgba(255,255,255,.03) 0 2px, transparent 2px 5px);
+  border: 7px solid #5a3b22; box-shadow: 0 0 0 3px #1e130c, inset 0 0 0 2px #85581b, inset 0 0 40px rgba(0,0,0,.55); overflow: visible; transition: transform .05s; }
+.des-scene::before { content: ''; position: absolute; inset: -14px; border: 6px dotted #ffd35a; border-radius: 16px; pointer-events: none; opacity: .55; filter: drop-shadow(0 0 3px #ffb020); }
+.des-scene::after { content: ''; position: absolute; inset: 0; border-radius: 4px; pointer-events: none; box-shadow: inset 0 0 0 0 rgba(255, 211, 90, 0); }
+#des[data-phase="attente"] .des-scene::before { animation: des-ampoules 1.6s steps(2) infinite; }
+#des[data-phase="roule"] .des-scene::before { opacity: 1; animation: des-ampoules .22s steps(2) infinite; }
+#des[data-phase="pose"] .des-scene::before, #des[data-phase="somme"] .des-scene::before { opacity: 1; animation: des-ampoules .45s steps(2) infinite; }
+#des[data-phase="verdict"] .des-scene::before { opacity: 1; }
+#des[data-palier="crit"][data-phase="verdict"] .des-scene::before { animation: des-ampoules .16s steps(2) infinite; border-color: #fff3c4; }
+#des[data-palier="fumble"][data-phase="verdict"] .des-scene::before { border-color: #b8322a; opacity: .6; }
+@keyframes des-ampoules { 0% { border-color: #ffd35a; } 50% { border-color: #7a5a1e; } 100% { border-color: #ffd35a; } }
+.des-paire { display: flex; gap: 6px; align-items: center; justify-content: center; }
+.de { position: relative; width: 112px; height: 112px; transition: filter .3s; filter: drop-shadow(0 8px 0 rgba(0,0,0,.35)); will-change: transform; }
+.des-paire.n2 .de { width: 92px; height: 92px; }
+.de svg { width: 100%; height: 100%; overflow: visible; }
+.de .facette { stroke: #1e130c; stroke-width: 3; stroke-linejoin: round; transition: fill .3s; }
+.de .facette.a { fill: #e4d4ac; } .de .facette.b { fill: #cdb68c; } .de .facette.c { fill: #f3e7c9; }
+.de .num { position: absolute; left: 0; right: 0; top: 52%; transform: translateY(-50%); text-align: center; font: 700 1.9rem/1 var(--titre); color: #3a2c1a; text-shadow: 0 1px 0 rgba(255,255,255,.5); }
+.des-paire.n2 .de .num { font-size: 1.5rem; }
+.num.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+/* le vrai dé : un canevas deux fois plus grand que la place du dé, pour qu'il puisse rebondir sans être coupé */
+.de.de3d { width: 104px; height: 104px; filter: none; }
+.des-paire.n2 .de.de3d { width: 92px; height: 92px; }
+.de3d .gl { position: absolute; left: -60%; top: -60%; width: 220%; height: 220%; pointer-events: none; }
+.des-tapis { position: absolute; inset: 0; overflow: hidden; border-radius: 4px; display: grid; place-items: center; }
+.de.de3d.ecarte { filter: grayscale(.7); }
+.de.de3d.gagnant { filter: none; }
+.de.ecarte { filter: grayscale(.8) drop-shadow(0 4px 0 rgba(0,0,0,.3)); }
+.de.gagnant { filter: drop-shadow(0 0 10px rgba(255, 211, 90, .85)) drop-shadow(0 8px 0 rgba(0,0,0,.35)); }
+
+/* l'avantage : un ruban en haut du médaillon */
+.ruban { position: absolute; top: 6px; left: 50%; transform: translateX(-50%); margin: 0; padding: 0 12px; font: 700 .8rem var(--titre); letter-spacing: .08em; text-transform: uppercase; border: 2px solid #1e130c; border-radius: 3px; }
+.ruban.avantage { background: #8fd05a; color: #1d3a12; } .ruban.desavantage { background: #d0705a; color: #3a110a; }
+
+/* la table de lecture, à droite */
+.des-table { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; align-content: center; }
+.des-table li { display: grid; grid-template-columns: 3.2em 1fr auto; gap: 6px; align-items: baseline; background: #3b2716; border: 2px solid #1e130c; border-radius: 3px; padding: 3px 8px; transition: opacity .3s, transform .3s, border-color .3s, box-shadow .3s; }
+.des-table .plage { font: 700 .85rem var(--titre); color: var(--creme-doux); }
+.des-table .nom-p { font: 600 .88rem var(--texte); color: var(--creme); }
+.des-table .chance { font: 500 .78rem var(--titre); color: #ffd35a; }
+.des-table li.course { border-color: #ffd35a; background: #6a4624; box-shadow: 0 0 0 1px #ffd35a, 0 0 10px rgba(255, 211, 90, .5); }
+.des-table li.eteint { opacity: .4; }
+.des-table li.actif { transform: scale(1.06); border-color: #ffd35a; box-shadow: 0 0 0 2px #ffd35a, 0 0 14px rgba(255, 211, 90, .6); background: #5a3b22; }
+.des-table li.actif[data-palier="fumble"] { border-color: #d0705a; box-shadow: 0 0 0 2px #d0705a; }
+
+/* le calcul et le verdict, sous la scène */
+.des-resultat { display: grid; justify-items: center; gap: 0; min-height: 76px; align-content: center; text-align: center; }
+.des-resultat p { margin: 0; }
+.calcul { font: 700 1.55rem var(--titre); color: var(--creme); min-height: 1.3em; letter-spacing: .04em; }
+.calcul .tot { color: #ffd35a; font-size: 1.9rem; animation: des-tot .35s ease-out; }
+@keyframes des-tot { from { transform: scale(1.7); opacity: 0; } to { transform: none; opacity: 1; } }
+.verdict { font: 700 1.5rem var(--titre); color: #ffd35a; text-shadow: 0 3px 0 #3b2716; animation: des-verdict .45s cubic-bezier(.2, .9, .3, 1.3); min-height: 1.3em; }
+.effet { font: 500 .9rem var(--titre); color: var(--creme-doux); min-height: 1.2em; }
+@keyframes des-verdict { from { transform: scale(.4) translateY(8px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+#des footer { display: flex; justify-content: center; }
+#des footer .bouton-jeu { min-width: 190px; font-size: 1.05rem; display: inline-flex; gap: 10px; align-items: center; justify-content: center; }
+#des footer kbd { font: 700 .7rem var(--titre); color: #ffe2a8; border: 1px solid var(--bois-clair); border-radius: 3px; padding: 0 5px; background: rgba(0,0,0,.25); }
+#des[data-phase="attente"]:not(.regard) footer .bouton-jeu { animation: des-pulse 1.1s ease-in-out infinite; border-color: #ffd35a; }
+@keyframes des-pulse { 50% { box-shadow: inset 0 -3px 0 rgba(0,0,0,.25), 0 0 0 3px rgba(255, 211, 90, .6); } }
+
+/* le palier colore le médaillon et le verdict */
+#des[data-palier="crit"] .des-scene { border-color: #ffd35a; box-shadow: inset 0 0 0 2px #ffd35a, inset 0 0 36px rgba(255, 211, 90, .45); }
+#des[data-palier="crit"] .de .facette.a { fill: #ffe08a; } #des[data-palier="crit"] .de .facette.b { fill: #f0c250; } #des[data-palier="crit"] .de .facette.c { fill: #fff3c4; }
+#des[data-palier="crit"] .gagnant, #des[data-palier="crit"] .de:only-child { filter: drop-shadow(0 0 16px rgba(255, 211, 90, 1)) drop-shadow(0 8px 0 rgba(0,0,0,.35)); }
+#des[data-palier="crit"][data-phase="verdict"] .verdict { color: #fff3c4; text-shadow: 0 0 14px #ffd35a, 0 3px 0 #7a3b10; }
+#des[data-palier="fumble"] .des-scene { border-color: #d0705a; box-shadow: inset 0 0 0 2px #b8322a, inset 0 0 30px rgba(184, 50, 42, .4); }
+#des[data-palier="fumble"] .de .facette.a { fill: #c9a59b; } #des[data-palier="fumble"] .de .facette.b { fill: #a98378; } #des[data-palier="fumble"] .de .facette.c { fill: #d9b9ae; }
+#des[data-palier="fumble"][data-phase="verdict"] .verdict { color: #ff9c8a; }
+#des[data-palier="fumble"][data-phase="verdict"] .des-cadre { animation: des-tremble .45s linear; }
+#des[data-palier="crit"][data-phase="verdict"] .des-cadre { animation: des-frappe .5s ease-out; }
+@keyframes des-tremble { 15% { transform: translateX(-7px); } 35% { transform: translateX(6px); } 55% { transform: translateX(-4px); } 75% { transform: translateX(3px); } }
+@keyframes des-frappe { 30% { transform: scale(1.025); } }
+#des[data-palier="graze"][data-phase="verdict"] .verdict { color: #e9d3ad; }
+
+/* les étincelles du critique */
+.etincelles { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.etincelle { position: absolute; left: 50%; top: 52%; width: 8px; height: 8px; margin: -4px; background: #ffd35a; border: 1px solid #7a3b10; opacity: 0; }
+#des[data-palier="crit"][data-phase="verdict"] .etincelle, #des[data-palier="crit"][data-phase="somme"] .etincelle { animation: des-etincelle .9s ease-out forwards; }
+@keyframes des-etincelle { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0) rotate(45deg); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(calc(var(--d) * -1)) rotate(45deg) scale(.4); } }
+
+/* la pluie de pièces du critique */
+.piece { position: absolute; left: var(--x); top: -18px; width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff3c4, #ffd35a 55%, #b8892a); border: 2px solid #7a3b10; opacity: 0; }
+#des[data-palier="crit"][data-phase="somme"] .piece, #des[data-palier="crit"][data-phase="verdict"] .piece { animation: des-piece 1.4s cubic-bezier(.4, 0, .9, .6) var(--dl) forwards; }
+@keyframes des-piece { 0% { opacity: 1; transform: translateY(0) rotateY(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(300px) rotateY(var(--r)); } }
+
+@media (max-width: 640px) {
+  #des { padding-bottom: 70px; }
+  .des-corps { grid-template-columns: 1fr; }
+  .des-mods, .des-table { grid-template-columns: 1fr 1fr; }
+  .des-table li, .des-mods .mod { font-size: .8rem; }
+  .des-scene { min-height: 200px; order: -1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #des, .des-cadre, .verdict, .calcul .tot, #des footer .bouton-jeu { animation: none !important; }
+  .etincelle, .piece { display: none; }
+}

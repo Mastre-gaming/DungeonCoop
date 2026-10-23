@@ -69,6 +69,7 @@ import * as runSkill from './57_run.js';
 import * as voteSkill from './58_vote.js';
 import * as synchroSkill from './59_synchro.js';
 import * as sauvegardeSkill from './60_sauvegarde.js';
+import * as desSkill from './61_des.js';
 import { ecranTitre, sauterTitre, retourAuDashboard } from './45_titre.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
@@ -157,6 +158,9 @@ async function demarrer(sortieTitre) {
   // les rats : les PR ouvertes qui attendent quelque chose (en ?test, rien ne part sur le réseau)
   const rats = game.use(ratsSkill, { rendu, heros, images, collision, camera, sentinelle, missions, canvas, visite, horsLigne: query.has('test') });
   const tour = game.use(tourSkill, { heros, sentinelle, camera, collision, camp, lieux, decor, rats, images, visite });
+  // le jet de d20 (panneau façon BG3, dés de cristal) ; ?des[=avantage|desavantage] : un jet d'essai au chargement
+  const des = game.use(desSkill, { visite });
+  if (query.has('des') && !query.has('test')) des.demo(query.get('des') || null);
   const groupe = game.use(groupeSkill, { missions, renommee, reseau, sentinelle, images, ouvrirJournal: () => hud.activer('journal') });
   hud.brancher('groupe', groupe);
   const campagne = game.use(campagneSkill, { visite, horsLigne: query.has('test'), ouvrirCarte: () => hud.activer('campagne') });
@@ -219,7 +223,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });
