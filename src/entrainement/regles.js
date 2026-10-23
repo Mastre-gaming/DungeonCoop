@@ -820,7 +820,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
           if (dc) { dc.fait = true; S.repere = { e: null, h: u.id, groupe: dc.groupe, surprise: true }; stop = true; }
         }
         if (S.phase === 'exploration' && u.camp === 'h') {
-          if (meneur) avancerRondes(l / n);
+          if (meneur) avancerRondes((l / n) * (typeof meneur === "number" ? meneur : 1));      // (à plusieurs, chaque joueur mène : une part de la marche)
           for (const c of S.cachettes) if (!c.trouvee && !c.reperee && !c.essais.includes(u.id) && Math.hypot(q.x - c.x, q.y - c.y) <= 3.5) {   // la perception passive
             c.essais.push(u.id);
             const k = d(20), ok = k >= c.dd;
@@ -1939,8 +1939,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     portee, apercuMarche, deplacer, utiliser, apercu, apercuBrasero, braseroProche, foinContre, explorer, engager, fouiller, quiVoit, cueillir, acheterTonneau, poserTonneau, avancerRondes, regardDe: regard, couvert, prevoir, actionner, levierPossible, apercuLevier, reprendre, choisir, acheter, toucherBorne, resoudre, fouillerChariot, ouvrir, curiosite,
     commencer, finPhaseHeros, rienAFaire, recapInfini, suiteInfini, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
-    instantane: () => JSON.stringify({ ...S, evenements: [] }),
-    restaurer(copie) { const o = JSON.parse(copie); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
+    instantane: () => JSON.stringify({ ...S, evenements: [] }, (k, v) => (v === Infinity ? '∞' : v)),          // (à pied, le déplacement est sans limite : JSON ne sait pas écrire l'infini)
+    restaurer(copie) { const o = JSON.parse(copie, (k, v) => (v === '∞' ? Infinity : v)); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
     // pour les tests : des actions directes, sans passer par l'interface
     _: { agirGardien, annoncerCharge, charger, recalerCharge, attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
   };

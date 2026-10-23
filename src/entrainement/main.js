@@ -5,6 +5,7 @@
 //   ?aventure=camp-des-mastres(&niveau=1)   un niveau de l'aventure : on désigne qui lance le dé, la graine tire la salle (aventure.js)
 //     &mot=ABCDE la graine donnée (sans vote) · &salle= &rencontre= forcer des fichiers · &miroir
 //   ?groupe=ABCDE(&hote)   à plusieurs (#80) : le groupe du camp, venu ensemble (multi.js)
+import * as partyNet from '../skills/party-net/module/03_skill.js';      // (pour les tests à plusieurs : tools/multi_explo.mjs)
 import { createGame } from '../skills/core/module/06_game.js';
 import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
@@ -102,9 +103,10 @@ async function demarrer() {
   // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)
   const nouveauCombat = (eq, copie = null, infini = null) => {
     combat = creer(eq, infini);
+    if (niveau?.plan.troncon && !copie) combat.explorer();      // (la copie de l'hôte porte déjà l'exploration en cours)
     if (copie) combat.restaurer(copie);
     vueSkill.remplacer(combat); interfaceSkill.remplacer(combat); multiSkill.api.remplacer(combat);
-    if (niveau?.plan.troncon) explorer();
+    if (niveau?.plan.troncon) { ihm.lance(); ihm.choisirHeros(premierDeMoi()); }
     game.dbg.combat = combat;
     return combat;
   };
@@ -120,13 +122,16 @@ async function demarrer() {
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();
-    Object.assign(game.dbg, { combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
+    Object.assign(game.dbg, { partyNet, combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
   game.use(tests, { combat, vue, ihm, multi, trame, salle, game, images, SALLE });
 
   // un tronçon du chemin : on commence à pied, sans écran d'accueil (chemin-sentier-f.md §0)
-  function explorer() { combat.explorer(); ihm.lance(); ihm.choisirHeros('h1'); }
-  if (niveau?.plan.troncon) explorer();
-  if (cine) cine.jouer('depart', {});
+  function premierDeMoi() { return combat.S.heros.find((id) => !ihm.reseau || ihm.reseau.aMoi(id)) ?? 'h1'; }
+  function explorer() { combat.explorer(); ihm.lance(); ihm.choisirHeros(premierDeMoi()); }
+  // à plusieurs, le lobby d'abord : l'hôte lance (multi.js), et la scène du départ se joue alors chez tous
+  const enGroupe = /^[A-Za-z0-9]{5}$/.test(query.get('groupe') ?? '') && !query.has('test');
+  if (niveau?.plan.troncon && !enGroupe) explorer();
+  if (cine && !enGroupe) cine.jouer('depart', {});
   document.querySelector('#chargement').hidden = true;
   document.documentElement.dataset.pret = '1';
   game.start();

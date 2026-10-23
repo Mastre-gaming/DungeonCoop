@@ -11,6 +11,7 @@
 import { CAPACITES, HEROS, ENNEMIS, PNJ, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour, capacitesDe, VUE } from './regles.js';
 import { monGithub } from './joueur.js';
 import { CONTACT, metres, dist } from './geometrie.js';
+import { marcheGroupe, GESTES } from './explo.js';
 import { calculerBilan } from './bilan.js';
 import { DEBUT_INFINI } from './regles.js';
 import { LISTE as SALLES } from './salles.js';
@@ -71,7 +72,7 @@ function construire() {
     dom.etat = el('span', { class: 'etat-terrain' }, 'Prêt'),
     dom.emporte = el('span', { class: 'emporte-hud', hidden: true },
       dom.relance = el('span', { class: 'relance-hud', title: 'La vieille borne : le premier d20 raté d’un héros se rejoue' }),
-      dom.poserTonneau = el('button', { type: 'button', class: 'bouton-jeu discret petit', title: 'Poser le tonneau d’huile à côté du héros choisi (exploration)', onclick: () => { const h = herosChoisi(); if (h && combat.poserTonneau(h)) vider(); else banniere('En exploration, avec un héros choisi'); } }, 'Poser le tonneau')),
+      dom.poserTonneau = el('button', { type: 'button', class: 'bouton-jeu discret petit', title: 'Poser le tonneau d’huile à côté du héros choisi (exploration)', onclick: () => { const h = herosChoisi(); if (h && combat.S.phase === 'exploration' && geste('poser', h)) vider(); else banniere('En exploration, avec un héros choisi'); } }, 'Poser le tonneau')),
     dom.caillasse = el('span', { class: 'caillasse-hud', title: 'La Caillasse du groupe', hidden: true }, el('i', { class: 'piece-caillasse', 'aria-hidden': 'true' }), dom.caillasseN = el('b', {}, '0')),
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
@@ -369,31 +370,32 @@ function agir(cible) {
   if (ok) { ui.cap = null; ui.annuler = []; ui.portee = null; vider(); }
   return ok;
 }
+// Un geste sur un objet du décor : seul, tout de suite ; à plusieurs, l'hôte le joue et le montre à tous (ok : on l'a demandé).
+function geste(op, h, obj = null) {
+  if (reseau) { reseau.agir({ type: 'explo', op, id: h.id, obj }); return true; }
+  return GESTES[op](combat, h, { obj });
+}
+// La scène de la dernière zone franchie (celles d'avant, passées d'un coup, comptent comme vues) ; null s'il n'y en a pas.
+function sceneDeZone(h) {
+  if (!cine || combat.S.phase !== 'exploration') return null;
+  const passes = (cine.donnees?.declencheurs ?? []).filter((o) => h.x >= o.x && !cine.vues.has(o.scene)), d = passes[passes.length - 1];
+  for (const o of passes) if (o !== d) cine.vues.add(o.scene);
+  return d?.scene ?? null;
+}
+// Après le choix d'un chemin : la scène de l'éboulis qui ferme l'autre, puis l'éboulis lui-même (evs : ses événements).
+function apresChoixChemin(f, brancheId, evs) {
+  const r = f.branches.find((o) => o.id !== brancheId)?.tombe?.[0];
+  let fait = false; const eboulis = () => { if (!fait) { fait = true; vue.jouer(evs); ui.sale = true; } };
+  if (cine) cine.jouer('fourche-apres', { 'branche-perdue': r ? { x: (r.x0 + r.x1) / 2 + 3, y: (r.y0 + r.y1) / 2 } : null, eboulis }).then(eboulis); else eboulis();
+}
 // L'exploration : le héros choisi marche où l'on clique, les autres le suivent en file ; repéré en route, le combat commence.
 function explorerVers(h, p) {
-  const a = combat.apercuMarche(h, p.x, p.y, portee(h));
-  if (!a.ok) return false;
-  const depart = { x: h.x, y: h.y };
-  combat.deplacer(h, p.x, p.y, portee(h), { meneur: true });
+  if (!combat.apercuMarche(h, p.x, p.y, portee(h)).ok) return false;
   ui.portee = null;
-  const l = Math.hypot(depart.x - h.x, depart.y - h.y) || 1, ux = (depart.x - h.x) / l, uy = (depart.y - h.y) / l;
-  combat.S.heros.map((id) => combat.U(id)).filter((u) => u !== h && !u.ko && aMoi(u.id)).forEach((u, k) => {
-    if (combat.S.repere) return;
-    for (const recul of [1.3 * (k + 1), 1.3 * k + 0.8, 0.9]) {        // derrière lui, sur le chemin qu'il a pris
-      const c = { x: h.x + ux * recul + (k % 2 ? 0.5 : -0.5) * uy, y: h.y + uy * recul + (k % 2 ? -0.5 : 0.5) * ux };
-      if (combat.deplacer(u, c.x, c.y, combat.portee(u))) break;
-    }
-  });
-  // toutes les marches en même temps
-  const evs = combat.S.evenements, marches = evs.filter((e) => e.type === 'marche');
-  if (marches.length > 1) { const i = evs.indexOf(marches[0]); evs.splice(0, evs.length, ...evs.slice(0, i), { type: 'groupe', marches: marches.map((e) => ({ id: e.id, chemin: e.chemin })) }, ...evs.slice(i + 1).filter((e) => e.type !== 'marche')); }
-  if (combat.S.repere) combat.engager(!!combat.S.repere.surprise, combat.S.repere.groupe ?? null);
+  if (reseau) { reseau.agir({ type: 'explo', op: 'marche', id: h.id, x: p.x, y: p.y }); return true; }      // l'hôte arbitre, et montre à tous
+  marcheGroupe(combat, h, p, combat.S.heros.filter(aMoi));
   vider();
-  if (cine && combat.S.phase === 'exploration') {          // la scène de la dernière zone franchie (celles d'avant, passées d'un coup, comptent comme vues)
-    const passes = (cine.donnees?.declencheurs ?? []).filter((o) => h.x >= o.x && !cine.vues.has(o.scene)), d = passes[passes.length - 1];
-    for (const o of passes) if (o !== d) cine.vues.add(o.scene);
-    if (d) cine.jouer(d.scene, {});
-  }
+  const scene = sceneDeZone(h); if (scene) cine.jouer(scene, {});
   if (combat.S.question?.fourche) demanderChemin();
   if (combat.S.question?.incident) demanderIncident();
   return true;
@@ -408,9 +410,9 @@ function ouvrirEtal(h, id) {
   dom.choix = el('div', { class: 'entree-fond' }, el('section', { class: 'entree-terrain plaque', role: 'dialog', 'aria-label': 'L’étal du colporteur' },
     el('h2', {}, 'L’étal du colporteur'), el('p', {}, `${h.nom} a ${combat.S.caillasse} Caillasse.`),
     el('div', { class: 'entree-choix trois' },
-      el('button', { type: 'button', class: 'entree-heros', 'data-achat': 'potion', disabled: combat.S.caillasse < c.prix, onclick: () => acheter(() => combat.acheter(h, id)) },
+      el('button', { type: 'button', class: 'entree-heros', 'data-achat': 'potion', disabled: combat.S.caillasse < c.prix, onclick: () => acheter(() => geste('acheter', h, id)) },
         el('strong', {}, `Une potion : ${c.prix}`), el('span', { class: 'detail-branche' }, '+20 PV, à boire en combat')),
-      c.tonneau ? el('button', { type: 'button', class: 'entree-heros', 'data-achat': 'tonneau', disabled: c.tonneauVendu || combat.S.caillasse < c.tonneau, onclick: () => acheter(() => combat.acheterTonneau(h, id)) },
+      c.tonneau ? el('button', { type: 'button', class: 'entree-heros', 'data-achat': 'tonneau', disabled: c.tonneauVendu || combat.S.caillasse < c.tonneau, onclick: () => acheter(() => geste('tonneau', h, id)) },
         el('strong', {}, c.tonneauVendu ? 'Le tonneau : vendu' : `Le tonneau d’huile : ${c.tonneau}`), el('span', { class: 'detail-branche' }, 'À poser avant un combat : un coup ou du feu, et l’huile s’étend')) : '',
       el('button', { type: 'button', class: 'entree-heros', 'data-achat': 'rien', onclick: fermer }, el('strong', {}, 'Rien, merci')))));
   document.body.append(dom.choix);
@@ -419,13 +421,14 @@ function ouvrirEtal(h, id) {
 function demanderIncident() {
   const i = combat.S.incidents.find((o) => o.id === combat.S.question?.incident);
   if (!i || dom.choix) return;
-  const fermer = (choix) => { dom.choix.remove(); dom.choix = null; combat.resoudre(i.id, choix, herosChoisi() ?? combat.U('h1')); vider(); };
+  const voix = !reseau || reseau.hote;
+  const fermer = (choix) => { dom.choix.remove(); dom.choix = null; if (reseau) reseau.agir({ type: 'explo', op: 'choix', quoi: 'embuscade', id: herosChoisi()?.id, incident: i.id, choix }); else { combat.resoudre(i.id, choix, herosChoisi() ?? combat.U('h1')); vider(); } };
   dom.choix = el('div', { class: 'entree-fond' }, el('section', { class: 'entree-terrain plaque', role: 'dialog', 'aria-label': 'Une embuscade' },
-    el('h2', {}, 'Une embuscade !'), el('p', { class: 'entree-question' }, 'Des bandits sortent des blés et barrent la route.'),
+    el('h2', {}, 'Une embuscade !'), el('p', { class: 'entree-question' }, `Des bandits sortent des blés et barrent la route.${voix ? '' : ' L’hôte décide pour le groupe…'}`),
     el('div', { class: 'entree-choix trois' },
-      el('button', { type: 'button', class: 'entree-heros', 'data-choix': 'payer', disabled: combat.S.caillasse < i.rancon, onclick: () => fermer('payer') }, el('strong', {}, `Payer ${i.rancon} Caillasse`)),
-      el('button', { type: 'button', class: 'entree-heros', 'data-choix': 'negocier', onclick: () => fermer('negocier') }, el('strong', {}, 'Négocier (d20)')),
-      el('button', { type: 'button', class: 'entree-heros', 'data-choix': 'combattre', onclick: () => fermer('combattre') }, el('strong', {}, 'Combattre')))));
+      el('button', { type: 'button', class: 'entree-heros', 'data-choix': 'payer', disabled: !voix || combat.S.caillasse < i.rancon, onclick: () => fermer('payer') }, el('strong', {}, `Payer ${i.rancon} Caillasse`)),
+      el('button', { type: 'button', class: 'entree-heros', 'data-choix': 'negocier', disabled: !voix, onclick: () => fermer('negocier') }, el('strong', {}, 'Négocier (d20)')),
+      el('button', { type: 'button', class: 'entree-heros', 'data-choix': 'combattre', disabled: !voix, onclick: () => fermer('combattre') }, el('strong', {}, 'Combattre')))));
   document.body.append(dom.choix);
 }
 // La fourche : arrivé au poteau, le groupe choisit son chemin (sur un seul écran : l'hôte ; à plusieurs, le vote et le dé
@@ -434,14 +437,14 @@ function demanderChemin() {
   const f = combat.S.fourches.find((o) => o.id === combat.S.question?.fourche);
   if (!f || dom.choix || ui.fourcheEnCours) return;
   if (cine && !cine.vues.has('fourche-avant')) { ui.fourcheEnCours = true; cine.jouer('fourche-avant', {}).then(() => { ui.fourcheEnCours = false; demanderChemin(); }); return; }
+  const voix = !reseau || reseau.hote;             // à plusieurs, l'hôte choisit au nom du groupe
   dom.choix = el('div', { class: 'entree-fond' }, el('section', { class: 'entree-terrain plaque', role: 'dialog', 'aria-label': 'Quel chemin ?' },
-    el('h2', {}, 'La fourche'), f.panneau ? el('p', {}, f.panneau) : '', el('p', { class: 'entree-question' }, 'Quel chemin prend le groupe ?'),
-    el('div', { class: 'entree-choix deux' }, f.branches.map((b) => el('button', { type: 'button', class: 'entree-heros', 'data-branche': b.id, onclick: () => {
+    el('h2', {}, 'La fourche'), f.panneau ? el('p', {}, f.panneau) : '', el('p', { class: 'entree-question' }, voix ? 'Quel chemin prend le groupe ?' : 'L’hôte choisit le chemin du groupe…'),
+    el('div', { class: 'entree-choix deux' }, f.branches.map((b) => el('button', { type: 'button', class: 'entree-heros', 'data-branche': b.id, disabled: !voix, onclick: () => {
       dom.choix.remove(); dom.choix = null;
+      if (reseau) return void reseau.agir({ type: 'explo', op: 'choix', quoi: 'chemin', id: herosChoisi()?.id, fourche: f.id, branche: b.id });
       combat.choisir(f.id, b.id);
-      const evs = combat.S.evenements.splice(0), r = f.branches.find((o) => o.id !== b.id)?.tombe?.[0];
-      let fait = false; const eboulis = () => { if (!fait) { fait = true; vue.jouer(evs); ui.sale = true; } };
-      if (cine) cine.jouer('fourche-apres', { 'branche-perdue': r ? { x: (r.x0 + r.x1) / 2 + 3, y: (r.y0 + r.y1) / 2 } : null, eboulis }).then(eboulis); else eboulis();
+      apresChoixChemin(f, b.id, combat.S.evenements.splice(0));
     } }, el('strong', {}, b.nom || b.id), b.detail ? el('span', { class: 'detail-branche' }, b.detail) : '')))));
   document.body.append(dom.choix);
 }
@@ -457,7 +460,7 @@ function cliquer(p) {
       ...combat.S.incidents.filter((o) => o.sorte === 'chariot' && !o.fait)].find((o) => dist(o, p) < 1.3);
     if (objet && dist(h, objet) <= CONTACT + 0.8) {
       if (objet.sorte === 'colporteur') return void ouvrirEtal(h, objet.id);
-      const ok = objet.sorte === 'chariot' ? combat.fouillerChariot(h, objet.id) : combat.toucherBorne(h, objet.id);
+      const ok = geste(objet.sorte === 'chariot' ? 'chariot' : 'borne', h, objet.id);
       if (ok) vider(); else banniere(objet.sorte === 'colporteur' ? `Une potion : ${objet.prix} Caillasse` : 'Déjà fait');
       return;
     }
@@ -467,19 +470,19 @@ function cliquer(p) {
     const cu = combat.S.curiosites.find((o) => (o.fuit ? o.couronne : !o.parti) && dist(o, p) < ({ canard: 3, loup: 1.3 }[o.sorte] ?? 0.9));   // (le canard nage autour de sa place ; la statue se clique sur tout son corps)
     if (cu) {
       const loin = cu.fuit ? CONTACT + 0.8 : cu.portee;
-      if (dist(h, cu) <= loin) { if (combat.curiosite(h, cu.id)) vider(); return; }
+      if (dist(h, cu) <= loin) { if (geste('curiosite', h, cu.id)) vider(); return; }
       const l = dist(h, cu), q = { x: cu.x + ((h.x - cu.x) / l) * (loin - 0.4), y: cu.y + ((h.y - cu.y) / l) * (loin - 0.4) };
       if (!explorerVers(h, q)) banniere('Trop loin : approche-toi');
       return;
     }
     const tv = combat.S.trouvailles.find((o) => !o.fait && dist(o, p) < (o.sorte === 'pommier' ? 1.6 : 0.9));
     if (tv) {
-      if (dist(h, tv) <= CONTACT + 0.8) { if (combat.cueillir(h, tv.id)) vider(); return; }
+      if (dist(h, tv) <= CONTACT + 0.8) { if (geste('cueillir', h, tv.id)) vider(); return; }
       const l = dist(h, tv), q = { x: tv.x + ((h.x - tv.x) / l) * 1.2, y: tv.y + ((h.y - tv.y) / l) * 1.2 };
       explorerVers(h, q); return;
     }
     const c = combat.S.cachettes.find((o) => !o.trouvee && o.reperee && dist(o, p) < 0.9);
-    if (c && dist(h, c) <= CONTACT + 0.3) { if (combat.fouiller(h, c.id)) vider(); else banniere('Déjà fouillé par ce héros'); return; }
+    if (c && dist(h, c) <= CONTACT + 0.3) { if (geste('fouiller', h, c.id)) vider(); else banniere('Déjà fouillé par ce héros'); return; }
     if (c) { const l = dist(h, c), q = { x: c.x + ((h.x - c.x) / l) * 1.1, y: c.y + ((h.y - c.y) / l) * 1.1 }; explorerVers(h, q); return; }
     explorerVers(h, p);
     return;
@@ -820,6 +823,7 @@ function montrerDe(e) {
 // Un objet du combat : au contact, on l'actionne (l'action du héros) ; sinon on y va (en exploration) ou l'on dit pourquoi pas.
 function actionnerLevier(h, l) {
   if (dist(h, l) <= CONTACT + 0.8) {
+    if (reseau && combat.S.phase === 'exploration') { geste('levier', h, l.id); return true; }
     if (reseau) { banniere('À plusieurs : bientôt'); return true; }
     if (combat.actionner(h, l.id)) { ui.cap = null; ui.portee = null; ui.annuler = []; vider(); }
     else banniere(combat.S.phase === 'heros' && !h.t.action ? 'Son action est déjà dépensée' : 'Pas maintenant');
@@ -988,5 +992,16 @@ export const api = {
     dessinerPlaces(); ui.sale = true;
   },
   redessiner() { if (!dom.accueil.hidden) dessinerPlaces(); ui.sale = true; },
-  etatRecu() { ui.portee = null; ui.sale = true; if (ui.sel && !combat.U(ui.sel)) ui.sel = null; },
+  etatRecu() {
+    ui.portee = null; ui.sale = true; if (ui.sel && !combat.U(ui.sel)) ui.sel = null;
+    // l'exploration à plusieurs : la question du groupe (la fourche, l'embuscade) s'affiche chez tous, et se ferme quand l'hôte a choisi
+    const q = combat.S.question;
+    if (dom.choix && dom.choix.querySelector('[data-branche], [data-choix]') && !q) { dom.choix.remove(); dom.choix = null; }
+    if (q?.fourche) demanderChemin();
+    if (q?.incident) demanderIncident();
+  },
+  // multi.js : ce que l'hôte montre à tous (une scène de zone, l'éboulis du chemin choisi)
+  sceneDeZone(h) { return sceneDeZone(h); },
+  jouerScene(scene, opts = {}) { return cine ? cine.jouer(scene, opts) : Promise.resolve(); },
+  apresChoixChemin(fourche, branche, evs) { const f = combat.S.fourches.find((o) => o.id === fourche); if (f) apresChoixChemin(f, branche, evs); else vue.jouer(evs); },
 };

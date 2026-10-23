@@ -130,3 +130,13 @@ Rien n'est posé pour remplir : chaque pièce dit quelque chose du chemin, ou se
   - **la planche à roulettes**, au pied du moulin (un salut à DeadSlide) : 3 Caillasse ;
   - **le rat couronné**, au pied d'une statue de l'allée : il file quand on approche, et laisse briller une couronne minuscule (5 Caillasse) ;
   - **la statue du loup :** cliquée, elle « hurle » dans le vent.
+
+## 15. À plusieurs (src/entrainement/explo.js, multi.js)
+- **Qui fait quoi :** chacun mène ses héros (clic = sa marche, ses autres héros le suivent en file). L'hôte tient les règles : il vérifie chaque action (`arbitrerExploration`), la joue, renvoie l'état et les événements à tous. Les rondes avancent d'une part de la marche de chacun (1/nombre de joueurs), pour ne pas aller N fois plus vite.
+- **Les gestes** (acheter au colporteur, cueillir, fouiller, la borne, le chariot, un levier, une curiosité, poser le tonneau) partent vers l'hôte comme la marche ; le moteur vérifie la distance et l'action du héros.
+- **Les choix du groupe** (la fourche, l'embuscade) : la question s'affiche chez tous, **l'hôte seul choisit** (au nom du groupe) ; les autres voient « L'hôte choisit… ». Le vote reste à faire (il viendra avec le choix du chemin à la grande porte).
+- **Les scènes** : celles d'une zone franchie, et la chute de l'éboulis après la fourche, sont jouées chez tous (messages `scene` et `chemin`) ; le départ se joue quand l'hôte lance.
+- **Le combat** : repéré en route, il commence pour tous ; les « prêts » de la phase des héros sont ceux du terrain d'entraînement. Un ami qui part laisse ses héros à l'hôte.
+- **Un bug trouvé en route :** `instantane()` écrivait l'infini (le déplacement à pied) en `null` : un invité ne pouvait plus marcher. Corrigé (`'∞'`), avec un test.
+- **Vérifié :** `?test` (558) et `node tools/multi_explo.mjs` (un hôte et un ami simulé sur le fil loopback ; une page invitée face à un hôte simulé).
+- **Reste à faire :** le vote du chemin et le « prêt » au bout, dans le flux camp → mission (patch suivant).

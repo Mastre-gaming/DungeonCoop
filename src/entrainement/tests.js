@@ -1,5 +1,6 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
+import { arbitrerExploration } from './explo.js';
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, equipeDepuis, peutJouer, classesPour, equipePour, capacitesDe } from './regles.js';
 import * as AVENTURE from './aventure.js';
 import { cinematiques, remplir } from './cinema.js';
@@ -1328,6 +1329,28 @@ export async function selfTest(t, game) {
   const mR = EX.U('h1');
   EX.deplacer(mR, 150, 13, EX.portee(mR), { meneur: true });
   t.ok(Math.abs(ronde.x - x0R) > 0.5 && ronde.regard != null && EX.S.evenements.some((e) => e.type === 'marche' && e.id === ronde.id), 'les loups du canal font leur ronde quand le groupe marche ; leur regard suit leur pas');
+  }
+  // --- L'exploration à plusieurs : l'hôte arbitre la marche, les gestes et les choix du groupe ---------------------------
+  t.group('le sentier F à plusieurs : l’hôte arbitre l’exploration');
+  {
+    const P = tro(), L = { phase: 'combat', equipe: ['brute', 'chevalier', 'voleur', 'druide'], proprio: ['host', 'ana', 'host', 'host'], pret: [], absents: {} };
+    const libreAutour = (C, id) => { const h = C.U(id); for (const [dx, dy] of [[1.5, 0], [0, 1.5], [-1.5, 0], [0, -1.5], [1, 1], [-1, -1], [2.5, 0], [0, 2.5]]) if (C.apercuMarche(h, h.x + dx, h.y + dy, C.portee(h)).ok) return { x: h.x + dx, y: h.y + dy }; return null; };
+    const x1 = P.U('h1').x, x2 = P.U('h2').x, vit = (qui, a) => arbitrerExploration(P, L, qui, a, { joueurs: 2 });
+    const R = tro(); R.U('h1').t.mv = 3; R.restaurer(P.instantane());
+    t.ok(R.U('h1').t.mv === Infinity && R.S.phase === 'exploration', 'copier puis restaurer garde le déplacement sans limite (JSON écrit l’infini en « null »)');
+    t.ok(!vit('ana', { type: 'explo', op: 'marche', id: 'h1', x: x1 + 2, y: P.U('h1').y }) && P.U('h1').x === x1, 'Ana ne mène pas le héros de l’hôte');
+    const d2 = libreAutour(P, 'h2'), p2 = { ...P.U('h2') };
+    t.ok(d2 && vit('ana', { type: 'explo', op: 'marche', id: 'h2', x: d2.x, y: d2.y }) && Math.hypot(P.U('h2').x - p2.x, P.U('h2').y - p2.y) > 0.8, 'Ana mène le sien');
+    t.ok(vit('host', { type: 'explo', op: 'marche', id: 'h1', x: x1 + 2, y: P.U('h1').y }) && P.U('h1').x > x1 + 1.5 && P.U('h3').x !== P.U('h4').x, 'l’hôte mène : ses autres héros le suivent en file');
+    t.ok(!vit('ana', { type: 'explo', op: 'choix', quoi: 'chemin', fourche: 'fourche', branche: P.S.fourches[0].branches[0].id }), 'le chemin du groupe : la voix est à l’hôte seul');
+    t.ok(!vit('ana', { type: 'explo', op: 'cueillir', id: 'h2', obj: 'pommier-du-sentier' }) && !vit('ana', { type: 'explo', op: 'inconnu', id: 'h2' }) && !vit('ana', null), 'un geste hors de portée, un geste inconnu, rien du tout : refusés');
+    P.S.question = { fourche: 'fourche' };
+    t.ok(!vit('ana', { type: 'explo', op: 'marche', id: 'h2', x: P.U('h2').x + 1, y: P.U('h2').y }), 'pendant une question du groupe, personne ne marche');
+    const f = P.S.fourches[0];
+    t.ok(vit('host', { type: 'explo', op: 'choix', quoi: 'chemin', fourche: f.id, branche: f.branches[0].id }) && f.choisi === f.branches[0].id && !P.S.question, 'l’hôte choisit le chemin au nom du groupe');
+    const L2 = { ...L, proprio: ['ana', 'ben', 'ana', 'ben'] };
+    const d3 = libreAutour(P, 'h3');
+    t.ok(d3 && arbitrerExploration(P, L2, 'ana', { type: 'explo', op: 'marche', id: 'h3', x: d3.x, y: d3.y }, { joueurs: 3 }), 'à plusieurs, chacun mène les siens même si l’hôte n’a aucun héros');
   }
   }
   // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres ------------------------
