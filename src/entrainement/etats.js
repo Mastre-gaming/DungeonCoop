@@ -9,6 +9,7 @@ export const DOSSIER_ETATS = './assets/lpc/etats/';
 // compte(u) : les tours qui restent (le nombre sous l'icône), ou null s'il n'y en a pas.
 const SENS = [
   { id: 'inspire', genre: 'bonus', effet: () => 'Avantage à sa prochaine attaque.', compte: () => null },
+  { id: 'puissance', genre: 'bonus', icone: 'lame', effet: () => 'Sa prochaine attaque fait +d6 (le Power chord de Riff Ossel).', compte: () => null },
   { id: 'lame', genre: 'bonus', effet: () => 'Sa prochaine attaque fait +d6 et compte comme du feu (Huilé ×2, enflamme l’huile).', compte: () => null },
   { id: 'ardent', genre: 'bonus', icone: 'lame', effet: () => 'Ses coups donnent la Brûlure et enflamment l’huile (les Armes ardentes de l’Illuminé).', compte: (u) => u.st.ardent?.n ?? null },
   { id: 'bouclier', genre: 'bonus', effet: (u) => `Les ${u.st.bouclier?.v ?? 0} prochains dégâts sont pour le bouclier.`, compte: (u) => u.st.bouclier?.v ?? null },

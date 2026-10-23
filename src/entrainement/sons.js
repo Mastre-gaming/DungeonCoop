@@ -7,7 +7,7 @@ export const DOSSIER = './assets/sons/riff-ossel/';
 export function sonDe(type, cap, anim) {
   if (type !== 'riff-ossel') return null;
   if (cap === 'riff') return anim === 'contact' ? 'riff-melee' : 'riff';
-  return { ballade: 'ballade', courseEffrenee: 'course' }[cap] ?? null;
+  return { ballade: 'ballade', courseEffrenee: 'course', powerChord: 'power', solo: 'solo' }[cap] ?? null;
 }
 const lecteurs = new Map();
 export function jouerSon(nom) {

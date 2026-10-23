@@ -1,4 +1,4 @@
-// Riff Ossel au terrain : le combat à l'écran, ses trois sorts, une image de chacun (shots/riff-*.png).
+// Riff Ossel au terrain : le combat à l'écran, ses sorts (--niveaux : le Power chord et le Solo), une image de chacun (shots/riff-*.png).
 import { servir, ouvrir } from './captures.mjs';
 const srv = await servir();
 try {
@@ -18,10 +18,15 @@ try {
       C.utiliser(r, '${id}', { id: c.id }); dbg.ihm.vider?.(); dbg.vue.jouer(C.S.evenements.splice(0)); })()`);
     for (const ms of [150, 350, 350]) { await page.eval(`new Promise((r) => setTimeout(r, ${ms}))`); await page.shot(`shots/riff-${nom}-${ms}-${Math.random().toString(36).slice(2, 5)}.png`); }
   };
-  await lancer('riff', "C.S.unites.find((u) => u.camp === 'e')", 'riff-loin', 5);
-  await lancer('riff', "C.S.unites.find((u) => u.camp === 'e' && u.pv > 0)", 'riff-contact', 1.3);
-  await lancer('ballade', "C.S.unites.find((u) => u.type === 'brute')", 'ballade', 0);
-  await lancer('courseEffrenee', "C.S.unites.find((u) => u.type === 'voleur')", 'course', 0);
+  if (process.argv.includes('--niveaux')) {
+    await lancer('powerChord', "C.S.unites.find((u) => u.type === 'brute')", 'power', 0);
+    await lancer('solo', "C.S.unites.find((u) => u.camp === 'e' && u.pv > 0)", 'solo', 1.1);
+  } else {
+    await lancer('riff', "C.S.unites.find((u) => u.camp === 'e')", 'riff-loin', 5);
+    await lancer('riff', "C.S.unites.find((u) => u.camp === 'e' && u.pv > 0)", 'riff-contact', 1.3);
+    await lancer('ballade', "C.S.unites.find((u) => u.type === 'brute')", 'ballade', 0);
+    await lancer('courseEffrenee', "C.S.unites.find((u) => u.type === 'voleur')", 'course', 0);
+  }
   console.log('erreurs', JSON.stringify(page.errors));
   await page.close();
 } finally { srv.stop(); }
