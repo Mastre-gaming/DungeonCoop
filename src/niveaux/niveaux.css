@@ -1,0 +1,78 @@
+/* L'atelier des niveaux : les recettes de DESIGN.fr.md §5 (cadre de bois, parchemin, case, bouton), la salle au milieu. */
+:root { --haut-atelier: 70px; --gauche-atelier: 268px; --droite-atelier: 300px; }
+body { margin: 0; background: var(--herbe, #2f5a2a); color: var(--creme); font: 14px/1.35 var(--texte); overflow: hidden; }
+.bois { background: var(--tex-bois) 0 0 / 80px 48px, var(--bois); color: #fff7e6; image-rendering: pixelated; box-sizing: border-box;
+  border: 14px solid var(--bois-nuit); border-image: var(--cadre-bois) 32 / 32px / 6px repeat; box-shadow: 0 6px 0 rgba(0, 0, 0, .4); }
+.plaque { background: var(--tex-parchemin) 0 0 / 64px 64px, var(--parchemin); color: var(--parchemin-encre); image-rendering: pixelated; box-sizing: border-box;
+  border: 8px solid var(--bois-fonce); border-image: var(--cadre-fin) 20 / 20px / 4px repeat; box-shadow: 0 4px 0 rgba(0, 0, 0, .3); }
+.bouton-jeu.petit { font-size: 12px; padding: 2px 8px; }
+.bouton-jeu.choisi, .bouton-jeu[aria-pressed="true"] { outline: 3px solid var(--or); outline-offset: 1px; }
+.bouton-jeu.fort { background: #7a3b10; color: #fff7e6; }
+.note { margin: 0; font-size: 13px; color: var(--parchemin-doux, #6b5a3c); }
+
+/* en haut : le nom de la salle et les fichiers */
+.atelier-haut { position: fixed; left: 8px; right: 8px; top: 6px; height: var(--haut-atelier); z-index: 5; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 6px; }
+.atelier-titre { display: grid; min-width: 0; }
+.atelier-titre .surtitre { font: 500 12px var(--titre); color: var(--laiton-clair); }
+.atelier-titre strong { font: 700 18px var(--titre); color: var(--or); text-shadow: var(--contour-or); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.atelier-fichiers { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+.atelier-fichiers a { text-decoration: none; }
+
+/* à gauche : les outils, par famille ; une case par outil (son image, son nom) */
+.atelier-palette { position: fixed; left: 8px; top: calc(var(--haut-atelier) + 16px); bottom: 8px; width: var(--gauche-atelier); z-index: 4; overflow-y: auto; padding: 4px 6px; }
+.famille h2 { margin: 6px 0 4px; font: 700 13px var(--titre); color: var(--or); letter-spacing: .05em; text-transform: uppercase; text-shadow: 0 1px 0 #000; }
+.outils { display: grid; grid-template-columns: 1fr; gap: 3px; }
+.outils-ennemis { grid-template-columns: 1fr 1fr; }
+.outil { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 2px 4px; text-align: left; cursor: pointer; color: #fff7e6; font: 500 12px var(--titre);
+  background: var(--bois-creux); border: 2px solid var(--bois-nuit); border-radius: 4px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .06), inset 0 -2px 0 rgba(0, 0, 0, .3); }
+.outil:hover, .outil:focus-visible { border-color: var(--or); outline: none; }
+.outil.actif { border-color: var(--or); box-shadow: 0 0 0 2px var(--or); }
+.outil-image { flex: none; width: 32px; height: 32px; image-rendering: pixelated; }
+.outil-nom { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.outil.sans-regles .outil-nom { color: var(--laiton-clair); }
+.outil.sans-regles::after { content: '·'; color: var(--braise); font-weight: 700; margin-left: auto; }
+
+/* au milieu : la salle, dessinée comme au terrain (échelle entière : ×1 à ×4) */
+.atelier-vue { position: fixed; left: calc(var(--gauche-atelier) + 16px); right: calc(var(--droite-atelier) + 16px); top: calc(var(--haut-atelier) + 16px); bottom: 64px;
+  overflow: auto; display: flex; background: #1e130c; border: 3px solid var(--bois-nuit); box-shadow: inset 0 0 0 1px var(--bois-clair); }
+.atelier-salle { display: block; margin: auto; flex: none; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
+.atelier-outils-vue { position: fixed; left: calc(var(--gauche-atelier) + 16px); right: calc(var(--droite-atelier) + 16px); bottom: 6px; height: 54px; z-index: 4;
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: center; padding: 0 6px; border-width: 10px; }
+
+/* à droite : l'outil, ce qui est choisi, la salle, ce qui est à revoir */
+.atelier-droite { position: fixed; right: 8px; top: calc(var(--haut-atelier) + 16px); bottom: 8px; width: var(--droite-atelier); z-index: 4; overflow-y: auto; padding: 8px 10px; display: grid; align-content: start; gap: 10px; }
+.atelier-droite .bloc { display: grid; gap: 6px; }
+.atelier-droite h2 { margin: 0; font: 700 14px var(--titre); color: #7a3b10; border-bottom: 1px solid #cdb68c; padding-bottom: 2px; }
+.atelier-droite p { margin: 0; }
+.outil-courant { font: 700 13px var(--titre); }
+.champ { display: grid; gap: 2px; font: 500 12px var(--titre); color: #5a3b22; }
+.champ input, .champ select { font: 14px var(--texte); padding: 3px 6px; border: 2px solid var(--bois-clair); border-radius: 3px; background: #fffaf0; color: var(--parchemin-encre); min-width: 0; }
+.boutons-ligne { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.boutons-ligne .champ { flex: 1; }
+/* la taille : un côté par ligne (− +), puis les tailles toutes faites */
+.taille-actuelle { font: 700 13px var(--titre); }
+.taille-cotes { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.taille-cote { display: flex; align-items: center; gap: 4px; font: 500 12px var(--titre); color: #5a3b22; }
+.taille-cote span { flex: 1; }
+.case { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.a-revoir ul { margin: 0; padding-left: 18px; font-size: 13px; }
+.a-revoir li { margin: 2px 0; }
+
+/* les fenêtres : ouvrir une salle, la planche des décors ; l'annonce */
+.atelier-modale { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 20; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 80px); overflow-y: auto; padding: 14px 18px; display: grid; gap: 8px; }
+.atelier-modale[hidden] { display: none; }
+.atelier-modale h2 { margin: 0; font: 700 17px var(--titre); color: #7a3b10; }
+.atelier-modale h3 { margin: 6px 0 0; font: 700 13px var(--titre); color: #5a3b22; }
+.atelier-modale ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.atelier-modale li { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.atelier-modale li span { color: #6b5a3c; }
+.atelier-planche { width: min(640px, calc(100vw - 32px)); }
+.atelier-planche header { display: grid; gap: 6px; }
+.atelier-planche p { margin: 0; }
+.planche-defile { max-height: 60vh; overflow: auto; background: #3a2a1a; border: 2px solid var(--bois-nuit); }
+.planche-deco { display: block; image-rendering: pixelated; cursor: crosshair; }
+.atelier-banniere { position: fixed; left: 50%; top: calc(var(--haut-atelier) + 24px); transform: translateX(-50%); z-index: 21; padding: 6px 14px; max-width: 70vw;
+  background: var(--parchemin); color: var(--parchemin-encre); border: 2px solid #b8892a; font: 600 14px var(--texte); }
+.atelier-banniere[hidden] { display: none; }
+
+@media (max-width: 1100px) { :root { --gauche-atelier: 210px; --droite-atelier: 240px; } .atelier-fichiers .bouton-jeu { font-size: 12px; padding: 2px 6px; } }

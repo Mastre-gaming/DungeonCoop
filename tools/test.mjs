@@ -7,7 +7,7 @@ const srv = await servir();
 let rate = 0;
 try {
   // le camp (et sa vue visite), puis le terrain d'entraînement (entrainement.html) et l'armurerie (classe.html)
-  const pages = [['', 'test'], ...(process.argv.includes('--visite') ? [['', 'test&visite']] : []), ['entrainement.html', 'test'], ['classe.html', 'test'], ['archives.html', 'test']];
+  const pages = [['', 'test'], ...(process.argv.includes('--visite') ? [['', 'test&visite']] : []), ['entrainement.html', 'test'], ['classe.html', 'test'], ['archives.html', 'test'], ['niveaux.html', 'test']];
   for (const [chemin, q] of pages) {
     const page = await ouvrir(srv.url + chemin, q);
     // Le délai : sur les machines de GitHub (rendu logiciel), le camp et ses 1000 tests et plus prennent 10 à 13 min ; les

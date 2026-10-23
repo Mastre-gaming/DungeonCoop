@@ -7,7 +7,7 @@ import { createGame } from '../skills/core/module/06_game.js';
 import { chargerImages } from '../02_images.js';
 import { creerRendu } from '../04_rendu.js';
 import * as ESSAI from './salle.js';
-import { construire as construireSalle } from './salles.js';
+import { construire as construireSalle, PLANCHES_SALLES } from './salles.js';
 import { creerTrame } from './geometrie.js';
 import { creerCombat, equipeDepuis, equipePour, EQUIPE_KIT } from './regles.js';
 import { monGithub } from './joueur.js';
@@ -38,6 +38,7 @@ const game = createGame({ storage: { prefix: 'dungeoncoop:' } });
 async function demarrer() {
   const planches = {
     limier: 'compagnons/limier.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
+    ...PLANCHES_SALLES,           // le château et le donjon (les salles de l'atelier des niveaux)
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
     ...FILMS,                     // les animations validées de Baba Brisenclume (films.js)
@@ -67,7 +68,7 @@ async function demarrer() {
 
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null });
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null, salleNom: SALLE.nom, salleIdee: SALLE.idee });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();
