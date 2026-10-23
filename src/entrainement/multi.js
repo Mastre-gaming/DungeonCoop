@@ -83,7 +83,7 @@ export function arbitrer(combat, L, qui, a) {
     return combat.deplacer(h, x, y, combat.portee(h));
   }
   if (a.type === 'capacite') {
-      if (!capacitesDe(combat.S, h.type).includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
+    if (!capacitesDe(combat.S, h).includes(a.cap) && a.cap !== 'desengager') return false;     // (Se désengager : pour tous)
     const c = a.cible ?? {}, cible = c.id ? { id: String(c.id) } : Number.isFinite(c.x) && Number.isFinite(c.y) ? { x: c.x, y: c.y } : {};
     return combat.utiliser(h, a.cap, cible);
   }
@@ -320,7 +320,7 @@ export function update(dt) {
 function intention(s) {
   const h = combat.U(PLACES[Math.round(s.h) - 1]);
   if (!h) return '';
-  const cap = CAPACITES[capacitesDe(combat.S, h.type)[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
+  const cap = CAPACITES[capacitesDe(combat.S, h)[Math.round(s.c) - 1]], cible = combat.S.unites[Math.round(s.v) - 1];
   if (!cap) return '';
   return `${cap.nom}${cible ? ` → ${cible.nom}` : ''}`;
 }

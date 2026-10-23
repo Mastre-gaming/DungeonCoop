@@ -8,7 +8,7 @@
 //   V : les barres de vie des ennemis · Maj+V : celles des alliés
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
-import { CAPACITES, HEROS, ENNEMIS, PNJ, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, equipeDepuis, equipePour, classesPour, capacitesDe, VUE } from './regles.js';
+import { CAPACITES, HEROS, ENNEMIS, PNJ, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, FORMES, equipeDepuis, equipePour, classesPour, capacitesDe, VUE } from './regles.js';
 import { monGithub } from './joueur.js';
 import { CONTACT, metres, dist } from './geometrie.js';
 import { marcheGroupe, GESTES } from './explo.js';
@@ -123,7 +123,7 @@ function construire() {
         ui.salle?.id === 'essai' ? el('option', { value: 'essai', selected: true }, ui.salle.nom) : null)),
     dom.groupe = el('div', { class: 'groupe-lobby', hidden: true, 'aria-live': 'polite' }),
     dom.titreEquipe = el('h2', {}, 'Ton équipe : choisis la classe de chacun'),
-    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (le Traqueur de Paolitus, Shadow de Fraps : chacune ne se joue que par son auteur). ◀ ▶ pour changer.'),
+    el('p', { class: 'muet' }, 'Les 4 héros du kit D1, des classes d’essai (marquées « essai » : faites au budget de la fiche de classe, pour tester), et les vraies classes de chacun dès que leurs règles sont écrites (le Traqueur de Paolitus, Shadow de Fraps, Baba de DonBabaa, le Changepeau de Mope : chacune ne se joue que par son auteur). ◀ ▶ pour changer.'),
     dom.places = el('div', { class: 'places-accueil' }),
     dom.boutonsEquipe = el('div', { class: 'boutons' },
       el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => { ui.choix = EQUIPE_KIT.slice(); dessinerPlaces(); } }, 'Le kit D1'),
@@ -355,7 +355,7 @@ function choisirCapacite(id) {
   if (id && (!h || !utilisable(h, CAPACITES[id]))) return false;
   ui.cap = id && ui.cap !== id ? id : null;
   // une capacité sans cible (la potion) se lance tout de suite
-  if (ui.cap && CAPACITES[ui.cap].type === 'potion') { agir({}); return true; }
+  if (ui.cap && ['potion', 'mue', 'quitterForme'].includes(CAPACITES[ui.cap].type)) { agir({}); return true; }
   ui.sale = true;
   return true;
 }
@@ -531,7 +531,7 @@ function clavier(e) {
     return;
   }
   const n = TOUCHES.indexOf(e.key), h = herosChoisi();
-  if (n >= 0 && h && !e.ctrlKey && !e.metaKey && !e.altKey) { const id = ordreBarre(capacitesDe(combat.S, h.type), CAPACITES)[n]; if (id) choisirCapacite(id); }
+  if (n >= 0 && h && !e.ctrlKey && !e.metaKey && !e.altKey) { const id = ordreBarre(capacitesDe(combat.S, h), CAPACITES)[n]; if (id) choisirCapacite(id); }
 }
 function portee(h) { if (!ui.portee || ui.portee.id !== h.id || ui.portee.mv !== h.t.mv || ui.portee.x !== h.x || ui.portee.y !== h.y) ui.portee = { id: h.id, mv: h.t.mv, x: h.x, y: h.y, P: combat.portee(h) }; return ui.portee.P; }
 
@@ -633,7 +633,7 @@ function joueurFiche(id) {
 // sinon celle qu'on a choisie.
 const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
 // Le Pas dans l’ombre de Shadow n’a de sens qu’avec un ennemi tenu par un allié : sans cible, on le montre indisponible.
-const sansCible = (h, cap) => cap.type === 'ombre' && !combat.cibles(h, cap).length;
+const sansCible = (h, cap) => (cap.type === 'ombre' || cap.type === 'bond' || cap.type === 'ardent' || cap.devorer) && !combat.cibles(h, cap).length;
 const utilisable = (h, cap) => combat.peutUtiliser(h, cap) && !sansCible(h, cap);
 function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
@@ -641,7 +641,10 @@ function pourquoiPas(h, cap) {
   if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
   if (cap.type === 'enclume' && h.enclumeTombee) return 'Son enclume est déjà tombée : une fois par combat.';
   if (cap.type === 'forge' && !combat.presDeLEnclume(h)) return combat.S.enclume ? 'Loin de son enclume : il doit être à son contact pour forger.' : 'Pas d’enclume : la Chute d’Enclume d’abord.';
-  if (cap.cout && h.res.v < cap.cout) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${cap.cout}.`;
+  if (cap.type === 'bond' && combat.trahiParLaLumiere(h)) return 'La Bête brûle (Brûlure, ou dans le feu) : plus de Bond.';
+  if (cap.forme === 'illumine' && (h.st.trempe || combat.surfaceA(h)?.t === 'eau')) return 'Trempé ou dans l’eau : l’Illuminé s’éteindrait aussitôt.';
+  if (cap.type === 'attaque' && cap.devorer && !combat.cibles(h, cap).length) return 'Aucun ennemi À terre, ou qu’elle vient d’étreindre, à son contact.';
+  if (combat.coutDe(h, cap) && h.res.v < combat.coutDe(h, cap)) return `Pas assez ${/^[AEIOUÉ]/.test(h.res.type) ? 'd’' : 'de '}${h.res.type} : ${h.res.v} sur ${combat.coutDe(h, cap)}.`;
   if (sansCible(h, cap)) return 'Aucun ennemi à 7,5 m qu’un allié serre à 4,5 m.';
   if (cap.type === 'brasero') return 'Va au contact d’un brasero : il se renverse à portée de main.';
   if (cap.type === 'potion') return h.potion < 1 ? 'Sa potion est déjà bue.' : 'Ses PV sont au maximum.';
@@ -692,7 +695,7 @@ function listeEtats(u) {
 function dessinerInfo(info) {
   const d = ui.survol && !vue.occupe() ? vue.sous(ui.survol.x, ui.survol.y) : null, u = d ? combat.U(d) : null;
   if (!u) { dom.info.hidden = true; return; }
-  const tete = el('div', { class: 'cc-tete' }, el('strong', {}, u.nom), el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV`));
+  const tete = el('div', { class: 'cc-tete' }, el('strong', {}, u.nom), el('span', {}, `${Math.max(0, u.pv)} / ${u.pvMax} PV${u.forme ? ` · ${FORMES[u.forme.id].nom} ${u.forme.pv} / ${u.forme.max}` : ''}`));
   if (info) {
     const cap = CAPACITES[ui.cap];
     dom.info.replaceChildren(tete,
@@ -730,7 +733,7 @@ function dessinerTout() {
   if (S.phase !== 'heros') dom.chrono.textContent = '';
   // les fiches des héros : le médaillon du héros du camp, en petit, et son bandeau de bois (DESIGN.fr.md §5)
   dom.equipe.replaceChildren(...S.heros.map((id) => {
-    const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko;
+    const u = combat.U(id), H = HEROS[u.type], actif = groupe.includes(id) && !u.ko, F = u.forme ? FORMES[u.forme.id] : null;
     const etats = etatsDe(u);
     const pv = Math.max(0, u.pv), part = (v, max) => `width:${max ? Math.max(0, Math.min(100, (v / max) * 100)) : 0}%`;
     // une jauge : le texte écrit dedans (court), et le texte entier pour les lecteurs d'écran et au survol
@@ -740,22 +743,23 @@ function dessinerTout() {
       'aria-label': `${H.nom}${u.ko ? ', KO' : ''} : ${pv} sur ${u.pvMax} PV${u.res.max ? `, ${u.res.type} ${u.res.v} sur ${u.res.max}` : ''}` },
       el('img', { class: 'fh-medaillon', src: medaillonDe(u.type), alt: '' }),
       el('span', { class: 'fh-bandeau' },
-        el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
+        el('span', { class: 'fh-titre' }, el('strong', {}, H.nom, F ? ` · ${F.nom}` : '', u.ko ? ' · KO' : ''), reseau ? joueurFiche(id) : null,
           el('span', { class: `fh-potion${u.potion ? '' : ' bue'}`, title: u.potion ? 'Sa potion' : 'Potion bue' }, el('img', { src: icone('potion'), alt: u.potion ? 'potion' : 'potion bue' }))),
         // la vie et la ressource sur une ligne (la version compacte) : la ressource se reconnaît à sa couleur
         el('span', { class: `fh-jauges${u.res.max ? '' : ' seule'}` },
-          jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`, `${pv}/${u.pvMax} PV`),
+          F ? jauge('pv forme', u.forme.pv, u.forme.max, `${F.nom} : ${u.forme.pv} / ${u.forme.max} PV de forme (l’orc dessous : ${pv} / ${u.pvMax} PV)`, `${u.forme.pv}/${u.forme.max} forme`)
+            : jauge(`pv${u.pv <= u.pvMax * 0.3 ? ' bas' : ''}`, pv, u.pvMax, `${pv} / ${u.pvMax} PV`, `${pv}/${u.pvMax} PV`),
           u.res.max ? jauge('res', u.res.v, u.res.max, `${u.res.type} ${u.res.v} / ${u.res.max}`, `${u.res.v}/${u.res.max}`, { dataset: { res: u.res.type } }) : null),
-        el('span', { class: 'fh-ligne' }, actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
+        el('span', { class: 'fh-ligne' }, F ? `orc ${pv}/${u.pvMax} PV · ` : '', actif ? `${metres(u.t.mv)} / ${metres(u.vitesse)} m · ${u.t.action ? 'action' : '—'} · ${u.t.bonus ? 'bonus' : '—'}` : `${metres(u.vitesse)} m par tour`,
           etats.length ? el('span', { class: 'fh-etats' }, ` · ${etats.join(' · ')}`) : null)));
   }));
   // la barre des sorts : une case par capacité (l'icône, A ou B, son coût, sa touche), rangées par sorte ; le nom et le reste
   // sont dans la fiche au-dessus, au survol ou au choix
   const h = herosChoisi();
   if (h && ['heros', 'exploration'].includes(S.phase)) {
-    const ordre = ordreBarre(capacitesDe(S, h.type), CAPACITES);
+    const ordre = ordreBarre(capacitesDe(S, h), CAPACITES);
     const caseSort = (id) => {
-      const c = CAPACITES[id], ok = utilisable(h, c), touche = TOUCHES[ordre.indexOf(id)] ?? '', s = sorteDe(id, c);
+      const c = { ...CAPACITES[id], cout: combat.coutDe(h, CAPACITES[id]) }, ok = utilisable(h, CAPACITES[id]), touche = TOUCHES[ordre.indexOf(id)] ?? '', s = sorteDe(id, c);
       const survol = (oui) => () => { if (oui ? ui.capSurvol !== id : ui.capSurvol === id) { ui.capSurvol = oui ? id : null; ui.sale = true; } };
       return el('button', { type: 'button', class: `capacite ${c.slot} s-${s}${ui.cap === id ? ' choisie' : ''}${ok ? '' : ' indispo'}`, 'aria-disabled': ok ? null : 'true',
         'aria-label': `${c.nom}, ${c.slot === 'action' ? 'action' : 'action bonus'}${c.cout ? `, ${c.cout} ${h.res.type}` : ''}${touche ? `, touche ${touche}` : ''}`, title: c.nom,
@@ -977,7 +981,7 @@ export function remplacer(c) {
 }
 // Ce que mon pointeur montre aux amis (multi.js) : où il est, mon héros, ma capacité et ma cible (en numéros).
 function pointeur() {
-  const h = herosChoisi(), caps = h ? capacitesDe(combat.S, h.type) : [], vise = vue.marques.survolCible;
+  const h = herosChoisi(), caps = h ? capacitesDe(combat.S, h) : [], vise = vue.marques.survolCible;
   return { x: ui.survol?.x ?? -1, y: ui.survol?.y ?? -1, h: h ? PLACES.indexOf(h.id) + 1 : 0, c: ui.cap ? caps.indexOf(ui.cap) + 1 : 0,
     v: vise ? combat.S.unites.findIndex((u) => u.id === vise) + 1 : 0 };
 }

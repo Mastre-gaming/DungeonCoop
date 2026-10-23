@@ -18,6 +18,9 @@ const ICONES = {
   pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos', desengager: 'desengager',
   marteau: 'marteau', chuteEnclume: 'enclume', lameArdente: 'lameArdente', trempe: 'trempe', tenailles: 'tenailles',
   renverser: 'fleche',      // (le brasero du sentier F)
+  batonNoue: 'baton', mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
+  crocs: 'crocs', bond: 'bond', curee: 'curee', poing: 'poing', etreinte: 'liane', devorer: 'devorer',
+  braise: 'etincelle', embrasement: 'embrasement', armesArdentes: 'lameArdente',
 };
 // La sorte de chaque capacité, pour la barre des sorts (les sortes de CLASS_TEMPLATE.fr.md, plus le familier et le commun).
 // Une capacité absente d'ici prend sa sorte d'après ce qu'elle fait (sorteDe).
@@ -27,6 +30,7 @@ export const SORTES = [
   { id: 'exploitation', nom: 'Exploitation' },
   { id: 'soutien', nom: 'Soutien' },
   { id: 'familier', nom: 'Le limier' },
+  { id: 'mue', nom: 'La Mue' },
   { id: 'commun', nom: 'Commun' },
 ];
 const SORTE = {
@@ -34,6 +38,9 @@ const SORTE = {
   foudre: 'exploitation', tirLeste: 'exploitation', coupDos: 'exploitation', coupDos3: 'exploitation',
   chuteEnclume: 'exploitation', lameArdente: 'exploitation', trempe: 'exploitation', tenailles: 'preparation',   // (la fiche de Baba : Enclume et Forge, une exploitation)
   pousser: 'commun', potion: 'commun', relever: 'commun',
+  bond: 'preparation', etreinte: 'preparation', embrasement: 'preparation',     // (le Changepeau : la fiche de Mope)
+  curee: 'exploitation', devorer: 'exploitation', armesArdentes: 'soutien',
+  mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
 };
 export function sorteDe(id, cap) {
   if (SORTE[id]) return SORTE[id];
@@ -49,7 +56,7 @@ export function ordreBarre(ids, CAPACITES) {
 }
 // Les touches de la barre, dans l'ordre : 1 à 9, puis 0, - et = (une classe qui a plus de sorts, comme le Traqueur)
 export const TOUCHES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
-export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×', renverser: 'FEU' };
+export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×', renverser: 'FEU', mueBete: 'BÊTE', mueCosa: 'COSA', mueIllumine: 'FEU', quitterForme: 'ORC' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
 // une attaque contre une cible ordinaire : raté sur 1, critique sur 20, éraflure jusqu'à d20 + bonus = 9 (12 contre un coriace)
@@ -110,6 +117,10 @@ export function resume(cap) {
     case 'tenailles': return `attire ${metres(cap.longueur)} m`;
     case 'moquerie': return 'Exposé';
     case 'brasero': return 'allume le foin';
+    case 'mue': return { bete: '40 PV · Bête', cosa: '60 PV · Cosa', illumine: '30 PV · Illuminé' }[cap.forme];
+    case 'quitterForme': return 'redevient orc';
+    case 'bond': return 'saute · À terre';
+    case 'ardent': return '2 tours · feu';
     default: return '';
   }
 }

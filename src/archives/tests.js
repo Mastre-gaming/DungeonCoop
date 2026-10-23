@@ -22,7 +22,7 @@ export async function selfTest(t, game) {
   t.group('le catalogue : tous les assets du projet');
   t.eq(C.personnages.filter((p) => p.ennemi).length, MOBS.length, `une carte par fichier de content/ennemis/ (${MOBS.length})`);
   t.ok(MOBS.every((m) => m.id && m.nom && m.rang && m.pv > 0 && m.capacites?.length && (m.rang !== 'boss' || m.mecanique_combo)), 'chaque ennemi a son rang, ses PV, ses attaques (et un boss, sa mécanique de combo)');
-  t.eq(C.personnages.filter((p) => p.groupe !== 'Le camp' && !p.ennemi).length, Object.keys(PERSOS).length, `les ${Object.keys(PERSOS).length} personnages du terrain d’entraînement`);
+  t.eq(C.personnages.filter((p) => p.groupe !== 'Le camp' && !p.ennemi && !p.forme).length, Object.keys(PERSOS).length, `les ${Object.keys(PERSOS).length} personnages du terrain d’entraînement`);
   t.ok(['heros-camp', 'sentinelle', 'crieur', 'barde-camp', 'rat-conflit', 'rat-tests', 'rat-relecture'].every((id) => C.personnages.some((p) => p.id === id)), 'et ceux du camp : le héros de départ, la sentinelle, le crieur, le barde, les 3 rats');
   t.eq(C.classes.filter((c) => c.source === 'regles').length, Object.keys(HEROS).length, 'les 8 classes jouables au terrain');
   t.ok(C.classes.filter((c) => c.source === 'armurerie').length >= 5, 'les fiches de l’armurerie (content/classes/)');
@@ -35,6 +35,7 @@ export async function selfTest(t, game) {
   t.ok(filet.briques.includes('etat-gele') && filet.briques.includes('filet-pose') && utilise(BRIQUES['etat-gele'], 'Garde de givre'), 'le Filet : l’état Gelé et le filet posé (lus dans « Gelé (Garde de givre, Filet) »)');
   t.ok(epee.briques.includes('croissant-taille'), 'le Coup d’épée retrouve sa traînée (apostrophes droite et courbe)');
   t.ok(C.sorts.find((s) => s.id === 'pousser').classes[0] === 'tous les héros', 'Pousser, la Potion, Relever : les gestes de tous');
+  t.ok(['bete', 'cosa', 'illumine'].every((f) => C.personnages.some((p) => p.id === `changepeau-${f}` && p.format === 'bande' && p.classe === 'changepeau')), 'les trois formes du Changepeau de Mope, avec sa classe');
   t.eq(C.decors.length, Object.keys(DECORS_SALLES).length, `les ${Object.keys(DECORS_SALLES).length} planches du château et du donjon`);
   t.ok(C.decors.every((d) => d.origine.endsWith('.png') && d.auteur && d.usage.length) && C.decors.find((d) => d.id === 'lave').usage.some((u) => u.includes('bloque')),
     'chacune : son original dans le pack, qui l’a dessinée, à quoi elle sert (la lave : un pinceau qui bloque)');

@@ -55,6 +55,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .fh-jauge { position: relative; display: block; min-width: 0; height: 12px; background: var(--bois-nuit); border: 1px solid #000; box-shadow: 0 0 0 1px var(--bois-clair); overflow: hidden; }
 .fh-jauge .rempli { position: absolute; left: 0; top: 0; bottom: 0; background: var(--vie-allie); transition: width .25s; }
 .fh-jauge.pv.bas .rempli { background: var(--braise); }
+.fh-jauge.pv.forme .rempli { background: var(--vie-forme); }   /* les PV de la forme du Changepeau */
 .fh-jauge .texte { position: relative; display: block; text-align: center; font: 500 10px/12px var(--titre); color: #fff7e6; white-space: nowrap;
   text-shadow: 0 1px 0 #000, 1px 0 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
 /* la ressource : sa couleur pleine, et le vide teinté d'elle (on reconnaît la ressource même à 0) */
@@ -98,9 +99,9 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .barre-terrain { padding: 8px; max-width: 100%; box-sizing: border-box; }
 /* La barre des sorts (DESIGN §5) : la barre d'action du camp (BABA), ses cases de 52 px, ses rivets, ses embouts et ses loups ;
    les sorts rangés par sorte (le nom du groupe et une bande de sa couleur sur chaque case), le commun à part. */
-:root { --sorte-base: #ccbd7b; --sorte-preparation: #4a8fd8; --sorte-exploitation: #e0603a; --sorte-soutien: #5fb84a; --sorte-familier: #c8913a; --sorte-commun: #a8956f; --sorte-mouvement: #7fc8d8; }
+:root { --sorte-base: #ccbd7b; --sorte-preparation: #4a8fd8; --sorte-exploitation: #e0603a; --sorte-soutien: #5fb84a; --sorte-familier: #c8913a; --sorte-commun: #a8956f; --sorte-mouvement: #7fc8d8; --sorte-mue: #b07ad8; --vie-forme: #9a62d0; }
 .s-base { --c: var(--sorte-base); } .s-preparation { --c: var(--sorte-preparation); } .s-exploitation { --c: var(--sorte-exploitation); }
-.s-soutien { --c: var(--sorte-soutien); } .s-familier { --c: var(--sorte-familier); } .s-commun { --c: var(--sorte-commun); } .s-mouvement { --c: var(--sorte-mouvement); }
+.s-soutien { --c: var(--sorte-soutien); } .s-familier { --c: var(--sorte-familier); } .s-commun { --c: var(--sorte-commun); } .s-mouvement { --c: var(--sorte-mouvement); } .s-mue { --c: var(--sorte-mue); }
 .socle-sorts { display: flex; align-items: flex-end; pointer-events: none; }
 .socle-sorts > * { pointer-events: auto; }
 .socle-sorts .embout { align-self: center; width: 16px; height: 88px; background: var(--embout) 0 0 / 16px 88px; image-rendering: pixelated; position: relative; z-index: 1; }
@@ -411,6 +412,7 @@ body [hidden] { display: none !important; }
 .plaque-vie .pv-plein { display: block; height: 100%; background: #c8352a; transition: width .25s; }
 .plaque-vie.allie .pv-plein { background: #4f9a33; }
 .plaque-vie.bas .pv-plein { background: #e8792a; }
+.plaque-vie.forme .pv-plein { background: #9a62d0; }
 .plaque-vie .pv-chiffre { display: none; position: absolute; inset: 0; text-align: center; font: 700 10px/11px var(--titre); color: #fff7e6; text-shadow: 1px 1px 0 #000, -1px 0 0 #000, 0 -1px 0 #000; }
 .plaque-vie.pres .pv-chiffre { display: block; }
 .plaque-vie.ko { opacity: .7; }
