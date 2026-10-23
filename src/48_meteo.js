@@ -161,6 +161,7 @@ export function init(game, options) {
   if (visite || !options.sol) return api;
   const net = (t) => { t.magFilter = t.minFilter = THREE.NearestFilter; t.generateMipmaps = false; t.flipY = false; t.needsUpdate = true; return t; };   // (flipY : on lit les planches de haut en bas, comme le jeu)
   const sol = net(new THREE.CanvasTexture(options.sol)), planche = options.images?.placeSols;
+  game.bus.on('sol:maj', () => { sol.needsUpdate = true; });   // le sol redessiné (les sentiers qui s'usent, 53_traces.js)
   const placeTex = planche ? net(new THREE.Texture(planche)) : sol;
   const dessus = { transparent: true, depthTest: false, depthWrite: false };
   voiles = {

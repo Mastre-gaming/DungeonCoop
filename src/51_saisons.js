@@ -278,7 +278,11 @@ export function teindreCamp({ images, camp, sol, saison }) {
     }
   }
   if (sol) teindreSol(sol, saison, { arbres });
+  pourLeSol = { saison, arbres };
 }
+// Le sol redessiné plus tard (les sentiers qui s'usent, 53_traces.js) : le repeindre pour la même saison, autour des mêmes arbres.
+let pourLeSol = null;
+export function reteindreSol(sol) { if (pourLeSol) teindreSol(sol, pourLeSol.saison, { arbres: pourLeSol.arbres }); }
 
 // --- La compétence : la saison du camp, pour les autres (la météo, les bêtes) et les tests ------------------------
 let S = { saison: 'ete', forcee: false };
