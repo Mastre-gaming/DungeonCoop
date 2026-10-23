@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "id": "camp-des-mastres/sentier-f-b",
+  "id": "camp-des-mastres/sentier-des-gueux-c",
   "nom": "",
   "unite": "cases",
-  "note": "La meule : un grand tas de foin, le brasero collé à son flanc ouest (gabarit B).",
+  "note": "Le champ fauché : deux bottes de foin et deux braseros, un de chaque côté (gabarit C).",
   "taille": [
     24,
     16
@@ -11,23 +11,41 @@
   "decor": {
     "rochers": [
       [
-        6.5,
-        13.5
+        15.5,
+        5
+      ],
+      [
+        15.5,
+        15
+      ],
+      [
+        7,
+        10
       ]
     ],
     "tonneaux": [],
     "foin": [
       {
         "x0": 10,
-        "y0": 7,
-        "x1": 15,
-        "y1": 13
+        "y0": 6,
+        "x1": 13,
+        "y1": 9
+      },
+      {
+        "x0": 10,
+        "y0": 11,
+        "x1": 13,
+        "y1": 14
       }
     ],
     "braseros": [
       [
-        8.2,
-        10
+        8.3,
+        7.5
+      ],
+      [
+        8.3,
+        12.5
       ]
     ]
   },
@@ -53,36 +71,36 @@
     "ennemis": {
       "avant": [
         [
-          16.5,
-          7.5
+          17.5,
+          8
         ],
         [
-          16.5,
+          17.5,
           10
         ],
         [
-          16.5,
-          12.5
+          17.5,
+          12
         ]
       ],
       "loin": [
         [
           20.5,
-          5
+          5.5
         ],
         [
           20.5,
-          15
+          14.5
         ]
       ],
       "fond": [
         [
           22,
-          9
+          10
         ],
         [
           22,
-          11
+          8.5
         ]
       ]
     }

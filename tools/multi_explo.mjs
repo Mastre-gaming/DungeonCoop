@@ -1,4 +1,4 @@
-// L'exploration à plusieurs, sur le build (dist/) : l'hôte et un ami simulé (fil « loopback », sans réseau) jouent le sentier F.
+// L'exploration à plusieurs, sur le build (dist/) : l'hôte et un ami simulé (fil « loopback », sans réseau) jouent le sentier des Gueux.
 //   npm run build && node tools/multi_explo.mjs [dossier des captures]
 // Vérifie : le lancement (le départ), la marche de chacun, les refus, les scènes de zone, un geste (cueillir), la fourche
 // (la voix de l'hôte, l'éboulis chez tous), l'embuscade, l'entrée en combat et le départ d'un ami.

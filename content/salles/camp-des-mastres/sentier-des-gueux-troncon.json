@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "id": "camp-des-mastres/sentier-f-troncon",
+  "id": "camp-des-mastres/sentier-des-gueux-troncon",
   "nom": "",
   "unite": "cases",
-  "note": "Le chemin de la tour en entier (chemin-de-la-tour.md §5), d'ouest en est : la zone 0, le départ (la clairière de l'est du camp, le sentier F) ; la zone 1, le sentier F (combat 1 : sa clairière reçoit le gabarit tiré) ; la zone 2, la fourche (le colporteur, la vieille borne) ; la zone 3, le gué (combat 2, le péage) ; la zone 4, les champs (le chariot ou l'embuscade) ; la zone 5, le moulin (combat 3 : protéger le meunier) ; la zone 6, la montée (les ruines) ; la zone 7, la porte de la tour (le gardien, mini-boss) ; la zone 8, l'arrivée (la porte s'ouvre).",
+  "note": "Le chemin de la tour en entier (chemin-de-la-tour.md §5), d'ouest en est : la zone 0, le départ (la clairière de l'est du camp, le sentier des Gueux) ; la zone 1, le sentier des Gueux (combat 1 : sa clairière reçoit le gabarit tiré) ; la zone 2, la fourche (le colporteur, la vieille borne) ; la zone 3, le gué (combat 2, le péage) ; la zone 4, les champs (le chariot ou l'embuscade) ; la zone 5, le moulin (combat 3 : protéger le meunier) ; la zone 6, la montée (les ruines) ; la zone 7, la porte de la tour (le gardien, mini-boss) ; la zone 8, l'arrivée (la porte s'ouvre).",
   "monde": [
     301,
     26

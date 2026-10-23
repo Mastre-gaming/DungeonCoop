@@ -76,6 +76,7 @@ function construire() {
       dom.relance = el('span', { class: 'relance-hud', title: 'La vieille borne : le premier d20 raté d’un héros se rejoue' }),
       dom.poserTonneau = el('button', { type: 'button', class: 'bouton-jeu discret petit', title: 'Poser le tonneau d’huile à côté du héros choisi (exploration)', onclick: () => { const h = herosChoisi(); if (h && combat.S.phase === 'exploration' && geste('poser', h)) vider(); else banniere('En exploration, avec un héros choisi'); } }, 'Poser le tonneau')),
     dom.caillasse = el('span', { class: 'caillasse-hud', title: 'La Caillasse du groupe', hidden: true }, el('i', { class: 'piece-caillasse', 'aria-hidden': 'true' }), dom.caillasseN = el('b', {}, '0')),
+    dom.xp = el('span', { class: 'xp-hud', title: 'L’expérience du groupe : chaque niveau donne +5 PV et ouvre des compétences', hidden: true }, dom.xpNiveau = el('b', {}, 'Niv. 1'), el('span', { class: 'xp-barre' }, dom.xpJauge = el('i', {})), dom.xpReste = el('small', {}, '')),
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
     dom.boutonFiche = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => montrerFin(true) }, 'Fiche'),
@@ -328,6 +329,8 @@ function surEvenement(e) {
   else if (e.type === 'perception' && e.ok) banniere('Quelque chose brille…', 'combo');
   else if (e.type === 'levier') banniere({ corde: 'Le pont s’effondre !', vanne: 'La cour est inondée !', herse: 'La herse tombe !' }[e.sorte] ?? '', 'combo');
   else if (e.type === 'curiosite' && e.n) banniere(`+${e.n} Caillasse`, 'combo');
+  else if (e.type === 'xp') banniere(`+${e.n} XP`, 'combo');
+  else if (e.type === 'niveau') banniere(`Niveau ${e.niveau} ! +${e.pv} PV${e.appris?.length ? ` · ${e.appris.map((a) => `${combat.U(a.h)?.nom ?? ''} : ${CAPACITES[a.cap]?.nom ?? a.cap}`).join(' · ')}` : ''}`, 'combo');
   else if (e.type === 'arrivee') ui.arrivee = true;
   ui.sale = true;
 }
@@ -882,6 +885,14 @@ function carteVictoire(g, n) {
 function compterCaillasse() {
   if (!ui.aventure) return;
   dom.caillasse.hidden = false;
+  const PG = combat.S.progression;
+  dom.xp.hidden = !PG;
+  if (PG) {
+    const P = PG.plan, base = (PG.niveau - 1) * P.xpParNiveau;
+    dom.xpNiveau.textContent = `Niv. ${PG.niveau}`;
+    dom.xpJauge.style.width = PG.niveau >= P.niveauMax ? '100%' : `${Math.round(((PG.xp - base) / P.xpParNiveau) * 100)}%`;
+    dom.xpReste.textContent = PG.niveau >= P.niveauMax ? 'max' : `${PG.xp - base}/${P.xpParNiveau} XP`;
+  }
   const vrai = combat.S.caillasse;
   if (ui.cv == null) ui.cv = vrai;
   if (ui.cv !== vrai) {

@@ -23,6 +23,7 @@ import * as SAISON from './saison.js';
 import * as desSkill from '../61_des.js';   // le jet de d20 (le dé de cristal)
 import CHEMIN from './chemin.json';
 import * as tests from './tests.js';
+import * as PROGRESSION from './progression.js';
 import * as AVENTURE from './aventure.js';
 import { demanderLancer } from './entree.js';
 import PERSOS from './persos.json';
@@ -44,7 +45,7 @@ const SALLE = construireSalle(query.get('salle')) ?? ESSAI;
 
 const game = createGame({ storage: { prefix: 'dungeoncoop:' } });
 
-const CLE_PREMIERE = 'dungeoncoop:sentier-f-vue';
+const CLE_PREMIERE = 'dungeoncoop:sentier-des-gueux-vue';
 
 // Un niveau de l'aventure (?aventure=) : le vote de qui lance le dé, la graine, puis la salle et la rencontre tirées.
 async function entrerNiveau(equipe) {
@@ -71,7 +72,7 @@ async function demarrer() {
   const MONDE = niveau ? niveau.plan : SALLE;                 // le module de la salle : D1 (salle.js) ou un fichier de l'aventure
   const planches = {
     limier: 'compagnons/limier.png', forme_bete: 'entrainement/formes/bete.png', forme_cosa: 'entrainement/formes/cosa.png', forme_illumine: 'entrainement/formes/illumine.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
-    brasero: 'brasero_sentier_f.png', haute: 'herbe_haute.png', surfaces: 'surfaces.png', surfaces_lpc: 'surfaces_lpc.png', chemin: 'chemin.png', etal: 'etal.png',   // (le chemin de la tour)
+    brasero: 'brasero_sentier_gueux.png', haute: 'herbe_haute.png', surfaces: 'surfaces.png', surfaces_lpc: 'surfaces_lpc.png', chemin: 'chemin.png', etal: 'etal.png',   // (le chemin de la tour)
     ...PLANCHES_SALLES,           // le château et le donjon (les salles de l'atelier des niveaux)
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
     ...EFFETS,                    // les briques de la bibliothèque d'animations (effets.js, #134)
@@ -95,10 +96,12 @@ async function demarrer() {
     // la salle jouée : celle d'une aventure (un tronçon), ou celle d'essai / de la route (salles.js)
     const monde = niveau ? niveau.options : { departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null };
     const creer = (eq, infini = null) => {
-      const c = creerCombat({ trame, salle, ...monde, equipe: eq, alea, infini });
+      const c = creerCombat({ trame, salle, ...monde, equipe: eq, alea, infini, progression });
       if (saison === 'hiver') c.S.curiosites = c.S.curiosites.filter((o) => o.sorte !== 'canard');   // (en hiver, pas de canard à taquiner)
       return c;
     };
+  // l'XP du groupe (progression.js) : d'après le plan de l'aventure ; ?xp= et ?nh= viennent de la run sauvegardée (sinon, niveau 1 : relancer l'aventure repart de zéro)
+  const progression = niveau ? { plan: PROGRESSION.planDe(AVENTURE.aventure(query.get('aventure'))), xp: query.get('xp'), niveau: query.get('nh') } : null;
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.
   // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)
@@ -126,7 +129,7 @@ async function demarrer() {
     Object.assign(game.dbg, { partyNet, combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
   game.use(tests, { combat, vue, ihm, multi, trame, salle, game, images, SALLE });
 
-  // un tronçon du chemin : on commence à pied, sans écran d'accueil (chemin-sentier-f.md §0)
+  // un tronçon du chemin : on commence à pied, sans écran d'accueil (chemin-sentier-des-gueux.md §0)
   function premierDeMoi() { return combat.S.heros.find((id) => !ihm.reseau || ihm.reseau.aMoi(id)) ?? 'h1'; }
   function explorer() { combat.explorer(); ihm.lance(); ihm.choisirHeros(premierDeMoi()); }
   // à plusieurs, le lobby d'abord : l'hôte lance (multi.js), et la scène du départ se joue alors chez tous

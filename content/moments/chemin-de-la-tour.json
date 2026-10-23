@@ -1,9 +1,9 @@
 {
-  "_lisez_moi": "Les moments du niveau 1 « Le chemin de la tour » (le sentier F, jusqu'à la porte), dans le gabarit du départ du camp (content/moments/depart.json, Paolitus) : une scène est une suite d'étapes ; une réplique fait 4 lignes courtes au plus (STORY_STRUCTURE.md). {heros}, {heros2}, {heros3}, {heros4} : le nom du 1er, 2e, 3e, 4e héros du groupe ; {partants} : les noms de ceux qui partent. Une réplique avec \"qui\": \"{heros}\" est dite par ce héros (son médaillon), \"Le conteur\" et \"Le colporteur\" ont le leur. Les répliques marquées \"brouillon\": true sont des BROUILLONS de Claude (ton : aventure épique, pointe d'humour) : l'histoire est à l'équipe, qui les réécrit ou les retire ici, sans toucher au code. Celles sans \"brouillon\" expliquent le jeu. Étapes : camera [x, y] ou un point nommé (ennemis, brasero, branche-perdue) + duree ; coupe (fondu au noir, la caméra ailleurs) ; titre / sous ; texte (qui, brouillon, si : nord ou sud) ; marqueur ; gros_plan (\"etal\" ou null) et etiquette ({x, y, texte, bas}, pixels de l'image 240 x 150) ; eboulis ; attendre. « declencheurs » : une scène quand le groupe passe x. « combats » : le titre de chaque combat et sa scène.",
+  "_lisez_moi": "Les moments du niveau 1 « Le chemin de la tour » (le sentier des Gueux, jusqu'à la porte), dans le gabarit du départ du camp (content/moments/depart.json, Paolitus) : une scène est une suite d'étapes ; une réplique fait 4 lignes courtes au plus (STORY_STRUCTURE.md). {heros}, {heros2}, {heros3}, {heros4} : le nom du 1er, 2e, 3e, 4e héros du groupe ; {partants} : les noms de ceux qui partent. Une réplique avec \"qui\": \"{heros}\" est dite par ce héros (son médaillon), \"Le conteur\" et \"Le colporteur\" ont le leur. Les répliques marquées \"brouillon\": true sont des BROUILLONS de Claude (ton : aventure épique, pointe d'humour) : l'histoire est à l'équipe, qui les réécrit ou les retire ici, sans toucher au code. Celles sans \"brouillon\" expliquent le jeu. Étapes : camera [x, y] ou un point nommé (ennemis, brasero, branche-perdue) + duree ; coupe (fondu au noir, la caméra ailleurs) ; titre / sous ; texte (qui, brouillon, si : nord ou sud) ; marqueur ; gros_plan (\"etal\" ou null) et etiquette ({x, y, texte, bas}, pixels de l'image 240 x 150) ; eboulis ; attendre. « declencheurs » : une scène quand le groupe passe x. « combats » : le titre de chaque combat et sa scène.",
   "id": "camp-des-mastres",
   "combats": {
     "principal": {
-      "titre": "Les bandits du sentier F",
+      "titre": "Les bandits du sentier des Gueux",
       "scene": "premier-combat"
     },
     "gue": {
@@ -74,7 +74,7 @@
         ]
       },
       {
-        "texte": "Le sentier F ? Quelqu’un a vraiment appelé un sentier « F » ?",
+        "texte": "Le sentier des Gueux ? C’est un nom, ça, ou une mise en garde ?",
         "qui": "{heros}",
         "brouillon": true
       },
@@ -115,7 +115,7 @@
         "duree": 1.0
       },
       {
-        "texte": "Des bandits. Évidemment. Le sentier F a toujours eu mauvaise réputation : c’est pour ça qu’on ne lui a jamais donné de vrai nom.",
+        "texte": "Des bandits. Évidemment. Le sentier des Gueux porte bien son nom : on l’a baptisé d’après ceux qui y traînent.",
         "qui": "Le conteur",
         "brouillon": true
       },

@@ -66,6 +66,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
   const s = {
     gabarit, phase: 'camp', etape: -1, salle: null, options: [], heros: heros.map(faire), joueurs: [], reveil: null,
     defaites: 0, parcours: [], issue: null,
+    progression: { xp: 0, niveau: 1 },      // l'expérience du groupe (entrainement/progression.js) : elle suit la run et sa sauvegarde, pas l'aventure relancée
   };
   // Les héros aux joueurs, à tour de rôle : avec deux joueurs, deux héros chacun ; avec trois, 2-1-1 ; avec quatre, un chacun.
   function repartir(js) {
@@ -182,10 +183,14 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     // `rapport` : où en sont les héros à la fin (voir rapporter). Une défaite l'ignore : tout le groupe tombé, il se
     // réveille au dernier repos (ou au départ, s'il n'y en a pas eu) avec les héros tels qu'ils y étaient ; la salle perdue
     // garde ses ennemis (les salles s'en souviendront). Le tirage de défaite (le d20) viendra avec les héros.
-    finirSalle(issue, rapport) {
+    // `progression` : { xp, niveau } du groupe à la fin de la salle (l'XP d'une salle perdue est perdue avec elle ; elle ne recule jamais).
+    finirSalle(issue, rapport, progression = null) {
       if (s.phase !== 'salle') return false;
       if (!['victoire', 'defaite', 'abandon'].includes(issue)) return false;
       if (issue !== 'defaite' && rapport) rapporter(rapport);
+      if (issue !== 'defaite' && progression && Number.isFinite(progression.xp) && Number.isFinite(progression.niveau)) {
+        s.progression = { xp: Math.max(s.progression.xp, Math.round(progression.xp)), niveau: Math.max(s.progression.niveau, Math.round(progression.niveau)) };
+      }
       s.parcours.push({ salle: s.salle.id, issue });
       if (issue === 'abandon') return finir('abandon');
       if (issue === 'defaite') {
@@ -216,7 +221,8 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     },
     // Une copie de la run, sans rien qui bouge : pour l'envoyer à un autre onglet ou la ranger.
     instantane() { return copie({ ...s, salle: s.salle, options: s.options }); },
-    restaurer(i) { Object.assign(s, copie(i)); return api; },
+    restaurer(i) { Object.assign(s, copie(i)); s.progression ??= { xp: 0, niveau: 1 }; return api; },      // (une ancienne sauvegarde n'a pas d'XP : niveau 1)
+    get progression() { return s.progression; },
   };
 
   // L'étape suivante : une seule salle → on y entre ; plusieurs → le groupe choisit ; plus rien → le bilan.

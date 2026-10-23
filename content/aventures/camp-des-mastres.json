@@ -13,24 +13,24 @@
   "niveaux": [
     {
       "n": 1,
-      "id": "sentier-f",
-      "nom": "Le sentier F",
+      "id": "sentier-des-gueux",
+      "nom": "Le sentier des Gueux",
       "sorte": "combat",
       "salles": [
-        "camp-des-mastres/sentier-f-a",
-        "camp-des-mastres/sentier-f-b",
-        "camp-des-mastres/sentier-f-c"
+        "camp-des-mastres/sentier-des-gueux-a",
+        "camp-des-mastres/sentier-des-gueux-b",
+        "camp-des-mastres/sentier-des-gueux-c"
       ],
       "rencontres": [
-        "camp-des-mastres/sentier-f-bandits",
-        "camp-des-mastres/sentier-f-rodeurs",
-        "camp-des-mastres/sentier-f-braconniers"
+        "camp-des-mastres/sentier-des-gueux-bandits",
+        "camp-des-mastres/sentier-des-gueux-rodeurs",
+        "camp-des-mastres/sentier-des-gueux-braconniers"
       ],
       "premiere_partie": {
-        "salle": "camp-des-mastres/sentier-f-a",
-        "rencontre": "camp-des-mastres/sentier-f-bandits"
+        "salle": "camp-des-mastres/sentier-des-gueux-a",
+        "rencontre": "camp-des-mastres/sentier-des-gueux-bandits"
       },
-      "troncon": "camp-des-mastres/sentier-f-troncon"
+      "troncon": "camp-des-mastres/sentier-des-gueux-troncon"
     },
     {
       "n": 2,
@@ -67,5 +67,21 @@
       "sorte": "mini-boss",
       "a_ecrire": true
     }
-  ]
+  ],
+  "progression": {
+    "niveauMax": 6,
+    "xpParNiveau": 100,
+    "combats": {
+      "principal": 100,
+      "gue": 100,
+      "champs": 100,
+      "moulin": 100,
+      "porte": 100
+    },
+    "fourche": 100,
+    "trouvaille": 5,
+    "cachette": 5,
+    "curiosite": 5,
+    "_lisez_moi": "Le plan d'XP du chemin de la tour (chemin-de-la-tour.md : +1 niveau après chaque combat ou étape, le groupe arrive à la porte au niveau 6) : 100 XP par niveau ; chaque combat prévu, la fourche (l'étape du colporteur ou de la borne) et l'embuscade ou le chariot des champs en valent 100 ; les petites trouvailles 5. Les compétences qui s'ouvrent à chaque niveau : src/entrainement/progression.js."
+  }
 }

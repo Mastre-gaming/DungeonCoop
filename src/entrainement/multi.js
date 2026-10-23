@@ -6,7 +6,7 @@
 // On voit où pointe chacun, et ce qu'il prépare (« Fraps : Foudre → Sbire 2 ») : le combo se voit avant d'être joué.
 //   ?groupe=ABCDE&hote   l'hôte : le code du groupe du camp, sur un autre préfixe (les deux salles ne se mélangent pas)
 //   ?groupe=ABCDE        les autres (on réessaie tant que l'hôte n'est pas arrivé)
-// L'exploration (le sentier F) passe par le même chemin : chacun mène ses héros, l'hôte arbitre la marche, les gestes et les
+// L'exploration (le sentier des Gueux) passe par le même chemin : chacun mène ses héros, l'hôte arbitre la marche, les gestes et les
 // choix du groupe (la fourche, l'embuscade), joue les scènes chez tous et renvoie l'état.
 // Sans ?groupe, rien de tout ça : on joue seul, comme avant. Si l'hôte s'en va, chacun continue seul.
 import * as partyNet from '../skills/party-net/module/03_skill.js';

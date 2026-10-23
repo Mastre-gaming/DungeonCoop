@@ -1,4 +1,4 @@
-"""Les planches des ennemis du chemin (le sentier F, docs/fiches/chemin-sentier-f.md §4), au format du terrain
+"""Les planches des ennemis du chemin (le sentier des Gueux, docs/fiches/chemin-sentier-des-gueux.md §4), au format du terrain
 d'entraînement : la grille LPC de 64 px (13 images, rangées : sort 0, estoc 4, marche 8, taille 12, tir 16, blessé 20,
 repos 22 ; dans chaque groupe haut, gauche, bas, droite), recoupée aux 26 premières rangées comme les autres.
 

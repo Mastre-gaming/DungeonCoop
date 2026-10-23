@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "id": "camp-des-mastres/sentier-f-c",
+  "id": "camp-des-mastres/sentier-des-gueux-a",
   "nom": "",
   "unite": "cases",
-  "note": "Le champ fauché : deux bottes de foin et deux braseros, un de chaque côté (gabarit C).",
+  "note": "La clairière aux deux rochers : un goulot garni de foin, le brasero au bord. Les ennemis le traversent d'eux-mêmes (fiche chemin-sentier-des-gueux.md, gabarit A).",
   "taille": [
     24,
     16
@@ -11,41 +11,27 @@
   "decor": {
     "rochers": [
       [
-        15.5,
-        5
+        11.5,
+        8.4
       ],
       [
-        15.5,
-        15
-      ],
-      [
-        7,
-        10
+        11.5,
+        11.6
       ]
     ],
     "tonneaux": [],
     "foin": [
       {
         "x0": 10,
-        "y0": 6,
-        "x1": 13,
-        "y1": 9
-      },
-      {
-        "x0": 10,
-        "y0": 11,
-        "x1": 13,
-        "y1": 14
+        "y0": 8,
+        "x1": 15,
+        "y1": 12
       }
     ],
     "braseros": [
       [
-        8.3,
-        7.5
-      ],
-      [
-        8.3,
-        12.5
+        8.2,
+        10
       ]
     ]
   },
@@ -72,35 +58,35 @@
       "avant": [
         [
           17.5,
-          8
+          8.5
         ],
         [
           17.5,
-          10
+          11.5
         ],
         [
           17.5,
-          12
+          14
         ]
       ],
       "loin": [
         [
           20.5,
-          5.5
+          5
         ],
         [
           20.5,
-          14.5
+          15
         ]
       ],
       "fond": [
         [
           22,
-          10
+          9.5
         ],
         [
           22,
-          8.5
+          11.5
         ]
       ]
     }

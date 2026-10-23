@@ -4,12 +4,12 @@ Brouillon du 23 oct 2026, **validé par le propriétaire le 23 oct** (les quatre
 
 | # | Combat | Niv. | Budget | Ce qu'il apprend | Combo principal |
 |---|---|---|---|---|---|
-| 1 | Le sentier F, « les guetteurs » | 1 | 8 | l'aperçu du combo, la surprise | foin et brasero |
+| 1 | Le sentier des Gueux, « les guetteurs » | 1 | 8 | l'aperçu du combo, la surprise | foin et brasero |
 | 2 | Le gué, « le péage » | 3 | 11 | la poussée, l'eau profonde, choisir sa traversée | pousser dans la rivière ; eau et foudre |
 | 3 | Le moulin, « le moulin envahi » | 5 | 11 | protéger quelqu'un, l'eau et la foudre | le canal et la foudre ; la roue |
 | 4 | La porte, « le gardien de la porte » | 6 | 16 | lire une attaque annoncée, l'esquiver ensemble | faire percuter sa charge, puis frapper étourdi |
 
-## 1. Le sentier F : « les guetteurs » (fait, `chemin-sentier-f.md`)
+## 1. Le sentier des Gueux : « les guetteurs » (fait, `chemin-sentier-des-gueux.md`)
 - **La situation :** des bandits postés derrière un tas de foin gardent le sentier ; un arbalétrier un peu en retrait, au nord. Le brasero est au bord de la clairière, **hors de leur vue**.
 - **Le déclenchement :** entrer dans un champ de vue (les cônes au sol) ; ou s'approcher du brasero par l'ouest et le renverser sans être vu : **surprise**.
 - **Le combo :** le foin et le brasero (n'importe quel héros) ; la Flèche de feu de loin ; pousser un bandit contre le brasero (secours).
@@ -64,6 +64,6 @@ L'**embuscade** (si la graine tire les bandits plutôt que le chariot) se **nég
 - Aucun combat perdu sur un seul jet.
 
 ## 8. L'ordre de construction (porte T)
-1. Le départ (zone 0) relié au sentier F (combat 1), joué et noté.
+1. Le départ (zone 0) relié au sentier des Gueux (combat 1), joué et noté.
 2. Le gué (combat 2), avec l'eau profonde, le haut-fond et le pont ; joué et noté.
 3. Le moulin, puis la porte et son gardien (avec Étourdi), un par un.

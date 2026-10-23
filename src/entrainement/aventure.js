@@ -1,5 +1,5 @@
 // Les aventures du terrain d'entraînement : « Le camp des mastres » et ses niveaux, en données (content/aventures/,
-// content/salles/, content/rencontres/ : NIVEAUX.fr.md, docs/fiches/chemin-sentier-f.md). Ce module charge ces fichiers,
+// content/salles/, content/rencontres/ : NIVEAUX.fr.md, docs/fiches/chemin-sentier-des-gueux.md). Ce module charge ces fichiers,
 // tire une salle et une rencontre à partir d'une graine de 5 lettres, construit la salle (le module que main.js passe
 // au combat, comme salle.js pour D1) et vérifie le contenu. Les coordonnées des fichiers sont en cases, comme salle.js.
 //   ?aventure=camp-des-mastres&niveau=1   (&graine=ABCDE : la graine ; &salle= et &rencontre= : forcer un fichier ; &miroir)
@@ -110,7 +110,7 @@ export function placerEnnemis(rencontre, sallePlan, compte = {}) {
   return { rencontre: ids, types, departs, renforts, rondes };
 }
 
-// --- Le tronçon : un bout du chemin qu'on explore à pied (chemin-sentier-f.md §0) ----------------------------------
+// --- Le tronçon : un bout du chemin qu'on explore à pied (chemin-sentier-des-gueux.md §0) ----------------------------------
 // Le fichier du tronçon donne le monde (32 x 26 cases), les bandes de bois (elles bloquent le pas et la vue), les arbres
 // du champ, le sentier, l'herbe haute, les pièces de décor et les cachettes ; sa clairière reçoit le gabarit tiré
 // (construireSalle, puis décalé). Le sentier et l'herbe haute ne sont que du décor.

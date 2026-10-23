@@ -9,6 +9,7 @@ import {
     CONTACT, ECART_MIN, dist, metres, vue, voit, enTenaille, carteDistances, chemin, longueurChemin, indiceDe, pointDe,
     libre, simulerPoussee, pointLibreProche, trajetLibre, ajouterObstacle, retirerObstacle, dansForme, ecartHauteur, niveauA, NIVEAU_M,
 } from './geometrie.js';
+import * as PROG from './progression.js';
 import { lire } from './reglages-combat.js';   // les nombres qu'on règle à la main (panneau) ; leurs défauts sont les valeurs d'avant
 
 // --- Les classes d'essai (niveau 1, « uniquement pour ce test ») et les ennemis du kit ------------------------------
@@ -97,7 +98,8 @@ export const FORMES = {
 export const capacitesDe = (a, b) => {
   const [S, x] = b === undefined ? [null, a] : [a, b];
   const u = typeof x === 'string' ? { type: x } : x;
-  const base = u?.forme && FORMES[u.forme.id] ? [...FORMES[u.forme.id].capacites, 'pousser', 'potion', 'relever'] : HEROS[u?.type]?.capacites ?? [];
+  let base = u?.forme && FORMES[u.forme.id] ? [...FORMES[u.forme.id].capacites, 'pousser', 'potion', 'relever'] : HEROS[u?.type]?.capacites ?? [];
+  if (S?.progression && !u?.forme) base = base.filter((c) => PROG.ouverte(u.type, c, S.progression.niveau));      // (en aventure, les compétences s'ouvrent avec les niveaux)
   return S?.braseros?.some((br) => !br.renverse) ? [...base, 'renverser'] : base;
 };
 const formeDe = (u) => u?.forme?.id ?? null;
@@ -234,7 +236,7 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 // braseros : leurs places [x, y] (un héros au contact peut en renverser un : le feu prend sur le foin qui le touche).
 export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null,
   rencontre = null, types = {}, objectif = 'vaincre-tous', foin = [], braseros = [], cachettes = [], recompense = null,
-  fourches = [], colporteurs = [], bornes = [], groupeDe = {}, renforts = {}, combats = null, eaux = [], incidents = [], pnjs = [], portes = [], curiosites = [], declencheurs = [], leviers = [], rondes = {}, trouvailles = [] }) {
+  fourches = [], colporteurs = [], bornes = [], groupeDe = {}, renforts = {}, combats = null, eaux = [], incidents = [], pnjs = [], portes = [], curiosites = [], declencheurs = [], leviers = [], rondes = {}, trouvailles = [], progression = null }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -249,6 +251,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     chefTour: 1, ennemisAvantage: false, debut: null, fin: null, debutPhase: null, resultat: null,
     heros: PLACES.slice(), equipe: equipe.slice(), ennemis: [],
     infini: infini ? { manche: infini.manche, xp: infini.xp, niveau: infini.niveau } : null,
+    progression: progression ? { plan: progression.plan, ...PROG.depart(progression.plan, progression) } : null,      // (l'XP du groupe, d'après le plan de l'aventure)
     stats: { degats: Object.fromEntries(PLACES.map((p) => [p, 0])), combos: [], tenailles: 0, ko: 0, releves: 0, rounds: [], reles: {}, potions: {} },
   };
   // Le mode infini : les ennemis montent à chaque manche (PV et dégâts), les héros gagnent un bonus par niveau.
@@ -257,7 +260,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const manchePatron = () => !!S.infini && S.infini.manche % lire('infini.chefTous') === 0;
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
   PLACES.forEach((id, k) => {
-    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv') * facteurNiveau())), pvDep = infini?.fractions?.[PLACES[k]] != null ? Math.max(1, Math.round(infini.fractions[PLACES[k]] * pvH)) : pvH;
+    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv') * facteurNiveau())) + PROG.PV_PAR_NIVEAU * ((S.progression?.niveau ?? 1) - 1), pvDep = infini?.fractions?.[PLACES[k]] != null ? Math.max(1, Math.round(infini.fractions[PLACES[k]] * pvH)) : pvH;
     const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
     S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvDep, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: lire('potion.nb') }));
   });
@@ -1086,6 +1089,23 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     commencer();
     return true;
   }
+  // L'XP du groupe (le plan de l'aventure dit combien vaut chaque chose) : les niveaux gagnés donnent +5 PV à chaque héros.
+  function gagnerXp(n, pourquoi) {
+    const P = S.progression; if (!P || !(n > 0)) return;
+    const avant = P.niveau, ancien = P.xp;
+    P.xp += n; P.niveau = PROG.niveauPour(P.xp, P.plan);
+    ev({ type: 'xp', n, pourquoi, xp: P.xp, niveau: P.niveau });
+    log(`+${n} XP · ${pourquoi}`, 'bon');
+    for (let k = avant + 1; k <= P.niveau; k++) {
+      for (const u of S.unites) if (u.camp === 'h' && !u.familier) { u.pvMax += PROG.PV_PAR_NIVEAU; if (!u.ko) u.pv += PROG.PV_PAR_NIVEAU; }
+      const appris = S.unites.filter((u) => u.camp === 'h' && !u.familier).flatMap((u) => PROG.nouvelles(u.type, k).map((cap) => ({ h: u.id, cap })));
+      ev({ type: 'niveau', niveau: k, pv: PROG.PV_PAR_NIVEAU, appris });
+      log(`Niveau ${k} ! Chaque héros gagne ${PROG.PV_PAR_NIVEAU} PV.`, 'bon');
+      for (const a of appris) log(`${U(a.h).nom} apprend ${CAPACITES[a.cap]?.nom ?? a.cap}.`, 'bon');
+    }
+    return ancien;
+  }
+  const xpDe = (source, id) => (id ? S.progression?.plan.combats[id] : S.progression?.plan[source]) ?? 0;
   // Après une victoire, dans une aventure : la Caillasse de la rencontre (un tirage par héros), le feu et les flaques
   // passagères s'éteignent, et l'on reprend la marche là où l'on est. Les héros KO restent à terre : on les relève en marchant.
   function reprendre() {
@@ -1096,6 +1116,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     for (let k = 0; k < S.heros.length; k++) n += a + Math.floor(alea() * (b - a + 1));
     if (c?.objectif === 'proteger' && U(c.but.pnj) && !U(c.but.pnj).mort) { n += c.but.bonus; log(`${U(c.but.pnj).nom} est sauf : +${c.but.bonus} Caillasse.`, 'bon'); }
     S.caillasse += n;
+    gagnerXp(xpDe('combats', g), g === 'principal' ? 'le premier combat' : 'le combat gagné');
     for (const k of Object.keys(S.surfaces)) if (S.surfaces[k].ttl != null) delete S.surfaces[k];
     for (const u of S.unites) if (u.camp === 'h') { delete u.st.brulure; delete u.st.huile; delete u.st.trempe; delete u.st.gele; delete u.st.aTerre; u.expose = false; }
     for (const u of S.unites) if (u.cache && u.groupe === (S.groupeActif ?? 'principal')) u.mort = true;
@@ -1177,6 +1198,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const n = Math.min(o.soin, h.pvMax - h.pv); h.pv += n;
     ev({ type: 'trouvaille', id, h: h.id, n, sorte: o.sorte });
     if (n) ev({ type: 'soin', id: h.id, n, pv: h.pv });
+    gagnerXp(xpDe('trouvaille'), 'une trouvaille');
     log(o.sorte === 'pommier' ? `${h.nom} secoue le pommier et croque une pomme : +${n} PV.` : `${h.nom} cueille une herbe et la mâche : +${n} PV.`, 'bon');
     return true;
   }
@@ -1225,6 +1247,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     for (const r of arbres) ajouterObstacle(trame, { ...r, marche: true, arbre: true });
     log(`Le groupe choisit « ${b.nom || b.id} ». Un éboulis ferme l’autre chemin.`, 'bon');
     S.voie = brancheId;
+    gagnerXp(xpDe('fourche'), 'le chemin choisi');
     if (b.alerte) {                                   // le colporteur bavarde : le péage est prévenu, un bandit de plus l'attend
       S.alertes[b.alerte] = true;
       const enJeu = S.unites.some((u) => u.groupe === b.alerte && !u.mort && !u.cache);   // (un combat déjà gagné ne reçoit personne)
@@ -1242,6 +1265,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       for (const o of S.unites) if (o.camp === 'e' && o.groupe === i.id) o.mort = true;
       i.fait = true; S.question = null;
       log(texte, 'bon'); ev({ type: 'paye', id: i.id });
+      gagnerXp(xpDe('combats', i.id), 'l’embuscade évitée');
     };
     if (choix === 'payer') {
       if (S.caillasse < i.rancon) return false;
@@ -1268,6 +1292,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     ev({ type: 'fouille', id: h.id, k, ok, n: i.caillasse, piege: true, dd: i.dd, degats: ok ? 0 : i.degats });
     if (!ok) blesser(h, i.degats, null);
     S.caillasse += i.caillasse;
+    gagnerXp(xpDe('combats', i.id), 'le chariot fouillé');
     log(ok ? `${h.nom} désamorce le piège du chariot (d20 : ${k}) : ${i.caillasse} Caillasse.` : `Le piège du chariot claque sur ${h.nom} (d20 : ${k}) : ${i.degats} dégâts ; ${i.caillasse} Caillasse.`, ok ? 'bon' : 'mauvais');
     return true;
   }
@@ -1320,6 +1345,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (ok) { c.trouvee = true; n = c.caillasse[0] + Math.floor(alea() * (c.caillasse[1] - c.caillasse[0] + 1)); S.caillasse += n; }
     ev({ type: 'fouille', id: h.id, k, ok, n, cachette: id, dd: c.dd });
     log(ok ? `${h.nom} fouille (d20 : ${k}) : ${n} Caillasse !` : `${h.nom} fouille (d20 : ${k}) : rien.`, ok ? 'bon' : 'muet');
+    if (ok) gagnerXp(xpDe('cachette'), 'une cachette trouvée');
     return true;
   }
   // Plus personne n'a rien à faire : ni déplacement, ni action, ni action bonus (la fin de phase automatique du panneau).
@@ -1741,6 +1767,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const coutDe = (h, cap) => (cap.type === 'mue' && h.formePassee && h.formePassee !== cap.forme ? 30 : cap.cout ?? 0);
   function peutUtiliser(h, cap) {
     if (!peutAgir(h)) return false;
+    if (S.progression && !h.forme && !PROG.ouverte(h.type, Object.keys(CAPACITES).find((k) => CAPACITES[k] === cap), S.progression.niveau)) return false;      // (pas encore apprise)
     if (cap.type === 'ombre' && trahiParLaLumiere(h)) return false;
     if (cap.type === 'bond' && trahiParLaLumiere(h)) return false;          // la Bête : brûlante ou dans le feu, plus de Bond
     if (cap.type === 'mue' && (h.forme || h.type !== CHANGEPEAU)) return false;     // (seul le Changepeau mue)
@@ -1845,6 +1872,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   function utiliserSeul(h, capId, cible = {}) {
     const cap = CAPACITES[capId];
     if (!cap || !peutUtiliser(h, cap)) return false;
+    if (S.progression && !h.forme && !PROG.ouverte(h.type, capId, S.progression.niveau)) return false;      // (pas encore apprise)
     combos = new Set();
     if (cap.type === 'zone') {
       if (!zonePossible(h, cap, cible)) return false;
@@ -2119,7 +2147,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   return {
     S, U, herosVivants, ennemisVivants, ciblesEnnemies, trahiParLaLumiere, coutDe, sortieOmbre, presDeLEnclume, poseEnclume, derriereEnclume, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
     portee, apercuMarche, deplacer, utiliser, apercu, apercuBrasero, braseroProche, foinContre, explorer, engager, fouiller, quiVoit, cueillir, acheterTonneau, poserTonneau, avancerRondes, regardDe: regard, couvert, prevoir, actionner, levierPossible, apercuLevier, reprendre, choisir, acheter, toucherBorne, resoudre, fouillerChariot, ouvrir, curiosite,
-    commencer, finPhaseHeros, rienAFaire, recapInfini, suiteInfini, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
+    commencer, gagnerXp, finPhaseHeros, rienAFaire, recapInfini, suiteInfini, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }, (k, v) => (v === Infinity ? '∞' : v)),          // (à pied, le déplacement est sans limite : JSON ne sait pas écrire l'infini)
     restaurer(copie) { const o = JSON.parse(copie, (k, v) => (v === '∞' ? Infinity : v)); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
