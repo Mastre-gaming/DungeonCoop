@@ -220,7 +220,9 @@ function proprioPlace(k) {
 function dessinerLobby() {
   dom.groupe.hidden = !reseau;
   dom.boutonsEquipe.hidden = !!reseau;
-  dom.salle.querySelector('select').disabled = !!reseau;   // à plusieurs, tout le groupe joue la salle où il est entré
+  // à plusieurs, c'est l'hôte qui choisit la salle (tout le groupe le suit : multi.js) ; les autres la voient
+  dom.salle.querySelector('select').disabled = !!reseau && !reseau.hote;
+  dom.salle.title = reseau && !reseau.hote ? 'L’hôte choisit la salle' : '';
   dom.titreEquipe.textContent = reseau ? 'Le lobby : chacun prend ses héros et choisit leur classe' : 'Ton équipe : choisis la classe de chacun';
   for (const i of [...dom.mode.querySelectorAll('input'), dom.infiniCase]) i.disabled = !!reseau && !reseau.hote;
   dom.commencer.hidden = !!reseau && !reseau.hote;
@@ -267,10 +269,11 @@ function commencer() {
 function changerSalle(id) {
   const q = new URLSearchParams(location.search);
   if (id) q.set('salle', id); else q.delete('salle');
-  q.set('equipe', ui.choix.join(','));
+  q.set('equipe', equipeAffichee().join(','));        // (à plusieurs : les classes du lobby)
   q.set('mode', dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe');
   if (dom.infiniCase.checked) q.set('infini', ''); else q.delete('infini');
   q.delete('go');
+  if (reseau) return void (reseau.hote && reseau.changerSalle(id, `${location.pathname}?${q}`));
   location.assign(`${location.pathname}?${q}`);
 }
 function lance() { dom.accueil.hidden = true; dom.fin.hidden = true; ui.fini = false; ui.finMontree = false; ui.sale = true; }

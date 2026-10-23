@@ -8,6 +8,8 @@
 //   ?groupe=ABCDE        les autres (on réessaie tant que l'hôte n'est pas arrivé)
 // L'exploration (le sentier F) passe par le même chemin : chacun mène ses héros, l'hôte arbitre la marche, les gestes et les
 // choix du groupe (la fourche, l'embuscade), joue les scènes chez tous et renvoie l'état.
+// La salle (?salle=, salles.js) est celle de l'hôte : il la choisit au lobby, et tout le groupe le suit (la page se recharge,
+// avec le même groupe) ; qui arrive dans une autre salle que lui (du camp, sans ?salle) est renvoyé dans la sienne.
 // Sans ?groupe, rien de tout ça : on joue seul, comme avant. Si l'hôte s'en va, chacun continue seul.
 import * as partyNet from '../skills/party-net/module/03_skill.js';
 import { T } from '../01_plan.js';
@@ -95,6 +97,7 @@ let game, combat, vue, ihm, nouveauCombat, horloge = null;
 let party = null, code = '', hote = false, relie = false, statut = '', essais = 0, minuterie = 0;
 let naviguer = (url) => { location.href = url; }, delai = 400;   // (le temps que le dernier message parte avant la page)
 let L = null;
+let suivie = false;                 // (on part déjà vers la salle de l'hôte : une seule fois)
 let calque = null;
 const curseurs = new Map();       // id → le pointeur d'un ami : l'arme de son héros, et ce qu'il prépare
 
@@ -120,6 +123,8 @@ function brancher(transport) {
   if (!hote) { REG.imposer({}); REG.surDemande((ops) => party?.toHost({ t: 'reglage', ops })); } else REG.liberer();     // un invité ne règle rien : il subit les valeurs de l'hôte (les défauts, avant qu'elles arrivent)
   relie = false; essais = 0; statut = hote ? 'Ouverture du terrain…' : 'Connexion au groupe…';
   L = nouveauLobby(combat.S.equipe);
+  suivie = false;
+  if (hote) L.salle = maSalle();
   const ce = party = partyNet.createParty({
     transport, fields: ['x', 'y', 'h', 'c', 'v'], me: () => ihm.pointeur(), name: monNom,
     settings: { snap: 6 },
@@ -194,6 +199,11 @@ function surMessage(de, m) {
   }
   if (de !== HOTE) return;
   if (m.R) REG.imposer(m.R);       // les valeurs de l'hôte d'abord : le combat qui suit se crée avec elles
+  // l'hôte joue une autre salle (il l'a changée au lobby, ou on arrive du camp sans elle) : on le suit, avec le même groupe
+  if (typeof m.L?.salle === 'string' && /^[a-z0-9-]*$/.test(m.L.salle) && m.L.salle !== maSalle()) {
+    if (!suivie) { suivie = true; naviguer(adresseSalle(m.L.salle)); }
+    return;
+  }
   if (m.t === 'reglages') { /* (déjà imposé) */ }
   else if (m.t === 'reglages-refus') ihm.banniere('L’hôte a fermé les réglages : lui seul les change');
   else if (m.t === 'salon') {
@@ -283,6 +293,14 @@ function rejouer() {
   ihm.accueil();
   envoyerSalon();
 }
+// La salle jouée ici (?salle= ; '' : la salle d'essai), et l'adresse de cette page dans une autre salle (le même groupe).
+const maSalle = () => new URLSearchParams(location.search).get('salle') ?? '';
+export function adresseSalle(id, search = location.search, chemin = location.pathname) {
+  const q = new URLSearchParams(search);
+  if (id) q.set('salle', id); else q.delete('salle');
+  q.delete('go');
+  return `${chemin}?${q}`;
+}
 const adresseCamp = () => `./index.html?spot=combat&${hote ? 'hote' : 'code'}=${code}`;
 
 // --- Chaque image : les pointeurs des amis -------------------------------------------------------------------------
@@ -366,6 +384,12 @@ export const api = {
   estPret: () => !!party && L.pret.includes(party.id),
   attendus: () => (party ? attendus(L, combat) : []),
   adresseCamp,
+  // l'hôte change de salle au lobby : tout le groupe le sait (le lobby part avec la salle), puis sa page s'y recharge
+  changerSalle(id, url) {
+    if (!hote || !party) return naviguer(url);
+    L.salle = id; envoyerSalon();
+    if (delai) setTimeout(() => naviguer(url), delai); else naviguer(url);
+  },
   // l'hôte retourne au camp : tout le groupe le suit (sinon le groupe du camp n'aurait plus d'hôte)
   partirAuCamp() {
     const aller = () => naviguer(adresseCamp());
