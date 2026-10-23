@@ -125,5 +125,11 @@
     "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_pale_green&head=Orc_male_pale_green&clothes=TShirt_tan&legs=Pants_brown&cape=Tattered_charcoal&hat=Hood_charcoal&wrists=Cuffs_white&weapon=Gnarled_staff_medium",
     "attaque": null,
     "anims": ["marche", "sort", "estoc", "taille", "tir", "blesse"]
+  },
+  "riff-ossel": {
+    "nom": "Riff Ossel",
+    "lien": null,
+    "attaque": null,
+    "anims": ["marche", "estoc", "taille", "tir", "blesse"]
   }
 }

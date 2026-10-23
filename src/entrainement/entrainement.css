@@ -61,7 +61,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 /* la ressource : sa couleur pleine, et le vide teinté d'elle (on reconnaît la ressource même à 0) */
 .fh-jauge[data-res="Rage"] { --c: var(--res-rage); } .fh-jauge[data-res="Mana"] { --c: var(--res-mana); }
 .fh-jauge[data-res="Concentration"] { --c: var(--res-concentration); } .fh-jauge[data-res="Foi"] { --c: var(--res-foi); }
-.fh-jauge[data-res="Énergie"] { --c: var(--res-energie); } .fh-jauge[data-res="Élan"] { --c: var(--res-elan); }
+.fh-jauge[data-res="Rythme"] { --c: #c0392b; } .fh-jauge[data-res="Énergie"] { --c: var(--res-energie); } .fh-jauge[data-res="Élan"] { --c: var(--res-elan); }
 .fh-jauge.res { background: color-mix(in srgb, var(--c) 28%, var(--bois-nuit)); }
 .fh-jauge.res .rempli { background: var(--c); }
 .fiche-heros .fh-ligne { font: 500 11px/12px var(--titre); color: var(--laiton-clair); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -131,7 +131,7 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .capacite .cap-cout { position: absolute; left: 2px; bottom: 2px; min-width: 10px; text-align: center; font: 700 11px/12px var(--titre); padding: 0 2px; color: #fff7e6; background: var(--bois-nuit); box-shadow: 0 0 0 1px #1e161e; }
 .capacite .cap-cout[data-res="Rage"] { background: var(--res-rage); } .capacite .cap-cout[data-res="Mana"] { background: var(--res-mana); }
 .capacite .cap-cout[data-res="Concentration"] { background: var(--res-concentration); } .capacite .cap-cout[data-res="Foi"] { background: #a8761b; }
-.capacite .cap-cout[data-res="Énergie"] { background: #2c7a2a; } .capacite .cap-cout[data-res="Élan"] { background: #1f7a70; }
+.capacite .cap-cout[data-res="Rythme"] { background: #c0392b; } .capacite .cap-cout[data-res="Énergie"] { background: #2c7a2a; } .capacite .cap-cout[data-res="Élan"] { background: #1f7a70; }
 .capacite kbd { position: absolute; right: 2px; bottom: 1px; min-width: 0; padding: 0; border: 0; background: none; box-shadow: none; font: 700 11px/12px var(--titre); color: #ffe2a8; text-shadow: 0 1px 0 #000, 1px 0 0 #000; }
 .capacite:hover, .capacite:focus-visible { border-color: var(--or); outline: none; }
 .capacite.choisie { border-color: var(--or); box-shadow: 0 0 0 2px var(--or), inset 0 3px 0 var(--c), inset 0 -3px 0 rgba(0, 0, 0, .35); }

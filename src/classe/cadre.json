@@ -76,7 +76,8 @@
     { "id": "concentration", "nom": "Concentration", "remplit": "+1 par préparation qu'un coéquipier exploite", "max": 3, "depart": 0 },
     { "id": "foi", "nom": "Foi", "remplit": "+1 par soin ou protection", "max": 3, "depart": 0 },
     { "id": "energie", "nom": "Énergie", "remplit": "3 à chaque tour, perdue si elle n'est pas dépensée", "max": 3, "depart": 3 },
-    { "id": "elan", "nom": "Élan", "remplit": "+1 par case parcourue, se vide si on reste immobile", "max": 5, "depart": 0 }
+    { "id": "elan", "nom": "Élan", "remplit": "+1 par case parcourue, se vide si on reste immobile", "max": 5, "depart": 0 },
+    { "id": "rythme", "nom": "Rythme", "remplit": "+1 à chaque attaque d'un allié ; se vide si aucun allié n'attaque pendant un tour complet", "max": 4, "depart": 1 }
   ],
 
   "accroches": {
@@ -98,7 +99,9 @@
       { "id": "poussee", "nom": "Poussée", "effet": "3 m tout droit ; +8 contre un obstacle ; le fossé élimine un sbire" },
       { "id": "attirer", "nom": "Attirer", "effet": "3 m vers soi : dans une surface, le feu, le fossé" },
       { "id": "tenaille", "nom": "Tenaille", "effet": "un allié de l'autre côté de la cible donne l'avantage" },
-      { "id": "avantage", "nom": "Donner l'avantage", "effet": "un allié a l'avantage à sa prochaine attaque" }
+      { "id": "avantage", "nom": "Donner l'avantage", "effet": "un allié a l'avantage à sa prochaine attaque" },
+      { "id": "mobilite", "nom": "Mobilité", "effet": "un allié gagne 3 m de déplacement ce tour, et peut s'éloigner d'un ennemi sans attaque d'opportunité" },
+      { "id": "buff-degats", "nom": "Dégâts bonus", "effet": "la prochaine attaque d'un allié fait +d6" }
     ]
   },
 

@@ -2,6 +2,7 @@
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, FORMES, equipeDepuis, peutJouer, classesPour, equipePour, capacitesDe } from './regles.js';
 import { adresseEquipe } from './interface.js';
+import { sonDe } from './sons.js';
 import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
@@ -221,8 +222,8 @@ export async function selfTest(t, game) {
 
   // --- Les classes d'essai (#76) ----------------------------------------------------------------------------------
   t.group('les classes d’essai');
-  t.eq(CLASSES_ESSAI.length, 12, 'douze classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier, Shadow, Baba Brisenclume et le Changepeau');
-  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9, 6, 7.5], 'une distance par tour selon la classe (6 m à 10,5 m)');
+  t.eq(CLASSES_ESSAI.length, 13, 'treize classes à choisir : les 4 du kit, 4 d’essai, le Traqueur au limier, Shadow, Baba Brisenclume, le Changepeau et Riff Ossel');
+  t.eq(CLASSES_ESSAI.map((c) => HEROS[c].vitesse * 1.5), [7.5, 7.5, 9, 7.5, 10.5, 6, 9, 9, 9, 9, 6, 7.5, 9], 'une distance par tour selon la classe (6 m à 10,5 m)');
   t.ok(CLASSES_ESSAI.every((c) => HEROS[c].capacites.filter((k) => !['pousser', 'potion', 'relever'].includes(k)).length >= 3 && HEROS[c].faiblesse), 'chacune a ses 3 capacités au moins et une faiblesse (CLASS_TEMPLATE)');
   t.eq(equipeDepuis('chevalier,druide,barde,eclaireuse'), ['chevalier', 'druide', 'barde', 'eclaireuse'], 'une équipe se lit dans l’adresse (?equipe=)');
   t.eq(equipeDepuis('brute,dragon,mage,barde'), null, 'une classe inconnue est refusée');
@@ -230,7 +231,7 @@ export async function selfTest(t, game) {
   // la classe d'un joueur ne se joue que par lui (son auteur, son pseudo GitHub)
   t.ok(peutJouer('traqueur-au-limier', 'PCrrfng') && peutJouer('traqueur-au-limier', 'pcrrfng') && !peutJouer('traqueur-au-limier', 'DonBabaa') && !peutJouer('traqueur-au-limier', null),
     'le Traqueur au limier ne se joue que par Paolitus (@PCrrfng), son auteur');
-  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 4 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 3, 'les classes du kit et d’essai, par tout le monde');
+  t.ok(peutJouer('brute', null) && classesPour(null).length === CLASSES_ESSAI.length - 5 && classesPour('PCrrfng').length === CLASSES_ESSAI.length - 4, 'les classes du kit et d’essai, par tout le monde');
   t.eq(equipePour(['mage', 'traqueur-au-limier', 'barde', 'gardien'], 'DonBabaa'), ['mage', EQUIPE_KIT[1], 'barde', 'gardien'], 'une équipe (lien, choix gardé) avec la classe d’un autre : elle redevient celle du kit à sa place');
   {
     const L = nouveauLobby(EQUIPE_KIT); L.proprio = ['host', 'ana', 'paul', null];
@@ -657,6 +658,79 @@ export async function selfTest(t, game) {
     t.ok(dist(c, s) > 2 && c.forme.pv === c.forme.max, `puis elle recule (à ${(dist(c, s) * 1.5).toFixed(1)} m de sa cible), sans attaque d’opportunité`);
     c.t.bonus = true; c.st.brulure = { n: 2, par: null };
     t.ok(!C.peutUtiliser(c, CAPACITES.bond), 'brûlante, la Bête ne peut plus bondir');
+  }
+
+  // --- Riff Ossel de DonBabaa : le Rythme, le Riff (à distance, puis à la hache), la Ballade, la Course effrénée ----------
+  t.group('Riff Ossel de DonBabaa');
+  {
+    const H = HEROS['riff-ossel'];
+    t.ok(CLASSES_ESSAI.includes('riff-ossel') && peutJouer('riff-ossel', 'DonBabaa') && peutJouer('riff-ossel', 'donbabaa') && !peutJouer('riff-ossel', 'PCrrfng') && !peutJouer('riff-ossel', null),
+      'Riff Ossel se choisit à l’entrée, et ne se joue que par DonBabaa, son auteur');
+    t.ok(H.pv === 110 && H.vitesse * 1.5 === 9 && H.res.type === 'Rythme' && H.res.max === 4 && H.res.v === 1, 'sa fiche : 110 PV, 9 m par tour, le Rythme (1 au départ, 4 au plus)');
+    t.eq(resultats(CAPACITES.riff).map((r) => r.degats), ['0', '5–7', '11–14', '22–28'], 'le Riff : 8 + d4 + 2, comme sa description');
+    t.ok(H.capacites.every((k) => CAPACITES[k] && icone(k)), 'chaque capacité a une icône');
+    t.eq(['riff', 'riff-contact', 'ballade', 'courseEffrenee', 'pousser'].map((c) => sonDe('riff-ossel', c.split('-')[0], c.endsWith('contact') ? 'contact' : 'riff')), ['riff', 'riff-melee', 'ballade', 'course', null], 'ses sons : le Riff, le Fracas au contact, la Ballade, la Course effrénée');
+    t.ok(sonDe('brute', 'fracas', 'attaque') === null, 'les autres classes n’ont pas de son (pour l’instant)');
+    t.eq(ordreBarre(H.capacites, CAPACITES).slice(0, 3), ['riff', 'courseEffrenee', 'ballade'], 'sa barre : Riff (attaque), Course effrénée (préparation), Ballade (soutien)');
+  }
+  const riff = (o = {}) => {
+    const C = essai(['riff-ossel', 'brute', 'voleur', 'mage'], { alea: des(Array(60).fill(15)), ...o });
+    C.commencer();
+    const r = trouver(C, 'riff-ossel'), b = trouver(C, 'brute'), v = trouver(C, 'voleur'), m = trouver(C, 'mage');
+    for (const u of C.S.unites) if (![r, b, v, m].includes(u)) { u.x = 30 + C.S.unites.indexOf(u) * 1.2; u.y = 3; }
+    poser(C, r.id, 6, 10); poser(C, b.id, 11, 11.5); poser(C, v.id, 3, 13); poser(C, m.id, 3, 8); const s = poser(C, 'br', 11, 10);
+    return { C, r, b, v, m, s };
+  };
+  {
+    const { C, r, b, s } = riff();
+    t.ok(C.cibles(r, CAPACITES.riff).some((x) => x.id === s.id), 'le Riff vise la Brute ennemie à 7,5 m');
+    t.ok(C.utiliser(r, 'riff', { id: s.id }) && C.S.evenements.some((e) => e.type === 'attaque' && e.cap === 'riff' && e.anim === 'riff'), 'à distance : son animation « riff »');
+    C.S.evenements.length = 0;
+    r.t.action = true; poser(C, s.id, 7.2, 10);
+    t.ok(C.utiliser(r, 'riff', { id: s.id }) && C.S.evenements.some((e) => e.type === 'attaque' && e.cap === 'riff' && e.anim === 'contact'), 'au contact : le même coup à la hache (l’animation « contact »)');
+    const o = C._.attaqueReflexe(r);
+    t.ok(o && o.id === 'riff' && o.melee, 'et il a une attaque d’opportunité au contact');
+    // le Rythme : +1 par attaque d'un allié (pas la sienne), 4 au plus
+    const R0 = r.res.v;
+    t.ok(R0 === 1, 'son propre Riff ne donne pas de Rythme');
+    poser(C, b.id, 8.4, 10);
+    t.ok(C.utiliser(b, 'fracas', { id: s.id }) && r.res.v === 2, 'la Brute attaque : Rythme +1');
+    r.res.v = 4; b.t.action = true; C.utiliser(b, 'fracas', { id: s.id });
+    t.ok(r.res.v === 4, 'le Rythme ne dépasse pas 4');
+    // il retombe à 0 si aucun allié n'a attaqué de tout un tour
+    r.rythmeVu = false; C._.finTour(r);
+    t.ok(r.res.v === 0, 'aucun allié n’a attaqué : le Rythme retombe à 0');
+    r.res.v = 3; r.rythmeVu = true; C._.finTour(r);
+    t.ok(r.res.v === 3 && r.rythmeVu === false, 'un allié a attaqué : il garde son Rythme');
+  }
+  {
+    // la Ballade : soigne (10–13), retire un état, relève un allié KO à distance (2 Rythme, une fois par combat)
+    const { C, r, b, v } = riff();
+    b.pv = 50; b.st.brulure = { n: 2, par: null };
+    t.ok(C.cibles(r, CAPACITES.ballade).some((x) => x.id === b.id), 'la Ballade vise un allié à 9 m');
+    t.ok(C.utiliser(r, 'ballade', { id: b.id }) && b.pv >= 60 && b.pv <= 63 && !b.st.brulure, `la Ballade : +${b.pv - 50} PV et la Brûlure retirée`);
+    v.ko = true; v.pv = 0; r.t.action = true; r.res.v = 1;
+    t.ok(!C.cibles(r, CAPACITES.ballade).some((x) => x.id === v.id), 'sans 2 Rythme, pas de relève');
+    r.res.v = 3;
+    t.ok(C.cibles(r, CAPACITES.ballade).some((x) => x.id === v.id), 'avec 2 Rythme, la Ballade vise un allié KO à 9 m');
+    t.ok(C.utiliser(r, 'ballade', { id: v.id }) && !v.ko && v.pv === 25 && r.res.v === 1, 'elle le relève à distance (25 PV) pour 2 Rythme');
+    v.ko = true; v.pv = 0; r.t.action = true; r.res.v = 4;
+    t.ok(!C.cibles(r, CAPACITES.ballade).some((x) => x.id === v.id) && !C.utiliser(r, 'ballade', { id: v.id }), 'une seule fois par combat');
+  }
+  {
+    // la Course effrénée : 1 Rythme, +3 m et le désengagement pour un allié
+    const { C, r, b } = riff();
+    r.res.v = 0;
+    t.ok(!C.peutUtiliser(r, CAPACITES.courseEffrenee), 'sans Rythme, pas de Course effrénée');
+    r.res.v = 2; const mv = b.t.mv;
+    t.ok(C.utiliser(r, 'courseEffrenee', { id: b.id }) && b.t.mv === mv + 2 && b.t.desengage && r.res.v === 1, 'la Course effrénée : l’allié gagne 3 m et s’éloigne sans attaque d’opportunité, pour 1 Rythme');
+    t.ok(!r.t.bonus, 'elle prend l’action bonus');
+  }
+  {
+    // Os fragiles : poussée, mur et chute lui font ×2
+    const { C, r, s } = riff();
+    const pv = r.pv; C._.blesser(r, 6, s.id, { choc: true, sansMult: true });
+    t.ok(r.pv === pv - 12, 'Os fragiles : 6 de choc, 12 de dégâts');
   }
   {
     // la Cosa : l'Étreinte attire, Dévorer nourrit la forme ; le feu lui fait ×2

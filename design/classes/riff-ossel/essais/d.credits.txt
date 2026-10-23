@@ -1,0 +1,52 @@
+Credits & Attribution
+
+You must credit the authors of this artwork. Detailed attribution instructions
+
+License information for all spritesheets in this generator is available here
+
+body/bodies/skeleton/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Napsio, JaidynReiman, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+head/heads/skeleton/adult/walk.png
+
+Licenses: OGA-BY 3.0, CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Napsio, JaidynReiman, Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+hair/afro/adult/walk.png
+
+Licenses: CC0
+
+Authors: bluecarrot16
+
+facial/glasses/sunglasses/adult/walk/black.png
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: Michael Whitlock (bigbeargames), Thane Brimhall (pennomi), laetissima
+
+torso/clothes/vest_open/male/walk/black.png
+
+Licenses: CC-BY-SA 3.0, GPL 3.0
+
+Authors: bluecarrot16, Thane Brimhall (pennomi), laetissima
+
+legs/pants/male/walk.png
+
+original male pants by wulax, recolors and edits to v3 base by bluecarrot16, climb/jump/run/sit/emotes/revised combat by JaidynReiman based on ElizaWy's LPC Revised
+
+Licenses: OGA-BY 3.0, GPL 3.0, CC-BY-SA 3.0
+
+Authors: bluecarrot16, JaidynReiman, ElizaWy, Matthew Krohn (makrohn), Johannes Sjölund (wulax), Stephen Challener (Redshrike)
+
+feet/boots/rimmed/male/walk.png
+
+Licenses: OGA-BY 3.0+, CC-BY 3.0+, GPL 3.0
+
+Authors: JaidynReiman
+
+Download TXT
+Download CSV
