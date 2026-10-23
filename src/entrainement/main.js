@@ -67,7 +67,7 @@ async function demarrer() {
 
   const vue = game.use(vueSkill, { rendu, images, combat, salle, canvas });
   // ?go : on vient de choisir l'équipe et de cliquer « Commencer » : le combat démarre tout de suite (?mode= le mode de tour)
-  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null });
+  const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null, salleNom: SALLE.nom, salleIdee: SALLE.idee });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();

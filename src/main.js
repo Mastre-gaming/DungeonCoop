@@ -45,6 +45,7 @@ import * as tourSkill from './31_tour.js';
 import * as terrainSkill from './23_terrain.js';
 import * as armurerieSkill from './26_armurerie.js';
 import * as archivesSkill from './27_archives.js';
+import * as tableCartesSkill from './62_table_cartes.js';
 import * as murailleSkill from './32_muraille.js';
 import * as crieurSkill from './38_crieur.js';
 import * as patchNotesSkill from './48_patch_notes.js';
@@ -142,6 +143,7 @@ async function demarrer(sortieTitre) {
   const terrain = game.use(terrainSkill, { rendu, canvas, heros, visite, reseau });   // E devant le terrain : le combat d'entraînement (à plusieurs : tout le groupe)
   const armurerie = game.use(armurerieSkill, { rendu, canvas, heros, visite });       // E devant l'armurerie : le créateur de classe (#125)
   const archives = game.use(archivesSkill, { rendu, canvas, heros, collision, images, visite });   // E devant la tente des archives : tous les assets du projet
+  const tableCartes = game.use(tableCartesSkill, { rendu, canvas, heros, visite });   // E devant la table des cartes : l'atelier des niveaux
   // le chantier des trois autres murs : ses ouvriers, et le chef de chantier (E : où en est chaque mur)
   const chantier = game.use(chantierSkill, { rendu, images, heros, missions, collision, visite });
   // les murs ouest, nord et est montent avec le chantier, et s'estompent comme la grande muraille quand on s'en éloigne
@@ -223,7 +225,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, tests: camptests });
+  Object.assign(game.dbg, { rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, tableCartes, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

@@ -173,6 +173,13 @@ const SALLES = {
     ],
   },
 };
+// Les salles dessinées à l'atelier des niveaux (niveaux.html, la table des cartes du camp) : un fichier chacune dans
+// content/salles/<id>.json, au même format qu'ici ; elles s'ajoutent à la liste toutes seules.
+for (const S of Object.values(import.meta.glob('../../content/salles/*.json', { eager: true, import: 'default' }))) if (S?.id && !SALLES[S.id]) SALLES[S.id] = S;
+export { SALLES };
+// La salle que l'atelier fait essayer (« Essayer au terrain ») : ?salle=essai, gardée dans ce navigateur.
+export const CLE_ESSAI = 'dungeoncoop:salle-essai';
+function salleEssai() { try { return JSON.parse(localStorage.getItem(CLE_ESSAI)); } catch { return null; } }
 export const NOMS = Object.keys(SALLES);
 // pour l'accueil du terrain : chaque salle, son nom et sa question
 export const LISTE = NOMS.map((id) => ({ id, nom: SALLES[id].nom, idee: SALLES[id].idee }));
@@ -203,7 +210,11 @@ function rampeDe(relief, r) {
 
 // Construit une salle : la géométrie, les départs, et son dessin.
 export function construire(id) {
-  const S = SALLES[id];
+  const S = id === 'essai' ? salleEssai() : SALLES[id];
+  return S ? construireDepuis(S, id) : null;
+}
+// La même chose depuis les données d'une salle (l'atelier des niveaux la dessine ainsi, à chaque retouche).
+export function construireDepuis(S, id = S?.id ?? 'essai') {
   if (!S) return null;
   const L = S.l ?? 24, H = S.h ?? 18, ZONE = { x0: 1, y0: 2, x1: L - 1, y1: H - 2 };
   const relief = S.relief ?? [], rampes = (S.rampes ?? []).map((r) => rampeDe(relief, r));

@@ -7,8 +7,8 @@ const tampon = new Date().toLocaleString('fr-FR', { timeZone: 'Europe/Paris', da
 export default defineConfig({
   base: './',
   define: { __BUILD_STAMP__: JSON.stringify(tampon) },
-  // quatre pages : le camp, le terrain d'entraînement, l'armurerie (le créateur de classe) et les archives, où l'on entre depuis le camp
+  // cinq pages : le camp, le terrain d'entraînement, l'armurerie (le créateur de classe), les archives et l'atelier des niveaux, où l'on entre depuis le camp
   build: { outDir: 'dist', emptyOutDir: true, assetsInlineLimit: 0, target: 'es2022', chunkSizeWarningLimit: 900,
-    rollupOptions: { input: { camp: 'index.html', entrainement: 'entrainement.html', classe: 'classe.html', archives: 'archives.html' } } },
+    rollupOptions: { input: { camp: 'index.html', entrainement: 'entrainement.html', classe: 'classe.html', archives: 'archives.html', niveaux: 'niveaux.html' } } },
   server: { port: 5173 },
 });
