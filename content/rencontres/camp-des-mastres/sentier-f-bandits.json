@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/sentier-f-bandits",
+  "nom": "",
+  "sorte": "combat",
+  "objectif": {
+    "type": "vaincre-tous"
+  },
+  "ennemis": [
+    {
+      "type": "bandit",
+      "n": 3,
+      "depart": "avant"
+    },
+    {
+      "type": "arbaletrier",
+      "n": 1,
+      "depart": "loin"
+    }
+  ],
+  "renforts": [],
+  "recompenses": {
+    "caillasse": [
+      15,
+      25
+    ]
+  }
+}

@@ -1,6 +1,10 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
-import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis } from './regles.js';
+import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, equipeDepuis, capacitesDe } from './regles.js';
+import * as AVENTURE from './aventure.js';
+import { cinematiques, remplir } from './cinema.js';
+import * as SAISON from './saison.js';
+import { demanderLancer, api as entree } from './entree.js';
 import { adresseEquipe } from './interface.js';
 import { resultats, resume, caracteristiques, effets, icone } from './fiches.js';
 import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
@@ -292,6 +296,7 @@ export async function selfTest(t, game) {
   t.eq(ihm.selection, trouver(combat, 'mage').id, 'un clic sur la Mage la choisit');
   game.dbg.advance(0.05);
   t.ok(canvas.style.cursor.includes('armes/mage.png'), 'le curseur devient le bâton de la Mage');
+  ihm.ui.ficheCachee = false;
   window.dispatchEvent(new KeyboardEvent('keydown', { key: '1', bubbles: true }));
   t.eq(ihm.ui.cap, 'etincelle', 'la touche 1 : sa première capacité, Étincelle');
   game.dbg.advance(0.05);
@@ -305,6 +310,11 @@ export async function selfTest(t, game) {
   t.ok(ihm.dom.ficheCap.dataset.capacite === 'foudre' && ihm.dom.ficheCap.textContent.includes('15 Mana') && ihm.dom.ficheCap.textContent.includes('Trempé'), 'survoler Foudre dans la barre montre sa fiche : son coût, ses effets');
   ihm.dom.capacites.querySelectorAll('.capacite')[2].dispatchEvent(new MouseEvent('mouseleave')); game.dbg.advance(0.05);
   t.eq(ihm.dom.ficheCap.dataset.capacite, 'etincelle', 'en quittant la barre, la fiche revient à la capacité choisie');
+  t.eq(getComputedStyle(ihm.dom.ficheCap).pointerEvents, 'none', 'la fiche ne prend pas le clic : on vise à travers elle');
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'i', code: 'KeyI', bubbles: true })); game.dbg.advance(0.05);
+  t.ok(ihm.dom.ficheCap.hidden && ihm.ui.cap === 'etincelle' && ihm.dom.basculeFiche.getAttribute('aria-pressed') === 'false', 'I cache la fiche (la capacité reste choisie)');
+  ihm.dom.basculeFiche.click(); game.dbg.advance(0.05);
+  t.ok(!ihm.dom.ficheCap.hidden && !ihm.ui.ficheCachee, 'le bouton « Fiche » la remontre');
   survoler(s1.x, s1.y - 0.8); game.dbg.advance(0.05);
   t.ok(!ihm.dom.info.hidden && ihm.dom.info.textContent.includes('Sbire 1') && /\d+ %/.test(ihm.dom.info.textContent) && ihm.dom.info.textContent.includes('11–14'),
     'la carte de la cible survolée : ses chances en % et les dégâts de chaque résultat');
@@ -421,6 +431,390 @@ export async function selfTest(t, game) {
     t.ok(plaque.hidden, 'sans barre ni état : rien sous le sbire');
     canvas.dispatchEvent(new PointerEvent('pointerleave', { bubbles: true })); game.dbg.advance(0.05);
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
+  }
+
+  // --- Le sentier F (Le camp des mastres, niveau 1) : le foin, le brasero, la graine, l'entrée ----------------------------
+  t.group('le sentier F : le contenu, la graine, le foin et le brasero');
+  {   // (un bloc à part : ses noms ne se mêlent pas à ceux des autres vérifications)
+  const problemes = AVENTURE.valider();
+  t.ok(problemes.length === 0, `le contenu de l’aventure tient (fichiers cités, départs, budget, brasero à portée du plus lent)${problemes.length ? ` : ${problemes.slice(0, 3).join(' | ')}` : ''}`);
+  const av = AVENTURE.aventure('camp-des-mastres'), niv1 = AVENTURE.niveauDe(av, 1);
+  t.ok(av?.niveaux.length === 6 && niv1.salles.length === 3 && niv1.rencontres.length === 3, 'l’aventure a ses 6 niveaux du chemin ; le sentier F, 3 salles et 3 rencontres');
+  t.eq(JSON.stringify(AVENTURE.tirer(niv1, 'KLMNP')), JSON.stringify(AVENTURE.tirer(niv1, 'KLMNP')), 'même graine, même salle');
+  const mots = Array.from({ length: 40 }, (_, k) => AVENTURE.tirer(niv1, AVENTURE.motAleatoire(graine(k + 1))));
+  t.ok(new Set(mots.map((m) => m.salle)).size === 3 && new Set(mots.map((m) => m.rencontre)).size === 3 && mots.some((m) => m.miroir) && mots.some((m) => !m.miroir), 'quarante graines : les trois salles, les trois rencontres et le miroir sortent');
+  t.eq(AVENTURE.tirer(niv1, 'ZZZZZ', { premiere: true }).salle, niv1.premiere_partie.salle, 'la toute première partie prend la clairière d’apprentissage');
+  t.ok(AVENTURE.deDeLaGraine('ABCDE') === AVENTURE.deDeLaGraine('ABCDE') && mots.every((m) => { const d = AVENTURE.deDeLaGraine(m.mot); return d >= 1 && d <= 20; }), 'le d20 montré se déduit de la graine : tout le monde voit le même');
+
+  const lis = (o = {}) => {
+    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-f-a', rencontre: 'camp-des-mastres/sentier-f-bandits', miroir: false, ...o });
+    const sl = prep.plan.salle();
+    return creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, alea: graine(5), horloge: () => 0 });
+  };
+  let CL = lis();
+  const foinN = () => Object.values(CL.mailles()).filter((s) => s.t === 'foin').length;
+  t.ok(foinN() > 20 && CL.S.braseros.length === 1 && CL.S.ennemisIds.length === 4 && CL.S.objectif === 'vaincre-tous', 'la clairière : du foin, un brasero, 4 ennemis, « vaincre tous »');
+  t.ok(['bd1', 'bd2', 'bd3'].every((id) => CL.U(id)?.type === 'bandit') && CL.U('ar1')?.type === 'arbaletrier', 'les bandits : trois bandits et un arbalétrier');
+  const rod = lis({ rencontre: 'camp-des-mastres/sentier-f-rodeurs' });
+  t.ok(rod.U('lp1')?.type === 'loup' && rod.S.unites.filter((u) => u.type === 'rat').length === 6 && rod.U('ar1'), 'les rôdeurs : un loup, deux nuées de trois rats, un arbalétrier');
+  CL.commencer(); CL.S.evenements.length = 0;
+  const [lh1, lh2] = ['h1', 'h2'].map((id) => CL.U(id));
+  t.ok(!CL.peutUtiliser(lh1, CAPACITES.renverser) && capacitesDe(CL.S, 'brute').includes('renverser'), 'loin du brasero, « Renverser » est grisé (mais proposé) : il faut aller à son contact');
+  lh1.x = 7.2; lh1.y = 10;
+  t.ok(CL.peutUtiliser(lh1, CAPACITES.renverser) && CL.cibles(lh1, CAPACITES.renverser)[0]?.id === 'b0', 'au contact : « Renverser » vise le brasero');
+  const ls1 = CL.U('bd1'); ls1.x = 11.1; ls1.y = 10;
+  const ap = CL.apercuBrasero('b0');
+  t.ok(ap.mailles.length > 20 && ap.touches.some((x) => x.id === 'bd1' && x.degats === 6), 'l’aperçu montre le foin qui brûlerait et qui serait pris dedans, avant de jouer');
+  const pvAvant = ls1.pv;
+  t.ok(CL.utiliser(lh1, 'renverser', { id: 'b0' }), 'le héros renverse le brasero');
+  t.ok(foinN() === 0 && Object.values(CL.mailles()).some((s) => s.t === 'feu'), 'le foin devient du feu');
+  t.ok(ls1.pv === pvAvant - 6 && ls1.st.brulure, 'l’ennemi pris dans le foin prend 6 et brûle');
+  t.ok(CL.S.braseros[0].renverse && !CL.utiliser(lh2, 'renverser', { id: 'b0' }) && !capacitesDe(CL.S, 'brute').includes('renverser'), 'le brasero ne se renverse qu’une fois');
+
+  // le combo à deux : l'un pousse un ennemi dans le foin, l'autre renverse le brasero
+  CL = lis(); CL.commencer(); CL.S.evenements.length = 0;
+  const [c1, c2] = [CL.U('h1'), CL.U('h2')], cs1 = CL.U('bd1');
+  c1.x = 7.6; c1.y = 9.2; cs1.x = 8.9; cs1.y = 9.2; c2.x = 7.2; c2.y = 10.8;
+  t.ok(CL.utiliser(c1, 'pousser', { id: 'bd1' }) && cs1.foinPar === 'h1', 'un héros pousse un ennemi dans le foin');
+  t.ok(CL.utiliser(c2, 'renverser', { id: 'b0' }) && CL.S.stats.combos.some((c) => c.a === 'h1' && c.b === 'h2' && c.quoi === 'foin enflammé'), 'l’autre renverse le brasero : le combo est compté, h1 prépare et h2 finit');
+  // la flèche de feu allume le foin de loin
+  CL = lis(); CL.commencer(); CL.S.evenements.length = 0;
+  const vl = CL.U('h3'); vl.x = 5; vl.y = 10;
+  t.ok(CL.huileVisable(vl, CAPACITES.fleche, { x: 11, y: 10 }) && CL.utiliser(vl, 'fleche', { x: 11, y: 10 }) && Object.values(CL.mailles()).some((s) => s.t === 'feu'), 'la Flèche de feu enflamme le foin de loin');
+
+  // « vaincre tous » : le combat est gagné quand le dernier ennemi tombe (le chef n'y est pour rien)
+  CL = lis(); CL.commencer(); CL.S.evenements.length = 0;
+  const dansFoin = [[10.4, 10], [12.2, 10], [13.4, 9], [13.4, 11]];
+  CL.S.ennemisIds.forEach((id, k) => { const u = CL.U(id); u.pv = 1; [u.x, u.y] = dansFoin[k]; });
+  const lr = CL.U('h1'); lr.x = 7.2; lr.y = 10;
+  CL.utiliser(lr, 'renverser', { id: 'b0' });
+  t.ok(CL.S.resultat === 'victoire' && CL.ennemisVivants().length === 0, 'le feu achève les quatre : victoire sans chef');
+  // le miroir et les deux autres gabarits
+  const miroir = lis({ miroir: true });
+  t.ok(miroir.S.braseros[0].y === 10 && miroir.U('h1').y > miroir.U('h4').y, 'le miroir retourne la salle de haut en bas (les héros en ordre inverse)');
+  const gb = lis({ salle: 'camp-des-mastres/sentier-f-b' }), gc = lis({ salle: 'camp-des-mastres/sentier-f-c' });
+  t.ok(gb.S.braseros.length === 1 && Object.values(gb.mailles()).filter((s) => s.t === 'foin').length > 30 && gc.S.braseros.length === 2, 'la meule (un brasero, un grand tas) et le champ fauché (deux braseros)');
+
+  // le combo de secours : poussé contre le brasero, l'ennemi prend le feu et le brasero tombe sur le foin
+  CL = lis(); CL.commencer(); CL.S.evenements.length = 0;
+  const pc = CL.U('h1'), pb = CL.U('bd1');
+  pc.x = 6.0; pc.y = 10; pb.x = 7.1; pb.y = 10;
+  t.ok(CL.utiliser(pc, 'pousser', { id: 'bd1' }) && pb.st.brulure && CL.S.braseros[0].renverse && Object.values(CL.mailles()).some((x) => x.t === 'feu'), 'poussé contre le brasero : il brûle, le brasero tombe et le foin prend');
+  // les habitudes : l'arbalétrier recharge entre deux tirs ; le loup mord celui que les siens attaquent déjà
+  CL = lis({ rencontre: 'camp-des-mastres/sentier-f-braconniers' }); CL.commencer(); CL.S.evenements.length = 0;
+  const arb = CL.U('ar1'), cibleA = CL.U('h1');
+  arb.x = 14; arb.y = 5; cibleA.x = 8; cibleA.y = 5;
+  arb.t = { mv: 0, action: true, bonus: true, reaction: true };
+  CL._.agirEnnemi(arb);
+  const tir1 = CL.S.evenements.some((e) => e.type === 'attaque' && e.de === 'ar1');
+  CL.S.evenements.length = 0; CL._.agirEnnemi(arb);
+  t.ok(tir1 && !CL.S.evenements.some((e) => e.type === 'attaque' && e.de === 'ar1') && CL.S.journal[0].t.includes('recharge'), 'l’arbalétrier tire, puis passe un tour à recharger');
+  const lp = CL.U('lp1'), bd = CL.U('bd1'), [m1, m2] = [CL.U('h1'), CL.U('h2')];
+  m1.x = 14; m1.y = 13; m2.x = 10; m2.y = 16.5; bd.x = 11.2; bd.y = 16.5; lp.x = 12; lp.y = 13;
+  lp.t = { mv: 8, action: true, bonus: true, reaction: true };
+  CL.S.evenements.length = 0; CL._.agirEnnemi(lp);
+  t.ok(CL.S.evenements.some((e) => e.type === 'attaque' && e.de === 'lp1' && e.vers === 'h2'), 'le loup va mordre le héros que le bandit attaque déjà, pas le plus proche');
+
+  // l'entrée : l'hôte choisit qui lance le dé, puis le d20 et la graine
+  const attente = demanderLancer({ titre: 'Le sentier F', noms: ['A', 'B', 'C', 'D'], alea: graine(9) });
+  t.ok(entree.ouvert && document.querySelector('.entree-terrain') && document.querySelector('.entree-lancer').hidden, 'l’entrée demande qui lance le dé, et rien ne part tout seul');
+  await pause(600);
+  t.ok(entree.etat().choisi === -1 && document.querySelector('.entree-terrain'), 'sans choix de l’hôte, le temps qui passe ne lance rien');
+  entree.choisir(2);
+  t.ok(entree.etat().choisi === 2 && !document.querySelector('.entree-lancer').hidden, 'l’hôte choisit un héros : son bouton « lance le dé » apparaît');
+  entree.lancer();
+  const lance = await attente;
+  t.ok(lance.qui === 2 && /^[A-Z]{5}$/.test(lance.mot) && lance.de === AVENTURE.deDeLaGraine(lance.mot) && !entree.ouvert && !document.querySelector('.entree-terrain'), 'le d20 donne une graine de 5 lettres, et l’entrée se ferme');
+
+
+  // le tronçon (chemin-sentier-f.md §0) : on marche, on est vu ou on surprend, on fouille
+  t.group('le sentier F : le tronçon à explorer');
+  const tro = (o = {}) => {
+    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-f-a', rencontre: 'camp-des-mastres/sentier-f-bandits', miroir: false, troncon: 'camp-des-mastres/sentier-f-troncon', ...o });
+    const sl = prep.plan.salle(), C = creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, alea: graine(5), horloge: () => 0 });
+    C.explorer(); C.S.evenements.length = 0;
+    return C;
+  };
+  let EX = tro();
+  const eh = EX.U('h1');
+  t.ok(EX.S.phase === 'exploration' && EX.peutAgir(eh) && EX.S.cachettes.some((c) => c.id === 'souche-du-depart') && EX.S.cachettes.some((c) => c.id === 'souche-creuse') && !EX.quiVoit(eh), 'le début du chemin : on part à pied de la clairière de l’est du camp, sans être vu, des cachettes à trouver');
+  t.ok(EX.deplacer(eh, 47, 13.2, EX.portee(eh)) && EX.S.phase === 'exploration' && !EX.S.repere && Math.abs(eh.x - 47) < 0.3, 'on marche (sans téléporter) de la clairière de l’est, par le sentier dans la forêt, jusqu’au brasero du sentier F, sans être vu');
+  EX.deplacer(eh, 55, 9.5, EX.portee(eh));
+  t.ok(EX.S.repere?.h === 'h1' && eh.x < 54.9, 'en entrant dans le champ de vue d’un bandit, le héros s’arrête là où il est vu');
+  EX.engager(false);
+  t.ok(EX.S.phase === 'heros' && EX.S.round === 1 && !EX.S.unites.some((u) => u.st.surpris) && Math.abs(EX.U('h1').x - eh.x) < 0.01, 'le combat commence là où chacun se tient, sans surprise');
+  // la surprise : renverser le brasero sans être vu
+  EX = tro();
+  const sh = EX.U('h2');
+  EX.deplacer(sh, 48, 13, EX.portee(sh));
+  t.ok(EX.utiliser(sh, 'renverser', { id: 'b0' }) && EX.S.phase === 'heros' && EX.ennemisVivants().every((u) => u.st.surpris), 'renverser le brasero sans être vu : le combat commence, les ennemis sont surpris');
+  EX.S.evenements.length = 0; EX.finPhaseHeros();
+  t.ok(EX.S.round === 2 && !EX.S.evenements.some((e) => e.type === 'attaque' && EX.U(e.de)?.camp === 'e') && EX.ennemisVivants().every((u) => !u.st.surpris), 'surpris, les ennemis passent leur premier tour');
+  // la cachette : un d20 de perception, une fois par héros
+  EX = tro();
+  const fh = EX.U('h3'), cc = EX.S.cachettes.find((c) => c.id === 'souche-creuse');
+  EX.deplacer(fh, cc.x + 1.1, cc.y, EX.portee(fh));
+  t.ok(EX.fouiller(fh, cc.id) && !EX.fouiller(fh, cc.id) && EX.S.evenements.some((e) => e.type === 'fouille') && (cc.trouvee ? EX.S.caillasse >= cc.caillasse[0] : EX.S.caillasse === 0), 'fouiller la souche creuse : un d20 de perception, une fois par héros');
+  t.ok(AVENTURE.tirer(niv1, 'KLMNP').troncon === 'camp-des-mastres/sentier-f-troncon', 'le sentier F se joue dans son tronçon');
+  // après la victoire : pas de fiche de mesure, la Caillasse de la rencontre, le feu s'éteint, on reprend la marche
+  EX = tro();
+  const vh = EX.U('h2');
+  EX.deplacer(vh, 48, 13, EX.portee(vh));
+  EX.ennemisVivants().filter((u) => u.groupe === 'principal').forEach((u, k) => { u.pv = 1; [u.x, u.y] = [[51.5, 13], [53, 13], [54.5, 12], [54.5, 14]][k]; });
+  EX.utiliser(vh, 'renverser', { id: 'b0' });
+  const avant = EX.S.caillasse, gagne = EX.reprendre();
+  t.ok(gagne >= 60 && gagne <= 100 && EX.S.caillasse === avant + gagne && EX.S.phase === 'exploration' && !EX.S.resultat && !Object.values(EX.mailles()).some((x) => x.t === 'feu') && EX.peutAgir(vh),
+    `après la victoire : ${gagne} Caillasse (15 à 25 par héros), le feu s’éteint, on reprend la marche`);
+  // la fourche (zone 2) : au poteau, le groupe choisit ; un arbre ferme l'autre chemin ; le colporteur, la borne
+  const sansEnnemis = (C) => C.ennemisVivants().forEach((u) => { u.pv = 0; u.mort = true; });
+  EX = tro(); sansEnnemis(EX);
+  const fo = EX.U('h1');
+  EX.deplacer(fo, 75, 13, EX.portee(fo));
+  t.ok(EX.S.question?.fourche === 'fourche' && fo.x < 74, 'arrivé au poteau de la fourche, le groupe s’arrête et doit choisir son chemin');
+  t.ok(EX.choisir('fourche', 'nord') && !EX.choisir('fourche', 'sud') && !EX.S.question && EX.S.evenements.some((e) => e.type === 'fourche'), 'le groupe prend le nord, une seule fois');
+  t.ok(!EX.apercuMarche(fo, 86, 18.6, EX.portee(fo)).ok && EX.deplacer(fo, 86, 8.6, EX.portee(fo)), 'l’arbre tombé ferme le sud (aux deux bouts) : on ne peut plus y aller, le nord reste ouvert');
+  EX.S.caillasse = 25;
+  t.ok(EX.acheter(fo, 'colporteur') && fo.potion === 2 && EX.S.caillasse === 5 && !EX.acheter(fo, 'colporteur'), 'le colporteur vend une potion pour 20 Caillasse (pas sans le sou)');
+  EX = tro(); sansEnnemis(EX);
+  const fb = EX.U('h2');
+  EX.deplacer(fb, 75, 13, EX.portee(fb)); EX.choisir('fourche', 'sud');
+  t.ok(EX.deplacer(fb, 85.5, 18.7, EX.portee(fb)) && EX.toucherBorne(fb, 'vieille-borne') && !EX.toucherBorne(fb, 'vieille-borne') && EX.S.evenements.some((e) => e.type === 'fouille' && e.borne), 'par le sud : la vieille borne, un d20 sans risque, une fois');
+  // le gué (zone 3, combat 2, « le péage ») : le pont, la rivière, les renforts, le haut-fond
+  const versGue = () => {
+    const C = tro(); C.ennemisVivants().filter((u) => u.groupe === 'principal').forEach((u) => { u.pv = 0; u.mort = true; });
+    const h = C.U('h1'); C.deplacer(h, 75, 13, C.portee(h)); C.choisir('fourche', 'nord');
+    return C;
+  };
+  EX = versGue();
+  const gh = EX.U('h1');
+  EX.deplacer(gh, 122, 13, EX.portee(gh));
+  t.ok(EX.S.repere && EX.U(EX.S.repere.e)?.groupe === 'gue' && gh.x < 122, 'en approchant du pont, les bandits du péage vous voient');
+  EX.engager(false);
+  const gue = EX.S.unites.filter((u) => u.groupe === 'gue');
+  t.ok(EX.S.groupeActif === 'gue' && EX.groupes()[1].ids.length > 0 && EX.groupes()[1].ids.every((id) => EX.U(id).groupe === 'gue') && gue.filter((u) => u.cache).length === 2,
+    'le combat du gué : seuls ses ennemis jouent, deux renforts attendent dans la cabane');
+  const banditPont = gue.find((u) => u.type === 'bandit' && !u.cache);
+  banditPont.x = 121; banditPont.y = 12.0; gh.x = 121; gh.y = 13.2;
+  t.ok(EX.utiliser(gh, 'pousser', { id: banditPont.id }) && banditPont.mort && EX.S.journal.some((l) => l.t.includes('emporté')), 'poussé du pont, un bandit tombe dans la rivière et il est emporté');
+  EX.S.unites.filter((u) => u.camp === 'h').forEach((u) => { u.pv = 999; u.pvMax = 999; });
+  EX.finPhaseHeros(); EX.finPhaseHeros();
+  t.ok(EX.S.round === 3 && gue.every((u) => !u.cache) && EX.S.journal.some((l) => l.t.includes('renforts')), 'au tour 3, deux bandits sortent de la cabane du péage');
+  EX = versGue();
+  const fh2 = EX.U('h2');
+  EX.deplacer(fh2, 111.5, 19, EX.portee(fh2));
+  t.ok(EX.deplacer(fh2, 120, 19, EX.portee(fh2)) && Math.abs(fh2.x - 120) < 0.3 && fh2.st.trempe && !EX.S.repere, 'le haut-fond : on traverse la rivière à pied, sans être vu, et l’on en sort Trempé');
+  // la fourche compte (le retour du 23 oct) : le nord prévient le péage (un bandit de plus, pas de surprise) mais vend un tonneau ; le sud donne une relance
+  {
+    const N = versGue(), alerte = N.S.unites.find((u) => u.groupe === 'gue' && u.type === 'bandit' && N.S.voie === 'nord' && !u.cache && N.U(u.id) && u.y < 11.5 && u.x > 125);
+    t.ok(N.S.alertes.gue && alerte && N.engager(true, 'gue') && N.ennemisVivants().every((u) => !u.st.surpris), 'par le nord, le péage est prévenu : un bandit de plus, et pas de surprise au gué');
+    const T2 = tro(); T2.ennemisVivants().filter((u) => u.groupe === 'principal').forEach((u) => { u.pv = 0; u.mort = true; });
+    const ach = T2.U('h1'); T2.deplacer(ach, 75, 13, T2.portee(ach)); T2.choisir('fourche', 'nord'); T2.S.caillasse = 60;
+    T2.deplacer(ach, 86, 9.2, T2.portee(ach));
+    const nT = T2.S.tonneaux.length;
+    t.ok(T2.acheterTonneau(ach, 'colporteur') && !T2.acheterTonneau(ach, 'colporteur') && T2.S.caillasse === 35 && T2.poserTonneau(ach) && T2.S.tonneaux.length === nT + 1 && !T2.S.tonneauxPortes,
+      'le tonneau d’huile du colporteur : acheté une fois (25), posé où l’on veut en exploration');
+    const S2 = tro(); S2.ennemisVivants().filter((u) => u.groupe === 'principal').forEach((u) => { u.pv = 0; u.mort = true; });
+    const so = S2.U('h1'); S2.deplacer(so, 75, 13, S2.portee(so)); S2.choisir('fourche', 'sud');
+    t.ok(S2.S.relances === 1 && S2.S.unites.filter((u) => u.renfort === 'alerte').every((u) => u.mort), 'par le sud : une relance pour le groupe, et le péage n’a pas de bandit de plus');
+    S2.engager(false, 'gue');
+    const cibleR = S2.ennemisVivants()[0];
+    let vu = false;
+    for (let k = 0; k < 300 && !vu; k++) { cibleR.pv = 999; S2._.attaquer(so, cibleR, { ...S2._.attaqueHeros(CAPACITES.fracas), id: 'fracas' }); vu = S2.S.evenements.some((e) => e.type === 'relance'); }
+    t.ok(vu && S2.S.relances === 0, 'la relance : le premier d20 raté d’un héros se rejoue, une seule fois');
+  }
+  // les champs (zone 4) : tiré par la graine, l'embuscade (payer, négocier, combattre) ou le chariot piégé
+  const versChamps = (incident) => {
+    const C = tro({ incidents: { champs: incident } });
+    C.ennemisVivants().filter((u) => u.groupe !== 'champs').forEach((u) => { u.pv = 0; u.mort = true; });
+    const h = C.U('h1'); C.deplacer(h, 75, 13, C.portee(h)); C.choisir('fourche', 'nord');
+    C.deplacer(h, 150, 13.6, C.portee(h));
+    return C;
+  };
+  EX = versChamps('embuscade');
+  const ch1 = EX.U('h1'), bandes = EX.S.unites.filter((u) => u.groupe === 'champs');
+  t.ok(bandes.length === 4 && bandes.every((u) => u.cache) && !EX.S.repere, 'les champs : les bandits de l’embuscade sont cachés dans les blés, on ne les voit pas venir');
+  EX.deplacer(ch1, 165, 12.3, EX.portee(ch1));
+  t.ok(EX.S.question?.incident === 'champs' && bandes.every((u) => !u.cache) && ch1.x < 162, 'en passant, l’embuscade sort des blés et barre la route');
+  EX.S.caillasse = 40;
+  t.ok(EX.resoudre('champs', 'payer', ch1) && EX.S.caillasse === 10 && bandes.every((u) => u.mort) && !EX.S.question && EX.S.phase === 'exploration', 'payer 30 Caillasse : les bandits s’écartent, la route continue');
+  EX = versChamps('embuscade');
+  const ch2 = EX.U('h1');
+  EX.deplacer(ch2, 165, 12.3, EX.portee(ch2));
+  t.ok(EX.resoudre('champs', 'combattre', ch2) && EX.S.phase === 'heros' && EX.S.groupeActif === 'champs', 'combattre : le combat de l’embuscade commence');
+  EX = versChamps('chariot');
+  const ch3 = EX.U('h1'), chariot = EX.S.incidents.find((i) => i.id === 'champs');
+  t.ok(chariot.sorte === 'chariot' && EX.S.unites.every((u) => u.groupe !== 'champs'), 'l’autre variante : le chariot, sans embuscade');
+  const pvAvantChariot = ch3.pv;
+  EX.deplacer(ch3, 161, 17.3, EX.portee(ch3));
+  t.ok(EX.fouillerChariot(ch3, 'champs') && !EX.fouillerChariot(ch3, 'champs') && EX.S.caillasse >= 15 && (ch3.pv === pvAvantChariot || ch3.pv === pvAvantChariot - 8), 'fouiller le chariot : un d20 de prudence (le piège claque ou non), 15 Caillasse');
+  // la saison du camp (saison.js, comme src/51_saisons.js) : le calendrier, et le sol repeint
+  {
+    t.eq(['2026-03-21', '2026-06-21', '2026-10-23', '2026-12-21'].map(SAISON.saisonDu), ['printemps', 'ete', 'automne', 'hiver'], 'la saison du chemin suit le calendrier du camp (le 23 octobre : l’automne)');
+    const c = Object.assign(document.createElement('canvas'), { width: 40, height: 20 }), g = c.getContext('2d');
+    g.fillStyle = 'rgb(59,148,51)'; g.fillRect(0, 0, 40, 20);
+    const lire = (cv) => [...cv.getContext('2d').getImageData(20, 4, 1, 1).data.slice(0, 3)];
+    const copie = () => { const d = Object.assign(document.createElement('canvas'), { width: 40, height: 20 }); d.getContext('2d').drawImage(c, 0, 0); return d; };
+    const a = lire(SAISON.teindreSol(copie(), 'automne')), hv = lire(SAISON.teindreSol(copie(), 'hiver', { chemins: 10 }));
+    t.ok(a[0] > 90 && a[1] < 148 && hv.every((x) => x > 200), 'le sol du chemin : l’herbe jaunit en automne, la neige en hiver');
+  }
+  // les cinématiques du niveau 1 (content/moments/) : des étapes valides, des scènes qui existent, les répliques d'histoire marquées brouillon
+  {
+    const CI = cinematiques('camp-des-mastres'), SORTES = ['camera', 'coupe', 'titre', 'texte', 'marqueur', 'eboulis', 'attendre', 'gros_plan', 'etiquette'], NOMMES = ['ennemis', 'brasero', 'branche-perdue'];
+    const etapes = Object.values(CI?.scenes ?? {}).flat();
+    t.ok(CI && etapes.length > 30 && etapes.every((e) => SORTES.some((k) => k in e) && [e.camera, e.coupe].every((c) => c == null || Array.isArray(c) || NOMMES.includes(c))),
+      `les cinématiques du niveau 1 : ${Object.keys(CI?.scenes ?? {}).length} scènes, ${etapes.length} étapes, toutes lisibles`);
+    t.ok([...CI.declencheurs.map((d) => d.scene), ...Object.values(CI.combats).map((c) => c.scene).filter(Boolean), 'depart', 'fourche-avant', 'fourche-apres', 'porte-ouverte', 'arrivee'].every((n) => CI.scenes[n]?.length),
+      'chaque scène appelée par le jeu existe');
+    t.ok(etapes.filter((e) => e.qui).every((e) => e.brouillon) && etapes.some((e) => e.brouillon), 'les répliques du conteur sont marquées brouillon (l’histoire est à l’équipe)');
+    t.ok(etapes.filter((e) => e.texte).every((e) => e.texte.length <= 190), 'chaque réplique reste courte (le gabarit du départ : 4 lignes au plus)');
+    t.ok(!/[{}]/.test(remplir('{heros} {heros2} {heros3} {heros4} {partants}')), 'les trous {heros} et {partants} se remplissent toujours (« Les héros » à défaut de groupe)');
+    t.ok(!/faille|portail|prismastre/i.test(JSON.stringify(CI)), 'rien de secret dans les cinématiques du dépôt public');
+  }
+  // le moulin (zone 5, combat 3, « le moulin envahi ») : par le nord sans être vu, la surprise ; protéger le meunier ; la roue
+  const versFin = () => {
+    const C = tro();
+    C.S.unites.filter((u) => u.camp === 'e' && ['principal', 'gue', 'champs'].includes(u.groupe)).forEach((u) => { u.pv = 0; u.mort = true; });
+    C.S.incidents.forEach((i) => { i.fait = true; });
+    const h = C.U('h1'); C.deplacer(h, 75, 13, C.portee(h)); C.choisir('fourche', 'nord');
+    return C;
+  };
+  const coup = (base) => ({ nom: 'Essai', mod: 0, dmod: 0, base, de: 1, melee: true, auto: true });
+  EX = versFin();
+  const mh = EX.U('h1');
+  EX.deplacer(mh, 197, 9, EX.portee(mh));
+  t.ok(!EX.S.repere && Math.abs(mh.x - 197) < 0.3, 'à pied, du gué jusqu’au moulin par le sentier, sans être vu');
+  EX.deplacer(mh, 198.2, 12.2, EX.portee(mh));
+  t.ok(EX.S.repere?.surprise && EX.S.repere.groupe === 'moulin', 'par le nord, derrière le moulin, on arrive près du meunier sans être vu : le combat commence par surprise');
+  EX.engager(true, 'moulin');
+  t.ok(EX.S.groupeActif === 'moulin' && EX.ennemisVivants().length === 9 && EX.ennemisVivants().every((u) => u.groupe === 'moulin' && u.st.surpris) && EX.ciblesEnnemies().some((u) => u.id === 'meunier'),
+    'le combat du moulin : 9 bêtes (un loup de plus attend en renfort), surprises ; le meunier est leur cible');
+  EX.S.unites.filter((u) => u.camp === 'h' || u.id === 'meunier').forEach((u) => { u.pv = 999; u.pvMax = 999; });
+  for (let k = 0; k < 8 && !EX.S.resultat; k++) EX.finPhaseHeros();
+  t.ok(EX.S.resultat === 'victoire' && EX.S.round === 5 && EX.S.unites.filter((u) => u.groupe === 'moulin' && u.camp === 'e').every((u) => u.mort), 'le meunier tient 4 tours : les bêtes s’enfuient, victoire');
+  const gainMoulin = EX.reprendre();
+  t.ok(gainMoulin >= 80 && gainMoulin <= 120 && EX.S.phase === 'exploration', `le meunier sauf : ${gainMoulin} Caillasse (15 à 25 par héros, plus 20)`);
+  EX = versFin();
+  EX.engager(false, 'moulin');
+  const meunier = EX.U('meunier'), rat1 = EX.ennemisVivants()[0];
+  meunier.pv = 1; EX._.attaquer(rat1, meunier, coup(10));
+  t.ok(meunier.mort && !EX.S.resultat && EX.S.phase === 'heros' && EX.S.journal.some((l) => l.t.includes('récompense')), 'si le meunier tombe, le combat continue (sans sa récompense)');
+  EX = versFin();
+  EX.engager(false, 'moulin');
+  EX.S.unites.filter((u) => u.groupe === 'moulin' && u.type === 'rat').forEach((u) => { u.pv = 0; u.mort = true; });
+  const rg = EX.S.unites.find((u) => u.type === 'rat-geant'), pr = EX.U('h1');
+  rg.x = 207.6; rg.y = 15.2; pr.x = 209.0; pr.y = 15.2;
+  t.ok(EX.utiliser(pr, 'projection', { id: rg.id }) && rg.pv === 40 - 8 - 20 && EX.S.journal.some((l) => l.t.includes('roue du moulin')) && EX.S.journal.some((l) => l.t.includes('bief')),
+    'projeté contre la roue du moulin : +8, puis elle le jette dans le bief (20)');
+  // la montée (zone 6) et la porte (zone 7, le gardien) : le rat couronné file ; la Parade ; la Charge annoncée ; Étourdi contre un pilier
+  EX = versFin();
+  EX.S.unites.filter((u) => u.groupe === 'moulin' && u.camp === 'e').forEach((u) => { u.pv = 0; u.mort = true; });
+  const ph = EX.U('h1');
+  EX.deplacer(ph, 197.2, 13.6, EX.portee(ph));
+  t.ok(EX.curiosite(ph, 'planche') && EX.S.caillasse === 3 && EX.S.curiosites.find((c) => c.id === 'planche').parti, 'près du moulin, une vieille planche à roulettes : 3 Caillasse');
+  EX.deplacer(ph, 262, 12, EX.portee(ph));
+  const ratC = EX.S.curiosites.find((c) => c.id === 'rat-couronne');
+  t.ok(!EX.S.repere && Math.abs(ph.x - 262) < 0.3 && ratC.parti && ratC.couronne, 'à pied, par l’allée des statues jusqu’à la cour, sans être vu ; le rat couronné file et laisse quelque chose');
+  EX.deplacer(ph, 250.4, 15.6, EX.portee(ph));
+  t.ok(EX.curiosite(ph, 'rat-couronne') && EX.S.caillasse === 8 && !ratC.couronne, 'la couronne du rat : 5 Caillasse');
+  EX.deplacer(ph, 274, 12, EX.portee(ph));
+  t.ok(EX.S.repere && EX.U(EX.S.repere.e)?.groupe === 'porte', 'dans la cour, la garde de la porte vous voit');
+  EX.engager(false);
+  const gp = EX.U('gp'), renfortsPorte = EX.S.unites.filter((u) => u.renfort === 'mi-vie');
+  t.ok(EX.S.groupeActif === 'porte' && gp?.type === 'gardien-porte' && renfortsPorte.length === 2 && renfortsPorte.every((u) => u.cache), 'le combat de la porte : le gardien, ses bandits, l’arbalétrier ; deux bandits attendent derrière la porte');
+  gp.x = 280; gp.y = 12; ph.x = 278.7; ph.y = 12;
+  EX._.attaquer(ph, gp, coup(10));
+  t.ok(gp.pv === 175 && !gp.t.reaction && EX.S.journal.some((l) => l.t.includes('pare')), 'la Parade : un coup au contact par tour n’est qu’une éraflure');
+  const autres = EX.S.unites.filter((u) => u.camp === 'h' && u !== ph);
+  autres.forEach((u, k) => { u.x = 285 + k * 1.2; u.y = 18.5; });
+  gp.x = 280; gp.y = 10.2; ph.x = 275; ph.y = 10.2;
+  t.ok(EX._.annoncerCharge(gp) && gp.charge.contre === 'pilier' && gp.charge.cible === 'h1' && EX.S.evenements.some((e) => e.type === 'charge'), 'la Charge annoncée : une ligne montrée au sol, vers le héros… et le pilier derrière lui');
+  ph.y = 13.2;
+  EX._.charger(gp);
+  t.ok(gp.st.etourdi?.par === 'h1' && Math.abs(gp.x - 271.8) < 0.4 && ph.pv === ph.pvMax, 'l’appât s’est écarté : le gardien percute le pilier, Étourdi');
+  const h2 = EX.U('h2'); h2.x = gp.x + 1.2; h2.y = gp.y;
+  const cEt = EX._.calculer(h2, gp, EX._.attaqueHeros(CAPACITES.dague));
+  t.ok(cEt.av === 1 && cEt.aCombos.some(([a]) => a === 'h1'), 'Étourdi : avantage contre lui, et c’est un combo entre l’appât et celui qui frappe');
+  gp.pv = 100; EX._.attaquer(h2, gp, coup(20));
+  t.ok(gp.miVie && renfortsPorte.every((u) => !u.cache) && EX.S.stats.combos.some((c) => c.a === 'h1' && c.b === 'h2'), 'à mi-vie, le gardien appelle ses deux bandits ; le combo est compté');
+  gp.pv = 1; gp.st.etourdi = { n: 1, par: null }; EX._.attaquer(h2, gp, coup(10));
+  t.ok(EX.S.resultat === 'victoire' && EX.S.unites.filter((u) => u.groupe === 'porte').every((u) => u.mort) && EX.S.evenements.some((e) => e.type === 'fuite'), 'le gardien vaincu : les autres s’enfuient, victoire');
+  EX.reprendre();
+  t.ok(EX.S.portes[0].ouverte && EX.S.evenements.some((e) => e.type === 'porte'), 'la porte de la tour s’ouvre');
+  t.ok(EX.deplacer(h2, 283, 5.4, EX.portee(h2)) && EX.S.arrivee && EX.S.evenements.some((e) => e.type === 'arrivee'), 'l’arrivée (zone 8) : on passe la porte à pied, le chemin est fini');
+  // le canard du canal (un clin d'œil) : trois coin et il s'en va bouder
+  EX = versFin();
+  const ca = EX.U('h1');
+  EX.deplacer(ca, 186.5, 16.9, EX.portee(ca));
+  t.ok(!EX.S.repere && EX.curiosite(ca, 'canard') && EX.curiosite(ca, 'canard') && EX.S.caillasse === 0 && EX.curiosite(ca, 'canard') && EX.S.caillasse === 1, 'le canard du canal, depuis la berge : coin, coin… et 1 Caillasse au troisième');
+  // plus tactique (le plan validé le 23 oct) : les intentions des ennemis, le couvert, les objets des combats, la Charge qui suit le gardien
+  EX = versFin();
+  EX.engager(false, 'moulin');
+  t.ok(EX.S.phase === 'heros' && EX.ennemisVivants().every((u) => u.intention && (u.intention.quoi !== 'frappe' || EX.U(u.intention.cible))) && EX.ennemisVivants().some((u) => u.intention.quoi === 'frappe'),
+    'au début de la phase des héros, chaque ennemi annonce ce qu’il va faire, et à qui');
+  const loupI = EX.ennemisVivants().find((u) => u.intention?.quoi === 'frappe'), viseI = EX.U(loupI.intention.cible);
+  EX.S.unites.filter((u) => u.camp === 'h' || u.id === 'meunier').forEach((u) => { u.pv = 999; u.pvMax = 999; });
+  EX.S.evenements.length = 0; EX.finPhaseHeros();
+  const coupsI = EX.S.evenements.filter((e) => e.type === 'attaque' && e.de === loupI.id);
+  t.ok(coupsI.every((e) => e.vers === viseI.id || EX.U(e.vers)?.camp !== 'h' || dist(EX.U(e.vers), loupI) <= CONTACT), `l’ennemi tient son intention (${loupI.nom} → ${viseI.nom})`);
+  const opv = EX.U('h1'), vh1 = EX.U('h2');
+  EX.S.phase = 'heros';
+  opv.x = 205.6; opv.y = 12.4; vh1.x = 200; vh1.y = 16.6;
+  const rgV = EX.S.unites.find((u) => u.type === 'rat-geant' && !u.mort); rgV.x = 203; rgV.y = 16.6;
+  opv.t.action = true;
+  t.ok(EX.apercuLevier('vanne')?.touches.some((o) => o.id === rgV.id) && EX.actionner(opv, 'vanne') && rgV.st.trempe?.par === 'h1' && !opv.t.action && EX.surfaceA(rgV)?.t === 'eau' && !EX.actionner(opv, 'vanne'),
+    'la vanne du moulin (aperçu, puis l’action du héros) : la cour est inondée, les bêtes sont Trempées, une seule fois');
+  EX = versGue();
+  EX.engager(false, 'gue');
+  const bPont = EX.S.unites.find((u) => u.groupe === 'gue' && u.type === 'bandit' && !u.cache), cH = EX.U('h1'), pH = EX.U('h2');
+  bPont.x = 119.9; bPont.y = 13.0; bPont.poussePar = { par: 'h2', round: EX.S.round };
+  cH.x = 117.4; cH.y = 12.0;
+  t.ok(EX.actionner(cH, 'corde') && bPont.mort && EX.S.stats.combos.some((c) => c.a === 'h2' && c.b === 'h1' && c.quoi.includes('pont')) && !EX.deplacer(pH, 123, 13, EX.portee(pH)),
+    'la corde du pont : le pont s’effondre, le bandit poussé dessus par un autre héros est emporté (combo), et le pont n’existe plus');
+  // la porte : la herse se lève avec le combat ; le gardien poussé dessous, le treuil la lâche (combo), ses renforts restent bloqués
+  EX = versFin();
+  EX.S.unites.filter((u) => u.groupe === 'moulin' && u.camp === 'e').forEach((u) => { u.pv = 0; u.mort = true; });
+  EX.engager(false, 'porte');
+  const gH = EX.U('gp'), tH = EX.U('h1');
+  t.ok(EX.S.portes[0].herseLevee && EX.S.evenements.some((e) => e.type === 'herse' && e.levee), 'quand la garde de la porte entre en combat, la herse se lève');
+  gH.x = 283; gH.y = 7.4; gH.poussePar = { par: 'h2', round: EX.S.round }; tH.x = 285.8; tH.y = 8.4;
+  t.ok(EX.actionner(tH, 'treuil') && gH.st.etourdi?.par === 'h2' && gH.pv === 170 && EX.S.stats.combos.some((c) => c.quoi.includes('herse')) && EX.S.unites.filter((u) => u.renfort === 'mi-vie').every((u) => u.mort) && !EX.S.portes[0].herseLevee,
+    'le treuil : la herse tombe sur le gardien (10, Étourdi, combo) ; ses renforts restent bloqués derrière');
+  // la Charge suit le gardien quand on le pousse : ici, poussé face à un pilier
+  EX = versFin();
+  EX.S.unites.filter((u) => u.groupe === 'moulin' && u.camp === 'e').forEach((u) => { u.pv = 0; u.mort = true; });
+  EX.engager(false, 'porte');
+  const gR = EX.U('gp'), cR = EX.U('h1'), pR = EX.U('h2');
+  EX.S.unites.filter((u) => u.camp === 'h' && u !== cR && u !== pR).forEach((u, k) => { u.x = 288 + k; u.y = 19; });
+  EX.ennemisVivants().filter((u) => u !== gR).forEach((u, k) => { u.x = 296; u.y = 18 + k * 1.2; });
+  gR.x = 280; gR.y = 13.2; cR.x = 275; cR.y = 13.2; pR.x = 289; pR.y = 21;
+  EX._.annoncerCharge(gR);
+  pR.x = 280; pR.y = 14.6;
+  const avantR = gR.charge.contre;
+  EX.S.phase = 'heros'; pR.t.bonus = true;
+  t.ok(avantR !== 'pilier' && EX.utiliser(pR, 'projection', { id: gR.id }) && Math.abs(gR.charge.y0 - gR.y) < 0.01 && Math.abs(gR.charge.y1 - gR.y) < 0.6 && gR.charge.contre === 'pilier' && gR.charge.prepare === 'h2',
+    'poussé avant sa Charge, le gardien emporte sa ligne avec lui : la voilà face à un pilier (et le pousseur prépare le combo)');
+  // le couvert : un tir vers une cible collée derrière un pilier a le désavantage
+  const arR = EX.S.unites.find((u) => u.type === 'arbaletrier' && u.groupe === 'porte');
+  arR.x = 290; arR.y = 10.2; cR.x = 270.0; cR.y = 10.2;
+  const cCv = EX._.calculer(arR, cR, { ...EX._.attaqueHeros(CAPACITES.fleche) });
+  t.ok(EX.couvert(arR, cR)?.pilier && cCv.av === -1 && cCv.notes.some((n) => n.includes('couvert')), 'le couvert : derrière un pilier, un tir a le désavantage');
+  {
+  // l'exploration vivante (le plan validé le 23 oct) : la perception passive, la cueillette, les rondes
+  EX = tro();
+  const pcH = EX.U('h1'), sc = EX.S.cachettes.find((c) => c.id === 'souche-creuse');
+  t.ok(EX.S.cachettes.every((c) => !c.reperee), 'au départ, les cachettes ne se voient pas');
+  EX.S.evenements.length = 0; EX.deplacer(pcH, 44.6, 12.4, EX.portee(pcH));
+  t.ok(sc.essais.includes('h1') && EX.S.evenements.some((e) => e.type === 'perception' && e.cachette === 'souche-creuse'), 'en passant près de la souche creuse, un d20 de perception se lance tout seul (une fois par héros)');
+  EX = tro();
+  const cp = EX.U('h1'); cp.pv = cp.pvMax - 10;
+  EX.deplacer(cp, 34.3, 10.2, EX.portee(cp));
+  t.ok(EX.cueillir(cp, 'pommier-du-sentier') && cp.pv === cp.pvMax - 4 && !EX.cueillir(cp, 'pommier-du-sentier'), 'secouer le pommier : une pomme, +6 PV, une seule fois');
+  EX = versFin();
+  const ronde = EX.S.unites.find((u) => u.ronde && u.groupe === 'moulin'), x0R = ronde.x;
+  const mR = EX.U('h1');
+  EX.deplacer(mR, 150, 13, EX.portee(mR), { meneur: true });
+  t.ok(Math.abs(ronde.x - x0R) > 0.5 && ronde.regard != null && EX.S.evenements.some((e) => e.type === 'marche' && e.id === ronde.id), 'les loups du canal font leur ronde quand le groupe marche ; leur regard suit leur pas');
+  }
   }
 
   // --- À plusieurs (#80) : les règles du lobby, puis cette page en hôte, puis chez un ami ------------------------

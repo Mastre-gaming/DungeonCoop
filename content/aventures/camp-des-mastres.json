@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres",
+  "nom": "Le camp des mastres",
+  "texte": {
+    "intro": "",
+    "fin": ""
+  },
+  "fiches": [
+    "docs/fiches/aventure-camp-des-mastres.md",
+    "docs/fiches/chemin-de-la-tour.md"
+  ],
+  "niveaux": [
+    {
+      "n": 1,
+      "id": "sentier-f",
+      "nom": "Le sentier F",
+      "sorte": "combat",
+      "salles": [
+        "camp-des-mastres/sentier-f-a",
+        "camp-des-mastres/sentier-f-b",
+        "camp-des-mastres/sentier-f-c"
+      ],
+      "rencontres": [
+        "camp-des-mastres/sentier-f-bandits",
+        "camp-des-mastres/sentier-f-rodeurs",
+        "camp-des-mastres/sentier-f-braconniers"
+      ],
+      "premiere_partie": {
+        "salle": "camp-des-mastres/sentier-f-a",
+        "rencontre": "camp-des-mastres/sentier-f-bandits"
+      },
+      "troncon": "camp-des-mastres/sentier-f-troncon"
+    },
+    {
+      "n": 2,
+      "id": "colporteur-ou-borne",
+      "nom": "",
+      "sorte": "evenement",
+      "a_ecrire": true
+    },
+    {
+      "n": 3,
+      "id": "gue",
+      "nom": "",
+      "sorte": "combat",
+      "a_ecrire": true
+    },
+    {
+      "n": 4,
+      "id": "bandits-ou-chariot",
+      "nom": "",
+      "sorte": "evenement",
+      "a_ecrire": true
+    },
+    {
+      "n": 5,
+      "id": "moulin",
+      "nom": "",
+      "sorte": "combat",
+      "a_ecrire": true
+    },
+    {
+      "n": 6,
+      "id": "porte-de-la-tour",
+      "nom": "",
+      "sorte": "mini-boss",
+      "a_ecrire": true
+    }
+  ]
+}

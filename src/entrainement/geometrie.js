@@ -46,6 +46,32 @@ export function creerTrame(salle) {
   return { salle, nx, ny, fixe };
 }
 
+// Un obstacle qui apparaît en cours de partie (un arbre qui tombe sur le chemin) : on le range dans la salle et on bloque
+// ses cases dans la trame (le combat la garde par référence : tout le monde le voit aussitôt).
+export function ajouterObstacle(tr, o) {
+  tr.salle.obstacles.push(o);
+  if (!(o.marche || o.eau || o.fosse)) return;
+  const b = o.r != null ? { x0: o.x - o.r, y0: o.y - o.r, x1: o.x + o.r, y1: o.y + o.r } : o;
+  for (let j = Math.max(0, Math.floor((b.y0 - RAYON) / PAS)); j <= Math.min(tr.ny - 1, Math.ceil((b.y1 + RAYON) / PAS)); j++) {
+    for (let i = Math.max(0, Math.floor((b.x0 - RAYON) / PAS)); i <= Math.min(tr.nx - 1, Math.ceil((b.x1 + RAYON) / PAS)); i++) {
+      if (dansForme(o, (i + 0.5) * PAS, (j + 0.5) * PAS, RAYON)) tr.fixe[j * tr.nx + i] = 1;
+    }
+  }
+}
+
+// Un obstacle qui s'en va (la porte de la tour s'ouvre) : on le sort de la salle et on relit ses cases dans la trame.
+export function retirerObstacle(tr, o) {
+  const k = tr.salle.obstacles.indexOf(o); if (k < 0) return;
+  tr.salle.obstacles.splice(k, 1);
+  const b = o.r != null ? { x0: o.x - o.r, y0: o.y - o.r, x1: o.x + o.r, y1: o.y + o.r } : o;
+  for (let j = Math.max(0, Math.floor((b.y0 - RAYON) / PAS)); j <= Math.min(tr.ny - 1, Math.ceil((b.y1 + RAYON) / PAS)); j++) {
+    for (let i = Math.max(0, Math.floor((b.x0 - RAYON) / PAS)); i <= Math.min(tr.nx - 1, Math.ceil((b.x1 + RAYON) / PAS)); i++) {
+      const x = (i + 0.5) * PAS, y = (j + 0.5) * PAS;
+      tr.fixe[j * tr.nx + i] = tr.salle.obstacles.some((a) => (a.marche || a.eau || a.fosse) && dansForme(a, x, y, RAYON)) ? 1 : 0;
+    }
+  }
+}
+
 const versCase = (tr, x, y) => [Math.min(tr.nx - 1, Math.max(0, Math.floor(x / PAS))), Math.min(tr.ny - 1, Math.max(0, Math.floor(y / PAS)))];
 const centreDe = (tr, i) => ({ x: ((i % tr.nx) + 0.5) * PAS, y: (Math.floor(i / tr.nx) + 0.5) * PAS });
 
@@ -153,6 +179,15 @@ export const longueurChemin = (depart, pts) => pts.reduce((s, p, k) => s + dist(
 // La ligne de vue : rien de ce qui la coupe (murs, rochers) entre les deux centres.
 export function vue(salle, a, b) {
   return !salle.obstacles.some((o) => o.vue && segmentCoupe(o, a, b));
+}
+
+// Un ennemi voit-il ce point ? Dans son champ (r cases, à ± demi radians autour de son regard : l'ouest par défaut) et
+// sans rien qui coupe la vue (l'exploration : chemin-de-la-tour.md §3).
+export function voit(salle, e, p, r, regard = Math.PI, demi = (35 * Math.PI) / 180) {
+  const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy);
+  if (d > r) return false;
+  if (d > 0.01) { const a = Math.atan2(dy, dx) - regard; if (Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) > demi) return false; }
+  return vue(salle, e, p);
 }
 
 // La prise en tenaille : un allié au contact de la cible, de l'autre côté (angle attaquant-cible-allié ≥ 135°).

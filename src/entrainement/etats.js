@@ -10,6 +10,7 @@ export const DOSSIER_ETATS = './assets/lpc/etats/';
 const SENS = [
   { id: 'inspire', genre: 'bonus', effet: () => 'Avantage à sa prochaine attaque.', compte: () => null },
   { id: 'expose', genre: 'malus', effet: () => 'La prochaine attaque contre lui a l’avantage.', compte: () => null },
+  { id: 'etourdi', genre: 'malus', effet: () => 'Ne joue pas son prochain tour, ne pare plus ; les attaques contre lui ont l’avantage.', compte: () => null },
   { id: 'aTerre', genre: 'malus', effet: () => 'Les attaques contre lui ont l’avantage ; se relever coûte la moitié de son déplacement.', compte: () => null },
   { id: 'gele', genre: 'malus', effet: () => '−3 m de déplacement, désavantage à ses attaques ; une poussée l’envoie 3 m plus loin.', compte: (u) => u.st.gele?.n ?? null },
   { id: 'trempe', genre: 'malus', effet: () => 'La foudre lui fait ×2. Le feu ne le fait pas brûler.', compte: (u) => u.st.trempe?.ttl ?? null },

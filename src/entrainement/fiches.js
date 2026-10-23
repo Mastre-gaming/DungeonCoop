@@ -13,8 +13,9 @@ const ICONES = {
   epee: 'epee', chargeBouclier: 'chargeBouclier', ralliement: 'ralliement',
   ronce: 'ronce', liane: 'liane', pluie: 'pluie',
   dague: 'dague', chant: 'chant', moquerie: 'moquerie',
+  renverser: 'fleche',
 };
-export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', fioleCible: 'CIBLE', givre3: '3' };
+export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', fioleCible: 'CIBLE', givre3: '3', renverser: 'FEU' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
 // une attaque contre une cible ordinaire : raté sur 1, critique sur 20, éraflure jusqu'à d20 + bonus = 9 (12 contre un coriace)
@@ -72,6 +73,7 @@ export function resume(cap) {
     case 'attraction': return `attire ${metres(cap.longueur)} m`;
     case 'inspiration': return 'avantage';
     case 'moquerie': return 'Exposé';
+    case 'brasero': return 'allume le foin';
     default: return '';
   }
 }

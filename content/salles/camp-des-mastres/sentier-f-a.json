@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "id": "camp-des-mastres/sentier-f-a",
+  "nom": "",
+  "unite": "cases",
+  "note": "La clairière aux deux rochers : un goulot garni de foin, le brasero au bord. Les ennemis le traversent d'eux-mêmes (fiche chemin-sentier-f.md, gabarit A).",
+  "taille": [
+    24,
+    16
+  ],
+  "decor": {
+    "rochers": [
+      [
+        11.5,
+        8.4
+      ],
+      [
+        11.5,
+        11.6
+      ]
+    ],
+    "tonneaux": [],
+    "foin": [
+      {
+        "x0": 10,
+        "y0": 8,
+        "x1": 15,
+        "y1": 12
+      }
+    ],
+    "braseros": [
+      [
+        8.2,
+        10
+      ]
+    ]
+  },
+  "departs": {
+    "heros": [
+      [
+        3,
+        7
+      ],
+      [
+        3,
+        9
+      ],
+      [
+        3,
+        11
+      ],
+      [
+        3,
+        13
+      ]
+    ],
+    "ennemis": {
+      "avant": [
+        [
+          17.5,
+          8.5
+        ],
+        [
+          17.5,
+          11.5
+        ],
+        [
+          17.5,
+          14
+        ]
+      ],
+      "loin": [
+        [
+          20.5,
+          5
+        ],
+        [
+          20.5,
+          15
+        ]
+      ],
+      "fond": [
+        [
+          22,
+          9.5
+        ],
+        [
+          22,
+          11.5
+        ]
+      ]
+    }
+  },
+  "tuiles": "prairie"
+}

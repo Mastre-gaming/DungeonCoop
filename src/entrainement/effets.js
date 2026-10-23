@@ -113,6 +113,7 @@ export function effetsLance(fx, cap, a, p, u) {
     case 'liane': fx.jouer('estoc', { x: a.x + 10 * sens, y: a.y - 28, retard: 0.25, miroir }); fx.jouer('poussiere', { x: p.x, y: p.y, retard: 0.35 }); return 0.45;
     case 'chant': { const q = tete({ x: p.x, y: p.y }); let fin = 0; for (let k = 0; k < 3; k++) { const d = vol(m, q) * 1.4; fx.jouer('note', { ...m, vers: q, retard: 0.2 + k * 0.15, duree: d, arc: 10 }); fin = 0.2 + k * 0.15 + d; } return fin; }
     case 'moquerie': { const q = tete({ x: p.x, y: p.y }), d = vol(m, q) * 1.3; fx.jouer('bulle-moquerie', { x: a.x, y: a.y - 56, vers: q, retard: 0.2, duree: d, arc: 12 }); fx.jouer('colere', { x: q.x + 8, y: q.y - 4, retard: 0.2 + d, duree: 0.9 }); return 0.2 + d + 0.1; }
+    case 'renverser': fx.jouer('poussiere', { x: p.x, y: p.y, retard: 0.25 }); fx.jouer('impact-etoile', { x: p.x, y: p.y - 18, retard: 0.3 }); return 0.4;
     case 'pousser': case 'projection': case 'projection20': case 'chargeBouclier': fx.jouer('impact-etoile', { x: p.x, y: p.y - 24, retard: 0.25 }); return 0.3;
     case 'fleche': case 'etincelle': case 'foudre': case 'tirRapide': case 'tirLeste': {
       // un tir sur un tonneau ou dans l'huile : le même vol, sans créature

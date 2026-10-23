@@ -74,6 +74,9 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .bas-terrain { position: fixed; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 9; display: flex; flex-direction: column; align-items: center; gap: 8px;
   width: max-content; max-width: calc(100vw - 600px); min-width: min(640px, calc(100vw - 16px)); pointer-events: none; }
 .bas-terrain > * { pointer-events: auto; }
+/* la fiche ne prend jamais le clic : on vise à travers elle (le retour du propriétaire, 23 oct) ; un petit bouton la cache */
+.bas-terrain > .fiche-capacite { pointer-events: none; }
+.bascule-fiche { align-self: flex-end; margin-bottom: -4px; }
 .barre-terrain { padding: 8px; max-width: 100%; box-sizing: border-box; }
 /* une ligne jusqu'à 5 capacités, sinon deux lignes égales (--col : posé par interface.js) */
 .capacites { display: grid; grid-template-columns: repeat(var(--col, 5), auto); justify-content: center; gap: 6px; }
@@ -150,6 +153,80 @@ kbd { display: inline-block; min-width: 1.1em; padding: 0 3px; border: 1px solid
 .de-grand .resultat { font: 700 1.25rem var(--titre); }
 .de-grand.critique .resultat { color: #ffd35a; } .de-grand.touche .resultat { color: #9fe28f; } .de-grand.eraflure .resultat { color: #f3c48a; } .de-grand.rate .resultat { color: #ff8a7a; }
 .de-grand.ennemi { border-color: #ff6a50; } .de-grand.ennemi .face { background: #ff9a7a; }
+/* les cinématiques (cinema.js) : les bandes noires, le fondu, le titre, la réplique, le repère sur la carte */
+.cinema-racine { position: fixed; inset: 0; z-index: 40; cursor: pointer; }
+.cinema-racine[hidden] { display: none; }
+.cinema-bande { position: absolute; left: 0; right: 0; height: 56px; background: #000; transition: transform .45s ease-out; }
+.cinema-bande.haut { top: 0; transform: translateY(-100%); } .cinema-bande.bas { bottom: 0; transform: translateY(100%); }
+.cinema-racine.entre .cinema-bande { transform: none; }
+.cinema-fondu { position: absolute; inset: 0; background: #000; opacity: 0; transition: opacity .35s; pointer-events: none; } .cinema-fondu.noir { opacity: 1; }
+.cinema-titre { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 6px; pointer-events: none; white-space: nowrap;
+  padding: 16px 70px; background: linear-gradient(90deg, transparent, rgba(10, 6, 2, .72) 18%, rgba(10, 6, 2, .72) 82%, transparent); }
+.cinema-titre[hidden] { display: none; }
+.cinema-titre strong { font: 700 clamp(1.6rem, 5vw, 3rem) var(--titre); color: #ffd35a; letter-spacing: .04em; text-shadow: 0 3px 0 #5a3b10, 0 0 18px rgba(0, 0, 0, .8); }
+.cinema-titre span { font: 600 1.2rem var(--titre); color: #fff3cf; text-shadow: 0 2px 6px #000; }
+.cinema-titre.frappe { animation: cinema-titre .6s cubic-bezier(.2, 1.5, .4, 1); }
+@keyframes cinema-titre { from { transform: translate(-50%, -50%) scale(1.8); opacity: 0; } }
+/* la réplique : le dialogue du jeu (jeu.css), son médaillon, « Suivant » (comme la réunion du départ, contrat.css) */
+.cinema-dialogue { position: absolute; bottom: calc(56px + 14px); z-index: 19; }
+.cinema-dialogue.neuf { animation: monte .2s ease-out; }
+.cinema-portrait { align-self: center; } .cinema-portrait canvas { display: block; width: 60px; height: 60px; image-rendering: pixelated; }
+.cinema-qui { font: 500 12px var(--titre); color: #7a3b10; }
+.cinema-brouillon { margin-left: auto; padding: 1px 6px; font: 700 10px sans-serif; letter-spacing: .08em; color: #fff; background: #b8432a; border-radius: 3px; }
+.cinema-brouillon[hidden] { display: none; }
+.cinema-suite { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+.cinema-passer { font: 500 12px var(--titre); color: var(--parchemin-doux); }
+.cinema-marqueur { position: absolute; left: 0; top: 0; padding: 3px 8px; font: 700 .85rem var(--titre); color: #2a1a10; background: #ffe58a; border: 2px solid #5a3b10; border-radius: 4px; white-space: nowrap; pointer-events: none; transform: translate(-50%, -100%); animation: marque .25s ease-out; }
+@keyframes marque { from { transform: translate(-50%, -70%); opacity: 0; } }
+.cinema-marqueur::after { content: ''; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: #5a3b10; border-bottom: 0; }
+.cinema-marqueur[hidden] { display: none; }
+.cinema-gros { position: absolute; inset: 56px 0 calc(56px + 150px) 0; display: grid; place-items: center; pointer-events: none; background: radial-gradient(ellipse, rgba(8, 4, 2, .55), rgba(8, 4, 2, .88)); }
+.cinema-gros[hidden] { display: none; }
+.cinema-gros.entre { animation: gros-entre .7s cubic-bezier(.2, .9, .3, 1) both; } .cinema-gros.sort { animation: gros-sort .3s ease-in both; }
+@keyframes gros-entre { from { opacity: 0; transform: scale(1.25); } } @keyframes gros-sort { to { opacity: 0; transform: scale(.96); } }
+.cinema-gros-cadre { position: relative; width: min(820px, 92vw, calc((100vh - 440px) * 1.6)); aspect-ratio: 240 / 150; border: 6px solid #5a3b10; outline: 3px solid #c9932a; box-shadow: 0 0 40px rgba(0, 0, 0, .8); background: #1f3523; }
+.cinema-gros-toile { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.cinema-etiquette { position: absolute; transform: translate(-50%, calc(-100% - 14px)); padding: 3px 9px; max-width: 260px; font: 700 .85rem var(--titre); line-height: 1.25; text-align: center; color: #2a1a10; background: #ffe58a; border: 2px solid #5a3b10; border-radius: 4px; pointer-events: none; animation: marque .25s ease-out; }
+.cinema-etiquette.bas { transform: translate(-50%, 14px); }
+.cinema-etiquette::after { content: ''; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%); border: 7px solid transparent; border-top-color: #5a3b10; border-bottom: 0; }
+.cinema-etiquette.bas::after { bottom: auto; top: -9px; border-top-color: transparent; border-bottom: 7px solid #5a3b10; border-top-width: 0; }
+body.cinema .equipe-terrain, body.cinema .droite-terrain, body.cinema .bas-terrain, body.cinema .coin-phase, body.cinema .aide-terrain, body.cinema .haut-terrain, body.cinema .intention-terrain { visibility: hidden; }
+/* le début et la fin d'un combat */
+.carte-combat, .carte-victoire { position: fixed; left: 50%; top: 34%; z-index: 14; transform: translate(-50%, -50%); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 22px 14px; pointer-events: none;
+  background: #2a1a10; border: 3px solid #ff6a50; outline: 2px solid #5a1a10; color: #fff3cf; box-shadow: 0 0 30px rgba(0, 0, 0, .6); animation: carte-combat 2.8s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+.carte-combat strong, .carte-victoire strong { font: 700 2.4rem var(--titre); color: #ff8a6a; letter-spacing: .05em; text-shadow: 0 3px 0 #5a1a10; }
+.carte-combat .cc-titre, .carte-victoire .cc-titre { font: 700 1.1rem var(--titre); }
+.carte-combat .cc-objectif { font-weight: 700; color: #ffd35a; } .carte-combat .cc-surprise { font-size: .9rem; color: #7ce0ff; } .carte-combat .cc-surprise.vu { color: #ffb0a0; }
+.carte-victoire { border-color: #ffd35a; outline-color: #5a3b10; pointer-events: auto; cursor: pointer; animation-duration: 3.2s; }
+.carte-victoire strong { color: #ffd35a; text-shadow: 0 3px 0 #5a3b10; } .carte-victoire .cv-gain { font: 700 1.4rem var(--titre); color: #ffe58a; } .carte-victoire .cv-suite { font-size: .85rem; opacity: .8; }
+@keyframes carte-combat { 0% { transform: translate(-50%, -50%) scale(2); opacity: 0; } 10% { transform: translate(-50%, -50%) scale(1); opacity: 1; } 85% { opacity: 1; } 100% { transform: translate(-50%, -60%); opacity: 0; } }
+.fondu-defaite { position: fixed; inset: 0; z-index: 29; background: #000; animation: fondu-defaite 1.4s ease-in forwards; pointer-events: none; }
+@keyframes fondu-defaite { from { opacity: 0; } to { opacity: .9; } }
+.flottant.alerte { font-size: 2rem; color: #ff4632; text-shadow: 0 2px 0 #3a0a04, 0 0 8px #fff; }
+/* la fourche : ce que donne chaque branche, sous son nom */
+.detail-branche { display: block; font-size: .8rem; font-weight: 400; margin-top: 3px; opacity: .85; }
+body.de-ouvert .droite-terrain { visibility: hidden; }
+/* ce que le groupe emporte de la fourche : la relance, le tonneau à poser */
+.emporte-hud { display: inline-flex; align-items: center; gap: 6px; } .emporte-hud[hidden], .emporte-hud [hidden] { display: none; }
+.relance-hud { font: 700 .85rem var(--titre); color: #2c5a8a; padding: 1px 6px; border: 1px solid #2c5a8a; border-radius: 3px; }
+/* la Caillasse du groupe, en haut */
+.caillasse-hud { display: inline-flex; align-items: center; gap: 5px; font: 700 1rem var(--titre); color: #5a3b10; transition: transform .15s; }
+.caillasse-hud[hidden] { display: none; }
+.caillasse-hud.gagne { transform: scale(1.25); color: #b06a00; }
+.piece-caillasse { width: 14px; height: 14px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #d8d2c4, #8a8478 60%, #4a463e); border: 2px solid #3a342c; box-shadow: inset -2px -2px 0 rgba(0, 0, 0, .25); }
+.gain-caillasse { position: fixed; z-index: 15; transform: translateX(-50%); font: 700 1.2rem var(--titre); color: #ffd35a; text-shadow: 0 2px 0 #5a3b10, 0 0 6px #000; pointer-events: none; animation: gain-caillasse 1.1s ease-out forwards; }
+@keyframes gain-caillasse { from { opacity: 0; transform: translate(-50%, 24px) scale(1.4); } 20% { opacity: 1; } to { opacity: 0; transform: translate(-50%, -10px); } }
+/* le combo : l'éclair doré, puis le tampon qui tombe sur l'impact */
+.flash-combo { position: fixed; inset: 0; z-index: 12; pointer-events: none; background: radial-gradient(circle, rgba(255, 236, 150, .55), rgba(255, 190, 60, .15) 60%, transparent); animation: flash-combo .45s ease-out forwards; }
+@keyframes flash-combo { from { opacity: 1; } to { opacity: 0; } }
+.tampon-combo { position: fixed; left: 50%; top: 40%; z-index: 13; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 14px 10px;
+  background: #2a1a10; border: 3px solid #ffd35a; outline: 2px solid #5a3b10; box-shadow: 0 0 24px rgba(255, 210, 90, .7); color: #fff3cf; transform: translate(-50%, -50%);
+  animation: tampon-combo 1.9s cubic-bezier(.2, 1.6, .4, 1) forwards; }
+.tampon-combo strong { font: 700 2rem var(--titre); color: #ffd35a; letter-spacing: .06em; text-shadow: 0 2px 0 #7a4a10, 0 0 12px rgba(255, 220, 120, .8); }
+.tampon-combo .tc-heros { display: flex; align-items: center; gap: 6px; } .tampon-combo .tc-heros canvas { border: 2px solid #ffd35a; background: #4a3420; image-rendering: pixelated; }
+.tampon-combo .tc-fleche { font: 700 1.3rem var(--titre); color: #ffd35a; } .tampon-combo .tc-quoi { font-size: .9rem; max-width: 320px; text-align: center; }
+@keyframes tampon-combo { 0% { transform: translate(-50%, -50%) scale(2.4) rotate(-8deg); opacity: 0; } 12% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); opacity: 1; }
+  80% { transform: translate(-50%, -50%) scale(1) rotate(-3deg); opacity: 1; } 100% { transform: translate(-50%, -62%) scale(.96) rotate(-3deg); opacity: 0; } }
 @keyframes apparait { from { transform: translate(-50%, -8px); opacity: 0; } }
 .banniere-terrain { position: fixed; left: 50%; top: 42%; transform: translate(-50%, -50%); z-index: 11; pointer-events: none; font: 700 1.6rem var(--titre); color: #fff7e6;
   text-shadow: 0 3px 0 #3b2716, 2px 0 0 #3b2716, -2px 0 0 #3b2716, 0 -2px 0 #3b2716; animation: apparait .2s ease-out; white-space: nowrap; }
@@ -232,6 +309,11 @@ body [hidden] { display: none !important; }
 /* Les barres de vie (V : les ennemis, Maj+V : les alliés), au-dessus des têtes */
 .plaques-terrain { position: fixed; inset: 0; pointer-events: none; z-index: 6; overflow: hidden; }
 /* sous les pieds : la jauge (sans cadre derrière, sans nom), puis les icônes des états ; le détail est dans la carte de survol */
+/* l'intention d'un ennemi, au-dessus de sa tête (phase des héros) */
+.intention-terrain { position: absolute; left: 0; top: 0; padding: 1px 6px; font: 700 11px var(--texte, sans-serif); color: #ffe3d6; background: rgba(60, 14, 8, .88); border: 1px solid #ff6a50; border-radius: 3px; white-space: nowrap; pointer-events: none; }
+.intention-terrain[hidden] { display: none; }
+.intention-terrain.recharge, .intention-terrain.passe { color: #d8e0ea; background: rgba(30, 34, 44, .85); border-color: #8a96a8; }
+.intention-terrain.garde, .intention-terrain.charge { color: #fff; background: rgba(150, 20, 10, .92); border-color: #ffd35a; }
 .plaque-vie { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; --px: 1; }
 .plaque-vie.pres { --px: 2; gap: 3px; }
 .plaque-vie .pv-barre { position: relative; display: block; width: 36px; height: 5px; background: var(--bois-nuit, #1e130c); border: 1px solid #000; box-shadow: 0 0 0 1px rgba(133, 88, 27, .7); overflow: hidden; }
@@ -256,3 +338,22 @@ body [hidden] { display: none !important; }
 .cc-etats li.bonus .cc-etat-nom { color: #9fe28f; }
 .cc-etat-nom small { font-weight: 500; color: #e9d3ad; }
 .cc-etat-effet { font: 12px/1.3 var(--texte); color: #e9d3ad; }
+
+/* --- L'entrée d'un niveau de l'aventure : l'hôte choisit qui lance le dé (entree.js) ---------------------------------------- */
+.entree-fond { position: fixed; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(20, 28, 14, 0.55); }
+.entree-terrain { width: min(560px, 92vw); padding: 18px 22px 20px; text-align: center; }
+.entree-terrain h2 { margin: 0 0 4px; font: 700 24px 'Pixelify Sans', system-ui, sans-serif; }
+.entree-question { margin: 0 0 12px; font-size: 18px; }
+.entree-choix { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.entree-choix.deux { grid-template-columns: repeat(2, 1fr); }
+.entree-choix.trois { grid-template-columns: repeat(3, 1fr); }
+.entree-heros:disabled { opacity: 0.5; cursor: default; }
+.entree-heros { cursor: pointer; padding: 10px 4px; display: grid; gap: 4px; font: inherit; color: #3a2614; background: #f8eed6; border: 3px solid #5a3b22; border-radius: 3px; }
+.entree-heros:hover { background: #fff6dc; }
+.entree-heros.choisi { outline: 3px solid #ffcf5a; }
+.entree-consigne { margin: 12px 0 8px; font-size: 14px; min-height: 2.6em; }
+.entree-lancer { font: 700 18px 'Pixelify Sans', system-ui, sans-serif; padding: 8px 18px; cursor: pointer; }
+.entree-de { margin-top: 10px; }
+.entree-face { display: inline-block; min-width: 2.2em; padding: 8px 14px; font: 700 44px 'Pixelify Sans', system-ui, sans-serif; border: 3px solid #5a3b22; background: #f3e7c9; }
+.entree-face.final { background: #ffe9a3; }
+.entree-graine { margin: 8px 0 0; font-size: 16px; letter-spacing: 0.04em; }
