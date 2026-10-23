@@ -58,6 +58,17 @@ const COURS = [...LIEUX.map((l) => ({ ...l, cx: (l.emprise[0] + l.emprise[2]) / 
 // Les sentiers du camp (des lignes brisées, 2 cases de large) et ceux, sauvages, du dehors (1 case, qui serpentent). Les départs
 // des prochaines missions s'enfoncent dans la forêt, au bout des sentiers sauvages.
 export const CHEMINS = PLAN.sentiers;
+// Les lieux où mène chaque tronçon de chaque sentier (le camp garde des traces, 53_traces.js : un sentier s'use selon le
+// travail fait dans ces lieux). '*' : la route de la porte au feu, que tout le monde prend ; '?' : vers une porte ou un
+// emplacement libre (il reste comme il est). Un tableau par sentier de plan.json, un élément par tronçon.
+const L = (...ids) => ids;
+export const CHEMINS_LIEUX = [
+  [L('*'), L('*')], [L('combat', 'level', 'archives', 'histoire', 'son'), L('level', 'archives', 'histoire', 'son')], [L('histoire', 'son')],
+  [L('level'), L('level')], [L('archives'), L('archives')], [L('art'), L('art'), L('art')], [L('?'), L('?')],
+  [L('combat'), L('combat')], [L('classes'), L('classes'), L('classes')], [L('classes')], [L('interface'), L('interface'), L('interface')],
+  [L('?'), L('?')], [L('technique'), L('technique')], [L('?'), L('?'), L('?')], [L('*')],
+  [L('histoire', 'son')], [L('son'), L('son')], [L('histoire')],
+];
 export const SAUVAGES = PLAN.sauvages;
 export const DEPARTS = PLAN.departs;
 export const CLAIRIERES = PLAN.clairieres;
@@ -94,17 +105,43 @@ const distChemin = (ch, x, y) => { let d = 1e9; for (let k = 0; k + 1 < ch.lengt
 const bruit = (x, y) => Math.sin(x * 2.9 + y * 1.7) * 0.5 + Math.sin(x * 5.3 - y * 3.1) * 0.35 + Math.sin(x * 11.1 + y * 7.9) * 0.15;
 
 // Est-ce de la terre battue à ce coin de case (i, j) ? (sentiers, places et cours ; le sol se dessine coin par coin)
-export function terre(i, j) {
+export function terre(i, j) { return terreUsee(i, j); }
+
+// La même chose, avec l'usure de chaque sentier du camp (53_traces.js, design validé par Mope le 22 oct) : usure(n, k) → 0
+// à 3 pour le tronçon k du sentier n. 0 : personne n'y va, l'herbe reprend un bord du sentier, par endroits ; 1 : normal ;
+// 2 : usé (des plaques de terre piétinée, voir usureCase) ; 3 : très usé, il déborde sur l'herbe par endroits, jamais dans
+// l'emprise d'un lieu.
+const hacher = (i, j) => { let h = (i * 374761393 + j * 668265263) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return (h ^ (h >>> 16)) >>> 0; };
+const dansUnLieu = (i, j) => [...LIEUX, ARCHIVES].some((l) => { const [x0, y0, x1, y1] = emprise(l); return i >= x0 && i <= x1 && j >= y0 && j <= y1; });
+export function terreUsee(i, j, usure = () => 1) {
   const [sx0, sy0, sx1, sy1] = ENCLOS.sol;
   if (i >= sx0 && i <= sx1 && j >= sy0 && j <= sy1) return true;         // le sol de l'enclos
   if (SOL_ARMURERIE.has(`${i},${j}`) || SOL_ARMURERIE.has(`${i - 1},${j}`) || SOL_ARMURERIE.has(`${i},${j - 1}`) || SOL_ARMURERIE.has(`${i - 1},${j - 1}`)) return true;
   for (const { x, y, r } of PLACES) if (Math.hypot(i - x, j - y) <= r) return true;
   for (const [cx, cy, r] of COURS) if (Math.hypot(i - cx, j - cy) <= r) return true;
-  for (const ch of CHEMINS) if (distChemin(ch, i, j) <= 1.05) return true;
+  for (const [n, ch] of CHEMINS.entries()) {
+    for (let k = 0; k + 1 < ch.length; k++) {
+      const [ax, ay] = ch[k], [bx, by] = ch[k + 1], u = usure(n, k);
+      const d = distSegment(i, j, ax, ay, bx, by), h = hacher(i, j);
+      const cote = (bx - ax) * (j - ay) - (by - ay) * (i - ax) > 0;
+      if (d <= 1.05 && !(u === 0 && cote && h % 3 < 2)) return true;
+      if (u === 3 && d <= 1.55 && h % 3 > 0 && !dansUnLieu(i, j)) return true;
+    }
+  }
   for (const ch of SAUVAGES) if (distChemin(ch, i, j) <= 0.85 + 0.3 * bruit(i, j)) return true;     // sauvages : étroits, irréguliers
   for (const { points } of DEPARTS) if (distChemin(points, i, j) <= 0.75 + 0.3 * bruit(i, j)) return true;
   if (j >= 31 && j <= 37 && i >= 13.5 && i <= 16.5) return true;        // la route du pont (comme avant)
   return false;
+}
+
+// l'usure du sentier le plus proche d'une case (i, j) (1 loin des sentiers) : pour les plaques de terre piétinée
+export function usureCase(i, j, usure = () => 1) {
+  let best = 2.2, u = 1;
+  for (const [n, ch] of CHEMINS.entries()) for (let k = 0; k + 1 < ch.length; k++) {
+    const d = distSegment(i + 0.5, j + 0.5, ch[k][0], ch[k][1], ch[k + 1][0], ch[k + 1][1]);
+    if (d < best) { best = d; u = usure(n, k); }
+  }
+  return u;
 }
 
 // Les douves, tout autour des trois autres murs, comme celles de la grande muraille du sud : deux cases d'eau au pied de chaque mur
