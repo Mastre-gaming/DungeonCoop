@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "id": "changepeau",
+  "nom": "Mope, l'ancien changepeau",
+  "auteur": "DevMope",
+  "phrase": "Un vieil orc vagabond qui porte trois bêtes sous la peau : il commence faible, se nourrit des coups, puis mue dans la forme que la salle demande.",
+  "role": "degats",
+  "twist": "change de façon de se battre selon la salle : trois formes, chacune mélange deux choses, et toutes frappent",
+  "archetype": "Fighter",
+  "caracs": { "FOR": 14, "DEX": 10, "CON": 14, "INT": 8, "SAG": 14, "CHA": 12 },
+  "pv": 110,
+  "vitesse": 5,
+  "ressource": "rage",
+  "capacites": [
+    { "nom": "Bâton noué", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "l'orc frappe de son long bâton, rien de plus : avant la mue, il est là pour prendre et donner des coups, pas pour porter l'équipe", "cree": [], "utilise": [], "renforts": [] },
+    { "nom": "La Mue", "sorte": "reaction", "slot": "bonus", "portee": "contact", "zone": "aucune", "carac": "CON", "cout": "20 Rage ; redevenu orc, 20 Rage pour reprendre la même forme, 30 pour une autre", "effet": "il prend sa forme du combat (la Bête, la Cosa ou l'Illuminé, selon la salle). La forme a sa propre barre de PV (comme la forme sauvage du druide de Baldur's Gate 3) : les coups la vident d'abord, ses PV d'orc restent intacts dessous. En forme, son attaque de base et ses capacités sont celles de la forme. Il peut quitter sa forme de lui-même (action bonus), sans tomber", "cree": [], "utilise": [], "renforts": [] }
+  ],
+  "formes": [
+    {
+      "id": "bete", "nom": "La Bête", "pv": 40, "melange": "dégâts et mobilité",
+      "quand": "les ennemis sont dispersés et fragiles : elle frappe et ne reste pas au contact",
+      "capacites": [
+        { "nom": "Crocs", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "une morsure de dents de sabre", "cree": [], "utilise": [], "renforts": [] },
+        { "nom": "Bond", "sorte": "preparation", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "saute sur une cible à 7,5 m, elle est À terre", "cree": ["aterre"], "utilise": [], "renforts": [] },
+        { "nom": "Curée", "sorte": "exploitation", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "×2 sur une cible À terre ou Exposée, puis il recule de 2 cases sans riposte (comme le Ranger de XCOM 2)", "cree": [], "utilise": ["aterre", "expose"], "renforts": ["effet"] }
+      ],
+      "faiblesse": "Brûlant ou dans le Feu, il ne peut plus bondir",
+      "planche": "design/classes/changepeau/formes/bete.png"
+    },
+    {
+      "id": "cosa", "nom": "La Cosa", "pv": 60, "melange": "dégâts et résistance",
+      "quand": "l'équipe manque de front, ou Baba et le Traqueur mettent déjà À terre",
+      "capacites": [
+        { "nom": "Poing de chair", "sorte": "base", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "un poing énorme de chair cousue", "cree": [], "utilise": [], "renforts": [] },
+        { "nom": "Étreinte", "sorte": "preparation", "slot": "bonus", "portee": "courte", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "attire un ennemi de 3 m jusqu'à son contact", "cree": ["attirer"], "utilise": [], "renforts": [] },
+        { "nom": "Dévorer", "sorte": "exploitation", "slot": "action", "portee": "contact", "zone": "aucune", "carac": "FOR", "cout": "", "effet": "un ennemi À terre ou qu'il vient d'attirer ; ses PV de forme regagnent la moitié des dégâts", "cree": [], "utilise": ["aterre", "attirer"], "renforts": ["effet"] }
+      ],
+      "faiblesse": "sa chair huileuse : le feu lui fait ×2",
+      "planche": "design/classes/changepeau/formes/cosa.png"
+    },
+    {
+      "id": "illumine", "nom": "L'Illuminé", "pv": 30, "melange": "dégâts de zone et un coup de main à un allié",
+      "quand": "les ennemis sont groupés, il y a de l'Huile à allumer, ou un allié qui frappe fort",
+      "capacites": [
+        { "nom": "Braise", "sorte": "base", "slot": "action", "portee": "moyenne", "zone": "aucune", "carac": "SAG", "cout": "", "effet": "une boule de braise lancée à 7,5 m", "cree": [], "utilise": [], "renforts": [] },
+        { "nom": "Embrasement", "sorte": "preparation", "slot": "action", "portee": "moyenne", "zone": "petite", "carac": "SAG", "cout": "", "effet": "une petite zone de Feu à 7,5 m, ceux dedans sont Brûlants ; elle allume l'Huile", "cree": ["feu", "brulant"], "utilise": ["huile"], "renforts": [] },
+        { "nom": "Armes ardentes", "sorte": "soutien", "slot": "bonus", "portee": "moyenne", "zone": "aucune", "carac": "SAG", "cout": "", "effet": "l'arme d'un allié brûle 2 tours : ses coups rendent la cible Brûlante et allument l'Huile (comme le drone du Spécialiste de XCOM 2)", "cree": ["brulant"], "utilise": ["huile"], "renforts": [] }
+      ],
+      "faiblesse": "Trempé ou dans l'Eau, son corps de flammes s'éteint : il perd sa forme (la chute)",
+      "planche": "design/classes/changepeau/formes/illumine.png"
+    }
+  ],
+  "faiblesse": "la chute : quand les PV de sa forme tombent à 0, il redevient orc, À terre et Exposé au milieu des ennemis ; les dégâts en trop passent sur ses PV d'orc, et changer de forme lui coûte alors 30 Rage",
+  "sousClasses": [
+    { "nom": "Maître des peaux", "idee": "change de forme moins cher (idée, à écrire)" },
+    { "nom": "L'Engloutisseur", "idee": "garde une seule forme, mais plus forte (idée, à écrire)" }
+  ],
+  "look": {
+    "corps": "un orc grand, maigre mais musclé, à la peau vert pâle",
+    "tenue": "capuche et cape usées et déchirées, t-shirt en lambeaux, pantalon troué, long bâton noueux",
+    "touche": "l'avant-bras gauche bandé et enchaîné, la bouche cousue ; ses trois formes ont chacune leur planche (design/classes/changepeau/formes/)",
+    "lien": "https://liberatedpixelcup.github.io/Universal-LPC-Spritesheet-Character-Generator/#sex=male&body=Body_Color_pale_green&head=Orc_male_pale_green&clothes=TShirt_tan&legs=Pants_brown&cape=Tattered_charcoal&hat=Hood_charcoal&wrists=Cuffs_white&weapon=Gnarled_staff_medium",
+    "base": "changepeau"
+  },
+  "references": "Inspiré de l'Abomination de Darkest Dungeon (la mue qui fait peur, le prix pour changer de forme), de Baldur's Gate 3 (les PV de forme et la chute) et de XCOM 2 (le coup puis le repli, l'aide à distance). Pas de foudre ni d'eau : c'est la Mage. Hors cadre sur un point, proposé au groupe en Idée : 2 capacités + 3 kits de forme au lieu de 3 capacités ; chaque forme tient dans les 10 points (Bête 9, Cosa 9, Illuminé 8, en comptant les PV et la Mue). Design validé par Mope le 23 oct. 2026."
+}
