@@ -184,13 +184,25 @@ function avancer(p, dt) {
   return true;
 }
 
+// Jamais un pas dans un obstacle (hors des scènes, qui ont leur propre chemin) : si le prochain pas y mènerait (un chemin
+// qui part tout contre le décor et en frôle un coin), on recalcule le chemin d'ici, une fois ; sinon on s'arrête un instant
+// et on choisit un autre but. Un promeneur déjà dans un obstacle (posé sur lui) peut en sortir.
+const dansLeMur = (p, x, y) => !p.scene && collision.bloque(x, y) && !collision.bloque(p.x, p.y);
 function marcher(p, dt) {
   let reste = VITESSE * dt;
   while (reste > 0 && p.route?.length) {
     const [tx, ty] = p.route[0], dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
     if (d < 0.5) { p.route.shift(); continue; }
     tourner(p, tx, ty);
-    if (reste < d) { p.x += (dx * reste) / d; p.y += (dy * reste) / d; break; }   // (pas de reste qui s'arrondit à l'infini)
+    const loin = reste < d, nx = loin ? p.x + (dx * reste) / d : tx, ny = loin ? p.y + (dy * reste) / d : ty;
+    if (dansLeMur(p, nx, ny)) {
+      const but = p.but ?? p.route.at(-1), r = !p.recale && collision.chemin(p.x, p.y, but[0], but[1], 20000);
+      if (r?.length) { p.recale = true; p.route = r; continue; }
+      p.recale = false; p.route = null; p.activite = null; p.but = null;
+      return;
+    }
+    p.recale = false;
+    if (loin) { p.x = nx; p.y = ny; break; }   // (pas de reste qui s'arrondit à l'infini)
     p.x = tx; p.y = ty; reste -= d; p.route.shift();
   }
 }
