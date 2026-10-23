@@ -269,7 +269,7 @@ function commencer() {
 function changerSalle(id) {
   const q = new URLSearchParams(location.search);
   if (id) q.set('salle', id); else q.delete('salle');
-  q.set('equipe', ui.choix.join(','));
+  q.set('equipe', equipeAffichee().join(','));        // (à plusieurs : les classes du lobby)
   q.set('mode', dom.accueil.querySelector('input[name=mode]:checked')?.value ?? 'equipe');
   if (dom.infiniCase.checked) q.set('infini', ''); else q.delete('infini');
   q.delete('go');

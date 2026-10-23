@@ -1528,7 +1528,7 @@ export async function selfTest(t, game) {
     t.ok(!choix.disabled && multi.L.salle === '' && ana.dernier('salon')?.L.salle === '', 'au lobby, l’hôte choisit la salle (la liste n’est pas grisée chez lui) ; le lobby dit laquelle');
     choix.value = 'butte'; choix.dispatchEvent(new Event('change')); jouer(0.3);
     const url = String(allees.pop());
-    t.ok(ana.dernier('salon')?.L.salle === 'butte' && url.includes('salle=butte') && !url.includes('go'), 'l’hôte prend la butte : Ana l’apprend par le lobby, et la page de l’hôte s’y recharge');
+    t.ok(ana.dernier('salon')?.L.salle === 'butte' && url.includes('salle=butte') && !url.includes('go') && new URLSearchParams(url.split('?')[1]).get('equipe') === multi.L.equipe.join(','), 'l’hôte prend la butte : Ana l’apprend par le lobby, et la page de l’hôte s’y recharge avec les classes du lobby');
     multi.L.salle = ''; choix.value = '';
   }
   REG._raz();
