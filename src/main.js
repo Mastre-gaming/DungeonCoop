@@ -99,6 +99,15 @@ document.querySelector('#tampon').textContent = `version du ${game.stamp}`;
 const imagesCamp = Promise.all([chargerImages(), chargerImages('./assets/lpc/', { ...choixSkill.FICHIERS, ...apparitionsSkill.FICHIERS })]);
 imagesCamp.catch(() => {});   // (une erreur ici est dite par demarrer)
 
+// Le moteur son (musique du menu, du camp, du terrain d'entraînement ; coupée quand la radio du barde joue) : bus musique / effets, ducking.
+// Créé avant l'écran titre pour qu'il ait sa musique ; le camp le relie ensuite à son héros et à sa radio (demarrer).
+const liaisonMusique = { heros: null, etat: null, titre: !sauterTitre(query) };
+const musique = game.use(musiqueSkill, { page: 'camp', visite: query.has('visite'), muet: query.has('test'),
+  heros: { get heros() { return liaisonMusique.heros?.heros ?? null; } },
+  etat: () => (liaisonMusique.titre ? { page: 'titre' } : liaisonMusique.etat?.() ?? { page: 'camp' }) });
+game.dbg.musique = musique;
+const pulsationMusique = setInterval(() => musiqueSkill.update(0.1), 100);   // (la boucle du jeu ne tourne pas encore pendant l'écran titre)
+
 async function demarrer(sortieTitre) {
   const [imagesBase, imagesHeros] = await imagesCamp;
   const images = { ...imagesBase, ...imagesHeros };   // (et les planches des héros à incarner)
@@ -185,8 +194,7 @@ async function demarrer(sortieTitre) {
   const parties = game.use(partiesSkill, { messagerie, reseau, visite });
   const boite = game.use(boiteSkill, { rendu, heros, collision, visite, ouvrirMessages: () => { if (!messagerie.ouvert) hud.activer('lettres'); } });
   const radio = game.use(radioSkill, { rendu, heros, collision, visite, reseau, muet: query.has('test') });   // la radio Deadlock : le barde près du feu (#94)
-  // le moteur son (musique du camp, du terrain d'entraînement ; coupée quand la radio du barde joue) : bus musique / effets, ducking
-  const musique = game.use(musiqueSkill, { page: 'camp', heros, visite, muet: query.has('test'), etat: () => ({ page: 'camp', radio: radio.radio?.info?.station != null }) });
+  liaisonMusique.heros = heros; liaisonMusique.etat = () => ({ page: 'camp', radio: radio.radio?.info?.station != null }); liaisonMusique.titre = false;   // le moteur son (créé avant l'écran titre) suit désormais le camp
   const reglages = game.use(reglagesSkill, { visite });   // le menu Réglages (O) : la musique et les effets (#95)
   hud.brancher('reglages', reglages);
   // le moteur de la run (#261) : la suite des salles, le vote de la salle suivante, la run chez les amis, la sauvegarde
@@ -256,6 +264,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('plans', () => { aller(...tests.devant(LIEUX[0]), 'haut')(); panneau.ouvrir('interface', 'plans'); });
 
   document.documentElement.dataset.pret = '1';
+  clearInterval(pulsationMusique);
   game.start();
   sortieTitre?.titre?.retirer();
 }

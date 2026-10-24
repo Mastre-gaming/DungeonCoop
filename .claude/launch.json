@@ -1,7 +1,38 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "camp", "runtimeExecutable": "npm", "runtimeArgs": ["run", "preview"], "port": 4173 },
-    { "name": "archives-ennemis", "runtimeExecutable": "npx", "runtimeArgs": ["vite", "preview", "--port", "4191", "--strictPort"], "port": 4191 }
+    {
+      "name": "camp",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "preview"
+      ],
+      "port": 4173
+    },
+    {
+      "name": "archives-ennemis",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "4191",
+        "--strictPort"
+      ],
+      "port": 4191
+    },
+    {
+      "name": "camp-musique",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "4177",
+        "--strictPort"
+      ],
+      "port": 4177
+    }
   ]
 }

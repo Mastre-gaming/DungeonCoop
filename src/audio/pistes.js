@@ -9,6 +9,7 @@ import LISTE from 'virtual:musique';     // les fichiers présents dans public/a
 export const DOSSIER = './assets/musique/';
 export const EXTENSIONS = ['mp3', 'ogg', 'm4a', 'aac', 'wav', 'flac'];
 export const PISTES = {
+  menu: { fichier: 'menu', nom: 'Le menu (l’écran titre)' },
   camp: { fichier: 'camp', nom: 'Le camp' },
   entrainement: { fichier: 'entrainement', nom: "Le camp d'entraînement" },
   foret: { fichier: 'foret', nom: 'La forêt (le sentier des gueux, en marchant)' },
@@ -28,9 +29,11 @@ export const MUSIQUE_DES_LIEUX = { combat: 'entrainement' };
 export const MUSIQUE_DES_NIVEAUX = { 'sentier-des-gueux': { exploration: 'foret', combat: 'combat-gueux' } };
 
 // La piste voulue d'après ce qui se passe (null : le silence).
+//   page 'titre'        l'écran titre (avant le camp)
 //   page 'camp'         { radio: la radio du camp est allumée, lieu: l'id du lieu où se tient le héros ou null }
 //   page 'entrainement' { aventure, niveau (l'id), phase, repere, resultat } — l'état du combat (regles.js)
 export function pisteVoulue(e) {
+  if (e.page === 'titre') return 'camp';                        // l'écran titre : la musique du camp (elle continue au camp, sans coupure)
   if (e.page === 'camp') {
     if (e.radio) return null;                                   // la radio du barde est allumée : elle seule
     return MUSIQUE_DES_LIEUX[e.lieu] ?? 'camp';

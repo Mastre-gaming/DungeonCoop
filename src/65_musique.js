@@ -38,7 +38,7 @@ export function etatEntrainement(S, { aventure = null, niveau = null } = {}) {
 }
 
 const FONDU = { defaut: 1.4, combat: 0.7, retourCombat: 2, radio: 1.2 };    // secondes de fondu enchaîné
-let game, options, mixage = null, music = null, ctxPerso = null, voulue = null, jouee = null, lieu = null, charge = false, desabonner = [];
+let forcage = null, panneau = null, game, options, mixage = null, music = null, ctxPerso = null, voulue = null, jouee = null, lieu = null, charge = false, desabonner = [];
 const fichiers = () => fichiersTrouves(options.liste ?? undefined, options.pistes ?? PISTES);
 
 export function init(g, o = {}) {
@@ -50,6 +50,7 @@ export function init(g, o = {}) {
     for (const type of ['pointerdown', 'keydown']) { addEventListener(type, eveil); desabonner.push(() => removeEventListener(type, eveil)); }
     if (navigator.userActivation?.hasBeenActive) api.eveil();     // (un geste a déjà eu lieu : le clic sur « Jouer » de l'écran titre)
   }
+  if (new URLSearchParams(location.search).has('musique')) construirePanneau();
   desabonner.push(g.bus.on('reglages:maj', (r) => mixage?.volumes({ musique: r?.musique, fx: r?.effets })));
   return api;
 }
@@ -71,7 +72,7 @@ async function charger() {
 
 export function update(dt) {
   if (!music) return;
-  const e = options.etat?.() ?? {};
+  const e = forcage ? { ...forcage } : options.etat?.() ?? {};
   if (e.page === 'camp') e.lieu = lieu = lieuDuHeros(options.heros?.heros ?? null, lieu);
   const v = pisteVoulue(e);
   if (v !== voulue) {
@@ -90,6 +91,7 @@ export function dispose() {
   desabonner = [];
   music?.play(null, { fade: 0.05 });
   if (ctxPerso) { ctxPerso.close?.().catch?.(() => {}); ctxPerso = null; }
+  panneau?.remove(); panneau = null; forcage = null;
   mixage = null; enregistrerMixage(null);
 }
 
@@ -117,8 +119,39 @@ export const api = {
   // Pour les tests : une piste fabriquée (un AudioBuffer) à la place du fichier.
   poserPiste(id, buffer, comment = {}) { music?.add(id, buffer, comment); },
   signalerFx,
+  // Force un état (comme si on y était) ; null : le vrai jeu reprend la main. Pour écouter les transitions (?musique).
+  forcer(e) { forcage = e; },
   etat() { return { voulue, jouee: api.jouee, lieu, trouvees: fichiers(), son: !!mixage, manquantes: Object.keys(PISTES).filter((i) => !music?.has(i)) }; },
 };
+
+// --- Le jukebox (?musique) : un bouton par moment du jeu, la musique y passe en direct, par les mêmes règles et les mêmes fondus.
+const MOMENTS = [
+  ['Réel (le jeu décide)', null],
+  ['Écran titre (musique du camp)', { page: 'titre' }],
+  ['Camp', { page: 'camp', radio: false, lieu: null }],
+  ['Radio du barde allumée', { page: 'camp', radio: true, lieu: null }],
+  ['Terrain d’entraînement', { page: 'camp', radio: false, lieu: 'combat' }],
+  ['Sentier : forêt (on marche)', { page: 'entrainement', aventure: 'camp-des-mastres', niveau: 'sentier-des-gueux', phase: 'exploration', repere: false }],
+  ['Sentier : repérés → combat', { page: 'entrainement', aventure: 'camp-des-mastres', niveau: 'sentier-des-gueux', phase: 'exploration', repere: true }],
+  ['Sentier : combat fini → forêt', { page: 'entrainement', aventure: 'camp-des-mastres', niveau: 'sentier-des-gueux', phase: 'exploration', repere: false }],
+  ['Sentier : défaite (silence)', { page: 'entrainement', aventure: 'camp-des-mastres', niveau: 'sentier-des-gueux', phase: 'fini', resultat: 'defaite' }],
+];
+function construirePanneau() {
+  const el = document.createElement('div');
+  el.style.cssText = 'position:fixed;right:12px;top:12px;z-index:99999;background:#2b1d10ee;border:2px solid #c9a24a;border-radius:6px;padding:8px;font:13px sans-serif;color:#f3e6c4;display:flex;flex-direction:column;gap:4px;min-width:230px';
+  const titre = document.createElement('strong'); titre.textContent = 'Jukebox (?musique)';
+  const joue = document.createElement('div'); joue.style.cssText = 'font-size:12px;opacity:.85;margin-bottom:2px';
+  el.append(titre, joue);
+  const boutons = MOMENTS.map(([nom, e]) => {
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = nom;
+    b.style.cssText = 'cursor:pointer;text-align:left;padding:5px 8px;background:#5a3d1e;color:#f3e6c4;border:1px solid #c9a24a;border-radius:4px';
+    b.onclick = () => { forcage = e; api.eveil(); boutons.forEach((x) => { x.style.background = x === b ? '#8a5a1e' : '#5a3d1e'; }); };
+    el.append(b); return b;
+  });
+  boutons[0].style.background = '#8a5a1e';
+  setInterval(() => { joue.textContent = `joue : ${music?.playing ?? 'rien'} · voulue : ${voulue ?? 'silence'}`; }, 200);
+  document.body.append(el); panneau = el;
+}
 
 // --- Les vérifications (?test) ------------------------------------------------------------------------------------
 // Hors ligne : un OfflineAudioContext, des pistes fabriquées, et le niveau de la musique mesuré dans le rendu.
@@ -134,6 +167,7 @@ const rms = (d, a, z) => { let s = 0; for (let i = Math.round(a * SR); i < Math.
 export async function selfTest(t) {
   t.group('le moteur son : qui joue quand');
   const camp = (o = {}) => pisteVoulue({ page: 'camp', radio: false, lieu: null, ...o });
+  t.eq(pisteVoulue({ page: 'titre' }), 'camp', 'l’écran titre : la musique du camp (qui continue au camp)');
   t.eq(camp(), 'camp', 'au camp, la musique du camp joue par défaut');
   t.eq(camp({ radio: true }), null, 'la radio du camp allumée : la musique du camp se coupe (la radio seule)');
   t.eq(camp({ radio: false }), 'camp', 'la radio éteinte : la musique du camp revient');
@@ -152,9 +186,9 @@ export async function selfTest(t) {
   t.eq(sent({ niveau: 'gue' }), null, 'un niveau sans musique : le silence');
 
   t.group('le moteur son : les fichiers');
-  t.eq(fichiersTrouves([]), { camp: null, entrainement: null, foret: null, 'combat-gueux': null }, 'aucun fichier déposé : toutes les pistes absentes (le moteur se tait)');
+  t.eq(fichiersTrouves([]), { menu: null, camp: null, entrainement: null, foret: null, 'combat-gueux': null }, 'aucun fichier déposé : toutes les pistes absentes (le moteur se tait)');
   t.eq(fichiersTrouves(['Camp.MP3', 'foret.wav', 'combat-sentier-des-gueux.ogg', 'notes.txt', 'entrainement.pdf']),
-    { camp: 'Camp.MP3', entrainement: null, foret: 'foret.wav', 'combat-gueux': 'combat-sentier-des-gueux.ogg' }, 'un fichier au nom attendu suffit (mp3, wav, ogg… sans tenir compte de la casse) ; le reste est ignoré');
+    { menu: null, camp: 'Camp.MP3', entrainement: null, foret: 'foret.wav', 'combat-gueux': 'combat-sentier-des-gueux.ogg' }, 'un fichier au nom attendu suffit (mp3, wav, ogg… sans tenir compte de la casse) ; le reste est ignoré');
 
   t.group('le moteur son : le mixage mesuré hors ligne');
   const dur = 4, off = new OfflineAudioContext(2, SR * dur, SR);
@@ -193,7 +227,7 @@ export async function selfTest(t) {
   options.liste = [];                                         // aucun fichier : rien à charger, le moteur se tait
   api.eveil(off3);
   t.ok(!!mixage && music.ctx === off3, 'le premier geste ouvre le son : un mixage, une musique branchée dessus');
-  t.eq(api.etat().trouvees, { camp: null, entrainement: null, foret: null, 'combat-gueux': null }, 'aucune piste déposée');
+  t.eq(api.etat().trouvees, { menu: null, camp: null, entrainement: null, foret: null, 'combat-gueux': null }, 'aucune piste déposée');
   let e = { page: 'camp', radio: false };
   options.etat = () => e; options.heros = null;
   update(0.1);
