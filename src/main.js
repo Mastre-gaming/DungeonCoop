@@ -73,6 +73,7 @@ import * as departSkill from './63_depart.js';
 import * as synchroSkill from './59_synchro.js';
 import * as sauvegardeSkill from './60_sauvegarde.js';
 import * as desSkill from './61_des.js';
+import * as carteSkill from './64_carte.js';
 import { ecranTitre, sauterTitre, retourAuDashboard } from './45_titre.js';
 import './jeu.css';
 import './cadres.css';   // les jetons de DESIGN.fr.md
@@ -191,6 +192,9 @@ async function demarrer(sortieTitre) {
   const vote = game.use(voteSkill, { party: () => reseau.party, run: () => run.courante, nom: nomDuVote, visite });
   const synchro = game.use(synchroSkill, { party: () => reseau.party, run: () => run, nom: nomDuVote });
   const sauvegarde = game.use(sauvegardeSkill, { party: () => reseau.party, run: () => run, joueurs: () => synchro.joueurs(), visite, horsLigne: query.has('test') });
+  // la carte de la tour (T) : les 25 salles découvertes au fil de la run ; elle s'ouvre toute seule après une salle gagnée
+  const carte = game.use(carteSkill, { run: () => run, visite });
+  hud.brancher('carte', carte);
   if (query.has('run') && !query.has('test')) run.nouvelle({ heros: ['Aldric', 'Brune', 'Cendre', 'Dune'] }).partir();   // ?run : une run d'essai, avec son bandeau
   // les héros qu'on peut incarner se promènent dans le camp et parlent (E) ; un héros pris par un joueur s'en va.
   // (après tous les autres : E sert d'abord aux lieux et aux personnages du camp, puis aux promeneurs)
@@ -231,7 +235,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { bus: game.bus, des, depart: depart_, run, vote, sauvegarde, synchro, rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, contrat, tableCartes, tests: camptests });
+  Object.assign(game.dbg, { bus: game.bus, des, depart: depart_, run, vote, sauvegarde, synchro, rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, carte, contrat, tableCartes, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

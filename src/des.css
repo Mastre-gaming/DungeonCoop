@@ -123,3 +123,15 @@
   #des, .des-cadre, .verdict, .calcul .tot, #des footer .bouton-jeu { animation: none !important; }
   .etincelle, .piece { display: none; }
 }
+
+/* Le jet court (en plein combat) : un petit cadre en haut de l'écran, sans table ni bonus ; il ne prend ni le clic ni le fond. */
+#des.court { place-items: start center; padding: 56px 0 0; background: none; }
+#des.court .des-cadre { pointer-events: none; width: auto; min-width: 220px; gap: 2px; padding: 6px 12px 8px; animation-duration: .18s; }
+#des.court h2 { font-size: .95rem; }
+#des.court .sous { font-size: .78rem; }
+#des.court .des-mods, #des.court .des-table, #des.court footer, #des.court .effet { display: none; }
+#des.court .des-corps { grid-template-columns: 1fr; }
+#des.court .des-scene { min-height: 96px; margin: 2px; }
+#des.court .de.de3d { width: 72px; height: 72px; }
+#des.court .des-paire.n2 .de.de3d { width: 64px; height: 64px; }
+#des.court .des-resultat { min-height: 44px; }

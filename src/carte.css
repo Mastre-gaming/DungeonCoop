@@ -1,0 +1,46 @@
+/* La carte de la tour (64_carte.js) : le look du jeu (DESIGN.fr.md), bois, parchemin, or. */
+#carte-tour { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; background: rgba(20, 12, 8, .86); padding: 10px 10px 0; color: var(--creme); font-family: var(--texte); }
+#carte-tour[hidden] { display: none; }
+#carte-tour * { box-sizing: border-box; }
+#carte-tour .cp-haut { display: flex; align-items: center; gap: 12px; width: min(calc(var(--e) * 160px + 18px), 100%); background: var(--bois); border: 4px solid var(--bois-fonce); border-radius: 5px; box-shadow: inset 0 0 0 2px var(--bois-clair); padding: 6px 10px; margin-bottom: 8px; flex: none; }
+#carte-tour .cp-niveau { margin: 0; width: 44px; height: 48px; flex: none; background: var(--rouge-cire); border: 3px solid var(--bois-fonce); border-radius: 4px 4px 22px 22px; box-shadow: inset 0 0 0 2px #d9645a; text-align: center; padding-top: 4px; line-height: 1; }
+#carte-tour .cp-niveau b { display: block; font: 700 20px var(--titre); color: #fff; text-shadow: 0 1px 0 #000; }
+#carte-tour .cp-niveau span { font: 500 9px var(--titre); color: #ffe2a8; }
+#carte-tour .cp-titre { flex: 1; min-width: 0; }
+#carte-tour .cp-titre b { display: block; font: 700 17px/1.1 var(--titre); color: var(--or); letter-spacing: .06em; }
+#carte-tour .cp-lieu { font: 500 13px var(--titre); color: var(--creme); }
+#carte-tour .cp-fermer, #carte-tour .cp-continuer { background: var(--bois); color: var(--creme); border: 2px solid var(--bois-fonce); border-radius: 4px; box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25); font: 500 13px var(--titre); padding: 6px 10px; min-height: 40px; cursor: pointer; }
+#carte-tour .cp-fermer:hover, #carte-tour .cp-continuer:hover { border-color: var(--or); }
+#carte-tour button:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+#carte-tour .cp-continuer { background: var(--bois-clair); border-color: var(--or); }
+
+#carte-tour .cp-carte { position: relative; width: calc(var(--e) * 160px + 18px); max-width: 100%; flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; border: 5px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 2px var(--bois-clair); background: var(--bois-fonce); scrollbar-color: var(--bois-clair) var(--bois-nuit); }
+#carte-tour #carte-fond { display: block; width: calc(var(--e) * 160px); height: calc(var(--e) * 780px); image-rendering: pixelated; margin: 0 auto; }
+#carte-tour .cp-sol { position: absolute; top: 0; left: 50%; width: calc(var(--e) * 160px); height: calc(var(--e) * 780px); transform: translateX(-50%); }
+
+#carte-tour .nd { position: absolute; transform: translate(-50%, -50%); width: calc(var(--e) * 14px); height: calc(var(--e) * 14px); min-width: 40px; min-height: 40px; padding: 0; background: var(--bois-creux); border: 2px solid var(--bois-nuit); border-radius: 4px; box-shadow: inset 0 2px 0 rgba(255, 255, 255, .1), inset 0 -3px 0 rgba(0, 0, 0, .4), 0 3px 0 rgba(0, 0, 0, .35); display: grid; place-items: center; cursor: pointer; }
+#carte-tour .nd canvas { width: 70%; height: 70%; image-rendering: pixelated; }
+#carte-tour .nd i { position: absolute; right: 3px; bottom: 0; font: 500 11px var(--titre); font-style: normal; color: #ffe2a8; text-shadow: 0 1px 0 #000; }
+#carte-tour .nd.fait { background: #4a3a24; border-color: var(--bois-fonce); }
+#carte-tour .nd.vu { background: #4a3a24; border-color: var(--bois-clair); }
+#carte-tour .nd.hors { opacity: .5; filter: grayscale(.7); }
+#carte-tour .nd.actuel { border-color: var(--or); box-shadow: 0 0 0 3px var(--or), inset 0 -3px 0 rgba(0, 0, 0, .4); animation: cp-pulse 1.2s steps(2, end) infinite; z-index: 3; }
+#carte-tour .nd.prochain { border-color: var(--creme); box-shadow: 0 0 0 2px var(--creme), inset 0 -3px 0 rgba(0, 0, 0, .4); }
+#carte-tour .nd.loin { min-width: 0; min-height: 0; width: calc(var(--e) * 8px); height: calc(var(--e) * 8px); background: var(--bois-nuit); border: 2px dashed #6d5f4a; opacity: .75; cursor: default; }
+#carte-tour .nd.sel { outline: 3px solid var(--or); outline-offset: 3px; }
+@keyframes cp-pulse { 50% { box-shadow: 0 0 0 7px rgba(255, 211, 90, .5), inset 0 -3px 0 rgba(0, 0, 0, .4); } }
+@media (prefers-reduced-motion: reduce) { #carte-tour .nd.actuel { animation: none; } }
+
+#carte-tour .lb { position: absolute; transform: translate(0, -50%); background: var(--parchemin); color: var(--parchemin-encre); border: 2px solid #b8892a; border-radius: 3px; font: 500 12px/1.1 var(--titre); padding: 3px 6px; white-space: nowrap; pointer-events: none; z-index: 2; }
+#carte-tour .lb.g { transform: translate(-100%, -50%); }
+#carte-tour .lb.ici { background: var(--or); border-color: var(--bois-fonce); }
+#carte-tour .etage { position: absolute; left: 2%; transform: translateY(-50%); background: var(--bois); border: 3px solid var(--bois-fonce); box-shadow: inset 0 0 0 2px var(--bois-clair); border-radius: 4px; color: var(--creme); font: 700 11px/1.2 var(--titre); letter-spacing: .08em; text-transform: uppercase; padding: 4px 8px; pointer-events: none; z-index: 2; }
+#carte-tour .etage span { display: block; font: 500 11px var(--titre); color: #ffe2a8; text-transform: none; letter-spacing: .02em; }
+
+#carte-tour .cp-bas { width: min(calc(var(--e) * 160px + 18px), 100%); flex: none; display: flex; gap: 10px; align-items: center; background: var(--parchemin); color: var(--parchemin-encre); border: 5px solid var(--bois-fonce); border-radius: 6px; box-shadow: inset 0 0 0 2px #cdb68c, 0 6px 0 rgba(0, 0, 0, .25); padding: 8px 12px; margin: 8px 0 max(8px, env(safe-area-inset-bottom, 0px)); }
+#carte-tour .cp-info { flex: 1; min-width: 0; }
+#carte-tour .titre-i { font: 700 15px/1.2 var(--titre); color: var(--accent-parchemin, #7a3b10); }
+#carte-tour .ligne-i { font-size: 13px; }
+
+/* le bouton de la barre d'action : la carte reste cachée quand elle est ouverte (le HUD est dessous) */
+body.carte-ouverte #barre-action { pointer-events: none; }

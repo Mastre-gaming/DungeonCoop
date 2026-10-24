@@ -79,6 +79,8 @@ let marques = {};                      // ce que l'interface demande de montrer 
 // (une clé neuve : les barres sont maintenant montrées par défaut, sous les pieds ; l'ancien choix « cachées » ne compte plus)
 const CLE_PLAQUES = 'dungeoncoop:barres-terrain';
 const plaques = { e: true, h: true }; // les barres de vie montrées : des ennemis (e), des alliés (h)
+const CLE_INTENTIONS = 'dungeoncoop:intentions-terrain';
+let intentionsVues = true;             // I : les étiquettes d'intention des ennemis, montrées ou cachées
 let calquePlaques = null;
 // Le ressenti des coups : au moment où le coup touche (l'arme ou le projectile arrive, pas à la fin de l'animation),
 // un arrêt sur image (la file et les animations attendent), une secousse de la caméra, un éclair blanc et un recul
@@ -149,6 +151,7 @@ export function init(g, options) {
   // le zoom de départ réglé en plein jeu : la caméra y glisse
   surChangement(() => { if (lire('feel.zoom') !== zoomDemande) { zoomDemande = lire('feel.zoom'); const [min, max] = bornesCrans(); cam.crans = Math.max(min, Math.min(max, zoomDemande)); } });
   try { const lu = JSON.parse(localStorage.getItem(CLE_PLAQUES)); if (lu) { plaques.e = !!lu.e; plaques.h = !!lu.h; } } catch {}
+  try { intentionsVues = localStorage.getItem(CLE_INTENTIONS) !== 'cachees'; } catch {}
 
   fx = creerEffets(rendu, images);
   films = creerFilms(rendu, images);
@@ -597,7 +600,7 @@ function scene(e) {
         viser((att.x + cible.x) / 2, (att.y + cible.y) / 2);
         des.lancer({ titre: 'Jet d’attaque', sous: `${combat.U(e.de)?.nom ?? ''} · ${e.nomCap ?? ''} → ${combat.U(e.vers)?.nom ?? ''}`, qui: combat.U(e.de)?.nom,
           avantage: e.av === 1 ? 'avantage' : e.av === -1 ? 'desavantage' : null, raison: e.raison, valeurs: e.jets, grazeMax: e.coriace ? 12 : 9,
-          mods: [{ nom: 'Maîtrise', val: e.mod }], auto: true }).then(() => { fini = true; });
+          mods: [{ nom: 'Maîtrise', val: e.mod }], auto: true, court: true }).then(() => { fini = true; });
         file.unshift({ ...e, jetMontre: true });
         return { duree: Infinity, maj() { if (fini) courant.s.duree = 0; } };
       }
@@ -746,7 +749,7 @@ function scene(e) {
       if (!des || !t) { pourEcouteurs(pour); return { duree: e.type === 'de' ? 0.5 : 0 }; }
       let fini = false;
       const qui = combat.U(e.id);
-      des.lancer({ titre: t.titre, sous: `${qui?.nom ?? ''} · ${t.sous} · DD ${t.dd}`, qui: qui?.nom, valeurs: [e.k], grazeMax: t.dd - 1, mods: [],
+      des.lancer({ titre: t.titre, sous: `${qui?.nom ?? ''} · ${t.sous} · DD ${t.dd}`, qui: qui?.nom, valeurs: [e.k], grazeMax: t.dd - 1, mods: [], court: e.type === 'de',
         paliers: { fumble: { nom: 'Échec critique', effet: t.ko }, graze: { nom: 'Raté', effet: t.ko }, hit: { nom: 'Réussi', effet: t.ok }, crit: { nom: 'Réussite éclatante', effet: t.ok } }, auto: true }).then(() => { fini = true; });
       return { duree: Infinity, maj() { if (fini) courant.s.duree = 0; }, fin() { pourEcouteurs({ ...pour, deJoue: true }); } };
     }
@@ -961,13 +964,13 @@ function grouperIntentions() {
     if (g) { g.n++; groupesIntention.set(a.id, null); } else { const v = { cle, a, n: 1 }; vus.push(v); groupesIntention.set(a.id, v); }
   }
 }
-function poserIntention(a, u) {           // au-dessus de la tête, pendant la phase des héros : ce que l'ennemi fera, et à qui
+function poserIntention(a, u) {           // (la classe « i-… » : « zone », « charge » sont déjà prises par d’autres panneaux) au-dessus de la tête, pendant la phase des héros : ce que l'ennemi fera, et à qui
   const g = groupesIntention.get(a.id);
-  const i = a.plaque.intention, o = u?.intention, voir = !!o && !!g && combat.S.phase === 'heros' && !occupe() && !a.mort && !a.cache;
+  const i = a.plaque.intention, o = u?.intention, voir = intentionsVues && !!o && !!g && combat.S.phase === 'heros' && !occupe() && !a.mort && !a.cache;
   if (i.hidden === voir) i.hidden = !voir;
   if (!voir) return;
   const texte = (INTENTION[o.quoi]?.(combat.U(o.cible)?.nom ?? '…') ?? '') + (g.n > 1 ? ` ×${g.n}` : '');
-  if (texte !== a.plaque.texteIntention) { a.plaque.texteIntention = texte; i.textContent = texte; i.className = `intention-terrain ${o.quoi}`; }
+  if (texte !== a.plaque.texteIntention) { a.plaque.texteIntention = texte; i.textContent = texte; i.className = `intention-terrain i-${o.quoi}`; }
   const e = versEcran(a.x, a.y - 66 * (a.meta.echelle ?? 1));
   i.style.transform = `translate(${Math.round(e.x)}px, ${Math.round(e.y)}px) translate(-50%, -100%)`;
 }
@@ -995,6 +998,12 @@ function poserPlaque(a) {
   p.el.classList.toggle('pres', cam.s >= 2);
   const e = versEcran(a.x, a.y + 2);
   p.el.style.transform = `translate(${Math.round(e.x)}px, ${Math.round(e.y)}px) translate(-50%, 0)`;
+}
+// I (l'interface) : montrer ou cacher les étiquettes d'intention des ennemis ; ce navigateur s'en souvient.
+export function basculerIntentions(oui = !intentionsVues) {
+  intentionsVues = !!oui;
+  try { localStorage.setItem(CLE_INTENTIONS, intentionsVues ? 'montrees' : 'cachees'); } catch {}
+  return intentionsVues;
 }
 // V, Maj+V (l'interface) : montrer ou cacher les barres d'un camp ; ce navigateur s'en souvient.
 export function basculerPlaques(camp, oui = !plaques[camp]) {
@@ -1183,7 +1192,7 @@ export function dispose() { for (const f of flottants) f.el.remove(); calquePlaq
 
 // Pour l'interface et les tests : l'état de la vue, sans y toucher.
 export const api = {
-  aff, tonneaux, braseros, get enclume() { return enclume; }, get films() { return films; }, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, effets,
+  aff, tonneaux, braseros, get enclume() { return enclume; }, get films() { return films; }, cam, jouer, occupe, surEvenement, dessinerMarques, versEcran, viser, portrait, planche, redessinerSurfaces, remplacer, basculerPlaques, basculerIntentions, effets,
   get plaques() { return { ...plaques }; },
   get marques() { return marques; },
   versMonde: (cx, cy) => { const p = rendu.versMonde(cx, cy); return { x: p.x / T, y: p.y / T }; },

@@ -13,6 +13,8 @@ export const always = true;
 
 export const PHASES = ['attente', 'roule', 'pose', 'somme', 'verdict', 'fini'];
 export const DUREES = { roule: 2.3, pose: 0.8, somme: 0.9 };
+export const DUREES_COURT = { roule: 0.7, pose: 0.25, somme: 0.3 };   // en plein combat : un jet bref, qui ne coupe pas l'action
+export const TENIR_COURT = 0.7;
 export const TENIR = 2.4;          // le verdict reste affiché (s) avant de se fermer tout seul
 export const ATTENTE_AUTO = 0.7;   // quand on regarde le jet d'un autre : on attend un instant, puis le dé part
 export const PALIERS = {
@@ -57,7 +59,8 @@ export function tirer(rng = Math.random, avantage = null, valeurs = null) {
 // --- Le jet : la machine à phases --------------------------------------------------------------------------------------
 // attente (le dé attend qu'on le lance) → roule → pose (l'autre dé s'éteint) → somme (le bonus s'ajoute) → verdict → fini.
 export function creerJet(opts = {}, rng = Math.random) {
-  const { avantage = null, mods = [], grazeMax = 9, auto = false, tenir = TENIR } = opts;
+  const { avantage = null, mods = [], grazeMax = 9, auto = false, court = false } = opts;
+  const tenir = opts.tenir ?? (court ? TENIR_COURT : TENIR), D = court ? DUREES_COURT : DUREES;
   const tirage = tirer(rng, avantage, opts.valeurs);
   const mod = mods.reduce((s, m) => s + m.val, 0);
   const total = tirage.nat + mod;
@@ -79,7 +82,7 @@ export function creerJet(opts = {}, rng = Math.random) {
     },
     // Une image de plus ; un gros pas passe plusieurs phases d'un coup (le reste du temps se reporte).
     avancer(dt) {
-      const limite = () => (phase === 'attente' ? (auto ? ATTENTE_AUTO : Infinity) : phase === 'verdict' ? tenir : DUREES[phase]);
+      const limite = () => (phase === 'attente' ? (auto ? ATTENTE_AUTO : Infinity) : phase === 'verdict' ? tenir : D[phase]);
       let reste = dt;
       while (phase !== 'fini') {
         const lim = limite();
@@ -90,7 +93,7 @@ export function creerJet(opts = {}, rng = Math.random) {
     },
     // Ce que l'écran dessine : la phase, l'avancement dans la phase (0 à 1) et le chiffre de chaque dé.
     vue() {
-      const p = DUREES[phase] ? Math.min(1, t / DUREES[phase]) : 0;
+      const p = D[phase] ? Math.min(1, t / D[phase]) : 0;
       if (phase === 'roule') {
         const k = Math.floor(14 * (1 - (1 - p) ** 2));   // des changements de plus en plus rares : le dé ralentit
         tirage.des.forEach((_, i) => { if (k !== derniers[i]) { derniers[i] = k; vus[i] = String(1 + Math.floor(Math.random() * 20)); } });
@@ -196,6 +199,7 @@ function creerEcran({ lancer, passer }) {
     racine.dataset.phase = v.phase;
     racine.dataset.palier = apres('pose') ? r.palier : '';
     racine.classList.toggle('regard', !!o.auto);
+    racine.classList.toggle('court', !!o.court);
     let impact = 0;
     des.forEach((d, i) => {
       let rot = 0, y = 0, s = 1, op = 1;
@@ -385,6 +389,9 @@ export async function selfTest(t) {
   t.eq([jet.res.nat, jet.res.garde, jet.res.total], [17, 1, 20], 'avantage : 5 et 17, on garde 17 (le premier dé s’éteint)');
   jet.lancer(); jet.avancer(DUREES.roule + 0.01);
   t.eq(jet.vue().affiche, ['5', '17'], 'les deux dés montrent leur vrai chiffre une fois posés');
+  jet = creerJet({ valeurs: [12], court: true }); jet.lancer(); jet.avancer(DUREES_COURT.roule + DUREES_COURT.pose + DUREES_COURT.somme + 0.01);
+  t.eq(jet.phase, 'verdict', 'un jet court arrive au verdict en ~1,3 s');
+  jet.avancer(TENIR_COURT + 0.01); t.ok(jet.fini, 'et se ferme tout seul vite');
   jet = creerJet({ valeurs: [6], mods: [] }); jet.lancer(); jet.avancer(0.2);
   t.ok(/^\d{1,2}$/.test(jet.vue().affiche[0]), 'pendant que le dé roule, un chiffre défile');
 
