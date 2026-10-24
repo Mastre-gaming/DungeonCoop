@@ -174,10 +174,15 @@ const bulle = (b, texte, x, y) => {
 };
 
 // L'adresse du niveau : le code du groupe (l'hôte le lance, les amis le suivent) et l'expérience de la run.
-export function adresse(chemin, { code = '', hote = false, progression = null, pv = null } = {}) {
+// Qui va au niveau : celui qui part (le contrat), et l'hôte (c'est lui qui tient le niveau) ; un ami qui est resté au camp, non.
+export const vaAuNiveau = (partants, moi, hote) => !!hote || !partants?.length || partants.some((p) => p.id === moi);
+
+export function adresse(chemin, { code = '', hote = false, progression = null, pv = null, potions = null, caillasse = 0 } = {}) {
   const q = new URLSearchParams({ aventure: AVENTURE.id, niveau: String(chemin?.niveau ?? 1) });
   if (code) { q.set('groupe', code); if (hote) q.set('hote', ''); }
   if (progression && !chemin?.neuf) { q.set('xp', String(progression.xp)); q.set('nh', String(progression.niveau)); }
+  if (potions?.length && !chemin?.neuf) q.set('po', potions.join(','));      // (les potions de chacun, et la Caillasse du groupe : elles suivent la run)
+  if (caillasse > 0 && !chemin?.neuf) q.set('ca', String(caillasse));
   if (pv?.length && !chemin?.neuf && pv.some((f) => f < 1)) q.set('pv', pv.join(','));      // (les PV gardés par la run, en fraction du maximum : le maximum suit le niveau)
   return `./entrainement.html?${q}`;
 }
@@ -217,21 +222,22 @@ export function init(g, options = {}) {
     game.bus.on('vote:fin', ({ i, options: o }) => { const c = o?.[i]; if (c?.id?.startsWith('chemin:')) ctrl.cheminChoisi(c.id); }),
     game.bus.on('party:game', (d) => ctrl.ecouter('game', d)),
     game.bus.on('party:leave', (d) => ctrl.ecouter('leave', d)),
-    game.bus.on('depart:lancer', ({ chemin }) => partir(chemin)),
+    game.bus.on('depart:lancer', ({ chemin, partants }) => partir(chemin, partants)),
   ];
   const q = new URLSearchParams(location.search);
-  if (q.get('retour') === 'victoire' && !q.has('test')) setTimeout(() => retourDeMission(q), 0);
+  if (['victoire', 'defaite'].includes(q.get('retour')) && !q.has('test')) setTimeout(() => retourDeMission(q), 0);
   return api;
 }
 
 // La mission : l'hôte (ou celui qui joue seul) tient la run ; les amis y vont avec le code du groupe.
-function partir(chemin) {
+function partir(chemin, partants = []) {
   const p = party(), hote = !p?.active || p.hosting, r = run();
+  if (!vaAuNiveau(partants, p?.id, hote)) { annoncer('Le groupe est parti sans toi : il te reste le camp.'); return; }
   if (hote && chemin) {
     const c = r?.courante;
     if (chemin.neuf || !c || !['salle', 'choix'].includes(c.phase)) r?.nouvelle({ gabarit: gabarit(), heros: HEROS_RUN, joueurs: synchro?.joueurs?.() ?? [], reelle: true, depart: { pvMax: 100, potions: 2 } }).partir();      // (100 : les PV de la run sont des pourcentages, le maximum réel dépend de la classe et du niveau)
   }
-  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, pv: pvDeLaRun() });
+  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, pv: pvDeLaRun(), potions: run()?.courante?.etat.heros.map((h) => h.potions) ?? null, caillasse: run()?.courante?.etat.caillasse ?? 0 });
   annoncer('Le groupe entre sur le chemin…');
   if (delai) setTimeout(() => naviguer(url), delai); else naviguer(url);
 }
@@ -246,12 +252,15 @@ export function retourDeMission(q) {
   const r = run();
   if (!r?.courante || r.courante.phase === 'camp') sauvegarde?.reprendre?.();
   const c = r?.courante;
-  for (const k of ['retour', 'xp', 'nh', 'niveau', 'pv']) q.delete(k);
+  for (const k of ['retour', 'xp', 'nh', 'niveau', 'pv', 'po', 'ca']) q.delete(k);
   try { history.replaceState(null, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`); } catch { /* rien à faire */ }
   if (!c || c.phase !== 'salle') return false;
+  if (q0.get('retour') === 'defaite') return c.finirSalle('defaite');      // le groupe se réveille au départ (l'XP gagnée avant reste)
   const fr = (q0.get('pv') ?? '').split(',').map(Number), rapport = {};
   c.etat.heros.forEach((h, i) => { if (Number.isFinite(fr[i])) rapport[h.id] = { pv: Math.round(Math.min(1, Math.max(0, fr[i])) * h.pvMax) }; });
-  return c.finirSalle('victoire', rapport, { xp, niveau });
+  const po = (q0.get('po') ?? '').split(',').map(Number);
+  c.etat.heros.forEach((h, i) => { if (Number.isFinite(po[i])) (rapport[h.id] ??= {}).potions = po[i]; });
+  return c.finirSalle('victoire', rapport, { xp, niveau }, { caillasse: Number(q0.get('ca')) || 0 });
 }
 
 function toucher(b) {

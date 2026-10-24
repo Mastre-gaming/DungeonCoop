@@ -67,6 +67,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
   const s = {
     gabarit, phase: 'camp', etape: -1, salle: null, options: [], heros: heros.map(faire), joueurs: [], reveil: null,
     defaites: 0, parcours: [], issue: null, reelle,
+    caillasse: 0,      // la Caillasse du groupe : elle suit la run d'un niveau à l'autre (et sa sauvegarde)
     progression: { xp: 0, niveau: 1 },      // l'expérience du groupe (entrainement/progression.js) : elle suit la run et sa sauvegarde, pas l'aventure relancée
   };
   // Les héros aux joueurs, à tour de rôle : avec deux joueurs, deux héros chacun ; avec trois, 2-1-1 ; avec quatre, un chacun.
@@ -185,13 +186,15 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     // réveille au dernier repos (ou au départ, s'il n'y en a pas eu) avec les héros tels qu'ils y étaient ; la salle perdue
     // garde ses ennemis (les salles s'en souviendront). Le tirage de défaite (le d20) viendra avec les héros.
     // `progression` : { xp, niveau } du groupe à la fin de la salle (l'XP d'une salle perdue est perdue avec elle ; elle ne recule jamais).
-    finirSalle(issue, rapport, progression = null) {
+    // `butin` : { caillasse } du groupe à la fin de la salle (perdue avec une salle perdue).
+    finirSalle(issue, rapport, progression = null, butin = null) {
       if (s.phase !== 'salle') return false;
       if (!['victoire', 'defaite', 'abandon'].includes(issue)) return false;
       if (issue !== 'defaite' && rapport) rapporter(rapport);
       if (issue !== 'defaite' && progression && Number.isFinite(progression.xp) && Number.isFinite(progression.niveau)) {
         s.progression = { xp: Math.max(s.progression.xp, Math.round(progression.xp)), niveau: Math.max(s.progression.niveau, Math.round(progression.niveau)) };
       }
+      if (issue !== 'defaite' && Number.isFinite(butin?.caillasse)) s.caillasse = Math.max(0, Math.round(butin.caillasse));
       s.parcours.push({ salle: s.salle.id, issue });
       if (issue === 'abandon') return finir('abandon');
       if (issue === 'defaite') {
@@ -222,7 +225,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     },
     // Une copie de la run, sans rien qui bouge : pour l'envoyer à un autre onglet ou la ranger.
     instantane() { return copie({ ...s, salle: s.salle, options: s.options }); },
-    restaurer(i) { Object.assign(s, copie(i)); s.progression ??= { xp: 0, niveau: 1 }; return api; },      // (une ancienne sauvegarde n'a pas d'XP : niveau 1)
+    restaurer(i) { Object.assign(s, copie(i)); s.progression ??= { xp: 0, niveau: 1 }; s.caillasse ??= 0; return api; },      // (une ancienne sauvegarde n'a pas d'XP : niveau 1)
     get progression() { return s.progression; },
   };
 

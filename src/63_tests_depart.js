@@ -2,7 +2,7 @@
 // à plusieurs (l'hôte mène, Ben reste au camp, Ana s'éloigne ou part). Appelées par le selfTest de 63_depart.js.
 import AVENTURE from '../content/aventures/camp-des-mastres.json';
 import { T } from './01_plan.js';
-import { creerDepart, chemins, gabarit, adresse, dansPorte, auBout, PORTE, BOUT, HEROS_RUN } from './63_depart.js';
+import { creerDepart, chemins, gabarit, adresse, vaAuNiveau, dansPorte, auBout, PORTE, BOUT, HEROS_RUN } from './63_depart.js';
 import { creerRun } from './57_run.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 
@@ -40,6 +40,9 @@ export async function testsDepart(t) {
   t.eq(adresse({ niveau: 1, neuf: true }, { progression: { xp: 120, niveau: 2 } }), './entrainement.html?aventure=camp-des-mastres&niveau=1', 'seul, et en recommençant : ni code ni XP (niveau 1)');
   t.ok(dansPorte({ x: PORTE.x, y: PORTE.y }) && !dansPorte({ x: PORTE.x, y: PORTE.y + 6 * T }) && auBout({ x: BOUT.x, y: BOUT.y }) && !auBout({ x: BOUT.x, y: BOUT.y - 5 * T }), 'la grande porte et le bout du chemin sont deux zones distinctes');
 
+  t.eq(adresse({ niveau: 1 }, { progression: { xp: 5, niveau: 1 }, potions: [2, 1, 0, 2], caillasse: 40 }), './entrainement.html?aventure=camp-des-mastres&niveau=1&xp=5&nh=1&po=2%2C1%2C0%2C2&ca=40', 'les potions de chacun et la Caillasse du groupe suivent la run');
+  const [a, b] = [{ id: 'ana' }, { id: 'ben' }];
+  t.ok(vaAuNiveau([a], 'ana', false) && !vaAuNiveau([a], 'ben', false) && vaAuNiveau([a], 'host', true) && vaAuNiveau([], 'ben', false), 'ceux qui sont restés au camp n’y vont pas ; l’hôte y va toujours (c’est lui qui tient le niveau)');
   t.group('le départ : seul');
   {
     const vus = [], solo = creerDepart({ emettre: (n, d) => vus.push([n, d]) });

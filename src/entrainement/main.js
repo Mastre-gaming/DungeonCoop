@@ -96,13 +96,15 @@ async function demarrer() {
     // la salle jouée : celle d'une aventure (un tronçon), ou celle d'essai / de la route (salles.js)
     const monde = niveau ? niveau.options : { departs: SALLE.DEPARTS, tonneaux: SALLE.TONNEAUX, flaque: SALLE.FLAQUE, surfaces: SALLE.SURFACES, ennemis: SALLE.ENNEMIS ?? null };
     const creer = (eq, infini = null) => {
-      const c = creerCombat({ trame, salle, ...monde, equipe: eq, alea, infini, progression, pvDepart });
+      const c = creerCombat({ trame, salle, ...monde, equipe: eq, alea, infini, progression, pvDepart, potionsDepart, caillasseDepart });
       if (saison === 'hiver') c.S.curiosites = c.S.curiosites.filter((o) => o.sorte !== 'canard');   // (en hiver, pas de canard à taquiner)
       return c;
     };
   // l'XP du groupe (progression.js) : d'après le plan de l'aventure ; ?xp= et ?nh= viennent de la run sauvegardée (sinon, niveau 1 : relancer l'aventure repart de zéro)
   const progression = niveau ? { plan: PROGRESSION.planDe(AVENTURE.aventure(query.get('aventure'))), xp: query.get('xp'), niveau: query.get('nh') } : null;
   const pvDepart = niveau && query.get('pv') ? query.get('pv').split(',').map((v) => Math.min(1, Math.max(0, Number(v)))).map((v) => (Number.isFinite(v) ? v : null)) : null;      // ?pv=1,0.6,1,0.25 : les PV de chacun au départ, en fraction de son maximum
+  const nombres = (cle) => (niveau && query.get(cle) ? query.get(cle).split(',').map((v) => (Number.isFinite(Number(v)) ? Math.max(0, Math.round(Number(v))) : null)) : null);      // ?po=2,1,2,2 : les potions de chacun ; ?ca=40 : la Caillasse du groupe
+  const potionsDepart = nombres('po'), caillasseDepart = Number(query.get('ca')) || 0;
   let combat = creer(equipe);
   // Un autre combat sans recharger la page (une autre équipe, Rejouer, le lobby à plusieurs) ; copie : l'état de l'hôte.
   // infini : la manche à jouer (mode infini : DEBUT_INFINI, puis suiteInfini() de la manche gagnée)

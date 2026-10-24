@@ -255,14 +255,14 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 // braseros : leurs places [x, y] (un héros au contact peut en renverser un : le feu prend sur le foin qui le touche).
 export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null,
   rencontre = null, types = {}, objectif = 'vaincre-tous', foin = [], braseros = [], cachettes = [], recompense = null,
-  fourches = [], colporteurs = [], bornes = [], groupeDe = {}, renforts = {}, combats = null, eaux = [], incidents = [], pnjs = [], portes = [], curiosites = [], declencheurs = [], leviers = [], rondes = {}, trouvailles = [], progression = null, pvDepart = null }) {
+  fourches = [], colporteurs = [], bornes = [], groupeDe = {}, renforts = {}, combats = null, eaux = [], incidents = [], pnjs = [], portes = [], curiosites = [], declencheurs = [], leviers = [], rondes = {}, trouvailles = [], progression = null, pvDepart = null, caillasseDepart = 0, potionsDepart = null }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
   // --- L'état (des données seulement : on peut le copier pour « Annuler ») ---------------------------------------
   const S = {
     mode, round: 1, gi: 0, phase: 'preparation', ordre: [], unites: [], tonneaux: [], braseros: [], enclume: null, surfaces: {}, journal: [], evenements: [],
-    objectif, cachettes: cachettes.map((c) => ({ ...c, trouvee: false, fouillePar: [], reperee: false, essais: [] })), trouvailles: trouvailles.map((o) => ({ ...o, fait: false })), caillasse: 0, repere: null, recompense, question: null, groupeActif: null, incidents: incidents.map((i) => ({ ...i, fait: false })),
+    objectif, cachettes: cachettes.map((c) => ({ ...c, trouvee: false, fouillePar: [], reperee: false, essais: [] })), trouvailles: trouvailles.map((o) => ({ ...o, fait: false })), caillasse: Math.max(0, Math.round(caillasseDepart) || 0), repere: null, recompense, question: null, groupeActif: null, incidents: incidents.map((i) => ({ ...i, fait: false })),
     combats: combats ?? { principal: { objectif, recompense } }, arrivee: false,
     leviers: leviers.map((l) => ({ ...l, fait: false })), portes: portes.map((p) => ({ ...p, ouverte: false, herseLevee: false })), declencheurs: declencheurs.map((o) => ({ ...o, fait: false })),
     curiosites: curiosites.map((c) => ({ ...c, faits: 0, fait: false, parti: false, couronne: false })),
@@ -281,7 +281,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   PLACES.forEach((id, k) => {
     const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv') * facteurNiveau())) + PROG.PV_PAR_NIVEAU * ((S.progression?.niveau ?? 1) - 1), fraction = pvDepart?.[k] ?? infini?.fractions?.[PLACES[k]], pvDep = fraction != null ? Math.max(1, Math.round(fraction * pvH)) : pvH;      // (la fraction de PV que la run garde d'un niveau à l'autre ; le maximum, lui, suit le niveau)
     const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
-    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvDep, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: lire('potion.nb') }));
+    S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvDep, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: potionsDepart?.[k] ?? lire('potion.nb') }));
   });
   for (const [type, f] of Object.entries(FAMILIERS)) {
     for (const m of S.unites.filter((u) => u.camp === 'h' && u.type === f.maitre)) {

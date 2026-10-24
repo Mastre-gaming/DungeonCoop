@@ -200,6 +200,11 @@ export async function selfTest(t) {
   t.eq(rx.progression, { xp: 130, niveau: 2 }, 'une salle perdue ne rapporte rien');
   const ancienne = JSON.parse(JSON.stringify(SX.get().run)); delete ancienne.progression;
   t.eq(rejouer(ancienne, J('Hôte')).progression, { xp: 0, niveau: 1 }, 'une ancienne sauvegarde sans XP : niveau 1');
+  const rc = creerRun({ heros: HEROS, joueurs: J('Hôte') }); rc.partir();
+  rc.finirSalle('victoire', null, null, { caillasse: 40 });
+  t.eq(rc.etat.caillasse, 40, 'une salle gagnée : la Caillasse du groupe suit la run');
+  rc.finirSalle('defaite', null, null, { caillasse: 999 });
+  t.eq(rc.etat.caillasse, 40, 'une salle perdue ne rapporte rien');
   const neuve = creerRun({ heros: HEROS, joueurs: J('Hôte') }); neuve.partir();
   t.eq(neuve.progression, { xp: 0, niveau: 1 }, 'une nouvelle run (l’aventure relancée) repart du niveau 1');
 
