@@ -19,6 +19,7 @@ export const CASES = [
   { id: 'groupe', nom: 'Le groupe', touche: 'KeyP', icone: [7, 0] },
   { id: 'campagne', nom: 'La campagne', touche: 'KeyC', icone: [6, 1] },
   { id: 'chronique', nom: 'Chronique du camp', touche: 'KeyN', icone: [10, 1] },
+  { id: 'carte', nom: 'La carte de la tour', touche: 'KeyT', icone: 'carte' },
   { id: 'sacoche', nom: 'La sacoche', touche: 'KeyI', icone: [8, 0] },
   { id: 'rumeurs', nom: 'Rumeurs de la taverne', touche: 'KeyR', icone: [7, 1] },
   { id: 'lettres', nom: 'Boîte aux lettres', touche: 'KeyM', icone: 'enveloppe' },
@@ -46,6 +47,12 @@ function icone(images, src) {
     r(5, 9, 22, 15, '#2b1c1d'); r(6, 10, 20, 13, '#f3e7c9'); r(6, 20, 20, 3, '#e4d4ac');
     for (let k = 0; k < 10; k++) { r(6 + k, 10 + k, 1, 1, '#85581b'); r(25 - k, 10 + k, 1, 1, '#85581b'); }
     r(14, 18, 4, 3, '#b8322a'); r(15, 19, 2, 1, '#e8792a');   // le cachet de cire
+  } else if (src === 'carte') {   // un parchemin roulé, son sentier pointillé et sa croix rouge (la carte de la tour)
+    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
+    r(4, 6, 24, 21, '#2b1c1d'); r(5, 7, 22, 19, '#f4ead2'); r(5, 7, 22, 2, '#cdb68c'); r(5, 24, 22, 2, '#cdb68c');
+    r(2, 5, 3, 23, '#85581b'); r(27, 5, 3, 23, '#85581b'); r(2, 5, 3, 1, '#b78c41'); r(27, 5, 3, 1, '#b78c41');
+    for (const [x, y] of [[8, 21], [11, 19], [14, 20], [17, 17], [20, 15], [22, 12]]) r(x, y, 2, 2, '#85581b');
+    for (let k = 0; k < 5; k++) { r(21 + k, 10 + k, 1, 1, '#b8322a'); r(25 - k, 10 + k, 1, 1, '#b8322a'); }
   } else if (src === 'engrenage') {   // un engrenage en bronze, pixel par pixel (les réglages)
     for (let y = 0; y < 32; y++) for (let x = 0; x < 32; x++) {
       const dx = x + 0.5 - 16, dy = y + 0.5 - 16, d = Math.hypot(dx, dy), a = Math.atan2(dy, dx);

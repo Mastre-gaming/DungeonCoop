@@ -126,6 +126,7 @@ export function testsHudEpique(t, ctx, game) {
   const sans = [];
   for (const c of hud.CASES) {
     if (c.id === 'dashboard') continue;   // (elle n'ouvre pas de panneau : elle part vers le dashboard)
+    if (c.id === 'carte') continue;       // (la carte de la tour est un écran plein, testé dans 64_carte.js)
     if (!hud.activer(c.id)) continue;
     game.dbg.advance(0.02);
     const ouverts = [...document.querySelectorAll('.panneau-missions, .cadres-groupe, .carte-campagne, .chronique-camp, .sacoche, .rumeurs, .messagerie-jeu')].filter(visible);

@@ -67,6 +67,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
   const s = {
     gabarit, phase: 'camp', etape: -1, salle: null, options: [], heros: heros.map(faire), joueurs: [], reveil: null,
     defaites: 0, parcours: [], issue: null, reelle,
+    decouvert: 0,                           // jusqu'où le groupe a vu la carte de la tour (64_carte.js) : le nombre de salles atteintes, il ne recule jamais
     progression: { xp: 0, niveau: 1 },      // l'expérience du groupe (entrainement/progression.js) : elle suit la run et sa sauvegarde, pas l'aventure relancée
   };
   // Les héros aux joueurs, à tour de rôle : avec deux joueurs, deux héros chacun ; avec trois, 2-1-1 ; avec quatre, un chacun.
@@ -173,7 +174,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     partir(ids = s.heros.map((h) => h.id)) {
       if (s.phase !== 'camp') return false;
       const avant = new Map(s.heros.map((h) => [h.id, h.joueur]));
-      Object.assign(s, { heros: ids.map((j) => Object.assign(faire(j), { joueur: avant.get(typeof j === 'string' ? j : j.id) ?? null })), etape: -1, salle: null, defaites: 0, parcours: [], issue: null });
+      Object.assign(s, { heros: ids.map((j) => Object.assign(faire(j), { joueur: avant.get(typeof j === 'string' ? j : j.id) ?? null })), etape: -1, salle: null, defaites: 0, parcours: [], issue: null, decouvert: 0 });
       s.reveil = { salle: null, heros: copie(s.heros) };   // avant le premier repos, on se réveille au départ
       dire('depart', { heros: s.heros });
       return avancer();
@@ -222,7 +223,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     },
     // Une copie de la run, sans rien qui bouge : pour l'envoyer à un autre onglet ou la ranger.
     instantane() { return copie({ ...s, salle: s.salle, options: s.options }); },
-    restaurer(i) { Object.assign(s, copie(i)); s.progression ??= { xp: 0, niveau: 1 }; return api; },      // (une ancienne sauvegarde n'a pas d'XP : niveau 1)
+    restaurer(i) { Object.assign(s, copie(i)); s.progression ??= { xp: 0, niveau: 1 }; s.decouvert ??= Math.max(0, s.etape + 1); return api; },      // (une ancienne sauvegarde n'a pas d'XP : niveau 1)
     get progression() { return s.progression; },
   };
 
@@ -230,7 +231,7 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
   function avancer() {
     const prochaine = etapes[s.etape + 1];
     if (!prochaine) return finir('victoire') ?? true;
-    s.etape += 1;
+    s.etape += 1; s.decouvert = Math.max(s.decouvert ?? 0, s.etape + 1);
     if (prochaine.length === 1) return entrer(prochaine[0]) ?? true;
     s.phase = 'choix'; s.salle = null; s.options = prochaine;
     dire('choix', { etape: s.etape, options: prochaine });
