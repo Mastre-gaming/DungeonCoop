@@ -21,6 +21,7 @@ const ICONES = {
   batonNoue: 'baton', mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
   crocs: 'crocs', bond: 'bond', curee: 'curee', poing: 'poing', etreinte: 'liane', devorer: 'devorer',
   braise: 'etincelle', embrasement: 'embrasement', armesArdentes: 'lameArdente',
+  riff: 'tirRapide', ballade: 'soin', courseEffrenee: 'chant', powerChord: 'ralliement', solo: 'fracas',          // (en attendant leurs icônes à eux)
 };
 // La sorte de chaque capacité, pour la barre des sorts (les sortes de CLASS_TEMPLATE.fr.md, plus le familier et le commun).
 // Une capacité absente d'ici prend sa sorte d'après ce qu'elle fait (sorteDe).
@@ -45,7 +46,7 @@ const SORTE = {
 export function sorteDe(id, cap) {
   if (SORTE[id]) return SORTE[id];
   if (cap.chien) return 'familier';
-  if (['soin', 'soinZone', 'inspiration'].includes(cap.type)) return 'soutien';
+  if (['soin', 'soinZone', 'inspiration', 'puissance'].includes(cap.type)) return 'soutien';
   if (cap.type === 'attaque') return cap.cout || cap.contreGele ? 'exploitation' : 'base';
   return 'preparation';
 }
@@ -113,6 +114,8 @@ export function resume(cap) {
     case 'huileCible': return 'Huilé';
     case 'attraction': return `attire ${metres(cap.longueur)} m`;
     case 'inspiration': return 'avantage';
+    case 'course': return '+3 m · désengagé';
+    case 'puissance': return '+d6 au prochain coup';
     case 'forge': return cap.forge === 'lame' ? '+d6 · feu' : 'bouclier 10';
     case 'tenailles': return `attire ${metres(cap.longueur)} m`;
     case 'moquerie': return 'Exposé';

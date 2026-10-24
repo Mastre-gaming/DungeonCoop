@@ -30,7 +30,7 @@ Les coups d'équipe | deux classes côte à côte dépensent leur action ensembl
 ## Ce qui est bâti
 - Le terrain d'entraînement : le combat de la Salle d'essai, sans cases, en pixel art LPC #14
 - Le combat d'essai D1 : gagné au round 5, 4 combos, « fun » 9/10 #25
-- À plusieurs : le groupe entre ensemble, chacun choisit sa classe #80
+- À plusieurs : le groupe entre ensemble, chacun choisit sa classe #80 ; l’hôte choisit la salle, le groupe le suit #283
 - Les classes d'essai à l'entrée #76
 - La première vraie classe jouable au terrain : Shadow, de Fraps #198
 - Les attaques d'opportunité, et Se désengager (à l'essai) #231

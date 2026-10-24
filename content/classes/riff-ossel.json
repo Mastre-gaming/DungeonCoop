@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "id": "riff-ossel",
+  "nom": "Riff Ossel",
+  "auteur": "DonBabaa",
+  "phrase": "Un squelette rockeur qui joue la bataille : plus ses alliés cognent, plus la guitare-hache hurle.",
+  "role": "soutien",
+  "twist": "un soutien offensif : il tire de loin, soigne même les K.O., et plus l'équipe attaque, plus ses riffs sont puissants",
+  "archetype": "Support",
+  "caracs": { "FOR": 8, "DEX": 14, "CON": 12, "INT": 11, "SAG": 12, "CHA": 15 },
+  "pv": 100,
+  "vitesse": 6,
+  "ressource": "rythme",
+  "capacites": [
+    { "nom": "Riff", "sorte": "base", "slot": "action", "portee": "longue", "zone": "aucune", "carac": "DEX", "cout": "", "effet": "un riff perçant de la guitare-hache, à 9 m : 8 + d4 + DEX ; il profite d'une cible À terre ou Exposée (avantage). Au contact d'un ennemi, la même attaque devient un coup de la guitare-hache tenue comme une hache (même dégâts) : il a donc une attaque d'opportunité", "cree": [], "utilise": ["aterre", "expose"], "renforts": [] },
+    { "nom": "Ballade", "sorte": "soutien", "slot": "action", "portee": "longue", "zone": "aucune", "carac": "SAG", "cout": "2 Rythme pour relever un allié K.O.", "effet": "soigne un allié à 9 m : 8 + d4 + SAG, et retire un état (Brûlure, Gelé ou Huilé). Sur un allié K.O. : il le relève à distance à 25 PV (2 Rythme, une fois par combat)", "cree": [], "utilise": [], "renforts": ["effet", "effet"] },
+    { "nom": "Course effrénée", "sorte": "preparation", "slot": "bonus", "portee": "longue", "zone": "aucune", "carac": "CHA", "cout": "1 Rythme", "effet": "le tempo s'emballe : un allié à 9 m gagne 3 m de déplacement ce tour et peut s'éloigner d'un ennemi sans attaque d'opportunité", "cree": ["mobilite"], "utilise": [], "renforts": [] }
+  ],
+  "montee": [
+    { "niveau": 2, "nom": "Power chord", "sorte": "soutien", "slot": "bonus", "portee": "longue", "carac": "CHA", "cout": "1 Rythme", "effet": "la prochaine attaque d'un allié à 9 m fait +d6", "cree": ["buff-degats"] },
+    { "niveau": 3, "nom": "sous-classe", "effet": "Virtuose ou Rockstar" },
+    { "niveau": 5, "nom": "Solo de la hache", "sorte": "exploitation", "slot": "action", "portee": "contact", "carac": "DEX", "cout": "3 Rythme", "effet": "un coup effréné de guitare-hache sur un ennemi au contact : 14 + d6 + DEX, la cible est Exposée ; puis Riff Ossel bondit en arrière jusqu'à 4,5 m dans la direction de son choix (un bond n'est pas une marche : pas d'attaque d'opportunité)", "cree": ["expose"] },
+    { "niveau": 6, "nom": "coup d'équipe", "effet": "à écrire avec une autre classe (idée : Baba le lance en arrière d'un coup de marteau)" },
+    { "niveau": 9, "nom": "Final de concert", "sorte": "amelioration", "effet": "le Solo de la hache repousse d'une case les ennemis voisins de la cible, et les alliés à 3 m de Riff ont l'avantage à leur prochaine attaque" }
+  ],
+  "faiblesse": "Os fragiles : les dégâts de poussée, de mur et de chute lui font ×2",
+  "sousClasses": [
+    { "nom": "Virtuose", "idee": "le hard rock plus fort, plus offensif : le Power chord touche deux alliés, le Riff traverse jusqu'à deux cibles alignées, le Solo coûte moins de Rythme" },
+    { "nom": "Rockstar", "idee": "le spectacle : il pose un ampli au sol qui soigne ou accélère les alliés autour de lui tant qu'il tient" }
+  ],
+  "look": {
+    "corps": "un squelette grand et maigre, un grand sourire de crâne, une énorme afro",
+    "tenue": "veste de rockstar cloutée, pantalon noir, bottes à talon, lunettes noires sur les orbites",
+    "touche": "une guitare-hache sur le dos : un manche de guitare électrique qui finit en lame, avec un petit ampli à la ceinture",
+    "lien": "",
+    "base": "riff-ossel"
+  },
+  "references": "Brook (One Piece) pour la silhouette ; le hard rock (guitare-hache, ampli, solo) pour le reste"
+}
