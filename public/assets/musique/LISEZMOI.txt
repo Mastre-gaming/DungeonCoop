@@ -1,0 +1,13 @@
+LES MUSIQUES DU JEU (faites avec Suno, déposées ici)
+
+Dépose un fichier au bon nom dans ce dossier, puis relance le jeu (npm run dev, ou un nouveau build) : c'est tout.
+Formats acceptés : mp3, ogg, m4a, aac, wav, flac. La casse du nom ne compte pas.
+Une piste absente n'est pas une erreur : le jeu se tait à cet endroit.
+
+  camp.mp3                       le camp (joue par défaut ; coupée quand la radio du barde est allumée)
+  entrainement.mp3               le camp d'entraînement (devant et dans le terrain d'entraînement)
+  foret.mp3                      la forêt (le sentier des gueux, en marchant)
+  combat-sentier-des-gueux.mp3   le combat du sentier des gueux (dès que les ennemis voient les héros)
+
+Boucle : sans réglage, chaque piste revient à son début avec un fondu de 3 s à la fin.
+Pour une boucle exacte (intro jouée une fois, puis boucle), voir src/audio/pistes.js (boucle: [début, fin] en secondes).

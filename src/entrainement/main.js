@@ -20,6 +20,8 @@ import * as multiSkill from './multi.js';
 import * as reglagesSkill from './panneau-reglages.js';
 import * as cinemaSkill from './cinema.js';
 import * as SAISON from './saison.js';
+import * as musiqueSkill from '../65_musique.js';   // le moteur son (la musique du terrain, la forêt et le combat du sentier)
+import { etatEntrainement } from '../65_musique.js';
 import * as desSkill from '../61_des.js';   // le jet de d20 (le dé de cristal)
 import CHEMIN from './chemin.json';
 import * as tests from './tests.js';
@@ -128,10 +130,12 @@ async function demarrer() {
   const cine = niveau?.plan.troncon && query.get('cinema') !== '0' ? game.use(cinemaSkill, { vue, images, heros: () => combat.S.unites.filter((u) => u.camp === 'h'), aventure: query.get('aventure'), auto: query.get('cinema') === 'auto' }) : null;
   const ihm = game.use(interfaceSkill, { combat, vue, canvas, nouveauCombat, cinema: cine, demarrer: query.has('go'), mode: query.get('mode'), infini: query.has('infini'), salle: SALLE.id ?? null, salleNom: SALLE.nom, salleIdee: SALLE.idee,
     aventure: niveau?.plan.troncon ? AVENTURE.aventure(query.get('aventure'))?.nom ?? null : null });
+  const niveauId = query.has('aventure') ? AVENTURE.niveauDe(AVENTURE.aventure(query.get('aventure')), query.get('niveau') ?? 1)?.id ?? null : null;
+  const musique = game.use(musiqueSkill, { page: 'entrainement', muet: query.has('test'), etat: () => etatEntrainement(combat.S, { aventure: query.get('aventure'), niveau: niveauId }) });
   const multi = game.use(multiSkill, { combat, vue, ihm, nouveauCombat });
   const reglages = game.use(reglagesSkill, { ihm });   // le panneau de réglages du combat (R)
   game.render = () => rendu.dessiner();
-    Object.assign(game.dbg, { partyNet, combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
+    Object.assign(game.dbg, { musique, partyNet, combat, vue, ihm, multi, reglages, trame, salle, rendu, nouveauCombat, niveau, cine, saison, des });
   game.use(tests, { combat, vue, ihm, multi, trame, salle, game, images, SALLE });
 
   // un tronçon du chemin : on commence à pied, sans écran d'accueil (chemin-sentier-des-gueux.md §0)
