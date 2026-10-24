@@ -443,6 +443,19 @@ body [hidden] { display: none !important; }
 .entree-heros { cursor: pointer; padding: 10px 4px; display: grid; gap: 4px; font: inherit; color: #3a2614; background: #f8eed6; border: 3px solid #5a3b22; border-radius: 3px; }
 .entree-heros:hover { background: #fff6dc; }
 .entree-heros.choisi { outline: 3px solid #ffcf5a; }
+/* le menu Échap (menu.js) : l'allure des fenêtres du chemin ; la musique et les effets, les touches, reprendre ou rentrer */
+.menu-echap { z-index: 60; }
+.menu-echap .entree-terrain { text-align: left; display: grid; gap: 12px; }
+.menu-echap h2 { text-align: center; }
+.menu-reglages { display: grid; gap: 6px; }
+.menu-reglage { display: grid; grid-template-columns: 80px 1fr 56px; align-items: center; gap: 10px; font: 600 15px 'Pixelify Sans', system-ui, sans-serif; color: #3a2614; }
+.menu-reglage input { accent-color: #b8892a; }
+.menu-reglage output { text-align: right; font-variant-numeric: tabular-nums; }
+.menu-touches { display: grid; grid-template-columns: auto 1fr; gap: 3px 12px; margin: 0; font-size: 14px; color: #3a2614; }
+.menu-touches dt { text-align: right; }
+.menu-touches dd { margin: 0; }
+.menu-touches kbd { font: 600 12px 'Pixelify Sans', system-ui, sans-serif; padding: 0 5px; border: 1px solid #5a3b22; border-radius: 3px; background: #fff6dc; }
+.menu-echap a.entree-heros { text-decoration: none; text-align: center; }
 .entree-consigne { margin: 12px 0 8px; font-size: 14px; min-height: 2.6em; }
 .entree-lancer { font: 700 18px 'Pixelify Sans', system-ui, sans-serif; padding: 8px 18px; cursor: pointer; }
 .entree-de { margin-top: 10px; }

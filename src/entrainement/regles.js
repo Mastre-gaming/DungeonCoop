@@ -971,7 +971,8 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   function marcher(u, pts, meneur = false) {
     const parcours = [{ x: u.x, y: u.y }];
-    let fait = 0, vu = surfaceA(u), stop = false, montre = 0;
+    let fait = 0, stop = false, montre = 0;
+    const etat = { vu: surfaceA(u) };
     // les attaques d'opportunité : où elles tombent sur le chemin (le point, puis l'attaquant)
     const coups = [];
     sortiesDeContact(u, pts, (o, q) => { coups.push({ o, q }); });
@@ -980,45 +981,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
       for (let k = 1; k <= n; k++) {
         const q = { x: a.x + (p.x - a.x) * (k / n), y: a.y + (p.y - a.y) * (k / n) };
         fait += l / n;
-        const s = surfaceA(q);
-        if (s && s !== vu && s.t !== (vu?.t)) { u.x = q.x; u.y = q.y; stop = entrerSurface(u, s, true); }
-        vu = s;
-        if (S.phase === 'exploration' && u.camp === 'h' && !S.repere) {      // repéré en marchant : il s'arrête là
-          const e = quiVoit(q);
-          if (e) { S.repere = { e: e.id, h: u.id }; stop = true; }
-          // arrivé tout près sans être vu (le moulin : les bêtes s'occupent du meunier) : le combat commence, par surprise
-          const dc = !e && S.declencheurs.find((o) => !o.fait && Math.hypot(q.x - o.x, q.y - o.y) <= o.rayon && S.unites.some((x) => x.camp === 'e' && !x.mort && x.groupe === o.groupe));
-          if (dc) { dc.fait = true; S.repere = { e: null, h: u.id, groupe: dc.groupe, surprise: true }; stop = true; }
-        }
-        if (S.phase === 'exploration' && u.camp === 'h') {
-          if (meneur) avancerRondes((l / n) * (typeof meneur === "number" ? meneur : 1));      // (à plusieurs, chaque joueur mène : une part de la marche)
-          for (const c of S.cachettes) if (!c.trouvee && !c.reperee && !c.essais.includes(u.id) && Math.hypot(q.x - c.x, q.y - c.y) <= 3.5) {   // la perception passive
-            c.essais.push(u.id);
-            const k = d(20), ok = k >= c.dd;
-            if (ok) c.reperee = true;
-            ev({ type: 'perception', id: u.id, k, ok, cachette: c.id });
-            log(ok ? `${u.nom} remarque quelque chose (perception, d20 : ${k}).` : `${u.nom} passe sans rien remarquer (perception, d20 : ${k}).`, ok ? 'bon' : 'muet');
-          }
-          for (const c of S.curiosites) if (c.fuit && !c.parti && Math.hypot(q.x - c.x, q.y - c.y) <= c.portee) {
-            c.parti = true; c.couronne = true;
-            log('Quelque chose file entre les pierres… et laisse briller quelque chose derrière lui.', 'muet');
-            ev({ type: 'curiosite', id: c.id, fuite: true });
-          }
-          const po = S.portes.find((o) => o.ouverte && o.sortie && Math.hypot(q.x - o.sortie.x, q.y - o.sortie.y) <= o.sortie.rayon);
-          if (po && !S.arrivee) { S.arrivee = true; stop = true; log('Le groupe passe la porte de la tour.', 'bon'); ev({ type: 'arrivee', id: po.id }); }
-        }
-        if (S.phase === 'exploration' && u.camp === 'h' && !S.question) {    // arrivé au poteau d'une fourche : le groupe choisit
-          const f = S.fourches.find((o) => !o.choisi && Math.hypot(q.x - o.poteau[0], q.y - o.poteau[1]) <= o.rayon);
-          if (f) { S.question = { fourche: f.id }; stop = true; }
-          const i = S.incidents.find((o) => o.sorte === 'embuscade' && !o.fait && Math.hypot(q.x - o.x, q.y - o.y) <= o.rayon);
-          if (i) {                                                          // l'embuscade : les bandits sortent des blés
-            S.question = { incident: i.id }; stop = true;
-            const sortent = S.unites.filter((o) => o.camp === 'e' && !o.mort && o.groupe === i.id);
-            for (const o of sortent) o.cache = false;
-            log('Une embuscade ! Des bandits sortent des blés et barrent la route.', 'ennemi');
-            ev({ type: 'embuscade', id: i.id, ids: sortent.map((o) => o.id) });
-          }
-        }
+        stop = controlesDuPas(u, q, l / n, meneur, etat);
         // il sort du contact d'une créature d'en face qui a sa réaction : elle frappe, et la marche reprend
         const ici = coups.filter((c) => Math.abs(c.q.x - q.x) < 1e-9 && Math.abs(c.q.y - q.y) < 1e-9);
         for (const { o } of ici) {
@@ -1045,6 +1008,75 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     jouerApres();
     return fait;
   }
+  // Ce qui arrive à u quand il pose le pied en q (un pas de dl cases), en marchant ou au pas libre : une surface, repéré, le
+  // déclencheur du moulin, les rondes (meneur), une cachette, une curiosité qui file, la porte de la tour, la fourche,
+  // l'embuscade. Vrai s'il s'arrête là. etat.vu : la surface du pas d'avant.
+  function controlesDuPas(u, q, dl, meneur, etat) {
+        let stop = false;
+        const s = surfaceA(q);
+        if (s && s !== etat.vu && s.t !== (etat.vu?.t)) { u.x = q.x; u.y = q.y; stop = entrerSurface(u, s, true); }
+        etat.vu = s;
+        if (S.phase === 'exploration' && u.camp === 'h' && !S.repere) {      // repéré en marchant : il s'arrête là
+          const e = quiVoit(q);
+          if (e) { S.repere = { e: e.id, h: u.id }; stop = true; }
+          // arrivé tout près sans être vu (le moulin : les bêtes s'occupent du meunier) : le combat commence, par surprise
+          const dc = !e && S.declencheurs.find((o) => !o.fait && Math.hypot(q.x - o.x, q.y - o.y) <= o.rayon && S.unites.some((x) => x.camp === 'e' && !x.mort && x.groupe === o.groupe));
+          if (dc) { dc.fait = true; S.repere = { e: null, h: u.id, groupe: dc.groupe, surprise: true }; stop = true; }
+        }
+        if (S.phase === 'exploration' && u.camp === 'h') {
+          if (meneur) avancerRondes(dl * (typeof meneur === "number" ? meneur : 1));      // (à plusieurs, chaque joueur mène : une part de la marche)
+          for (const c of S.cachettes) if (!c.trouvee && !c.reperee && !c.essais.includes(u.id) && Math.hypot(q.x - c.x, q.y - c.y) <= 3.5) {   // la perception passive
+            c.essais.push(u.id);
+            const k = d(20), ok = k >= c.dd;
+            if (ok) c.reperee = true;
+            ev({ type: 'perception', id: u.id, k, ok, cachette: c.id });
+            log(ok ? `${u.nom} remarque quelque chose (perception, d20 : ${k}).` : `${u.nom} passe sans rien remarquer (perception, d20 : ${k}).`, ok ? 'bon' : 'muet');
+          }
+          for (const c of S.curiosites) if (c.fuit && !c.parti && Math.hypot(q.x - c.x, q.y - c.y) <= c.portee) {
+            c.parti = true; c.couronne = true;
+            log('Quelque chose file entre les pierres… et laisse briller quelque chose derrière lui.', 'muet');
+            ev({ type: 'curiosite', id: c.id, fuite: true });
+          }
+          const po = S.portes.find((o) => o.ouverte && o.sortie && Math.hypot(q.x - o.sortie.x, q.y - o.sortie.y) <= o.sortie.rayon);
+          if (po && !S.arrivee) { S.arrivee = true; stop = true; log('Le groupe passe la porte de la tour.', 'bon'); ev({ type: 'arrivee', id: po.id }); }
+        }
+        if (S.phase === 'exploration' && u.camp === 'h' && !S.question) {    // arrivé au poteau d'une fourche : le groupe choisit
+          const f = S.fourches.find((o) => !o.choisi && (Math.hypot(q.x - o.poteau[0], q.y - o.poteau[1]) <= o.rayon || q.x >= o.poteau[0]));
+          if (f) { S.question = { fourche: f.id }; stop = true; }
+          const i = S.incidents.find((o) => o.sorte === 'embuscade' && !o.fait && Math.hypot(q.x - o.x, q.y - o.y) <= o.rayon);
+          if (i) {                                                          // l'embuscade : les bandits sortent des blés
+            S.question = { incident: i.id }; stop = true;
+            const sortent = S.unites.filter((o) => o.camp === 'e' && !o.mort && o.groupe === i.id);
+            for (const o of sortent) o.cache = false;
+            log('Une embuscade ! Des bandits sortent des blés et barrent la route.', 'ennemi');
+            ev({ type: 'embuscade', id: i.id, ids: sortent.map((o) => o.id) });
+          }
+        }
+        return stop;
+  }
+  // Le pas libre de l'exploration (comme au camp : retour des joueurs, 25 oct.) : u va en (x, y) d'un petit pas, s'il y tient,
+  // avec les mêmes rencontres qu'en marchant (controlesDuPas). Rend { ok, stop }. meneur : ses pas font avancer les rondes.
+  // Repéré en route, le combat commence (comme après une marche de groupe).
+  function pasLibre(u, x, y, { meneur = false } = {}) {
+    if (S.phase !== 'exploration' || S.question || S.repere || S.resultat || S.arrivee || !u || u.ko || u.mort || u.camp !== 'h') return { ok: false, stop: true };
+    const a = { x: u.x, y: u.y }, l = Math.hypot(x - a.x, y - a.y);
+    if (l < 1e-6) return { ok: true, stop: false };
+    if (!libreA(u, x, y)) return { ok: false, stop: false };
+    const n = Math.max(1, Math.ceil(l / 0.1)), etat = { vu: surfaceA(u) };
+    let stop = false;
+    for (let k = 1; k <= n && !stop; k++) {
+      const q = { x: a.x + (x - a.x) * (k / n), y: a.y + (y - a.y) * (k / n) };
+      u.x = q.x; u.y = q.y;
+      stop = controlesDuPas(u, q, l / n, meneur, etat);
+      if (u.mort || u.ko) break;
+    }
+    for (const o of S.unites) o.traceRonde = null;     // (les rondes : la vue suit leur place, sans film de marche)
+    jouerApres();
+    if (S.repere && S.phase === 'exploration') engager(!!S.repere.surprise, S.repere.groupe ?? null);
+    return { ok: true, stop };
+  }
+  // Ce point est-il libre pour u au pas libre : le décor, les ennemis debout et visibles, les tonneaux (on traverse ses alliés)
+  const libreA = (u, x, y) => libre(trame, x, y, genantsDe(u).filter((g) => !g.cache));
   // Le chemin qu'un héros prendrait jusqu'en (x, y), et sa longueur ; ok : il tient dans son déplacement.
   // `P` : sa portée déjà calculée (l'interface la garde tant qu'il ne bouge pas).
   function apercuMarche(h, x, y, P = portee(h)) {
@@ -1173,7 +1205,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const p = S.portes.find((o) => o.id === id); if (!p || p.ouverte) return false;
     const o = trame.salle.obstacles.find((x) => x.porte === id);
     if (o) retirerObstacle(trame, o);
-    p.ouverte = true;
+    p.ouverte = true; terrainFait.add(`p:${id}`);
     log('La herse se lève : la porte de la tour est ouverte.', 'bon');
     ev({ type: 'porte', id });
     return true;
@@ -1206,6 +1238,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (l.sorte === 'corde') {
       log(`${h.nom} coupe la corde : le pont s’effondre !`, 'combo');
       for (const f of l.fosses) ajouterObstacle(trame, { ...f });
+      terrainFait.add(`l:${l.id}`);
       for (const u of pris) { const p = prepare(u); if (p) combo(p, h.id, 'le pont s’effondre'); chute(u, trame.salle.obstacles.find((o) => o.fosse && dansForme(o, u.x, u.y)) ?? l.fosses[0], h.id); }
     } else if (l.sorte === 'vanne') {
       log(`${h.nom} ouvre la vanne : l’eau du bief inonde la cour du moulin !`, 'combo');
@@ -1279,6 +1312,22 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   }
   // La fourche (chemin-de-la-tour.md §4) : le groupe prend une branche ; un éboulis ferme les autres à leurs deux bouts (les
   // branches se rejoignent : un seul éboulis se contournerait par l'autre bout).
+  // Ce que les règles ont changé au terrain (la trame), déjà fait ici : chez un ami, restaurer() le refait d'après l'état reçu.
+  const terrainFait = new Set();
+  function synchroniserTerrain() {
+    for (const f of S.fourches) if (f.choisi && !terrainFait.has(`f:${f.id}`)) {
+      terrainFait.add(`f:${f.id}`);
+      for (const r of f.branches.filter((b) => b.id !== f.choisi).flatMap((b) => b.tombe ?? [])) ajouterObstacle(trame, { ...r, marche: true, arbre: true });
+    }
+    for (const p of S.portes) if (p.ouverte && !terrainFait.has(`p:${p.id}`)) {
+      terrainFait.add(`p:${p.id}`);
+      const o = trame.salle.obstacles.find((x) => x.porte === p.id); if (o) retirerObstacle(trame, o);
+    }
+    for (const l of S.leviers) if (l.fait && l.sorte === 'corde' && !terrainFait.has(`l:${l.id}`)) {
+      terrainFait.add(`l:${l.id}`);
+      for (const f of l.fosses ?? []) ajouterObstacle(trame, { ...f });
+    }
+  }
   function choisir(id, brancheId) {
     const f = S.fourches.find((o) => o.id === id), b = f?.branches.find((o) => o.id === brancheId);
     if (!f || f.choisi || !b) return false;
@@ -1286,6 +1335,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     const fermees = f.branches.filter((o) => o !== b);
     const arbres = fermees.flatMap((o) => o.tombe);
     for (const r of arbres) ajouterObstacle(trame, { ...r, marche: true, arbre: true });
+    terrainFait.add(`f:${id}`);
     log(`Le groupe choisit « ${b.nom || b.id} ». Un éboulis ferme l’autre chemin.`, 'bon');
     S.voie = brancheId;
     gagnerXp(xpDe('fourche'), 'le chemin choisi');
@@ -2324,11 +2374,11 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
 
   return {
     S, U, herosVivants, ennemisVivants, ciblesEnnemies, trahiParLaLumiere, coutDe, sortieOmbre, presDeLEnclume, poseEnclume, derriereEnclume, menacesDuChemin, groupes, groupeCourant, peutAgir, peutUtiliser, cibles, zonePossible, huileVisable, aPortee,
-    portee, apercuMarche, deplacer, utiliser, apercu, apercuBrasero, braseroProche, foinContre, explorer, engager, fouiller, quiVoit, cueillir, acheterTonneau, poserTonneau, avancerRondes, regardDe: regard, couvert, prevoir, actionner, levierPossible, apercuLevier, reprendre, choisir, acheter, toucherBorne, resoudre, fouillerChariot, ouvrir, curiosite,
+    portee, apercuMarche, deplacer, pasLibre, libreA, utiliser, apercu, apercuBrasero, braseroProche, foinContre, explorer, engager, fouiller, quiVoit, cueillir, acheterTonneau, poserTonneau, avancerRondes, regardDe: regard, couvert, prevoir, actionner, levierPossible, apercuLevier, reprendre, choisir, acheter, toucherBorne, resoudre, fouillerChariot, ouvrir, curiosite,
     commencer, gagnerXp, finPhaseHeros, rienAFaire, recapInfini, suiteInfini, fiche, surfaceA, mailles: () => S.surfaces, MAILLE,
     // « Annuler le déplacement » : une copie de l'état, et la remettre (les événements ne se copient pas)
     instantane: () => JSON.stringify({ ...S, evenements: [] }, (k, v) => (v === Infinity ? '∞' : v)),          // (à pied, le déplacement est sans limite : JSON ne sait pas écrire l'infini)
-    restaurer(copie) { const o = JSON.parse(copie, (k, v) => (v === '∞' ? Infinity : v)); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; },
+    restaurer(copie) { const o = JSON.parse(copie, (k, v) => (v === '∞' ? Infinity : v)); for (const k of Object.keys(o)) S[k] = o[k]; S.evenements = []; synchroniserTerrain(); },
     // pour les tests : des actions directes, sans passer par l'interface
     _: { agirGardien, debutTour, finTour, annoncerCharge, charger, recalerCharge, blesser, chuteForme, attaquer, pousser, calculer, chances, noter, fourchette, eclaterTonneau, enflammer, poserZone, agirEnnemi, marcher, carteDe, attaqueHeros, cibleBrute, attaqueReflexe, degatsMoyens, chanceAchever, coutOpportunites },
   };
