@@ -255,7 +255,7 @@ const VOISINS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
 // braseros : leurs places [x, y] (un héros au contact peut en renverser un : le feu prend sur le foin qui le touche).
 export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = [], flaque = null, surfaces = [], mode = 'equipe', equipe = EQUIPE_KIT, alea = Math.random, horloge = Date.now, infini = null,
   rencontre = null, types = {}, objectif = 'vaincre-tous', foin = [], braseros = [], cachettes = [], recompense = null,
-  fourches = [], colporteurs = [], bornes = [], groupeDe = {}, renforts = {}, combats = null, eaux = [], incidents = [], pnjs = [], portes = [], curiosites = [], declencheurs = [], leviers = [], rondes = {}, trouvailles = [], progression = null }) {
+  fourches = [], colporteurs = [], bornes = [], groupeDe = {}, renforts = {}, combats = null, eaux = [], incidents = [], pnjs = [], portes = [], curiosites = [], declencheurs = [], leviers = [], rondes = {}, trouvailles = [], progression = null, pvDepart = null }) {
   const d = (n) => 1 + Math.floor(alea() * n);
   let combos = new Set();                     // les combos déjà comptés dans l'action en cours
 
@@ -279,7 +279,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
   const manchePatron = () => !!S.infini && S.infini.manche % lire('infini.chefTous') === 0;
   const unite = (o) => Object.assign({ ko: false, mort: false, st: {}, expose: false, coriace: false, t: { mv: o.vitesse, action: true, bonus: true, reaction: true } }, o);
   PLACES.forEach((id, k) => {
-    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv') * facteurNiveau())) + PROG.PV_PAR_NIVEAU * ((S.progression?.niveau ?? 1) - 1), pvDep = infini?.fractions?.[PLACES[k]] != null ? Math.max(1, Math.round(infini.fractions[PLACES[k]] * pvH)) : pvH;
+    const type = equipe[k], h = HEROS[type], [x, y] = departs.heros[k], pvH = Math.max(1, Math.round(h.pv * lire('heros.pv') * facteurNiveau())) + PROG.PV_PAR_NIVEAU * ((S.progression?.niveau ?? 1) - 1), fraction = pvDepart?.[k] ?? infini?.fractions?.[PLACES[k]], pvDep = fraction != null ? Math.max(1, Math.round(fraction * pvH)) : pvH;      // (la fraction de PV que la run garde d'un niveau à l'autre ; le maximum, lui, suit le niveau)
     const meme = equipe.slice(0, k).filter((t) => t === type).length;     // deux fois la même classe : « Brute 2 »
     S.unites.push(unite({ id, camp: 'h', type, nom: meme ? `${h.nom} ${meme + 1}` : h.nom, court: h.court, x, y, pv: pvDep, pvMax: pvH, vitesse: h.vitesse, dex: h.dex, res: { ...h.res }, potion: lire('potion.nb') }));
   });

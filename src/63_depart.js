@@ -174,10 +174,11 @@ const bulle = (b, texte, x, y) => {
 };
 
 // L'adresse du niveau : le code du groupe (l'hôte le lance, les amis le suivent) et l'expérience de la run.
-export function adresse(chemin, { code = '', hote = false, progression = null } = {}) {
+export function adresse(chemin, { code = '', hote = false, progression = null, pv = null } = {}) {
   const q = new URLSearchParams({ aventure: AVENTURE.id, niveau: String(chemin?.niveau ?? 1) });
   if (code) { q.set('groupe', code); if (hote) q.set('hote', ''); }
   if (progression && !chemin?.neuf) { q.set('xp', String(progression.xp)); q.set('nh', String(progression.niveau)); }
+  if (pv?.length && !chemin?.neuf && pv.some((f) => f < 1)) q.set('pv', pv.join(','));      // (les PV gardés par la run, en fraction du maximum : le maximum suit le niveau)
   return `./entrainement.html?${q}`;
 }
 
@@ -228,26 +229,29 @@ function partir(chemin) {
   const p = party(), hote = !p?.active || p.hosting, r = run();
   if (hote && chemin) {
     const c = r?.courante;
-    if (chemin.neuf || !c || !['salle', 'choix'].includes(c.phase)) r?.nouvelle({ gabarit: gabarit(), heros: HEROS_RUN, joueurs: synchro?.joueurs?.() ?? [], reelle: true }).partir();
+    if (chemin.neuf || !c || !['salle', 'choix'].includes(c.phase)) r?.nouvelle({ gabarit: gabarit(), heros: HEROS_RUN, joueurs: synchro?.joueurs?.() ?? [], reelle: true, depart: { pvMax: 100, potions: 2 } }).partir();      // (100 : les PV de la run sont des pourcentages, le maximum réel dépend de la classe et du niveau)
   }
-  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null });
+  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, pv: pvDeLaRun() });
   annoncer('Le groupe entre sur le chemin…');
   if (delai) setTimeout(() => naviguer(url), delai); else naviguer(url);
 }
+const pvDeLaRun = () => run()?.courante?.etat.heros.map((h) => Math.round((h.pv / h.pvMax) * 100) / 100) ?? null;
 function annoncer(texte) { if (!panneau) return; panneau.replaceChildren(el('strong', {}, texte)); panneau.hidden = false; }
 
 // Le niveau est fini (?retour=victoire&xp=&nh=) : l'hôte reprend la run sauvegardée, et lui rend l'expérience du groupe.
 export function retourDeMission(q) {
   const p = party();
   if (p?.active && !p.hosting) return false;
-  const xp = Number(q.get('xp')), niveau = Number(q.get('nh'));
+  const xp = Number(q.get('xp')), niveau = Number(q.get('nh')), q0 = new URLSearchParams(q);
   const r = run();
   if (!r?.courante || r.courante.phase === 'camp') sauvegarde?.reprendre?.();
   const c = r?.courante;
-  for (const k of ['retour', 'xp', 'nh', 'niveau']) q.delete(k);
+  for (const k of ['retour', 'xp', 'nh', 'niveau', 'pv']) q.delete(k);
   try { history.replaceState(null, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`); } catch { /* rien à faire */ }
   if (!c || c.phase !== 'salle') return false;
-  return c.finirSalle('victoire', null, { xp, niveau });
+  const fr = (q0.get('pv') ?? '').split(',').map(Number), rapport = {};
+  c.etat.heros.forEach((h, i) => { if (Number.isFinite(fr[i])) rapport[h.id] = { pv: Math.round(Math.min(1, Math.max(0, fr[i])) * h.pvMax) }; });
+  return c.finirSalle('victoire', rapport, { xp, niveau });
 }
 
 function toucher(b) {

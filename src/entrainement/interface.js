@@ -938,7 +938,7 @@ function banniere(texte, genre = '') {
 function adresseRetour() {
   const P = combat.S.progression;
   if (!ui.aventure || !combat.S.arrivee || !P) return RETOUR_CAMP;
-  return `./index.html?spot=porte&retour=victoire&niveau=${new URLSearchParams(location.search).get('niveau') ?? '1'}&xp=${P.xp}&nh=${P.niveau}`;
+  return `./index.html?spot=porte&retour=victoire&niveau=${new URLSearchParams(location.search).get('niveau') ?? '1'}&xp=${P.xp}&nh=${P.niveau}&pv=${combat.S.heros.map((id) => { const u = combat.U(id); return u && !u.ko ? Math.round((u.pv / u.pvMax) * 100) / 100 : 0; }).join(',')}`;      // (les PV de chacun, en fraction de son maximum)
 }
 function finAventure() {
   if (combat.S.resultat === 'victoire') {

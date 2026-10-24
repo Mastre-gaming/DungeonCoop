@@ -47,7 +47,7 @@ try {
 
   console.log('\n— le retour de la mission : l’XP entre dans la run et survit au rechargement');
   // (la même page, rechargée : le stockage est gardé ; le camp lit ?retour=victoire&xp=&nh=)
-  await page.eval(`location.href = location.pathname + '?spot=porte&freeze&retour=victoire&niveau=1&xp=230&nh=3'`);
+  await page.eval(`location.href = location.pathname + '?spot=porte&freeze&retour=victoire&niveau=1&xp=230&nh=3&pv=1,0.5,0.25,1'`);
   await new Promise((ok) => setTimeout(ok, 800));
   await page.waitFor('document.documentElement.dataset.pret === "1"');
   const r2 = await page.eval(`(async () => {
@@ -59,6 +59,7 @@ try {
     note(c && c.etat.etape === 1 && c.phase === 'salle', 'et passe au niveau suivant de l’aventure (le 2, pas encore écrit)');
     note(!location.search.includes('retour') && !location.search.includes('xp='), 'l’adresse est nettoyée : recharger ne la rejoue pas');
     note(JSON.parse(localStorage.getItem('dungeoncoop:run-sauvee')).run.progression.xp === 230, 'la sauvegarde garde l’XP');
+    note(c && c.etat.heros.map((h) => h.pv).join() === '100,50,25,100', 'les PV de chacun reviennent dans la run (100, 50, 25, 100 %)');
     return { bilan, erreurs: [] };
   })()`);
   verifier(r2);
@@ -98,7 +99,7 @@ try {
     note(C.S.progression.xp === 230 && C.S.progression.niveau === 3 && C.U('h1').pvMax === 145 + 10, 'le niveau reçoit l’XP de la run (?xp=230&nh=3) : niveau 3, +10 PV');
     note(dbg.ihm.adresseRetour() === './index.html?spot=combat', 'en route : « Retour au camp » mène où il menait');
     C.S.arrivee = true; C.S.progression.xp = 345; C.S.progression.niveau = 4;
-    note(dbg.ihm.adresseRetour() === './index.html?spot=porte&retour=victoire&niveau=1&xp=345&nh=4', 'arrivé à la porte de la tour : « Retour au camp » rend l’XP et le niveau du groupe');
+    note(dbg.ihm.adresseRetour() === './index.html?spot=porte&retour=victoire&niveau=1&xp=345&nh=4&pv=1,1,1,1', 'arrivé à la porte de la tour : « Retour au camp » rend l’XP et le niveau du groupe');
     return { bilan, erreurs: [] };
   })()`));
   if (page.errors.length) { console.log('erreurs de la page :', page.errors.join(' | ')); code = 1; }
