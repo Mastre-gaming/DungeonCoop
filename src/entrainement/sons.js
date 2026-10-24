@@ -1,6 +1,7 @@
 // Les sons du terrain d'entraînement (pour l'instant ceux de Riff Ossel : des enregistrements découpés, public/assets/sons/riff-ossel/,
 // la table d'écoute est design/classes/riff-ossel/son/index.html). Ils suivent le volume des effets du menu Réglages.
 import { lireReglages } from '../25_reglages.js';
+import { signalerFx } from '../audio/mixage.js';
 
 export const DOSSIER = './assets/sons/riff-ossel/';
 // Quel son pour quelle capacité d'un héros : le Riff au contact, c'est le Fracas (l'animation « contact »).
@@ -17,6 +18,6 @@ export function jouerSon(nom) {
     if (!lecteurs.has(nom)) lecteurs.set(nom, new Audio(`${DOSSIER}${nom}.wav`));
     const a = lecteurs.get(nom).cloneNode();           // (un clone : le même son peut se chevaucher)
     a.volume = Math.min(1, v);
-    a.play().catch(() => {});                          // (avant le premier clic, le navigateur refuse : sans bruit)
+    a.play().then(() => signalerFx(1.1)).catch(() => {});   // (avant le premier clic, le navigateur refuse : sans bruit ; sinon, la musique baisse sous l'effet)
   } catch {}
 }

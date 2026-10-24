@@ -102,7 +102,7 @@ export function init(g, options) {
   game.bus.on('party:game', surMessageDuGroupe);
   game.bus.on('party:join', ({ id }) => { if (partage?.role === 'hote') redire(null, id); });
   // le son : pas en test ni dans la carte du dashboard
-  if (!visite && !options.muet) radioDuJeu.start(musique * presence(distance()), STATION);
+  if (!visite && !options.muet) radioDuJeu.start(musique * presence(distance()), 'off');   // éteinte au départ : la musique du camp joue ; on allume la radio chez le barde
   return api;
 }
 
