@@ -941,9 +941,10 @@ function banniere(texte, genre = '') {
 // Où « Retour au camp » mène : au bout du chemin, vers la grande porte, avec l'expérience du groupe (le camp la rend à la run) ;
 // sinon, devant le terrain d'entraînement comme avant.
 function adresseRetour() {
-  const P = combat.S.progression;
+  const P = combat.S.progression, niveau = new URLSearchParams(location.search).get('niveau') ?? '1';
+  if (ui.aventure && P && combat.S.resultat === 'defaite') return `./index.html?spot=porte&retour=defaite&niveau=${niveau}`;      // (le groupe se réveille au départ : la run garde son XP)
   if (!ui.aventure || !combat.S.arrivee || !P) return RETOUR_CAMP;
-  return `./index.html?spot=porte&retour=victoire&niveau=${new URLSearchParams(location.search).get('niveau') ?? '1'}&xp=${P.xp}&nh=${P.niveau}`;
+  return `./index.html?spot=porte&retour=victoire&niveau=${new URLSearchParams(location.search).get('niveau') ?? '1'}&xp=${P.xp}&nh=${P.niveau}&pv=${combat.S.heros.map((id) => { const u = combat.U(id); return u && !u.ko ? Math.round((u.pv / u.pvMax) * 100) / 100 : 0; }).join(',')}&po=${combat.S.heros.map((id) => combat.U(id)?.potion ?? 0).join(',')}&ca=${combat.S.caillasse}`;      // (les PV de chacun, en fraction de son maximum)
 }
 function finAventure() {
   if (combat.S.resultat === 'victoire') {
@@ -958,7 +959,7 @@ function finAventure() {
   }
   const noir = el('div', { class: 'fondu-defaite' });
   document.body.append(noir);
-  setTimeout(() => { dom.defaite.hidden = false; noir.remove(); }, 1400);
+  setTimeout(() => { dom.defaite.querySelector('a.retour-camp').href = adresseRetour(); dom.defaite.hidden = false; noir.remove(); }, 1400);
 }
 function recommencerChemin() {         // un nouveau lancer de dé, au début du chemin (sans la graine de la partie perdue)
   const q = new URLSearchParams(location.search);

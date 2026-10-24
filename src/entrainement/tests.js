@@ -10,7 +10,7 @@ import { demanderLancer, api as entree } from './entree.js';
 import { adresseEquipe } from './interface.js';
 import { sonDe } from './sons.js';
 import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
-import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
+import { regler, arrivee, moi as moiLobby, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { construire, NOMS } from './salles.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT, niveauA } from './geometrie.js';
@@ -1583,6 +1583,10 @@ export async function selfTest(t, game) {
     t.ok(C.S.progression.niveau === 6, 'le niveau 6 est le maximum du plan');
     C = XP({ xp: 250, niveau: 3 });
     t.ok(C.S.progression.niveau === 3 && C.U('h1').pvMax === base + 10 && capacitesDe(C.S, 'brute').includes('projection') && !capacitesDe(C.S, 'brute').includes('projection20'), 'une run reprise au niveau 3 : +10 PV, les compétences de niveau 2 ouvertes, pas celles du niveau 4');
+    const PV = creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, equipe: ['brute', 'mage', 'voleur', 'gardien'], progression: { plan, xp: 300, niveau: 4 }, pvDepart: [0.5, 1, 0, null], alea: graine(5), horloge: () => 0 });
+    t.ok(PV.U('h1').pvMax === 145 + 15 && PV.U('h1').pv === Math.round(0.5 * (145 + 15)) && PV.U('h2').pv === PV.U('h2').pvMax && PV.U('h3').pv === 1 && PV.U('h4').pv === PV.U('h4').pvMax, 'les PV gardés par la run : la moitié du maximum du niveau 4 (+15 PV), plein, 1 PV au plus bas, plein sans fraction');
+    const BU = creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, equipe: ['brute', 'mage', 'voleur', 'gardien'], progression: { plan, xp: 0, niveau: 1 }, potionsDepart: [0, 1, 2, null], caillasseDepart: 55, alea: graine(5), horloge: () => 0 });
+    t.ok(BU.S.caillasse === 55 && BU.U('h1').potion === 0 && BU.U('h2').potion === 1 && BU.U('h3').potion === 2 && BU.U('h4').potion === neuf().U('h4').potion, 'la run garde la Caillasse du groupe et les potions de chacun d’un niveau à l’autre');
     const libre = neuf({ equipe: ['brute', 'mage', 'voleur', 'gardien'] });
     t.ok(!libre.S.progression && capacitesDe(libre.S, 'mage').includes('foudre') && libre.U('h2').pvMax === HEROS.mage.pv, 'au terrain d’entraînement, sans plan d’aventure : tout est ouvert, pas d’XP');
     const saufEnsemble = HEROS.brute.capacites.concat(HEROS.mage.capacites).every((c) => CAPACITES[c]);
@@ -1650,6 +1654,24 @@ export async function selfTest(t, game) {
       'l’hôte vérifie chaque action : le héros d’Ana, Ana seulement');
     t.ok(!arbitrer(C, L, 'ana', { type: 'capacite', id: 'h2', cap: 'foudre', cible: { id: 's1' } }) && !arbitrer(C, L, 'ana', { type: 'marche', id: 'h2', x: 'loin', y: 3 }),
       'une capacité qui n’est pas la sienne, une action mal formée : refusées');
+  }
+
+  // les héros choisis au camp : chacun retrouve sa classe dans le lobby du niveau
+  t.group('à plusieurs : les héros choisis au camp');
+  {
+    const aS = HEROS.shadow.auteur, aR = HEROS['riff-ossel'].auteur;
+    const Lc = nouveauLobby(['shadow', 'riff-ossel', 'brute', 'mage']);
+    arrivee(Lc, 'host', aR);
+    t.ok(Lc.proprio[1] === 'host' && Lc.equipe[1] === 'riff-ossel', 'l’hôte arrive : il prend la place de sa propre classe (Riff Ossel)');
+    arrivee(Lc, 'ana');
+    t.ok(Lc.proprio[2] === 'ana' && Lc.equipe[0] === 'shadow' && Lc.equipe[2] === 'brute', 'un ami dont on ne sait pas encore qui il est : une place du kit, la classe de Shadow reste pour son auteur');
+    t.ok(moiLobby(Lc, 'ana', aS) && Lc.proprio[0] === 'ana' && Lc.proprio[2] === null && Lc.equipe[2] === 'brute', 'il dit qui il est (l’auteur de Shadow) : il prend la place de Shadow, la sienne se libère');
+    arrivee(Lc, 'ben');
+    t.ok(!moiLobby(Lc, 'ben', 'quelquun-d-autre') && Lc.proprio[2] === 'ben', 'un ami sans classe à lui reste sur sa place du kit');
+    const Ld = nouveauLobby(['shadow', 'brute', 'mage', 'voleur']);
+    arrivee(Ld, 'ben', 'quelquun-d-autre'); arrivee(Ld, 'cy', 'cy2'); arrivee(Ld, 'di', 'di2'); arrivee(Ld, 'el', 'el2');
+    t.ok(Ld.proprio.every(Boolean) && Ld.equipe[0] === 'brute' && !Ld.proprio.slice(0, 4).includes(null), 'la classe d’un absent ne reste pas à un autre quand il n’y a plus de place libre : elle redevient celle du kit');
+    t.ok(!moiLobby({ ...Lc, phase: 'combat' }, 'ana', aS) && !moiLobby(Lc, 'ana', null), 'pas de changement en plein combat, ni sans pseudo');
   }
 
   const hub = createLoopback({ latency: 0.02 });
