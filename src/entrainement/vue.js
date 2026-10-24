@@ -62,7 +62,11 @@ let enclume = null;
 let films = null;
 const BABA = 'baba-brisenclume';
 const FILMS_ENCLUME = ['chute-enclume', 'lame-ardente', 'trempe'];
-let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques;
+let fondSurfaces, ctxSurfaces, texSurfaces, fondMarques, ctxMarques, texMarques, planMarques = null;
+// La fenêtre des marques (en pixels du monde) : tout le terrain s'il est petit ; sur un long chemin (le sentier des Gueux fait
+// 9 632 px de long), la vue et une marge autour, pour ne pas renvoyer à la carte graphique une image de 32 Mo à chaque survol.
+let fenMarques = { x: 0, y: 0, w: 0, h: 0 };
+const GRAND = 2048;
 let file = [], courant = null, ecouteurs = [];
 let phaseVue = null;                  // la phase que la file montre en ce moment (les ennemis jouent : leurs tours se règlent à part)
 let temps = 0, prochainFeu = 0;
@@ -147,6 +151,8 @@ export function init(g, options) {
   };
   [fondSurfaces, ctxSurfaces, texSurfaces] = plan(-90, 'surfaces');
   [fondMarques, ctxMarques, texMarques] = plan(-80, 'marques');
+  planMarques = rendu.scene.getObjectByName('marques');
+  fenMarques = { x: 0, y: 0, w: W, h: H };
   calquePlaques = Object.assign(document.createElement('div'), { className: 'plaques-terrain' });
   calquePlaques.setAttribute('aria-hidden', 'true');
   document.body.append(calquePlaques);
@@ -392,17 +398,19 @@ const feuPresent = () => Object.values(maillesVues()).some((s) => s.t === 'feu')
 // marques = { selection: id, portee: carte|null, mv, chemin: [pts], survolCible: id, cibles: [ids], cercle: {x,y,r}, zone: {x,y,r,surf}, menace: {x,y,r}, actif: id }
 export function dessinerMarques(m = marques) {
   marques = m;
-  const g = ctxMarques, W = fondMarques.width, H = fondMarques.height;
-  g.clearRect(0, 0, W, H);
+  cadrerMarques();
+  const g = ctxMarques, W = fondMarques.width, H = fondMarques.height, F = fenMarques;
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
+  g.setTransform(1, 0, 0, 1, -F.x, -F.y);         // (on dessine en pixels du monde ; la fenêtre décale)
   if (m.portee) {
     // la zone atteignable : un remplissage léger et un liseré clair, sans cases (on interpole la trame des chemins)
     const tr = m.portee.tr, P = 0.25 * T, nx = tr.nx, ny = tr.ny, L = m.portee.longueur, mv = m.mv;
     const ok = (i, j) => (i >= 0 && j >= 0 && i < nx && j < ny && L[j * nx + i] <= mv ? 1 : 0);
     const img = g.createImageData(W, H), px = img.data, dedans = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) {
-      const fy = y / P - 0.5, j = Math.floor(fy), ty = fy - j;
+      const fy = (y + F.y) / P - 0.5, j = Math.floor(fy), ty = fy - j;
       for (let x = 0; x < W; x++) {
-        const fx = x / P - 0.5, i = Math.floor(fx), tx = fx - i;
+        const fx = (x + F.x) / P - 0.5, i = Math.floor(fx), tx = fx - i;
         const v = ok(i, j) * (1 - tx) * (1 - ty) + ok(i + 1, j) * tx * (1 - ty) + ok(i, j + 1) * (1 - tx) * ty + ok(i + 1, j + 1) * tx * ty;
         if (v >= 0.5) dedans[y * W + x] = 1;
       }
@@ -528,7 +536,41 @@ export function dessinerMarques(m = marques) {
     const f = m.chemin[m.chemin.length - 1];
     g.fillStyle = g.strokeStyle; g.beginPath(); g.arc(f.x * T, f.y * T, 4, 0, Math.PI * 2); g.fill();
   }
+  g.setTransform(1, 0, 0, 1, 0, 0);
   texMarques.needsUpdate = true;
+}
+// La fenêtre voulue : la vue de la caméra et une demi-vue de marge, calée sur 64 px, dans le terrain.
+function fenetreVoulue() {
+  const W = salle.l * T, H = salle.h * T;
+  if (W <= GRAND && H <= GRAND) return { x: 0, y: 0, w: W, h: H };
+  const vw = rendu.vue.w, vh = rendu.vue.h, m = Math.max(vw, vh) * 0.5;
+  const x0 = Math.max(0, Math.floor((cam.cx - vw / 2 - m) / 64) * 64), x1 = Math.min(W, Math.ceil((cam.cx + vw / 2 + m) / 64) * 64);
+  const y0 = Math.max(0, Math.floor((cam.cy - vh / 2 - m) / 64) * 64), y1 = Math.min(H, Math.ceil((cam.cy + vh / 2 + m) / 64) * 64);
+  return { x: x0, y: y0, w: Math.max(64, x1 - x0), h: Math.max(64, y1 - y0) };
+}
+// La vue sort-elle de la fenêtre des marques ? (on la redessine alors autour d'elle)
+function horsFenetre() {
+  const F = fenMarques, W = salle.l * T, H = salle.h * T;
+  if (F.w >= W && F.h >= H) return false;
+  const vw = rendu.vue.w, vh = rendu.vue.h;
+  return cam.cx - vw / 2 < F.x - 1 && F.x > 0 || cam.cx + vw / 2 > F.x + F.w + 1 && F.x + F.w < W || cam.cy - vh / 2 < F.y - 1 && F.y > 0 || cam.cy + vh / 2 > F.y + F.h + 1 && F.y + F.h < H;
+}
+// Cadre le calque des marques sur la fenêtre voulue (une autre taille : une autre texture).
+function cadrerMarques() {
+  const F = fenetreVoulue();
+  if (F.w !== fondMarques.width || F.h !== fondMarques.height) {
+    fondMarques.width = F.w; fondMarques.height = F.h;
+    texMarques.dispose();
+    texMarques = new THREE.CanvasTexture(fondMarques);
+    texMarques.magFilter = THREE.NearestFilter; texMarques.minFilter = THREE.NearestFilter; texMarques.generateMipmaps = false;
+    if (planMarques) { planMarques.material.map = texMarques; planMarques.material.needsUpdate = true; }
+  }
+  fenMarques = F;
+  if (planMarques) {
+    const W = salle.l * T, H = salle.h * T;
+    planMarques.scale.set(F.w / W, F.h / H, 1);
+    planMarques.position.set(F.x + F.w / 2, -(F.y + F.h / 2), planMarques.position.z);
+  }
 }
 
 // --- La file des événements ------------------------------------------------------------------------------------
@@ -1214,7 +1256,8 @@ export function update(dtReel) {
     courant.s.maj?.(courant.t, k);
     if (k >= 1) { courant.s.fin?.(); courant = null; if (!file.length && marques.actif) { marques.actif = null; dessinerMarques(); } }
   }
-  if (!occupe()) resynchroniser();
+  if (combat.S.phase === 'exploration') resynchroniser(dt, courant ? new Set([courant.e.id, courant.e.de, courant.e.vers, ...(courant.e.marches ?? []).map((m) => m.id)].filter(Boolean)) : null);
+  else if (!occupe()) resynchroniser();
   // le feu crépite
   if (temps > prochainFeu) { prochainFeu = temps + 0.16; if (feuPresent()) redessinerSurfaces(temps); }
   // la caméra glisse vers sa cible
@@ -1230,6 +1273,7 @@ export function update(dtReel) {
     if (k <= 0) secousse.a = 0;
   }
   rendu.viser(cam.cx - rendu.vue.w / 2 + ox, cam.cy - rendu.vue.h / 2 + oy);
+  if (horsFenetre()) dessinerMarques();
   poserEcran(dtReel);
   // les états sous les barres : relus quand la file est vide (ils apparaissent quand le coup a porté)
   if (!occupe()) etatsPlaques = new Map(combat.S.unites.map((u) => [u.id, etatsActifs(u)]));
@@ -1349,10 +1393,19 @@ function poserChien(a) {
 }
 
 // Quand la file est vide, la vue colle à l'état du combat (au cas où une scène a été sautée).
-function resynchroniser() {
+// En exploration (dt donné : le pas libre), chacun glisse vers sa place et marche tant qu'il bouge ; pris : ceux que l'événement
+// en cours anime (on ne les touche pas).
+function resynchroniser(dt = 0, pris = null) {
   for (const u of combat.S.unites) {
-    const a = aff.get(u.id); if (!a) continue;
-    a.x = u.x * T; a.y = u.y * T; a.pv = u.pv; a.ko = u.ko; a.mort = u.mort;
+    const a = aff.get(u.id); if (!a || pris?.has(u.id)) continue;
+    const tx = u.x * T, ty = u.y * T;
+    if (dt > 0) {
+      const dx = tx - a.x, dy = ty - a.y, l = Math.hypot(dx, dy);
+      if (l > 3 * T) { a.x = tx; a.y = ty; } else { const k = Math.min(1, dt * 18); a.x += dx * k; a.y += dy * k; }
+      if (l > 0.6 && !u.ko && !u.mort) { a.dir = versDir(dx, dy); if (a.anim === 'repos' || a.anim === 'marche') { if (a.anim !== 'marche') a.t = 0; a.anim = 'marche'; a.libre = 0.15; } }
+      else if (a.anim === 'marche' && (a.libre = (a.libre ?? 0) - dt) <= 0) a.anim = 'repos';
+    } else { a.x = tx; a.y = ty; }
+    a.pv = u.pv; a.ko = u.ko; a.mort = u.mort;
     if (a.formes) { a.forme = u.forme?.id ?? null; a.formePv = u.forme?.pv ?? 0; a.formeMax = u.forme?.max ?? 0; a.saut = 0; }
     if (a.anim === 'tombe' && !u.ko && !u.mort) a.anim = 'repos';
   }
