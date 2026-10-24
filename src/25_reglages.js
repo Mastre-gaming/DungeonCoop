@@ -27,8 +27,8 @@ function el(tag, attrs = {}, ...enfants) {
 let game, visite = false, boite, reglages = { ...DEFAUT };
 const curseurs = {};
 const LIGNES = [
-  ['musique', 'Musique', 'La radio du barde, près du feu (plus forte près de son enceinte).'],
-  ['effets', 'Effets', 'Le grésillement de la radio ; les bruitages du camp et des combats, plus tard.'],
+  ['musique', 'Musique', 'La musique du camp, du terrain et des niveaux, et la radio du barde (plus forte près de son enceinte).'],
+  ['effets', 'Effets', 'Les bruitages et le grésillement de la radio : ils passent toujours devant la musique, qui baisse sous eux.'],
 ];
 
 export function init(g, options = {}) {

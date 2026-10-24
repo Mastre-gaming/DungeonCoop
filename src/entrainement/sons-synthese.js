@@ -2,6 +2,7 @@
 // (rien que du code). Mêmes recettes que la table d'écoute (design/classes/riff-ossel/son/sons.js).
 import { createAudio } from '../skills/synth-audio/module/02_audio.js';
 import { lireReglages } from '../25_reglages.js';
+import { signalerFx } from '../audio/mixage.js';
 
 const vary = (a = 0.04) => 1 - a + Math.random() * a * 2;
 export const SYNTHESE = {
@@ -35,6 +36,6 @@ export function jouerSynthese(nom) {
     }
     audio.applyVolume({ sfxVolume: v });
     audio.unlock();
-    audio.play(nom);
+    if (audio.play(nom)) signalerFx(0.7);          // (la musique baisse sous l'effet)
   } catch {}
 }
