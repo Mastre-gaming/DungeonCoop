@@ -498,6 +498,20 @@ export async function selfTest(t, game) {
     C._.enflammer({ x: sh.x, y: sh.y }, null);
     t.ok(C.surfaceA(sh)?.t === 'feu' && !C.peutUtiliser(sh, CAPACITES.pasOmbre) && !C.utiliser(sh, 'pasOmbre', { id: s.id }), 'debout dans le feu non plus');
   }
+  {
+    // le deuxième réglage (#286) : le Pas une fois par combat, et le critique assuré sans le ×2
+    const { C, sh, s } = scene();
+    t.ok(C.utiliser(sh, 'pasOmbre', { id: s.id }), 'un premier Pas dans l’ombre');
+    sh.res.v = 3;
+    t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos3)).mult, 1, 'le critique assuré ne prend pas le ×2 de la Tenaille');
+    t.eq(C._.calculer(sh, s, C._.attaqueHeros(CAPACITES.coupDos)).mult, 2, 'le Coup dans le dos simple, si');
+    const pv = s.pv;
+    C.utiliser(sh, 'coupDos3', { id: s.id });
+    t.ok(pv - s.pv >= 22 && pv - s.pv <= 28, `le critique assuré en Tenaille : 22–28 (${pv - s.pv})`);
+    C.finPhaseHeros();
+    t.ok(!sh.ko && sh.t.bonus && !C.peutUtiliser(sh, CAPACITES.pasOmbre) && !C.utiliser(sh, 'pasOmbre', { id: s.id }), 'au round suivant, son action bonus revient, mais plus de Pas : une fois par combat');
+    t.ok(C.peutUtiliser(scene().sh, CAPACITES.pasOmbre), 'au combat suivant (ou à la manche suivante), il revient');
+  }
   t.eq(resultats(CAPACITES.coupDos).map((r) => r.degats), ['0', '5–7', '11–14', '22–28'], 'Coup dans le dos : 8 + d4 + 2, comme sa description');
   t.ok(icone('pasOmbre').endsWith('enseigne-pasOmbre.png') && icone('coupDos3').endsWith('enseigne-coupDos.png'), 'ses icônes : celles de sa fiche (design/classes/shadow/icones/)');
 
@@ -2094,6 +2108,11 @@ export async function selfTest(t, game) {
     touche('2');
     clic(9, 12 - 0.4); jouerFile();
     t.ok(dist(sh, C3.U('br')) <= CONTACT && enTenaille(sh, C3.U('br'), [C3.U('h2')]) && !sh.t.bonus, 'un clic sur la cible : Shadow ressort derrière elle, en Tenaille');
+    sh.t.bonus = true; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(bouton().classList.contains('indispo'), 'même avec son action bonus, le Pas reste grisé : une fois par combat (#286)');
+    ihm.ui.capSurvol = 'pasOmbre'; ihm.ui.sale = true; game.dbg.advance(0.05);
+    t.ok(ihm.dom.ficheCap.textContent.includes('déjà fait : une fois par combat'), 'sa fiche dit pourquoi');
+    ihm.ui.capSurvol = null;
     try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
   }
   t.group('Baba à l’écran');

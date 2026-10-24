@@ -183,9 +183,9 @@ export const CAPACITES = {
   // à tous, quand il y a un brasero dans la salle (la lisière) : n’importe quel héros au contact peut le renverser
   renverser: { nom: 'Renverser le brasero', slot: 'bonus', type: 'brasero', portee: CONTACT, ds: 'Au contact d’un brasero · le feu prend sur le foin qui le touche' },
   // Shadow
-  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'repos', ds: 'Portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille' },
+  pasOmbre: { nom: 'Pas dans l’ombre', slot: 'bonus', type: 'ombre', portee: 5, anim: 'repos', ds: 'Une fois par combat · portée 7,5 m · derrière un ennemi qu’un allié serre (4,5 m) : Tenaille' },
   coupDos: { nom: 'Coup dans le dos', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, dansLeDos: true, anim: 'attaque', ds: 'Au contact · 5–7 / 11–14 / 22–28 ; ×2 si Tenaille ou Exposée' },
-  coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré · ×2 si Tenaille ou Exposée' },
+  coupDos3: { nom: 'Coup dans le dos critique', slot: 'action', type: 'attaque', portee: CONTACT, mod: 2, base: 8, de: 4, dansLeDos: true, auto: true, cout: 3, anim: 'attaque', ds: '3 Élan · critique assuré (22–28), sans le ×2' },
   moquerie: { nom: 'Moquerie', slot: 'bonus', type: 'moquerie', portee: 6, cout: 2, anim: 'sort', ds: '2 Énergie · un ennemi à 9 m est Exposé : la prochaine attaque contre lui a l’avantage' },
   // le Traqueur au limier : l'arc, un piège posé au sol (un seul à la fois, le premier ennemi qui y entre le déclenche),
   // et un ordre au limier par tour (l'action bonus) : il court à la cible, agit, et revient
@@ -667,7 +667,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     // la Tenaille posée par le Pas dans l'ombre : elle compte pour celui qui l'a posée, au contact, jusqu'à la fin du round
     const ombre = lire('des.tenaille') >= 0.5 && A.melee && cible.st.tenaille?.par === att.id ? cible.st.tenaille : null;
     if (ombre && !tenaille) { av = true; tenaille = true; notes.push('prise en tenaille (Pas dans l’ombre) : avantage'); }
-    if (A.dansLeDos && (tenaille || cible.expose)) {             // le Coup dans le dos de Shadow
+    if (A.dansLeDos && !A.auto && (tenaille || cible.expose)) {  // le Coup dans le dos de Shadow (le critique assuré ne double pas, #286)
       mult *= 2; notes.push(`${tenaille ? 'en Tenaille' : 'Exposée'} : coup dans le dos ×2`);
       const tient = tenaille ? (ombre && U(ombre.tient)) || allies.find((o) => enTenaille(att, cible, [o])) : null;
       if (tient) aCombos.push([tient.id, 'Tenaille puis coup dans le dos']);
@@ -1806,6 +1806,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     if (!peutAgir(h)) return false;
     if (S.progression && !h.forme && !PROG.ouverte(h.type, Object.keys(CAPACITES).find((k) => CAPACITES[k] === cap), S.progression.niveau)) return false;      // (pas encore apprise)
     if (cap.type === 'ombre' && trahiParLaLumiere(h)) return false;
+    if (cap.type === 'ombre' && h.ombreFaite) return false;                 // le Pas dans l'ombre : une fois par combat (#286)
     if (cap.type === 'bond' && trahiParLaLumiere(h)) return false;          // la Bête : brûlante ou dans le feu, plus de Bond
     if (cap.type === 'mue' && (h.forme || h.type !== CHANGEPEAU)) return false;     // (seul le Changepeau mue)
     if (cap.type === 'quitterForme' && !h.forme) return false;
@@ -2123,7 +2124,7 @@ export function creerCombat({ trame, salle, departs, ennemis = null, tonneaux = 
     }
     if (cap.type === 'ombre' && ennemiVise) {             // le Pas dans l'ombre : ressortir derrière la cible
       const p = sortieOmbre(h, u); if (!p) return false;
-      payer(h, cap);
+      payer(h, cap); h.ombreFaite = true;
       ev({ type: 'lance', id: h.id, cap: capId, anim: cap.anim, x: u.x, y: u.y });
       ev({ type: 'ombre', id: h.id, x: p.x, y: p.y, cible: u.id });
       h.x = p.x; h.y = p.y; u.st.tenaille = { par: h.id, tient: p.tient.id };
