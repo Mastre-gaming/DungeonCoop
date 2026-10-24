@@ -403,8 +403,8 @@ body [hidden] { display: none !important; }
 /* l'intention d'un ennemi, au-dessus de sa tête (phase des héros) */
 .intention-terrain { position: absolute; left: 0; top: 0; padding: 1px 6px; font: 700 11px var(--texte, sans-serif); color: #ffe3d6; background: rgba(60, 14, 8, .88); border: 1px solid #ff6a50; border-radius: 3px; white-space: nowrap; pointer-events: none; }
 .intention-terrain[hidden] { display: none; }
-.intention-terrain.recharge, .intention-terrain.passe { color: #d8e0ea; background: rgba(30, 34, 44, .85); border-color: #8a96a8; }
-.intention-terrain.garde, .intention-terrain.charge { color: #fff; background: rgba(150, 20, 10, .92); border-color: #ffd35a; }
+.intention-terrain.i-recharge, .intention-terrain.i-passe { color: #d8e0ea; background: rgba(30, 34, 44, .85); border-color: #8a96a8; }
+.intention-terrain.i-garde, .intention-terrain.i-charge { color: #fff; background: rgba(150, 20, 10, .92); border-color: #ffd35a; }
 .plaque-vie { position: absolute; left: 0; top: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; --px: 1; }
 .plaque-vie.pres { --px: 2; gap: 3px; }
 .plaque-vie .pv-barre { position: relative; display: block; width: 36px; height: 5px; background: var(--bois-nuit, #1e130c); border: 1px solid #000; box-shadow: 0 0 0 1px rgba(133, 88, 27, .7); overflow: hidden; }

@@ -776,7 +776,7 @@ function testsHud(t, game) {
   const touche = (code) => { window.dispatchEvent(new KeyboardEvent('keydown', { code })); game.dbg.advance(0.05); window.dispatchEvent(new KeyboardEvent('keyup', { code })); game.dbg.advance(0.02); };
   t.group('le HUD : la barre d’action');
   const cases = [...hud.barre.querySelectorAll('.case')];
-  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'sacoche', 'rumeurs', 'lettres', 'reglages', 'dashboard'], 'sept cases, une par partie du dashboard, puis les réglages (#95) et le retour au dashboard');
+  t.eq(cases.map((c) => c.dataset.case), ['journal', 'groupe', 'campagne', 'chronique', 'carte', 'sacoche', 'rumeurs', 'lettres', 'reglages', 'dashboard'], 'sept cases, une par partie du dashboard, la carte de la tour (T), puis les réglages (#95) et le retour au dashboard');
   const versDash = cases.at(-1);
   t.ok(!versDash.classList.contains('bientot') && versDash.textContent.includes('B') && versDash.querySelector('canvas'), 'la case « Retour au dashboard » (B) est prête, avec son arche');
   t.ok(cases.every((c) => c.querySelector('canvas.icone') && c.querySelector('kbd')), 'chacune avec son icône en pixels et sa touche');
