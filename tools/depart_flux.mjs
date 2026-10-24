@@ -34,10 +34,23 @@ try {
     note(/Départ : /.test(depart.panneau.textContent) && !depart.bulles.drapeau.hidden, 'le panneau donne le chemin ; le drapeau marque le bout du chemin');
     heros.placer(15 * T, 33 * T, 'bas'); tick(0.2);
     note(depart.bulles.bout.hidden && !depart.controleur.etat.arrives.length, 'sur le pont : pas encore au bout');
+    const boutons = () => [...depart.panneau.querySelectorAll('.depart-boutons button')];
+    note(boutons().length === 2 && boutons().every((b) => b.disabled) && /Rejoins le drapeau/.test(depart.panneau.textContent), 'le HUD montre « Prêt » et « Pas encore », grisés tant qu’on n’est pas au bout du chemin');
     heros.placer(15 * T, 36.6 * T, 'bas'); tick(0.3);
     note(depart.controleur.etat.arrives.length === 1 && !depart.bulles.bout.hidden && /je suis prêt/.test(depart.bulles.bout.textContent), 'au bout du chemin : « E : je suis prêt (0/1) »');
-    depart.bulles.bout.click(); tick(0.3);
-    note(allees.length === 1 && (allees[0].startsWith('./entrainement.html?aventure=camp-des-mastres&niveau=1&xp=0&nh=1&po=') && allees[0].split('po=')[1].split('%2C').length === 4), 'prêt : le niveau se lance (seul : sans code du groupe, avec l’XP de la run : 0, niveau 1)');
+    note(boutons().every((b) => !b.disabled), 'au bout du chemin : les deux boutons s’allument');
+    boutons().find((b) => b.dataset.pret === 'non').click(); tick(0.2);
+    note(depart.controleur.etat.phase === 'marche' && !depart.controleur.etat.prets.length, '« Pas encore » : on n’est pas prêt');
+    boutons().find((b) => b.dataset.pret === 'oui').click(); tick(0.3);
+    const feu = depart.bulles.feu;
+    note(depart.controleur.etat.phase === 'des' && !feu.hidden && feu.querySelectorAll('li').length === 1 && /Qui lance le dé/.test(feu.textContent) && /lancera le dé/.test(feu.textContent), 'prêt : « Autour du feu » avec le héros choisi, qui lancera le dé');
+    note(!!feu.querySelector('canvas.depart-medaillon') && depart.panneau.hidden, 'le portrait du héros (le médaillon du camp) ; le panneau du prêt s’efface');
+    feu.querySelector('.depart-lancer').click(); tick(0.5);
+    note(!!dbg.des.ouvert || !!dbg.des.racine?.querySelector('canvas'), 'on lance : le panneau de dé (l’animation du dé de cristal) s’ouvre');
+    for (let k = 0; k < 160 && !allees.length; k++) { tick(0.1); await sleep(0); }
+    note(allees.length === 1 && allees[0].startsWith('./entrainement.html?aventure=camp-des-mastres&niveau=1&xp=0&nh=1&po=') && allees[0].split('po=')[1].split('&')[0].split('%2C').length === 4, 'puis le niveau se lance (seul : sans code du groupe, avec l’XP de la run : 0, niveau 1)');
+    const url = new URL(allees[0], 'http://x/');
+    note(/^[A-Z]{5}$/.test(url.searchParams.get('mot') ?? '') && url.searchParams.get('equipe')?.split(',').length === 4, 'avec la graine tirée au camp (5 lettres) et l’équipe de 4 héros');
     note(run.courante?.etat.reelle && run.courante.phase === 'salle' && run.courante.etat.gabarit.length === 6, 'une vraie run est partie : les 6 niveaux de l’aventure, sans boutons d’essai');
     note(!!localStorage.getItem('dungeoncoop:run-sauvee'), 'la run est sauvegardée avant de quitter le camp');
     return { bilan, erreurs };
@@ -84,7 +97,7 @@ try {
     vote.querySelector('.carte').click(); dbg.advance(3);
     note(depart.controleur.etat?.chemin?.neuf === true && depart.controleur.etat.phase === 'marche', 'recommencer : le chemin du niveau 1 est pris, en neuf');
     const allees = []; depart.testerNavigation((u) => allees.push(u));
-    heros.placer(15 * T, 36.6 * T, 'bas'); dbg.advance(0.3); depart.bulles.bout.click(); dbg.advance(0.3);
+    heros.placer(15 * T, 36.6 * T, 'bas'); dbg.advance(0.3); depart.panneau.querySelector('[data-pret=oui]').click(); dbg.advance(0.3); depart.bulles.feu.querySelector('.depart-lancer').click(); for (let k = 0; k < 160 && !allees.length; k++) { dbg.advance(0.1); await new Promise((ok) => setTimeout(ok, 0)); }
     note(allees.length === 1 && !/xp=/.test(allees[0]) && run.courante.progression.xp === 0 && run.courante.etat.etape === 0, 'la nouvelle run repart au niveau 1, à 0 XP : relancer l’aventure ne garde rien');
     return { bilan, erreurs: [] };
   })()`);

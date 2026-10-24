@@ -2,7 +2,7 @@
 // à plusieurs (l'hôte mène, Ben reste au camp, Ana s'éloigne ou part). Appelées par le selfTest de 63_depart.js.
 import AVENTURE from '../content/aventures/camp-des-mastres.json';
 import { T } from './01_plan.js';
-import { creerDepart, chemins, gabarit, adresse, vaAuNiveau, dansPorte, auBout, PORTE, BOUT, HEROS_RUN } from './63_depart.js';
+import { creerDepart, chemins, gabarit, adresse, vaAuNiveau, composerEquipe, typeDe, dansPorte, auBout, PORTE, BOUT, HEROS_RUN } from './63_depart.js';
 import { creerRun } from './57_run.js';
 import { createLoopback, createParty } from './skills/party-net/module/03_skill.js';
 
@@ -43,9 +43,15 @@ export async function testsDepart(t) {
   t.eq(adresse({ niveau: 1 }, { progression: { xp: 5, niveau: 1 }, potions: [2, 1, 0, 2], caillasse: 40 }), './entrainement.html?aventure=camp-des-mastres&niveau=1&xp=5&nh=1&po=2%2C1%2C0%2C2&ca=40', 'les potions de chacun et la Caillasse du groupe suivent la run');
   const [a, b] = [{ id: 'ana' }, { id: 'ben' }];
   t.ok(vaAuNiveau([a], 'ana', false) && !vaAuNiveau([a], 'ben', false) && vaAuNiveau([a], 'host', true) && vaAuNiveau([], 'ben', false), 'ceux qui sont restés au camp n’y vont pas ; l’hôte y va toujours (c’est lui qui tient le niveau)');
+  t.eq(composerEquipe(['shadow', 'riff-ossel']), ['shadow', 'riff-ossel', 'brute', 'mage'], 'l’équipe du niveau : les héros choisis, complétés par le kit');
+  t.eq(composerEquipe([null, 'brute', 'mage', 'voleur']), ['gardien', 'brute', 'mage', 'voleur'], 'le héros de départ (sans classe) et les doublons : le kit comble sans répéter');
+  t.eq(composerEquipe(['druide', 'druide', 'baba-brisenclume', 'shadow', 'barde']), ['druide', 'druide', 'baba-brisenclume', 'shadow'], 'jamais plus de quatre');
+  t.ok(typeDe('shadow') === 'shadow' && typeDe('depart') === null && typeDe(undefined) === null, 'un héros du camp qui n’a pas de classe de combat : le kit');
+  t.eq(adresse({ niveau: 1 }, { mot: 'ABCDE', equipe: ['shadow', 'riff-ossel', 'brute', 'mage'] }), './entrainement.html?aventure=camp-des-mastres&niveau=1&mot=ABCDE&equipe=shadow%2Criff-ossel%2Cbrute%2Cmage', 'l’adresse porte la graine tirée au camp et les héros choisis');
+
   t.group('le départ : seul');
   {
-    const vus = [], solo = creerDepart({ emettre: (n, d) => vus.push([n, d]) });
+    const vus = [], solo = creerDepart({ emettre: (n, d) => vus.push([n, d]), heroDe: () => ({ id: 'shadow', nom: 'Shadow', image: 'perso_shadow' }) });
     t.ok(!solo.demanderChemin() && !solo.arrive(true), 'avant le contrat : rien ne bouge');
     t.ok(solo.ouvrir([{ id: 'me', nom: 'Moi' }]) && solo.etat.phase === 'preparation', 'le contrat accepté : on se prépare');
     t.ok(!solo.arrive(true), 'pas de bout du chemin avant d’avoir choisi');
@@ -55,12 +61,20 @@ export async function testsDepart(t) {
     t.ok(!solo.pret(true), 'prêt, mais pas encore arrivé : refusé');
     solo.arrive(true);
     t.ok(solo.pret(true), 'au bout du chemin : prêt');
-    t.eq([vus.at(-1)[0], vus.at(-1)[1].chemin.niveau, solo.etat.phase], ['depart:lancer', 1, 'parti'], 'seul, un « prêt » suffit : le niveau se lance');
+    t.ok(solo.etat.phase === 'des' && solo.etat.lanceur === 0 && solo.etat.equipe[0].type === 'shadow', 'seul, un « prêt » suffit : le dé de la graine, lancé par son propre héros (Shadow)');
+    t.ok(!solo.deFini() && solo.lancerDe() && /^[A-Z]{5}$/.test(solo.etat.mot) && vus.at(-1)[0] === 'depart:de' && vus.at(-1)[1].de >= 1 && vus.at(-1)[1].de <= 20, 'il lance : une graine de 5 lettres et un d20, montrés à tous');
+    t.ok(!solo.lancerDe(), 'un seul jet');
+    solo.deFini(); t.eq(solo.etat.phase, 'compte', 'le dé a fini de rouler : le compte à rebours');
+    solo.avancer(5);
+    const lance = vus.at(-1);
+    t.eq([lance[0], lance[1].chemin.niveau, solo.etat.phase, lance[1].equipe, lance[1].mot === solo.etat.mot], ['depart:lancer', 1, 'parti', ['shadow', 'brute', 'mage', 'voleur'], true], 'puis le niveau se lance, avec la graine et l’équipe (Shadow + le kit)');
   }
 
   t.group('le départ : à plusieurs (l’hôte mène)');
   {
-    const { hote, amis: [ana, ben], pas } = groupe('DEPAR', ['Hôte', 'Ana', 'Ben'], { compte: 1 });
+    const types = {};
+    const { hote, amis: [ana, ben], pas } = groupe('DEPAR', ['Hôte', 'Ana', 'Ben'], { compte: 1, alea: () => 0.5, heroDe: (id) => ({ id: types[id] ?? 'depart', nom: types[id] ?? 'Héros de départ', image: 'heros' }) });
+    types[hote.party.id] = 'riff-ossel'; types[ana.party.id] = 'baba-brisenclume';
     const les3 = [hote, ana, ben];
     hote.ctrl.ouvrir([{ id: hote.party.id, nom: 'Hôte' }, { id: ana.party.id, nom: 'Ana' }]); pas(0.3);          // Ben reste au camp
     t.ok(les3.every((P) => P.ctrl.etat?.phase === 'preparation') && ana.ctrl.partant() && !ben.ctrl.partant(), 'tout le monde voit le départ ; Ana part, Ben reste au camp');
@@ -76,17 +90,27 @@ export async function testsDepart(t) {
     ana.ctrl.pret(true); pas(0.3);
     t.ok(ana.ctrl.etat.prets.length === 1, 'Ana n’est pas encore au bout : son « prêt » ne compte pas');
     ana.ctrl.arrive(true); pas(0.3); ana.ctrl.pret(true); pas(0.3);
-    t.ok(les3.every((P) => P.ctrl.etat.phase === 'compte'), 'tous les partants sont prêts : le compte à rebours, chez tout le monde');
+    t.ok(les3.every((P) => P.ctrl.etat.phase === 'des' && P.ctrl.etat.equipe.length === 2), 'tous les partants sont prêts : « Autour du feu » avec leurs deux héros, chez tout le monde');
+    t.ok(hote.ctrl.etat.equipe.map((e) => e.heros).join() === 'riff-ossel,baba-brisenclume' && hote.ctrl.etat.lanceur === null, 'ce sont les héros qu’ils ont choisis ; personne ne lance encore');
+    t.ok(!hote.ctrl.lancerDe(), 'pas de jet tant que l’hôte n’a pas désigné qui lance');
     ana.ctrl.arrive(false); pas(0.3);
-    t.ok(hote.ctrl.etat.phase === 'marche' && hote.ctrl.etat.prets.length === 1, 'Ana s’éloigne : plus prête, le compte à rebours s’arrête');
-    ana.ctrl.arrive(true); pas(0.3); ana.ctrl.pret(true); pas(1.6);
-    t.ok(les3.every((P) => P.vus.some(([n]) => n === 'depart:lancer')), 'le compte est fini : le niveau se lance chez l’hôte, chez Ana et chez Ben');
+    t.ok(hote.ctrl.etat.phase === 'marche' && hote.ctrl.etat.prets.length === 1, 'Ana s’éloigne avant le jet : plus prête, on repart à la marche');
+    ana.ctrl.arrive(true); pas(0.3); ana.ctrl.pret(true); pas(0.3);
+    ana.ctrl.choisirLanceur(1); pas(0.3);
+    t.ok(hote.ctrl.etat.lanceur === 1, 'Ana désigne son propre héros pour lancer le dé');
+    hote.ctrl.choisirLanceur(0); pas(0.2); hote.ctrl.lancerDe(); pas(0.3);
+    t.ok(les3.every((P) => P.vus.some(([n, d]) => n === 'depart:de' && d.qui.heros === 'riff-ossel' && d.mot === hote.ctrl.etat.mot)), 'l’hôte lance avec Riff Ossel : tout le monde, Ben compris, voit le même jet et la même graine');
+    ana.ctrl.arrive(false); pas(0.3);
+    t.ok(hote.ctrl.etat.phase === 'des' && hote.ctrl.etat.mot, 'le jet est fait : plus de retour en arrière');
+    hote.ctrl.deFini(); pas(1.6);
+    const lancee = hote.vus.find(([n]) => n === 'depart:lancer');
+    t.ok(les3.every((P) => P.vus.some(([n]) => n === 'depart:lancer')) && lancee[1].equipe.join() === 'riff-ossel,baba-brisenclume,brute,mage' && lancee[1].mot === hote.ctrl.etat.mot, 'le compte est fini : le niveau se lance chez tous, avec la même graine et les héros choisis');
   }
   {
     const { hote, amis: [ana], pas } = groupe('DEPAB', ['Hôte', 'Ana']);
     hote.ctrl.ouvrir([{ id: hote.party.id }, { id: ana.party.id }]); pas(0.2);
     hote.ctrl.ouvrirVote(hote.party.id); hote.ctrl.cheminChoisi(chemins(null)[0].id); hote.ctrl.arrive(true); hote.ctrl.pret(true); pas(0.2);
     ana.party.leave(); pas(0.5);
-    t.ok(hote.vus.some(([n]) => n === 'depart:lancer'), 'Ana part en route : on ne l’attend plus, l’hôte (prêt) part seul');
+    t.ok(hote.ctrl.etat.phase === 'des' && hote.ctrl.etat.equipe.length === 1 && hote.ctrl.etat.lanceur === 0, 'Ana part en route : on ne l’attend plus, l’hôte (prêt) passe au dé, seul avec son héros');
   }
 }

@@ -10,7 +10,7 @@ import { demanderLancer, api as entree } from './entree.js';
 import { adresseEquipe } from './interface.js';
 import { sonDe } from './sons.js';
 import { resultats, resume, caracteristiques, effets, icone, ordreBarre, sorteDe, TOUCHES } from './fiches.js';
-import { regler, arrivee, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
+import { regler, arrivee, moi as moiLobby, depart, attendus, arbitrer, nouveauLobby } from './multi.js';
 import { createLoopback, createParty } from '../skills/party-net/module/03_skill.js';
 import { construire, NOMS } from './salles.js';
 import { creerTrame, carteDistances, chemin, longueurChemin, indiceDe, libre, vue, enTenaille, simulerPoussee, dist, CONTACT, niveauA } from './geometrie.js';
@@ -1646,6 +1646,24 @@ export async function selfTest(t, game) {
       'l’hôte vérifie chaque action : le héros d’Ana, Ana seulement');
     t.ok(!arbitrer(C, L, 'ana', { type: 'capacite', id: 'h2', cap: 'foudre', cible: { id: 's1' } }) && !arbitrer(C, L, 'ana', { type: 'marche', id: 'h2', x: 'loin', y: 3 }),
       'une capacité qui n’est pas la sienne, une action mal formée : refusées');
+  }
+
+  // les héros choisis au camp : chacun retrouve sa classe dans le lobby du niveau
+  t.group('à plusieurs : les héros choisis au camp');
+  {
+    const aS = HEROS.shadow.auteur, aR = HEROS['riff-ossel'].auteur;
+    const Lc = nouveauLobby(['shadow', 'riff-ossel', 'brute', 'mage']);
+    arrivee(Lc, 'host', aR);
+    t.ok(Lc.proprio[1] === 'host' && Lc.equipe[1] === 'riff-ossel', 'l’hôte arrive : il prend la place de sa propre classe (Riff Ossel)');
+    arrivee(Lc, 'ana');
+    t.ok(Lc.proprio[2] === 'ana' && Lc.equipe[0] === 'shadow' && Lc.equipe[2] === 'brute', 'un ami dont on ne sait pas encore qui il est : une place du kit, la classe de Shadow reste pour son auteur');
+    t.ok(moiLobby(Lc, 'ana', aS) && Lc.proprio[0] === 'ana' && Lc.proprio[2] === null && Lc.equipe[2] === 'brute', 'il dit qui il est (l’auteur de Shadow) : il prend la place de Shadow, la sienne se libère');
+    arrivee(Lc, 'ben');
+    t.ok(!moiLobby(Lc, 'ben', 'quelquun-d-autre') && Lc.proprio[2] === 'ben', 'un ami sans classe à lui reste sur sa place du kit');
+    const Ld = nouveauLobby(['shadow', 'brute', 'mage', 'voleur']);
+    arrivee(Ld, 'ben', 'quelquun-d-autre'); arrivee(Ld, 'cy', 'cy2'); arrivee(Ld, 'di', 'di2'); arrivee(Ld, 'el', 'el2');
+    t.ok(Ld.proprio.every(Boolean) && Ld.equipe[0] === 'brute' && !Ld.proprio.slice(0, 4).includes(null), 'la classe d’un absent ne reste pas à un autre quand il n’y a plus de place libre : elle redevient celle du kit');
+    t.ok(!moiLobby({ ...Lc, phase: 'combat' }, 'ana', aS) && !moiLobby(Lc, 'ana', null), 'pas de changement en plein combat, ni sans pseudo');
   }
 
   const hub = createLoopback({ latency: 0.02 });

@@ -58,8 +58,22 @@ export function arrivee(L, qui, github = null) {
     return;
   }
   if (L.proprio.includes(qui)) return;
-  const k = L.proprio.indexOf(null);
-  if (k >= 0) { L.proprio[k] = qui; if (!peutJouer(L.equipe[k], github)) L.equipe[k] = EQUIPE_KIT[k]; }
+  // la place de sa propre classe d'abord (le héros qu'il a choisi au camp), puis une place d'une classe du kit, puis n'importe laquelle
+  const libre = (k) => L.proprio[k] === null;
+  const sienne = github ? L.equipe.findIndex((t, k) => libre(k) && HEROS[t]?.auteur && peutJouer(t, github)) : -1;
+  const kit = L.equipe.findIndex((t, k) => libre(k) && !HEROS[t]?.auteur);
+  const k = sienne >= 0 ? sienne : kit >= 0 ? kit : L.proprio.indexOf(null);
+  if (k >= 0) { L.proprio[k] = qui; if (github && !peutJouer(L.equipe[k], github)) L.equipe[k] = EQUIPE_KIT[k]; }
+}
+// Un ami qui vient d'arriver dit qui il est (son pseudo GitHub) : s'il a une classe à lui dans l'équipe, il la prend ; une classe
+// d'un autre sur sa place redevient celle du kit. Vrai si le lobby a changé.
+export function moi(L, qui, github) {
+  if (L.phase !== 'lobby' || !github) return false;
+  const k = L.proprio.indexOf(qui);
+  const sienne = L.equipe.findIndex((t, j) => HEROS[t]?.auteur && peutJouer(t, github) && (L.proprio[j] === null || L.proprio[j] === qui));
+  if (sienne >= 0 && sienne !== k) { if (k >= 0) L.proprio[k] = null; L.proprio[sienne] = qui; return true; }
+  if (k >= 0 && !peutJouer(L.equipe[k], github)) { L.equipe[k] = EQUIPE_KIT[k]; return true; }
+  return false;
 }
 // Quelqu'un part : au lobby, ses places se libèrent ; en combat, l'hôte joue ses héros en attendant.
 export function depart(L, qui) {
@@ -135,7 +149,7 @@ function brancher(transport) {
       else if (type === 'game') surMessage(d.from, d.m);
       else if (type === 'join' && hote) { arrivee(L, d.id); envoyerSalon(); if (L.phase === 'combat') party.to(d.id, { t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs: [], rejoint: true }); }
       else if (type === 'leave' && hote) { depart(L, d.id); verifierPrets(); envoyerSalon(); }
-      else if (type === 'welcome') relie = true;
+      else if (type === 'welcome') { relie = true; if (!hote && monGithub()) party?.toHost?.({ t: 'moi', github: monGithub() }); }
       ihm.redessiner();
     },
   });
@@ -176,6 +190,7 @@ function surMessage(de, m) {
   if (!m || typeof m !== 'object') return;
   if (hote) {
     if (['prendre', 'rendre', 'classe', 'mode', 'infini'].includes(m.t)) { if (regler(L, de, m)) envoyerSalon(); }
+    else if (m.t === 'moi') { if (moi(L, de, typeof m.github === 'string' ? m.github.slice(0, 40) : null)) envoyerSalon(); }
     else if (m.t === 'commencer' && de === HOTE) lancer();
     else if (m.t === 'rejouer' && de === HOTE) rejouer();
     else if (m.t === 'suite' && de === HOTE) suivante();

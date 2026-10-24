@@ -210,7 +210,7 @@ async function demarrer(sortieTitre) {
   // le contrat au tableau et la réunion du départ (Paolitus, 22 oct) : la porte de l'aventure
   const contrat = game.use(contratSkill, { rendu, heros, camera, decor, promeneurs, scenes, images, visite, reseau, limier, nom: nomDuVote });
   // le départ par la grande porte (la suite du contrat) : le chemin, le bout du chemin, les prêts, puis le niveau ; l'XP suit la run
-  const depart_ = game.use(departSkill, { rendu, canvas, heros, run: () => run, vote, sauvegarde, synchro, party: () => reseau.party, nom: nomDuVote, visite });
+  const depart_ = game.use(departSkill, { rendu, canvas, heros, images, des, choix, run: () => run, vote, sauvegarde, synchro, party: () => reseau.party, nom: nomDuVote, visite });
   // la case « Retour au dashboard » (B) : le chemin à l'envers, par l'écran titre et le ciel de nuit (en ?test, rien ne part)
   const versDashboard = { ouvert: false, essais: 0, ouvrir() { this.essais++; if (!query.has('test')) retourAuDashboard({ stamp: game.stamp }); }, fermer() {} };
   hud.brancher('dashboard', versDashboard);
@@ -231,7 +231,7 @@ async function demarrer(sortieTitre) {
   game.dbg.spot('entree', aller(15 * T, 29 * T, 'haut'));
   // le chantier des trois autres murs : devant le chef de chantier et son panneau
   game.dbg.spot('chantier', aller(292, 664, 'haut'));
-  Object.assign(game.dbg, { bus: game.bus, depart: depart_, run, vote, sauvegarde, synchro, rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, contrat, tableCartes, tests: camptests });
+  Object.assign(game.dbg, { bus: game.bus, des, depart: depart_, run, vote, sauvegarde, synchro, rendu, camp, heros, camera, decor, collision, missions, panneau, sentinelle, crieur, reseau, lieux, place, renommee, hud, groupe, campagne, chronique, sacoche, rumeurs, messagerie, boite, rats, tour, terrain, armurerie, archives, radio, reglages, muraille, parties, github, forgeron, choix, promeneurs, apparitions, chantier, murs, limier, jourNuit, meteo, animaux, vivant, gardes, habitants, scenes, saisons, fete, traces, patchNotes, run, vote, synchro, sauvegarde, des, contrat, tableCartes, tests: camptests });
   game.dbg.spot('sentinelle', () => { sentinelle.oublier(); sentinelle.demarrer(); });
   // le tour : depuis la sentinelle à son poste, le héros devant elle
   game.dbg.spot('tour', () => { aller(sentinelle.POSTE_LIBRE.x, sentinelle.POSTE_LIBRE.y + 1.5 * T, 'haut')(); sentinelle.suivre(); });

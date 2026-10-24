@@ -67,7 +67,9 @@ async function entrerNiveau(equipe) {
 
 async function demarrer() {
   // l'équipe choisie à l'entrée (#76) : ?equipe=brute,chevalier,druide,barde ; sinon les 4 héros du kit D1
-  const equipe = equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (la classe d'un autre joueur : pas pour moi)
+  // à plusieurs, l'équipe vient du camp (les héros choisis par chacun) : on la garde entière, c'est le lobby qui donne à chacun la sienne
+  const enGroupe = /^[A-Za-z0-9]{5}$/.test(query.get('groupe') ?? '') && !query.has('test');
+  const equipe = enGroupe ? equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT : equipePour(equipeDepuis(query.get('equipe')) ?? EQUIPE_KIT, monGithub());   // (seul : la classe d'un autre joueur ne se joue pas)
   const niveau = query.has('aventure') ? await entrerNiveau(equipe) : null;
   const MONDE = niveau ? niveau.plan : SALLE;                 // le module de la salle : D1 (salle.js) ou un fichier de l'aventure
   const planches = {
@@ -136,7 +138,6 @@ async function demarrer() {
   function premierDeMoi() { return combat.S.heros.find((id) => !ihm.reseau || ihm.reseau.aMoi(id)) ?? 'h1'; }
   function explorer() { combat.explorer(); ihm.lance(); ihm.choisirHeros(premierDeMoi()); }
   // à plusieurs, le lobby d'abord : l'hôte lance (multi.js), et la scène du départ se joue alors chez tous
-  const enGroupe = /^[A-Za-z0-9]{5}$/.test(query.get('groupe') ?? '') && !query.has('test');
   if (niveau?.plan.troncon && !enGroupe) explorer();
   if (cine && !enGroupe) cine.jouer('depart', {});
   document.querySelector('#chargement').hidden = true;

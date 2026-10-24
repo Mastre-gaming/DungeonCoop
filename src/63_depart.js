@@ -8,12 +8,15 @@
 // À plusieurs, l'hôte tient le départ (comme la réunion et le vote) : il compte, et le dit à tous (`depart:etat`).
 import AVENTURE from '../content/aventures/camp-des-mastres.json';
 import { T } from './01_plan.js';
+import { medaillon } from './33_cadres.js';
+import { motAleatoire, deDeLaGraine } from './entrainement/graine.js';
+import { CLASSES_ESSAI, EQUIPE_KIT } from './entrainement/classes_ids.js';
 import './depart.css';
 
 export const name = 'depart';
 export const always = true;
 
-export const COMPTE = 3;                                                   // secondes, une fois que tous sont prêts
+export const COMPTE = 2;                                                   // secondes, une fois le dé lancé
 // La grande porte, côté camp (devant la herse) ; le bout du chemin, de l'autre côté du pont (la route, en pixels du monde).
 export const PORTE = { x: 15 * T, y: 29 * T, rx: 2.6 * T, ry: 2.3 * T };
 export const BOUT = { x: 15 * T, y: 36.6 * T, r: 1.8 * T };
@@ -35,11 +38,22 @@ export function chemins(run, av = AVENTURE) {
   return liste;
 }
 
+// L'équipe du niveau : les héros choisis par ceux qui partent (leur classe, dans l'ordre : l'hôte d'abord), complétés par les
+// classes du kit (sans doublon tant qu'il en reste). `types` : une classe (ou null : le héros de départ, sans classe) par partant.
+export function composerEquipe(types) {
+  const libres = EQUIPE_KIT.slice();
+  const pris = types.slice(0, 4).map((t) => (CLASSES_ESSAI.includes(t) ? t : null));
+  for (const t of pris) { const i = libres.indexOf(t); if (i >= 0) libres.splice(i, 1); }
+  return Array.from({ length: 4 }, (_, k) => pris[k] ?? libres.shift() ?? EQUIPE_KIT[k]);
+}
+export const typeDe = (herosId) => (CLASSES_ESSAI.includes(herosId) ? herosId : null);
+
 // --- Le contrôleur : l'hôte mène, tout le monde voit (pur : testé avec de faux joueurs) --------------------------------------
 // `party()` : le groupe (party-net) ou null ; `nom(id)` ; `emettre(n, d)` : le bus ; `vue` : { appliquer(etat, moi) } ;
 // `liste()` : les chemins possibles. L'état : { n, phase, partants, chemin, arrives, prets, restant, vote }, phase :
-// 'preparation' (libres au camp) → 'marche' (le chemin est choisi, on va au bout) → 'compte' (tous prêts) → 'parti'.
-export function creerDepart({ party = () => null, nom = (id) => id, emettre = () => {}, vue = null, liste = () => chemins(null), compte = COMPTE } = {}) {
+// 'preparation' (libres au camp) → 'marche' (le chemin est choisi, on va au bout) → 'des' (tous prêts : un héros lance le
+// dé de la graine) → 'compte' (le dé est lancé) → 'parti'. `heroDe(id)` : le héros du camp choisi par ce joueur (ou null).
+export function creerDepart({ party = () => null, nom = (id) => id, emettre = () => {}, vue = null, liste = () => chemins(null), compte = COMPTE, heroDe = () => null, alea = Math.random } = {}) {
   let n = 0, s = null, etat = null;
   const moi = () => party()?.id ?? 'me';
   const enGroupe = () => !!party()?.active;
@@ -54,18 +68,23 @@ export function creerDepart({ party = () => null, nom = (id) => id, emettre = ()
   const tousPrets = () => !!s && s.partants.length > 0 && s.partants.every((p) => s.prets.includes(p.id));
   function verifier() {
     if (!s) return;
-    if (s.phase === 'marche' && tousPrets()) {
-      if (!enGroupe() || s.partants.length === 1) return void lancer();     // seul : un « prêt » suffit
-      s.phase = 'compte'; s.restant = compte;
-    } else if (s.phase === 'compte' && !tousPrets()) { s.phase = 'marche'; s.restant = null; }
+    if (s.phase === 'marche' && tousPrets()) entrerDansLesDes();
+    else if (s.phase === 'des' && !s.mot && !tousPrets()) { s.phase = 'marche'; s.equipe = null; s.lanceur = null; }      // (avant le jet, qui s'éloigne ou se reprend rend la main)
     diffuser();
+  }
+  // Tous sont prêts : l'équipe du niveau est faite des héros qu'ils ont choisis, et l'un d'eux lancera le dé de la graine
+  // (l'hôte le choisit ; seul, c'est le sien). Le dé donne un mot de 5 lettres : la salle, la rencontre, le miroir.
+  function entrerDansLesDes() {
+    s.phase = 'des'; s.mot = null; s.de = null;
+    s.equipe = s.partants.map((p) => { const h = heroDe(p.id); return { id: p.id, nom: p.nom, heros: h?.id ?? null, nomHeros: h?.nom ?? 'Héros de départ', image: h?.image ?? 'heros', type: typeDe(h?.id) }; });
+    s.lanceur = s.equipe.length === 1 ? 0 : null;
   }
   function lancer() {
     s.phase = 'parti'; s.restant = null;
-    const chemin = s.chemin, partants = s.partants.slice();
+    const chemin = s.chemin, partants = s.partants.slice(), mot = s.mot, equipe = composerEquipe(s.equipe.map((e) => e.type));
     diffuser();
-    party()?.toAll?.({ k: 'depart:vers', chemin });
-    emettre('depart:lancer', { chemin, partants });
+    party()?.toAll?.({ k: 'depart:vers', chemin, mot, equipe });
+    emettre('depart:lancer', { chemin, partants, mot, equipe });
   }
   function fermer() { s = null; diffuser(); }
   const api = {
@@ -104,26 +123,47 @@ export function creerDepart({ party = () => null, nom = (id) => id, emettre = ()
       diffuser(); emettre('depart:chemin', { chemin: s.chemin });
       return true;
     },
+    // L'hôte choisit le héros qui lance le dé, puis le lance ; tout le monde voit le même jet.
+    choisirLanceur(i) {
+      if (!estHote() && etat?.phase === 'des') { party()?.toHost?.({ k: 'depart:lanceur', i }); return true; }
+      if (!s || s.phase !== 'des' || s.mot || !s.equipe?.[i]) return false;
+      s.lanceur = i; diffuser(); return true;
+    },
+    lancerDe() {
+      if (!estHote() || !s || s.phase !== 'des' || s.mot || s.lanceur == null) return false;
+      s.mot = motAleatoire(alea); s.de = deDeLaGraine(s.mot);
+      diffuser();
+      const jet = { qui: s.equipe[s.lanceur], mot: s.mot, de: s.de, titre: s.chemin?.nom ?? '' };
+      party()?.toAll?.({ k: 'depart:de', ...jet });
+      emettre('depart:de', jet);
+      return true;
+    },
+    // Le dé a fini de rouler (chez l'hôte) : un court compte à rebours, puis le niveau.
+    deFini() {
+      if (!s || !estHote() || s.phase !== 'des' || !s.mot) return false;
+      s.phase = 'compte'; s.restant = compte; diffuser();
+      return true;
+    },
     // Je suis au bout du chemin (ou je l'ai quitté) : chacun le dit pour lui.
     arrive(oui) {
-      if (!etat || !['marche', 'compte'].includes(etat.phase) || !api.partant()) return false;
+      if (!etat || !['marche', 'des'].includes(etat.phase) || !api.partant()) return false;
       if (!estHote()) { party()?.toHost?.({ k: 'depart:arrive', oui: !!oui }); return true; }
       return api.recevoirArrivee(moi(), !!oui);
     },
     recevoirArrivee(id, oui) {
-      if (!s || !['marche', 'compte'].includes(s.phase) || !partant(id)) return false;
+      if (!s || !['marche', 'des'].includes(s.phase) || !partant(id) || (s.phase === 'des' && s.mot)) return false;
       s.arrives = s.arrives.filter((x) => x !== id); if (oui) s.arrives.push(id);
       if (!oui) s.prets = s.prets.filter((x) => x !== id);      // (qui s'éloigne n'est plus prêt)
       verifier();
       return true;
     },
     pret(oui) {
-      if (!etat || !['marche', 'compte'].includes(etat.phase) || !api.partant()) return false;
+      if (!etat || !['marche', 'des'].includes(etat.phase) || !api.partant()) return false;
       if (!estHote()) { party()?.toHost?.({ k: 'depart:pret', oui: !!oui }); return true; }
       return api.recevoirPret(moi(), !!oui);
     },
     recevoirPret(id, oui) {
-      if (!s || !['marche', 'compte'].includes(s.phase) || !partant(id) || (oui && !s.arrives.includes(id))) return false;
+      if (!s || !['marche', 'des'].includes(s.phase) || !partant(id) || (s.phase === 'des' && s.mot) || (oui && !s.arrives.includes(id))) return false;
       s.prets = s.prets.filter((x) => x !== id); if (oui) s.prets.push(id);
       verifier();
       return true;
@@ -144,8 +184,10 @@ export function creerDepart({ party = () => null, nom = (id) => id, emettre = ()
           if (k === 'depart:chemin') api.ouvrirVote(from);
           else if (k === 'depart:arrive') api.recevoirArrivee(from, !!m.oui);
           else if (k === 'depart:pret') api.recevoirPret(from, !!m.oui);
+          else if (k === 'depart:lanceur') { if (from === party()?.id || s?.equipe?.[m.i]?.id === from) api.choisirLanceur(m.i); }
         } else if (k === 'depart:etat') { etat = m.s; vue?.appliquer(etat, moi()); }
-        else if (k === 'depart:vers') emettre('depart:lancer', { chemin: m.chemin, partants: etat?.partants ?? [] });
+        else if (k === 'depart:vers') emettre('depart:lancer', { chemin: m.chemin, partants: etat?.partants ?? [], mot: m.mot, equipe: m.equipe });
+        else if (k === 'depart:de') emettre('depart:de', { qui: m.qui, mot: m.mot, de: m.de, titre: m.titre });
       } else if (type === 'leave' && s && estHote()) {
         // qui part ne compte plus ; plus personne : le départ est annulé
         s.partants = s.partants.filter((p) => p.id !== d.id); s.arrives = s.arrives.filter((x) => x !== d.id); s.prets = s.prets.filter((x) => x !== d.id);
@@ -165,7 +207,7 @@ function el(tag, attrs = {}, ...enfants) {
   return nd;
 }
 let game, ctrl = null, rendu, canvas, heros, run, vote, sauvegarde, synchro, party, visite, nomDe;
-let panneau, bullePorte, bulleBout, drapeau, arrets = [], enBout = null, naviguer = (url) => { location.href = url; }, delai = 700;
+let panneau, feuBoite, bullePorte, bulleBout, drapeau, images, desCamp, choix, arrets = [], enBout = null, naviguer = (url) => { location.href = url; }, delai = 700;
 const bulle = (b, texte, x, y) => {
   if (b.dataset.texte !== texte) { b.dataset.texte = texte; b.innerHTML = `<kbd data-key="KeyE">E</kbd> : ${texte}`; }
   const cr = canvas.getBoundingClientRect();
@@ -177,44 +219,71 @@ const bulle = (b, texte, x, y) => {
 // Qui va au niveau : celui qui part (le contrat), et l'hôte (c'est lui qui tient le niveau) ; un ami qui est resté au camp, non.
 export const vaAuNiveau = (partants, moi, hote) => !!hote || !partants?.length || partants.some((p) => p.id === moi);
 
-export function adresse(chemin, { code = '', hote = false, progression = null, pv = null, potions = null, caillasse = 0 } = {}) {
+export function adresse(chemin, { code = '', hote = false, progression = null, pv = null, potions = null, caillasse = 0, mot = '', equipe = null } = {}) {
   const q = new URLSearchParams({ aventure: AVENTURE.id, niveau: String(chemin?.niveau ?? 1) });
   if (code) { q.set('groupe', code); if (hote) q.set('hote', ''); }
   if (progression && !chemin?.neuf) { q.set('xp', String(progression.xp)); q.set('nh', String(progression.niveau)); }
   if (potions?.length && !chemin?.neuf) q.set('po', potions.join(','));      // (les potions de chacun, et la Caillasse du groupe : elles suivent la run)
   if (caillasse > 0 && !chemin?.neuf) q.set('ca', String(caillasse));
   if (pv?.length && !chemin?.neuf && pv.some((f) => f < 1)) q.set('pv', pv.join(','));      // (les PV gardés par la run, en fraction du maximum : le maximum suit le niveau)
+  if (mot) q.set('mot', mot);      // (la graine est tirée au camp : tout le groupe joue le même niveau)
+  if (equipe?.length === 4) q.set('equipe', equipe.join(','));      // (les héros choisis par les joueurs, complétés par le kit)
   return `./entrainement.html?${q}`;
 }
 
 function appliquer(e, moi) {
   if (!panneau) return;
-  if (!e || e.phase === 'parti') { panneau.hidden = !e; if (e) panneau.replaceChildren(el('strong', {}, 'Le groupe part !')); if (drapeau) drapeau.hidden = true; return; }
+  const feu = !!e && ['des', 'compte', 'parti'].includes(e.phase) && !!e.equipe;
+  if (feu) dessinerFeu(e, moi); else if (feuBoite) feuBoite.hidden = true;
+  if (!e || feu) { panneau.hidden = true; if (drapeau) drapeau.hidden = !!e && e.phase === 'des'; return; }
   const mien = e.partants.some((p) => p.id === moi), ch = e.chemin;
   const lignes = [el('strong', {}, ch ? `Départ : ${ch.nom}` : 'Le départ : préparez-vous')];
   if (!ch) lignes.push(el('span', {}, mien ? 'Rendez-vous à la grande porte (E) pour choisir le chemin.' : 'Le groupe prépare le départ.'));
   else {
     lignes.push(el('span', {}, `Au bout du chemin : ${e.arrives.length}/${e.partants.length}`), el('span', {}, `Prêts : ${e.prets.length}/${e.partants.length}`));
-    if (e.phase === 'compte') lignes.push(el('b', { class: 'compte' }, `Départ dans ${Math.ceil(e.restant ?? 0)}…`));
     lignes.push(el('small', {}, e.partants.map((p) => `${e.prets.includes(p.id) ? '✓' : e.arrives.includes(p.id) ? '…' : '·'} ${p.nom}`).join('  ')));
+    if (mien) {       // le « prêt » : deux boutons, actifs une fois au bout du chemin
+      const la = e.arrives.includes(moi), pret = e.prets.includes(moi);
+      lignes.push(el('div', { class: 'depart-boutons' },
+        el('button', { type: 'button', class: `bouton-jeu${pret ? ' actif' : ''}`, 'data-pret': 'oui', disabled: !la, onclick: () => ctrl?.pret(true) }, 'Prêt'),
+        el('button', { type: 'button', class: `bouton-jeu discret${!pret && la ? ' actif' : ''}`, 'data-pret': 'non', disabled: !la, onclick: () => ctrl?.pret(false) }, 'Pas encore')));
+      if (!la) lignes.push(el('small', { class: 'depart-aide' }, 'Rejoins le drapeau, au bout du chemin, pour te dire prêt.'));
+    }
   }
   panneau.replaceChildren(...lignes); panneau.hidden = false;
   drapeau.hidden = !ch;
 }
 
+// Le dé de la graine : « Autour du feu », avec les héros que les joueurs ont choisis au camp ; l'hôte désigne qui lance, puis lance.
+function dessinerFeu(e, moi) {
+  if (!feuBoite) return;
+  const hote = !!ctrl?.hote, lance = !!e.mot;
+  const items = e.equipe.map((h, i) => el('li', { class: e.lanceur === i ? 'choisi' : '', 'data-i': String(i), tabindex: 0, role: 'button',
+    onclick: () => { if (!lance && (hote || h.id === moi)) ctrl?.choisirLanceur(i); } },
+    images?.[h.image] ? Object.assign(medaillon(images[h.image]), { className: 'depart-medaillon', role: 'img', ariaLabel: `Le portrait de ${h.nomHeros}` }) : null,
+    el('span', { class: 'depart-heros' }, h.nomHeros), el('span', { class: 'depart-qui' }, h.id === moi ? 'toi' : h.nom)));
+  const qui = e.lanceur != null ? e.equipe[e.lanceur] : null;
+  const consigne = lance ? `${qui.nomHeros} a lancé : graine ${e.mot}${e.phase === 'compte' ? ` · départ dans ${Math.ceil(e.restant ?? 0)}…` : ''}`
+    : qui ? `${qui.nomHeros} lancera le dé.` : hote ? 'Choisis le héros qui lance le dé.' : 'L’hôte choisit le héros qui lance le dé.';
+  feuBoite.replaceChildren(el('h2', {}, lance ? e.chemin?.nom ?? 'Le dé est lancé' : 'Qui lance le dé ?'), el('ul', {}, items), el('p', { class: 'depart-consigne' }, consigne),
+    !lance && hote && qui ? el('button', { type: 'button', class: 'bouton-jeu depart-lancer', onclick: () => ctrl?.lancerDe() }, `${qui.nomHeros} lance le dé`) : null);
+  feuBoite.hidden = false;
+}
+
 export function init(g, options = {}) {
   game = g;
-  ({ rendu, canvas, heros, run, vote, sauvegarde, synchro, visite, nom: nomDe = (id) => id } = options);
+  ({ rendu, canvas, heros, run, vote, sauvegarde, synchro, visite, images, des: desCamp, choix, nom: nomDe = (id) => id } = options);
   party = options.party ?? (() => null);
   if (visite) return api;
   panneau = el('div', { id: 'depart-panneau', hidden: true, role: 'status' });
   bullePorte = el('a', { class: 'bulle-panneau bulle-depart', hidden: true, href: '#' });
   bulleBout = el('a', { class: 'bulle-panneau bulle-depart', hidden: true, href: '#' });
+  feuBoite = el('section', { id: 'depart-feu', class: 'cadre-epique', hidden: true, 'aria-label': 'Autour du feu' });
   drapeau = el('div', { id: 'depart-bout', hidden: true }, el('i', {}), el('span', {}, 'Fin du chemin'));
   for (const b of [bullePorte, bulleBout]) b.addEventListener('click', (e) => { e.preventDefault(); toucher(b); });
-  document.body.append(panneau, bullePorte, bulleBout, drapeau);
+  document.body.append(panneau, feuBoite, bullePorte, bulleBout, drapeau);
   game.input.bindings.consulter ??= ['KeyE'];
-  ctrl = creerDepart({ party, nom: nomDe, emettre: (n, d) => game.bus.emit(n, d), vue: { appliquer }, liste: () => chemins(run()?.courante?.etat ?? null) });
+  ctrl = creerDepart({ party, nom: nomDe, emettre: (n, d) => game.bus.emit(n, d), vue: { appliquer }, liste: () => chemins(run()?.courante?.etat ?? null), heroDe: heroDuCamp });
   arrets = [
     game.bus.on('contrat:accepte', (d) => ctrl.ouvrir(d.partants)),
     // un seul chemin (et pas « Recommencer ») : rien à voter ; sinon, le vote entre ceux qui partent
@@ -222,7 +291,8 @@ export function init(g, options = {}) {
     game.bus.on('vote:fin', ({ i, options: o }) => { const c = o?.[i]; if (c?.id?.startsWith('chemin:')) ctrl.cheminChoisi(c.id); }),
     game.bus.on('party:game', (d) => ctrl.ecouter('game', d)),
     game.bus.on('party:leave', (d) => ctrl.ecouter('leave', d)),
-    game.bus.on('depart:lancer', ({ chemin, partants }) => partir(chemin, partants)),
+    game.bus.on('depart:lancer', ({ chemin, partants, mot, equipe }) => partir(chemin, partants, mot, equipe)),
+    game.bus.on('depart:de', (jet) => jouerLeDe(jet)),
   ];
   const q = new URLSearchParams(location.search);
   if (['victoire', 'defaite'].includes(q.get('retour')) && !q.has('test')) setTimeout(() => retourDeMission(q), 0);
@@ -230,14 +300,31 @@ export function init(g, options = {}) {
 }
 
 // La mission : l'hôte (ou celui qui joue seul) tient la run ; les amis y vont avec le code du groupe.
-function partir(chemin, partants = []) {
+// Le héros que ce joueur a choisi au camp (41_choix_heros.js) : le mien, ou celui que le réseau montre chez un ami.
+function heroDuCamp(id) {
+  if (!choix) return null;
+  const moi = id === (party()?.id ?? 'me');
+  const hid = moi ? choix.choisi : choix.HEROS[Math.round(party()?.others?.get(id)?.state?.heros)]?.id;
+  const h = choix.parId(hid);
+  return h ? { id: h.id, nom: h.nom, image: h.image } : null;
+}
+// Le dé de la graine, devant tout le monde (le panneau de jet de 61_des.js) ; chez l'hôte, la fin du jet lance le compte à rebours.
+function jouerLeDe({ qui, mot, de, titre }) {
+  const palier = { nom: `Graine ${mot}`, effet: 'Le chemin de ce soir' };
+  const fini = () => { if (ctrl?.hote) ctrl.deFini(); };
+  if (!desCamp) return void fini();
+  desCamp.lancer({ titre: titre || 'Le chemin', sous: `${qui?.nomHeros ?? ''} (${qui?.nom ?? ''}) lance la graine`, qui: qui?.nomHeros, valeurs: [de], mods: [], auto: true,
+    paliers: { fumble: palier, graze: palier, hit: palier, crit: palier } }).then(fini, fini);
+}
+
+function partir(chemin, partants = [], mot = '', equipe = null) {
   const p = party(), hote = !p?.active || p.hosting, r = run();
   if (!vaAuNiveau(partants, p?.id, hote)) { annoncer('Le groupe est parti sans toi : il te reste le camp.'); return; }
   if (hote && chemin) {
     const c = r?.courante;
     if (chemin.neuf || !c || !['salle', 'choix'].includes(c.phase)) r?.nouvelle({ gabarit: gabarit(), heros: HEROS_RUN, joueurs: synchro?.joueurs?.() ?? [], reelle: true, depart: { pvMax: 100, potions: 2 } }).partir();      // (100 : les PV de la run sont des pourcentages, le maximum réel dépend de la classe et du niveau)
   }
-  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, pv: pvDeLaRun(), potions: run()?.courante?.etat.heros.map((h) => h.potions) ?? null, caillasse: run()?.courante?.etat.caillasse ?? 0 });
+  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, mot, equipe, pv: pvDeLaRun(), potions: run()?.courante?.etat.heros.map((h) => h.potions) ?? null, caillasse: run()?.courante?.etat.caillasse ?? 0 });
   annoncer('Le groupe entre sur le chemin…');
   if (delai) setTimeout(() => naviguer(url), delai); else naviguer(url);
 }
@@ -266,13 +353,13 @@ export function retourDeMission(q) {
 function toucher(b) {
   if (!ctrl) return;
   if (b === bullePorte) ctrl.demanderChemin();
-  else if (ctrl.etat?.phase === 'marche' || ctrl.etat?.phase === 'compte') ctrl.pret(!ctrl.etat.prets.includes(party()?.id ?? 'me'));
+  else if (ctrl.etat?.phase === 'marche') ctrl.pret(!ctrl.etat.prets.includes(party()?.id ?? 'me'));
 }
 export function update(dt) {
   if (!ctrl || visite) return;
   ctrl.avancer(dt);
   const e = ctrl.etat, h = heros.heros, moi = party()?.id ?? 'me', mien = ctrl.partant(moi), libre = h.controle !== false;
-  const enRoute = !!e && ['marche', 'compte'].includes(e.phase);
+  const enRoute = !!e && ['marche', 'des'].includes(e.phase) && !e.mot;
   // le bout du chemin : chacun dit s'il y est
   const la = enRoute && mien && auBout(h);
   if (enRoute && mien && la !== enBout) { enBout = la; ctrl.arrive(la); }
@@ -289,11 +376,11 @@ export function update(dt) {
   }
   if ((prochePorte || procheBout) && game.input.take('consulter')) toucher(prochePorte ? bullePorte : bulleBout);
 }
-export function dispose() { arrets.forEach((f) => f()); arrets = []; for (const n of [panneau, bullePorte, bulleBout, drapeau]) n?.remove(); ctrl = null; }
+export function dispose() { arrets.forEach((f) => f()); arrets = []; for (const n of [panneau, feuBoite, bullePorte, bulleBout, drapeau]) n?.remove(); ctrl = null; }
 export const api = {
   get controleur() { return ctrl; },
   get panneau() { return panneau; },
-  get bulles() { return { porte: bullePorte, bout: bulleBout, drapeau }; },
+  get bulles() { return { porte: bullePorte, bout: bulleBout, drapeau, feu: feuBoite }; },
   retourDeMission,
   // pour les tests : où l'on serait allé, au lieu d'y aller
   testerNavigation(f) { naviguer = f ?? ((url) => { location.href = url; }); delai = f ? 0 : 700; },

@@ -16,12 +16,12 @@ import { lire } from './reglages-combat.js';   // les nombres qu'on règle à la
 // Les 4 premières sont les héros du kit D1 ; les 4 suivantes, des classes d'essai faites au budget de
 // CLASS_TEMPLATE.fr.md (mission #76, fiches dans design/terrain-entrainement/CLASSES_ESSAI.fr.md).
 // Les vraies classes restent celles de chacun (missions #30 à #33).
-export const EQUIPE_KIT = ['brute', 'mage', 'voleur', 'gardien'];
 // La 9e : le Traqueur au limier, la classe de Paolitus (content/classes/traqueur-au-limier.json), la première vraie classe ici ;
 // la 10e : Shadow, la classe de FrapsFTW (content/classes/shadow.json, #198) ; la 11e : Baba Brisenclume, la classe de DonBabaa
 // (content/classes/baba-brisenclume.json) ; la 12e : le Changepeau, la classe de DevMope (content/classes/changepeau.json).
 // Chacune ne se joue que par son auteur (peutJouer).
-export const CLASSES_ESSAI = ['brute', 'mage', 'voleur', 'gardien', 'eclaireuse', 'chevalier', 'druide', 'barde', 'traqueur-au-limier', 'shadow', 'baba-brisenclume', 'changepeau', 'riff-ossel'];
+import { CLASSES_ESSAI, EQUIPE_KIT } from './classes_ids.js';
+export { CLASSES_ESSAI, EQUIPE_KIT };
 export const PLACES = ['h1', 'h2', 'h3', 'h4'];            // les 4 héros : une place, une classe choisie à l'entrée
 // « brute,chevalier,druide,barde » (l'adresse : ?equipe=…) → une équipe valable de 4 classes, ou null.
 export function equipeDepuis(texte) {
