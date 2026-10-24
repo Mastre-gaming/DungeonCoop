@@ -1020,8 +1020,16 @@ export async function selfTest(t, game) {
   ihm.dom.capacites.querySelectorAll('.capacite')[2].dispatchEvent(new MouseEvent('mouseleave')); game.dbg.advance(0.05);
   t.eq(ihm.dom.ficheCap.dataset.capacite, 'etincelle', 'en quittant la barre, la fiche revient à la capacité choisie');
   t.eq(getComputedStyle(ihm.dom.ficheCap).pointerEvents, 'none', 'la fiche ne prend pas le clic : on vise à travers elle');
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', code: 'KeyF', bubbles: true })); game.dbg.advance(0.05);
+  t.ok(ihm.dom.ficheCap.hidden && ihm.ui.cap === 'etincelle' && ihm.dom.basculeFiche.getAttribute('aria-pressed') === 'false', 'F cache la fiche (la capacité reste choisie)');
+  const etiqIntention = () => [...document.querySelectorAll('.intention-terrain')].filter((n) => !n.hidden);
+  game.dbg.advance(0.05);
+  const avant = etiqIntention().length;
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'i', code: 'KeyI', bubbles: true })); game.dbg.advance(0.05);
-  t.ok(ihm.dom.ficheCap.hidden && ihm.ui.cap === 'etincelle' && ihm.dom.basculeFiche.getAttribute('aria-pressed') === 'false', 'I cache la fiche (la capacité reste choisie)');
+  t.ok(avant > 0 && !etiqIntention().length, 'I cache les intentions des ennemis (et la fiche reste comme elle était)');
+  t.ok(etiqIntention().every((n) => n.className.includes('i-')) && !document.querySelector('.intention-terrain.zone, .intention-terrain.charge'), 'les étiquettes d’intention n’ont plus de classe qui se confond avec un autre panneau');
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'i', code: 'KeyI', bubbles: true })); game.dbg.advance(0.05);
+  t.eq(etiqIntention().length, avant, 'I les remontre');
   ihm.dom.basculeFiche.click(); game.dbg.advance(0.05);
   t.ok(!ihm.dom.ficheCap.hidden && !ihm.ui.ficheCachee, 'le bouton « Fiche » la remontre');
   survoler(s1.x, s1.y - 0.8); game.dbg.advance(0.05);

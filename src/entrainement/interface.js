@@ -5,7 +5,7 @@
 // des actions du combat.
 //   clic : choisir un héros, marcher (on voit le chemin et sa longueur), viser · Échap ou clic droit : annuler
 //   1 à 9 : une capacité · Tab : le héros suivant · molette : zoom · clic droit glissé : déplacer la vue
-//   V : les barres de vie des ennemis · Maj+V : celles des alliés
+//   V : les barres de vie des ennemis · Maj+V : celles des alliés · I : les intentions des ennemis · F : la fiche de la capacité
 // À plusieurs (#80, multi.js branché) : l'accueil devient le lobby (chacun ses places), on ne choisit que ses héros, les
 // actions partent chez l'hôte, et « Fin de la phase » devient « Je suis prêt ».
 import { CAPACITES, HEROS, ENNEMIS, PNJ, NOM_ETAT, NOM_RESULTAT, CLASSES_ESSAI, EQUIPE_KIT, PLACES, FAMILIERS, FORMES, equipeDepuis, equipePour, classesPour, capacitesDe, VUE } from './regles.js';
@@ -38,7 +38,7 @@ const pct = (x) => `${Math.round(x * 100)} %`;
 const duree = (ms) => { const s = Math.round(Math.max(0, ms) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 let cine = null, game, combat, vue, canvas, nouveauCombat, reseau = null;
-// la fiche de la capacité, montrée ou cachée (I, ou le bouton au-dessus de la barre) : ce navigateur s'en souvient
+// la fiche de la capacité, montrée ou cachée (F, ou le bouton au-dessus de la barre) : ce navigateur s'en souvient
 const CLE_FICHE = 'dungeoncoop:fiche-capacite';
 const ui = { ficheCachee: (() => { try { return localStorage.getItem(CLE_FICHE) === 'cachee'; } catch { return false; } })(), sel: null, cap: null, capSurvol: null, survol: null, annuler: [], portee: null, fini: false, sale: true, horloge: Date.now };
 const dom = {};
@@ -96,7 +96,7 @@ function construire() {
   const loupSculpte = (cote) => el('div', { class: `loup ${cote}`, 'aria-hidden': 'true' }, el('div', { class: 'loup-bois' }), el('div', { class: 'socle' }));
   dom.bas = el('div', { class: 'bas-terrain' },
     dom.ficheCap = el('section', { class: 'fiche-capacite bois', hidden: true, 'aria-live': 'polite' }),
-    dom.basculeFiche = el('button', { type: 'button', class: 'bascule-fiche bouton-jeu discret petit', 'aria-pressed': 'true', title: 'Montrer ou cacher la fiche de la capacité (I)', onclick: () => basculerFiche() }, 'Fiche'),
+    dom.basculeFiche = el('button', { type: 'button', class: 'bascule-fiche bouton-jeu discret petit', 'aria-pressed': 'true', title: 'Montrer ou cacher la fiche de la capacité (F)', onclick: () => basculerFiche() }, 'Fiche'),
     // la barre des sorts, comme celle du camp (BABA) : entre ses embouts de laiton et ses deux loups sculptés sur leur socle
     el('div', { class: 'socle-sorts' }, loupSculpte('gauche'), el('span', { class: 'embout gauche', 'aria-hidden': 'true' }),
       dom.barre = el('nav', { class: 'barre-terrain bois', 'aria-label': 'Les sorts du héros choisi' },
@@ -108,7 +108,7 @@ function construire() {
   dom.info = el('div', { class: 'carte-cible bois', hidden: true });
   dom.distance = el('div', { class: 'distance-survol', hidden: true });
   dom.aide = el('p', { class: 'aide-terrain plaque' }, 'Clic : choisir, marcher, viser · ', el('kbd', {}, '1'), '–', el('kbd', {}, '9'), ' capacités · ',
-    el('kbd', {}, 'Tab'), ' héros suivant · ', el('kbd', {}, 'Échap'), ' annuler · ', el('kbd', {}, 'V'), ' vie des ennemis · ', el('kbd', {}, 'I'), ' fiche · ', el('kbd', {}, 'Maj'), '+', el('kbd', {}, 'V'),
+    el('kbd', {}, 'Tab'), ' héros suivant · ', el('kbd', {}, 'Échap'), ' annuler · ', el('kbd', {}, 'V'), ' vie des ennemis · ', el('kbd', {}, 'F'), ' fiche · ', el('kbd', {}, 'I'), ' intentions · ', el('kbd', {}, 'Maj'), '+', el('kbd', {}, 'V'),
     ' des alliés · molette : zoom · clic droit glissé : la vue');
   dom.accueil = el('div', { class: 'fond-terrain', id: 'accueil' }, el('section', { class: 'cadre-terrain' },
     el('h1', {}, 'Le terrain d’entraînement'),
@@ -523,7 +523,12 @@ function clavier(e) {
   if (e.target.closest?.('input, textarea')) return;
   if (cine?.actif()) { if (e.key === 'Escape') cine.passer(); else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cine.suivant(); } return; }
   if (e.key === 'Escape') { if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; return; }
-  if (e.code === 'KeyI' && !e.ctrlKey && !e.metaKey && !e.altKey) { basculerFiche(); return; }
+  if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) { basculerFiche(); return; }
+  if (e.code === 'KeyI' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const oui = vue.basculerIntentions();
+    banniere(`Intentions des ennemis : ${oui ? 'affichées' : 'cachées'} (I)`);
+    return;
+  }
   if (e.code === 'KeyD' && !e.ctrlKey && !e.metaKey && !e.altKey) { desengager(); return; }
   if (e.code === 'KeyV' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const camp = e.shiftKey ? 'h' : 'e', oui = vue.basculerPlaques(camp);
@@ -666,7 +671,7 @@ function effetsFiche(cap) {
 }
 function dessinerFiche(h) {
   const id = ui.capSurvol ?? ui.cap, cap = id ? CAPACITES[id] : null;
-dom.basculeFiche.setAttribute('aria-pressed', String(!ui.ficheCachee)); dom.basculeFiche.textContent = ui.ficheCachee ? 'Fiche : cachée (I)' : 'Fiche (I)';
+dom.basculeFiche.setAttribute('aria-pressed', String(!ui.ficheCachee)); dom.basculeFiche.textContent = ui.ficheCachee ? 'Fiche : cachée (F)' : 'Fiche (F)';
   if (ui.ficheCachee || !cap || !h || !['heros', 'exploration'].includes(combat.S.phase) || vue.occupe()) { dom.ficheCap.hidden = true; return; }
   const r = resultats(cap), ok = utilisable(h, cap);
   const refus = ok ? null : el('span', { class: 'effet refus' }, pourquoiPas(h, cap));
@@ -809,7 +814,7 @@ function dessinerTout() {
 function basculerFiche(oui = ui.ficheCachee) {   // oui : la montrer
   ui.ficheCachee = !oui;
   try { localStorage.setItem(CLE_FICHE, ui.ficheCachee ? 'cachee' : 'montree'); } catch {}
-  banniere(`Fiche de la capacité : ${ui.ficheCachee ? 'cachée' : 'montrée'} (I)`);
+  banniere(`Fiche de la capacité : ${ui.ficheCachee ? 'cachée' : 'montrée'} (F)`);
   ui.sale = true;
 }
 function basculerJournal() {
