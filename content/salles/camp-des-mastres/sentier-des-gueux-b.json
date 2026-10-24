@@ -1,9 +1,9 @@
 {
   "version": 1,
-  "id": "camp-des-mastres/sentier-f-a",
+  "id": "camp-des-mastres/sentier-des-gueux-b",
   "nom": "",
   "unite": "cases",
-  "note": "La clairière aux deux rochers : un goulot garni de foin, le brasero au bord. Les ennemis le traversent d'eux-mêmes (fiche chemin-sentier-f.md, gabarit A).",
+  "note": "La meule : un grand tas de foin, le brasero collé à son flanc ouest (gabarit B).",
   "taille": [
     24,
     16
@@ -11,21 +11,17 @@
   "decor": {
     "rochers": [
       [
-        11.5,
-        8.4
-      ],
-      [
-        11.5,
-        11.6
+        6.5,
+        13.5
       ]
     ],
     "tonneaux": [],
     "foin": [
       {
         "x0": 10,
-        "y0": 8,
+        "y0": 7,
         "x1": 15,
-        "y1": 12
+        "y1": 13
       }
     ],
     "braseros": [
@@ -57,16 +53,16 @@
     "ennemis": {
       "avant": [
         [
-          17.5,
-          8.5
+          16.5,
+          7.5
         ],
         [
-          17.5,
-          11.5
+          16.5,
+          10
         ],
         [
-          17.5,
-          14
+          16.5,
+          12.5
         ]
       ],
       "loin": [
@@ -82,11 +78,11 @@
       "fond": [
         [
           22,
-          9.5
+          9
         ],
         [
           22,
-          11.5
+          11
         ]
       ]
     }

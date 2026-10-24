@@ -76,6 +76,7 @@ function construire() {
       dom.relance = el('span', { class: 'relance-hud', title: 'La vieille borne : le premier d20 raté d’un héros se rejoue' }),
       dom.poserTonneau = el('button', { type: 'button', class: 'bouton-jeu discret petit', title: 'Poser le tonneau d’huile à côté du héros choisi (exploration)', onclick: () => { const h = herosChoisi(); if (h && combat.S.phase === 'exploration' && geste('poser', h)) vider(); else banniere('En exploration, avec un héros choisi'); } }, 'Poser le tonneau')),
     dom.caillasse = el('span', { class: 'caillasse-hud', title: 'La Caillasse du groupe', hidden: true }, el('i', { class: 'piece-caillasse', 'aria-hidden': 'true' }), dom.caillasseN = el('b', {}, '0')),
+    dom.xp = el('span', { class: 'xp-hud', title: 'L’expérience du groupe : chaque niveau donne +5 PV et ouvre des compétences', hidden: true }, dom.xpNiveau = el('b', {}, 'Niv. 1'), el('span', { class: 'xp-barre' }, dom.xpJauge = el('i', {})), dom.xpReste = el('small', {}, '')),
     dom.chrono = el('span', { class: 'chrono' }),
     el('span', { class: 'sans-cases', title: 'FIGHT_RULES.md, « On trial » : chaque classe a une distance max par tour' }, 'sans cases'),
     dom.boutonFiche = el('button', { type: 'button', class: 'bouton-jeu discret', onclick: () => montrerFin(true) }, 'Fiche'),
@@ -331,6 +332,8 @@ function surEvenement(e) {
   else if (e.type === 'perception' && e.ok) banniere('Quelque chose brille…', 'combo');
   else if (e.type === 'levier') banniere({ corde: 'Le pont s’effondre !', vanne: 'La cour est inondée !', herse: 'La herse tombe !' }[e.sorte] ?? '', 'combo');
   else if (e.type === 'curiosite' && e.n) banniere(`+${e.n} Caillasse`, 'combo');
+  else if (e.type === 'xp') banniere(`+${e.n} XP`, 'combo');
+  else if (e.type === 'niveau') banniere(`Niveau ${e.niveau} ! +${e.pv} PV${e.appris?.length ? ` · ${e.appris.map((a) => `${combat.U(a.h)?.nom ?? ''} : ${CAPACITES[a.cap]?.nom ?? a.cap}`).join(' · ')}` : ''}`, 'combo');
   else if (e.type === 'arrivee') ui.arrivee = true;
   ui.sale = true;
 }
@@ -556,7 +559,8 @@ export function update() {
   if (ui.arrivee && libre && dom.arrivee.hidden && !ui.arriveeJouee) { ui.arriveeJouee = true; if (cine) { cine.jouer('arrivee', {}).then(() => { ui.arriveeVue = true; ui.sale = true; }); } else ui.arriveeVue = true; }
   if (ui.arrivee && ui.arriveeVue && libre && dom.arrivee.hidden && !cine?.actif()) {
     const S = combat.S;
-    dom.arriveeTexte.textContent = `Le groupe a passé la porte de la tour avec ${S.caillasse} Caillasse et ${S.stats.combos.length} combo${S.stats.combos.length > 1 ? 's' : ''} entre héros. La suite du camp des mastres est à écrire.`;
+    dom.arriveeTexte.textContent = `Le groupe a passé la porte de la tour avec ${S.caillasse} Caillasse et ${S.stats.combos.length} combo${S.stats.combos.length > 1 ? 's' : ''} entre héros. ${S.progression ? `Le groupe est au niveau ${S.progression.niveau} (${S.progression.xp} XP). ` : ''}La suite du camp des mastres est à écrire.`;
+    dom.arrivee.querySelector('a.retour-camp').href = adresseRetour();
     dom.arrivee.hidden = false;
   }
   if (!ui.sale) return;
@@ -885,6 +889,14 @@ function carteVictoire(g, n) {
 function compterCaillasse() {
   if (!ui.aventure) return;
   dom.caillasse.hidden = false;
+  const PG = combat.S.progression;
+  dom.xp.hidden = !PG;
+  if (PG) {
+    const P = PG.plan, base = (PG.niveau - 1) * P.xpParNiveau;
+    dom.xpNiveau.textContent = `Niv. ${PG.niveau}`;
+    dom.xpJauge.style.width = PG.niveau >= P.niveauMax ? '100%' : `${Math.round(((PG.xp - base) / P.xpParNiveau) * 100)}%`;
+    dom.xpReste.textContent = PG.niveau >= P.niveauMax ? 'max' : `${PG.xp - base}/${P.xpParNiveau} XP`;
+  }
   const vrai = combat.S.caillasse;
   if (ui.cv == null) ui.cv = vrai;
   if (ui.cv !== vrai) {
@@ -921,6 +933,13 @@ function banniere(texte, genre = '') {
   clearTimeout(minuterieBanniere); minuterieBanniere = setTimeout(() => { dom.banniere.hidden = true; }, 1300);
 }
 // Une aventure : la victoire rend la route (la Caillasse, puis l'exploration) ; la défaite ramène au début du chemin.
+// Où « Retour au camp » mène : au bout du chemin, vers la grande porte, avec l'expérience du groupe (le camp la rend à la run) ;
+// sinon, devant le terrain d'entraînement comme avant.
+function adresseRetour() {
+  const P = combat.S.progression;
+  if (!ui.aventure || !combat.S.arrivee || !P) return RETOUR_CAMP;
+  return `./index.html?spot=porte&retour=victoire&niveau=${new URLSearchParams(location.search).get('niveau') ?? '1'}&xp=${P.xp}&nh=${P.niveau}`;
+}
 function finAventure() {
   if (combat.S.resultat === 'victoire') {
     const g = combat.S.groupeActif ?? 'principal';
@@ -990,7 +1009,7 @@ function pointeur() {
 }
 
 export const api = {
-  basculerFiche, ui, dom, majCurseur, finAventure, demanderChemin, demanderIncident, commencer, mancheSuivante, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
+  basculerFiche, ui, dom, majCurseur, adresseRetour, finAventure, demanderChemin, demanderIncident, commencer, mancheSuivante, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
   get selection() { return ui.sel; },
   get reseau() { return reseau; },
   // multi.js : à plusieurs, puis de nouveau seul (l'hôte est parti : tous les héros sont à moi)

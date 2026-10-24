@@ -60,12 +60,14 @@ export const JOUEURS_MAX = 4;
 
 // La run elle-même. `evenement(nom, donnees)` prévient le reste du jeu (le bus) ; `gabarit` : une liste d'étapes ;
 // `heros` : des identifiants (état de départ) ou des états déjà faits ; `joueurs` : [{ id, nom }], l'hôte en premier.
-export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], depart = DEPART, evenement = () => {} } = {}) {
+// `reelle` : une vraie aventure (le départ du camp) : le bandeau n'a pas les boutons d'essai (Blessure, Victoire, Défaite).
+export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], depart = DEPART, evenement = () => {}, reelle = false } = {}) {
   const etapes = gabarit.map(sallesDe);
   const faire = (j) => (typeof j === 'string' ? neuf(j, depart) : { ...neuf(j.id, depart), ...copie(j) });
   const s = {
     gabarit, phase: 'camp', etape: -1, salle: null, options: [], heros: heros.map(faire), joueurs: [], reveil: null,
-    defaites: 0, parcours: [], issue: null,
+    defaites: 0, parcours: [], issue: null, reelle,
+    progression: { xp: 0, niveau: 1 },      // l'expérience du groupe (entrainement/progression.js) : elle suit la run et sa sauvegarde, pas l'aventure relancée
   };
   // Les héros aux joueurs, à tour de rôle : avec deux joueurs, deux héros chacun ; avec trois, 2-1-1 ; avec quatre, un chacun.
   function repartir(js) {
@@ -182,10 +184,14 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     // `rapport` : où en sont les héros à la fin (voir rapporter). Une défaite l'ignore : tout le groupe tombé, il se
     // réveille au dernier repos (ou au départ, s'il n'y en a pas eu) avec les héros tels qu'ils y étaient ; la salle perdue
     // garde ses ennemis (les salles s'en souviendront). Le tirage de défaite (le d20) viendra avec les héros.
-    finirSalle(issue, rapport) {
+    // `progression` : { xp, niveau } du groupe à la fin de la salle (l'XP d'une salle perdue est perdue avec elle ; elle ne recule jamais).
+    finirSalle(issue, rapport, progression = null) {
       if (s.phase !== 'salle') return false;
       if (!['victoire', 'defaite', 'abandon'].includes(issue)) return false;
       if (issue !== 'defaite' && rapport) rapporter(rapport);
+      if (issue !== 'defaite' && progression && Number.isFinite(progression.xp) && Number.isFinite(progression.niveau)) {
+        s.progression = { xp: Math.max(s.progression.xp, Math.round(progression.xp)), niveau: Math.max(s.progression.niveau, Math.round(progression.niveau)) };
+      }
       s.parcours.push({ salle: s.salle.id, issue });
       if (issue === 'abandon') return finir('abandon');
       if (issue === 'defaite') {
@@ -216,7 +222,8 @@ export function creerRun({ gabarit = GABARIT_ESSAI, heros = [], joueurs = [], de
     },
     // Une copie de la run, sans rien qui bouge : pour l'envoyer à un autre onglet ou la ranger.
     instantane() { return copie({ ...s, salle: s.salle, options: s.options }); },
-    restaurer(i) { Object.assign(s, copie(i)); return api; },
+    restaurer(i) { Object.assign(s, copie(i)); s.progression ??= { xp: 0, niveau: 1 }; return api; },      // (une ancienne sauvegarde n'a pas d'XP : niveau 1)
+    get progression() { return s.progression; },
   };
 
   // L'étape suivante : une seule salle → on y entre ; plusieurs → le groupe choisit ; plus rien → le bilan.
@@ -267,7 +274,7 @@ function dessiner() {
   const equipe = el('div', { class: 'run-heros' }, r.etat.heros.map((h) => el('span', { class: h.tombe ? 'tombe' : '' }, `${h.id}${nomDe(h) ? ` (${nomDe(h)})` : ''} ${h.pv}/${h.pvMax} PV · ${h.potions} potion${h.potions > 1 ? 's' : ''}${h.tombe ? ' · tombé' : ''}`)));
   const boutons = [];
   if (lecture) boutons.length = 0;
-  else if (r.phase === 'salle') boutons.push(['Blessure', () => { const h = r.etat.heros.find((x) => !x.tombe); if (h) r.rapporter({ [h.id]: { pv: h.pv - 6 } }); }], ['Victoire', () => r.finirSalle('victoire')], ['Défaite', () => r.finirSalle('defaite')], ['Abandon', () => r.finirSalle('abandon')]);
+  else if (r.phase === 'salle' && !r.etat.reelle) boutons.push(['Blessure', () => { const h = r.etat.heros.find((x) => !x.tombe); if (h) r.rapporter({ [h.id]: { pv: h.pv - 6 } }); }], ['Victoire', () => r.finirSalle('victoire')], ['Défaite', () => r.finirSalle('defaite')], ['Abandon', () => r.finirSalle('abandon')]);
   if (!lecture && r.phase === 'bilan') boutons.push(['Rentrer au camp', () => r.rentrer()]);
   bandeau.replaceChildren(barre, el('div', { class: 'run-ligne' }, ligne, r.etat.defaites ? ` · ${r.etat.defaites} défaite${r.etat.defaites > 1 ? 's' : ''}` : ''), equipe,
     el('div', { class: 'run-boutons' }, boutons.map(([t, f]) => el('button', { type: 'button', onclick: f }, t))));

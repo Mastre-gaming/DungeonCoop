@@ -1,0 +1,12 @@
+/* Le départ par la grande porte (63_depart.js) : le panneau, les bulles, le drapeau du bout du chemin */
+#depart-panneau { position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 18px; min-width: 260px; text-align: center;
+  font: 600 .9rem var(--texte, system-ui); color: #2a1d08; background: linear-gradient(#f4e6c4, #e6d09c); border: 2px solid #5a3b10; border-radius: 6px; box-shadow: 0 3px 0 rgba(0, 0, 0, .35); }
+#depart-panneau[hidden], .bulle-depart[hidden], #depart-bout[hidden] { display: none; }
+#depart-panneau strong { font: 700 1.05rem var(--titre, serif); }
+#depart-panneau small { font-size: .75rem; opacity: .85; }
+#depart-panneau .compte { color: #a02510; font-size: 1.1rem; }
+.bulle-depart { position: fixed; z-index: 41; transform: translate(-50%, -100%); }
+#depart-bout { position: fixed; z-index: 30; transform: translate(-50%, -100%); pointer-events: none; display: flex; flex-direction: column; align-items: center; font: 700 .75rem var(--titre, serif); color: #fff; text-shadow: 0 1px 2px #000; }
+#depart-bout i { display: block; width: 4px; height: 38px; background: #6b4a1e; position: relative; }
+#depart-bout i::after { content: ''; position: absolute; left: 4px; top: 2px; width: 24px; height: 16px; background: #c8402a; clip-path: polygon(0 0, 100% 35%, 0 100%); animation: depart-flotte 1.6s ease-in-out infinite; }
+@keyframes depart-flotte { 50% { transform: skewY(-8deg) scaleX(.9); } }

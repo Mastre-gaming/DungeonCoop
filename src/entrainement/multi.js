@@ -6,7 +6,7 @@
 // On voit où pointe chacun, et ce qu'il prépare (« Fraps : Foudre → Sbire 2 ») : le combo se voit avant d'être joué.
 //   ?groupe=ABCDE&hote   l'hôte : le code du groupe du camp, sur un autre préfixe (les deux salles ne se mélangent pas)
 //   ?groupe=ABCDE        les autres (on réessaie tant que l'hôte n'est pas arrivé)
-// L'exploration (le sentier F) passe par le même chemin : chacun mène ses héros, l'hôte arbitre la marche, les gestes et les
+// L'exploration (le sentier des Gueux) passe par le même chemin : chacun mène ses héros, l'hôte arbitre la marche, les gestes et les
 // choix du groupe (la fourche, l'embuscade), joue les scènes chez tous et renvoie l'état.
 // La salle (?salle=, salles.js) est celle de l'hôte : il la choisit au lobby, et tout le groupe le suit (la page se recharge,
 // avec le même groupe) ; qui arrive dans une autre salle que lui (du camp, sans ?salle) est renvoyé dans la sienne.
@@ -301,7 +301,7 @@ export function adresseSalle(id, search = location.search, chemin = location.pat
   q.delete('go');
   return `${chemin}?${q}`;
 }
-const adresseCamp = () => `./index.html?spot=combat&${hote ? 'hote' : 'code'}=${code}`;
+const adresseCamp = () => `${ihm.adresseRetour?.() ?? './index.html?spot=combat'}&${hote ? 'hote' : 'code'}=${code}`;      // (au bout du chemin : vers la grande porte, avec l'XP du groupe)
 
 // --- Chaque image : les pointeurs des amis -------------------------------------------------------------------------
 export function update(dt) {

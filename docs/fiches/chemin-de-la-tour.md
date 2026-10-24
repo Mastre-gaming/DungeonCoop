@@ -28,8 +28,8 @@ Brouillon du 22 oct 2026, **validé le 22 oct** pour le tableau des 6 étapes, l
 Environ **300 x 26 cases (450 m)** : une exploration, puis un combat, puis une exploration… Les scénarios de jeu des combats : `chemin-combats.md`.
 | # | Zone | Sorte | Ce qui s'y passe |
 |---|---|---|---|
-| 0 | Le départ | découverte | On part de la clairière de l'est du camp (son étang, sa ferme), par le sentier F qui s'enfonce dans la forêt (le plan agrandi du camp, `design/camp/plans/PLAN_AGRANDI.fr.md` ; décidé le 23 oct). Rien n'attaque : on apprend à marcher, à fouiller (une souche), à lire un champ de vue ; des traces de bandits. |
-| 1 | Le sentier F | combat 1 · niv. 1 | « Les guetteurs » : le foin, le brasero, les bandits. Fiche : `chemin-sentier-f.md`. |
+| 0 | Le départ | découverte | On part de la clairière de l'est du camp (son étang, sa ferme), par le sentier des Gueux qui s'enfonce dans la forêt (le plan agrandi du camp, `design/camp/plans/PLAN_AGRANDI.fr.md` ; décidé le 23 oct). Rien n'attaque : on apprend à marcher, à fouiller (une souche), à lire un champ de vue ; des traces de bandits. |
+| 1 | Le sentier des Gueux | combat 1 · niv. 1 | « Les guetteurs » : le foin, le brasero, les bandits. Fiche : `chemin-sentier-des-gueux.md`. |
 | 2 | La fourche | exploration | Le poteau indicateur (le choix, §4) : le colporteur au nord, la vieille borne au sud ; un éboulis ferme la branche perdue (à ses deux bouts). |
 | 3 | Le gué | combat 2 · niv. 3 | « Le péage » : la rivière, le pont tenu par des bandits, des arbalétriers sur l'autre rive, le haut-fond. |
 | 4 | Les champs | exploration | Le blé, les épouvantails, les meules ; tiré par la graine : le chariot renversé (énigme ou piège) ou l'embuscade (négociée ou combattue). |
@@ -51,7 +51,7 @@ Les niveaux montent de 1 après chaque combat ou étape (1 à 6). Décors encore
 Chaque combat rapporte 15 à 25 par héros, soit environ 60 avant la porte, plus les cachettes. Le colporteur est la seule dépense. Les chiffres sont des valeurs de départ (`MONNAIE.fr.md`).
 
 ## 9. Le score 8/10
-- Un nouveau joueur comprend le combo du sentier F sans explication et le réussit avant la fin du tour 3.
+- Un nouveau joueur comprend le combo du sentier des Gueux sans explication et le réussit avant la fin du tour 3.
 - Le groupe arrive à la porte au niveau 6 en environ 45 min, sans que personne n'ait été perdu sur un seul jet.
 - On a envie de fouiller : chaque tronçon a au moins une chose trouvée en marchant.
 - Le d20 hors combat se comprend dès la première cachette : même geste, même son qu'en combat.
@@ -59,7 +59,7 @@ Chaque combat rapporte 15 à 25 par héros, soit environ 60 avant la porte, plus
 - Test sur la route du propriétaire : lien, Hôte, code, amis, le chemin ; captures à l'appui.
 
 ## 10. L'ordre de construction (porte T, décidé le 23 oct)
-1. **Le premier tronçon seul** (le sentier F) comme début de la grande carte : la marche, l'exploration, le combat qui se déclenche, la surprise. Joué et noté.
+1. **Le premier tronçon seul** (le sentier des Gueux) comme début de la grande carte : la marche, l'exploration, le combat qui se déclenche, la surprise. Joué et noté.
 2. Ensuite seulement, les autres tronçons, un par un, chacun avec sa fiche.
 
 ## 11. Reste à discuter
@@ -106,7 +106,7 @@ Rien n'est posé pour remplir : chaque pièce dit quelque chose du chemin, ou se
 | Zone | Pièce | Pourquoi elle est là |
 |---|---|---|
 | 0, le départ | l'étang, la meule, l'épouvantail, la charrette, la clôture | la lisière du camp se cultive : le départ est encore « chez soi » |
-| 1, le sentier F | la souche à la hache, le bois empilé, les souches | des bûcherons du camp coupent ici ; une souche creuse cache de la Caillasse |
+| 1, le sentier des Gueux | la souche à la hache, le bois empilé, les souches | des bûcherons du camp coupent ici ; une souche creuse cache de la Caillasse |
 | 2, la fourche | le poteau | il marque le choix (s'y arrêter ouvre la question) |
 | 2 | l'étal du colporteur (nord), la vieille borne (sud) | chaque branche a sa rencontre : acheter, ou tenter le dé |
 | 2 | l'éboulis | il ferme la branche perdue, à ses deux bouts |
@@ -140,3 +140,18 @@ Rien n'est posé pour remplir : chaque pièce dit quelque chose du chemin, ou se
 - **Un bug trouvé en route :** `instantane()` écrivait l'infini (le déplacement à pied) en `null` : un invité ne pouvait plus marcher. Corrigé (`'∞'`), avec un test.
 - **Vérifié :** `?test` (558) et `node tools/multi_explo.mjs` (un hôte et un ami simulé sur le fil loopback ; une page invitée face à un hôte simulé).
 - **Reste à faire :** le vote du chemin et le « prêt » au bout, dans le flux camp → mission (patch suivant).
+
+## 16. L'expérience, les niveaux et les compétences (src/entrainement/progression.js)
+- **Le nom :** « le sentier F » s'appelle désormais **le sentier des Gueux** (nom, dialogues, fichiers : `sentier-des-gueux-*`). Un nom provisoire, à confirmer ou changer par l'équipe.
+- **Le plan (content/aventures/camp-des-mastres.json, « progression ») :** 100 XP par niveau, niveau max 6 ; le premier combat, le gué, les champs (l'embuscade évitée ou gagnée, ou le chariot fouillé), le moulin, la porte et la fourche valent chacun 100 : le groupe arrive à la porte au niveau 6. Une trouvaille, une cachette ou une curiosité : 5. Le groupe gagne l'XP ensemble.
+- **Un niveau :** +5 PV à chaque héros (CLASS_TEMPLATE.fr.md §7) et des compétences qui s'ouvrent (`DEBLOQUE` dans progression.js) : 2 → Projection (Brute), Éclaboussure (Mage), Fiole ciblée (Voleur), Garde de givre (Gardien), etc. ; 4 → les secondes (Projection 20, Foudre, Ouverture 2…). Une compétence pas encore apprise ne se lance pas et n'est pas sur la barre. Les classes des amis (Traqueur, Shadow, Baba, Changepeau) n'ont rien de verrouillé : leur créateur écrit ses niveaux. Aux niveaux 3 (sous-classe), 5 et 6 (mouvement d'équipe), rien n'est encore écrit : le tableau les accepte.
+- **Garder ou non :** l'XP et le niveau vivent dans la run (`57_run.js`, `progression`) et donc dans sa sauvegarde (`60_sauvegarde.js`) ; la page du niveau les reçoit par `?xp=` et `?nh=`. Relancer l'aventure (une nouvelle run) repart au niveau 1 ; une salle perdue ne rapporte rien ; l'XP ne recule jamais.
+- **À brancher dans le flux camp → mission :** que le camp passe `xp` et `nh` en lançant le niveau, et que le niveau rende `combat.S.progression` à `finirSalle(issue, rapport, progression)`.
+- **À confirmer par l'équipe :** les chiffres (100 par niveau, +5 PV, ce qui s'ouvre à 2 et 4).
+
+## 17. Du camp à la mission, et retour (src/63_depart.js)
+- **Après le contrat :** les partants sont libres au camp (un panneau « Le départ : préparez-vous »). À la **grande porte** (côté camp, E) : le vote du chemin, entre ceux qui partent (58_vote.js ; un seul chemin : pas de vote). On marche ensuite jusqu'au **bout du chemin**, de l'autre côté du pont (un drapeau le marque) ; là, E : **« je suis prêt (x/N) »** ; quand tous les partants le sont : un compte à rebours de 3 s, puis le niveau (`entrainement.html?aventure=…&niveau=1&groupe=CODE`, l'hôte avec `&hote`). Seul, un « prêt » suffit. Qui s'éloigne n'est plus prêt ; qui part n'est plus attendu.
+- **Les chemins proposés :** le niveau suivant de la run s'il est écrit, et « Recommencer l'aventure » (une run neuve, niveau 1, sans l'XP) dès qu'une run est en cours. Le niveau 2 n'étant pas écrit, il ne reste que « Recommencer » après le niveau 1.
+- **La run :** le départ crée une vraie run (les 6 niveaux de l'aventure, sans boutons d'essai) ; elle est sauvegardée avant de quitter le camp. Le niveau reçoit `?xp=&nh=` ; à la porte de la tour, « Retour au camp » ramène à la grande porte avec `?retour=victoire&xp=&nh=` : l'hôte reprend la run sauvegardée, lui rend l'XP, et passe au niveau suivant.
+- **Vérifié :** `?test` (le départ seul et à trois, avec le fil loopback), `node tools/depart_flux.mjs` (le vrai camp, de la porte au retour, et le rechargement). Pas essayé avec de vrais amis par internet.
+- **Reste :** le niveau 2 à écrire ; l'écran de vote est vu par tous (ceux qui restent au camp ne votent pas) ; les héros de la run sont h1 à h4 (leurs PV ne suivent pas encore ceux du niveau).

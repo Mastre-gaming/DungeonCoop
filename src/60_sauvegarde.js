@@ -187,6 +187,22 @@ export async function selfTest(t) {
   r.finirSalle('victoire'); r.finirSalle('victoire'); r.choisir(1);
   t.eq(S.get().run.salle.id, '3b', 'on la garde jusqu’au bout');
 
+  t.group('la sauvegarde : l’XP et le niveau suivent la run');
+  const SX = creerSauvegarde({ stockage: creerStockage({ memoire: true }) });
+  const rx = creerRun({ heros: HEROS, joueurs: J('Hôte'), evenement: (n, d) => SX.surRun(n, d.run) });
+  t.eq(rx.progression, { xp: 0, niveau: 1 }, 'une run neuve : 0 XP, niveau 1');
+  rx.partir(); rx.finirSalle('victoire', null, { xp: 130, niveau: 2 });
+  t.eq(SX.get().run.progression, { xp: 130, niveau: 2 }, 'une salle gagnée : l’XP et le niveau sont dans la sauvegarde');
+  t.eq(rejouer(SX.get().run, J('Hôte')).progression, { xp: 130, niveau: 2 }, 'reprendre la run : le groupe retrouve son niveau');
+  rx.finirSalle('victoire', null, { xp: 50, niveau: 1 });
+  t.eq(rx.progression, { xp: 130, niveau: 2 }, 'l’XP ne recule jamais');
+  rx.finirSalle('defaite', null, { xp: 900, niveau: 6 });
+  t.eq(rx.progression, { xp: 130, niveau: 2 }, 'une salle perdue ne rapporte rien');
+  const ancienne = JSON.parse(JSON.stringify(SX.get().run)); delete ancienne.progression;
+  t.eq(rejouer(ancienne, J('Hôte')).progression, { xp: 0, niveau: 1 }, 'une ancienne sauvegarde sans XP : niveau 1');
+  const neuve = creerRun({ heros: HEROS, joueurs: J('Hôte') }); neuve.partir();
+  t.eq(neuve.progression, { xp: 0, niveau: 1 }, 'une nouvelle run (l’aventure relancée) repart du niveau 1');
+
   t.group('la sauvegarde : une nouvelle run ne perd pas l’ancienne');
   const S3 = creerSauvegarde({ stockage: creerStockage({ memoire: true }) });
   const a = creerRun({ heros: HEROS, joueurs: J('Hôte'), evenement: (n, d) => S3.surRun(n, d.run) });

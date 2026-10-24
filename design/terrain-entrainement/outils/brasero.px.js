@@ -1,9 +1,9 @@
-// Le brasero du sentier F (docs/fiches/chemin-sentier-f.md) : un trépied de fer forgé, sa vasque et ses braises.
+// Le brasero du sentier des Gueux (docs/fiches/chemin-sentier-des-gueux.md) : un trépied de fer forgé, sa vasque et ses braises.
 // Quatre images de flamme, puis le brasero renversé (les braises répandues). Images de 32 x 64 comme le tonneau LPC,
 // pied au bas de l'image. Rendu avec le skill pxl :
 //   node <pxl>/bin/pxl.js build design/terrain-entrainement/outils/brasero.px.js --out <dossier>
-// puis la planche : les 4 images de anims/brasero_sentier_f.png, suivies de sprites/brasero_sentier_f_renverse.png, en une
-// ligne de 160 x 64 : public/assets/lpc/brasero_sentier_f.png (les images 0 à 3 : la flamme ; 4 : renversé).
+// puis la planche : les 4 images de anims/brasero_sentier_gueux.png, suivies de sprites/brasero_sentier_gueux_renverse.png, en une
+// ligne de 160 x 64 : public/assets/lpc/brasero_sentier_gueux.png (les images 0 à 3 : la flamme ; 4 : renversé).
 pal({
   k: "#1e161e",                                   // le contour LPC
   I: "#3a3236", i: "#5a5056", j: "#7d7177", h: "#a89aa0",   // le fer, du plus sombre au plus clair
@@ -25,7 +25,7 @@ sprite("_trepied", { w: 30, h: 62 },
 )
 
 // la flamme : trois langues qui ondulent, du rouge au jaune pâle, et une étincelle qui monte
-anim("brasero_sentier_f", { w: 30, h: 62, frames: 4, fps: 8, outline: "k" },
+anim("brasero_sentier_gueux", { w: 30, h: 62, frames: 4, fps: 8, outline: "k" },
   stamp("_trepied", 0, 0),
   (c) => {
     const k = c.phase * Math.PI * 2, s = (d) => Math.round(Math.sin(k + d) * 1.5)
@@ -38,7 +38,7 @@ anim("brasero_sentier_f", { w: 30, h: 62, frames: 4, fps: 8, outline: "k" },
   })
 
 // renversé : la vasque couchée, ouverte vers l'ouest, les pieds en l'air, les braises répandues
-sprite("brasero_sentier_f_renverse", { w: 30, h: 62, outline: "k" },
+sprite("brasero_sentier_gueux_renverse", { w: 30, h: 62, outline: "k" },
   line(18, 50, 27, 40, "I"), line(20, 55, 29, 50, "I"), line(16, 47, 21, 37, "I"),
   poly([9, 47, 15, 45, 21, 48, 23, 53, 21, 58, 15, 61, 9, 59], "i"),
   rect(12, 56, 10, 3, "I"), hline(10, 48, 10, "j"), hline(11, 47, 3, "h"),

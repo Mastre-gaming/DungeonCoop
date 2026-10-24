@@ -1,0 +1,290 @@
+// Le départ par la grande porte (la suite du contrat de 61_contrat.js ; le propriétaire, 24 oct) : après la réunion, tout le
+// monde est de nouveau libre dans le camp, et prépare la mission. À la grande porte (côté camp), « E » ouvre le vote du chemin
+// (58_vote.js, entre ceux qui partent) ; puis chacun marche jusqu'au bout du chemin, de l'autre côté du pont ; là, chacun se
+// dit prêt (« Prêts 2/3 ») ; quand tous les partants le sont, un court compte à rebours, et le groupe entre dans le niveau
+// (entrainement.html?aventure=…, avec le code du groupe : l'hôte le lance, les amis le suivent). Seul, un « prêt » suffit.
+// L'expérience du groupe passe par la run (57_run.js) et sa sauvegarde (60_sauvegarde.js) : le camp la donne au niveau
+// (?xp=&nh=), le niveau la rend au retour (?retour=victoire&xp=&nh=), et relancer l'aventure repart au niveau 1.
+// À plusieurs, l'hôte tient le départ (comme la réunion et le vote) : il compte, et le dit à tous (`depart:etat`).
+import AVENTURE from '../content/aventures/camp-des-mastres.json';
+import { T } from './01_plan.js';
+import './depart.css';
+
+export const name = 'depart';
+export const always = true;
+
+export const COMPTE = 3;                                                   // secondes, une fois que tous sont prêts
+// La grande porte, côté camp (devant la herse) ; le bout du chemin, de l'autre côté du pont (la route, en pixels du monde).
+export const PORTE = { x: 15 * T, y: 29 * T, rx: 2.6 * T, ry: 2.3 * T };
+export const BOUT = { x: 15 * T, y: 36.6 * T, r: 1.8 * T };
+export const dansPorte = (h) => !!h && Math.abs(h.x - PORTE.x) <= PORTE.rx && Math.abs(h.y - PORTE.y) <= PORTE.ry;
+export const auBout = (h) => !!h && Math.hypot(h.x - BOUT.x, h.y - BOUT.y) <= BOUT.r;
+export const HEROS_RUN = ['h1', 'h2', 'h3', 'h4'];                         // les quatre places du groupe (les héros de la run)
+
+// Les étapes de l'aventure, comme gabarit de run : un type de salle par niveau (une seule salle : pas d'embranchement).
+export const gabarit = (av = AVENTURE) => av.niveaux.map((n) => [n.sorte === 'boss' ? 'boss' : n.sorte === 'evenement' ? 'evenement' : 'combat']);
+
+// Les chemins qu'on peut prendre ce soir : le niveau suivant de la run (s'il est écrit), et de quoi recommencer l'aventure
+// (une nouvelle run : niveau 1, sans l'expérience gagnée). `run` : l'état de la run en cours, ou null.
+export function chemins(run, av = AVENTURE) {
+  const enCours = !!run && ['salle', 'choix'].includes(run.phase) && run.etape > 0;
+  const niveau = enCours ? av.niveaux[run.etape] : av.niveaux[0];
+  const liste = [];
+  if (niveau && !niveau.a_ecrire) liste.push({ id: `chemin:${niveau.id}`, niveau: niveau.n, nom: niveau.nom || av.nom, type: 'combat', gain: niveau.apercu?.gain, cout: niveau.apercu?.cout });
+  if (enCours) liste.push({ id: 'chemin:neuf', niveau: 1, neuf: true, nom: 'Recommencer l’aventure', type: 'combat', gain: 'Repartir du niveau 1', cout: 'L’expérience gagnée est perdue' });
+  return liste;
+}
+
+// --- Le contrôleur : l'hôte mène, tout le monde voit (pur : testé avec de faux joueurs) --------------------------------------
+// `party()` : le groupe (party-net) ou null ; `nom(id)` ; `emettre(n, d)` : le bus ; `vue` : { appliquer(etat, moi) } ;
+// `liste()` : les chemins possibles. L'état : { n, phase, partants, chemin, arrives, prets, restant, vote }, phase :
+// 'preparation' (libres au camp) → 'marche' (le chemin est choisi, on va au bout) → 'compte' (tous prêts) → 'parti'.
+export function creerDepart({ party = () => null, nom = (id) => id, emettre = () => {}, vue = null, liste = () => chemins(null), compte = COMPTE } = {}) {
+  let n = 0, s = null, etat = null;
+  const moi = () => party()?.id ?? 'me';
+  const enGroupe = () => !!party()?.active;
+  const estHote = () => !enGroupe() || party().hosting;
+  const copie = () => (s ? JSON.parse(JSON.stringify(s)) : null);
+  const partant = (id) => !!s?.partants.some((p) => p.id === id);
+  function diffuser() {
+    etat = copie();
+    party()?.toAll?.({ k: 'depart:etat', s: etat });
+    vue?.appliquer(etat, moi());
+  }
+  const tousPrets = () => !!s && s.partants.length > 0 && s.partants.every((p) => s.prets.includes(p.id));
+  function verifier() {
+    if (!s) return;
+    if (s.phase === 'marche' && tousPrets()) {
+      if (!enGroupe() || s.partants.length === 1) return void lancer();     // seul : un « prêt » suffit
+      s.phase = 'compte'; s.restant = compte;
+    } else if (s.phase === 'compte' && !tousPrets()) { s.phase = 'marche'; s.restant = null; }
+    diffuser();
+  }
+  function lancer() {
+    s.phase = 'parti'; s.restant = null;
+    const chemin = s.chemin, partants = s.partants.slice();
+    diffuser();
+    party()?.toAll?.({ k: 'depart:vers', chemin });
+    emettre('depart:lancer', { chemin, partants });
+  }
+  function fermer() { s = null; diffuser(); }
+  const api = {
+    get etat() { return etat; },
+    get ouvert() { return !!etat && etat.phase !== 'parti'; },
+    get hote() { return estHote(); },
+    partant: (id = moi()) => !!etat?.partants.some((p) => p.id === id),
+    // Le contrat est accepté : ceux qui partent sont libres de se préparer (l'hôte seulement).
+    ouvrir(partants) {
+      if (!estHote() || !partants?.length) return false;
+      n += 1;
+      s = { n, phase: 'preparation', partants: partants.map(({ id, nom: nm }) => ({ id, nom: nm ?? nom(id) })), chemin: null, arrives: [], prets: [], restant: null, vote: false };
+      diffuser(); emettre('depart:ouvert', { partants: s.partants });
+      return true;
+    },
+    // Un partant demande à choisir le chemin (à la grande porte) : l'hôte ouvre le vote, entre ceux qui partent.
+    demanderChemin() {
+      if (!etat || etat.phase !== 'preparation') return false;
+      if (!estHote()) { party()?.toHost?.({ k: 'depart:chemin' }); return true; }
+      return api.ouvrirVote(moi());
+    },
+    ouvrirVote(id) {
+      if (!s || s.phase !== 'preparation' || s.vote || !partant(id)) return false;
+      const options = liste();
+      if (!options.length) return false;
+      s.vote = true; diffuser();
+      emettre('depart:vote', { options, electeurs: s.partants.map((p) => p.id) });
+      return true;
+    },
+    // Le vote est fini (le bus de 58_vote.js) : le chemin est pris, tout le monde marche jusqu'au bout.
+    cheminChoisi(id) {
+      if (!s || s.phase !== 'preparation') return false;
+      const c = liste().find((o) => o.id === id);
+      if (!c) { s.vote = false; diffuser(); return false; }
+      s.chemin = { id: c.id, niveau: c.niveau, nom: c.nom, neuf: !!c.neuf }; s.vote = false; s.phase = 'marche';
+      diffuser(); emettre('depart:chemin', { chemin: s.chemin });
+      return true;
+    },
+    // Je suis au bout du chemin (ou je l'ai quitté) : chacun le dit pour lui.
+    arrive(oui) {
+      if (!etat || !['marche', 'compte'].includes(etat.phase) || !api.partant()) return false;
+      if (!estHote()) { party()?.toHost?.({ k: 'depart:arrive', oui: !!oui }); return true; }
+      return api.recevoirArrivee(moi(), !!oui);
+    },
+    recevoirArrivee(id, oui) {
+      if (!s || !['marche', 'compte'].includes(s.phase) || !partant(id)) return false;
+      s.arrives = s.arrives.filter((x) => x !== id); if (oui) s.arrives.push(id);
+      if (!oui) s.prets = s.prets.filter((x) => x !== id);      // (qui s'éloigne n'est plus prêt)
+      verifier();
+      return true;
+    },
+    pret(oui) {
+      if (!etat || !['marche', 'compte'].includes(etat.phase) || !api.partant()) return false;
+      if (!estHote()) { party()?.toHost?.({ k: 'depart:pret', oui: !!oui }); return true; }
+      return api.recevoirPret(moi(), !!oui);
+    },
+    recevoirPret(id, oui) {
+      if (!s || !['marche', 'compte'].includes(s.phase) || !partant(id) || (oui && !s.arrives.includes(id))) return false;
+      s.prets = s.prets.filter((x) => x !== id); if (oui) s.prets.push(id);
+      verifier();
+      return true;
+    },
+    // Le temps passe (chez l'hôte seulement) : le compte à rebours.
+    avancer(dt) {
+      if (!s || !estHote() || s.phase !== 'compte') return;
+      const avant = Math.ceil(s.restant);
+      s.restant = Math.max(0, s.restant - dt);
+      if (s.restant <= 0) lancer(); else if (Math.ceil(s.restant) !== avant) diffuser();
+    },
+    // Ce que dit party-net.
+    ecouter(type, d) {
+      if (type === 'game') {
+        const { from, m } = d, k = m?.k;
+        if (!k?.startsWith('depart:')) return;
+        if (estHote()) {
+          if (k === 'depart:chemin') api.ouvrirVote(from);
+          else if (k === 'depart:arrive') api.recevoirArrivee(from, !!m.oui);
+          else if (k === 'depart:pret') api.recevoirPret(from, !!m.oui);
+        } else if (k === 'depart:etat') { etat = m.s; vue?.appliquer(etat, moi()); }
+        else if (k === 'depart:vers') emettre('depart:lancer', { chemin: m.chemin, partants: etat?.partants ?? [] });
+      } else if (type === 'leave' && s && estHote()) {
+        // qui part ne compte plus ; plus personne : le départ est annulé
+        s.partants = s.partants.filter((p) => p.id !== d.id); s.arrives = s.arrives.filter((x) => x !== d.id); s.prets = s.prets.filter((x) => x !== d.id);
+        if (!s.partants.length) fermer(); else { verifier(); if (s && s.phase === 'preparation') diffuser(); }
+      }
+    },
+    fermer() { if (estHote()) fermer(); },
+  };
+  return api;
+}
+
+// --- Le skill : les bulles, le panneau du départ, le retour de la mission ---------------------------------------------------
+function el(tag, attrs = {}, ...enfants) {
+  const nd = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) { if (v == null || v === false) continue; if (k.startsWith('on')) nd.addEventListener(k.slice(2), v); else nd.setAttribute(k, v === true ? '' : v); }
+  for (const e of enfants.flat()) if (e != null && e !== false) nd.append(e instanceof Node ? e : String(e));
+  return nd;
+}
+let game, ctrl = null, rendu, canvas, heros, run, vote, sauvegarde, synchro, party, visite, nomDe;
+let panneau, bullePorte, bulleBout, drapeau, arrets = [], enBout = null, naviguer = (url) => { location.href = url; }, delai = 700;
+const bulle = (b, texte, x, y) => {
+  if (b.dataset.texte !== texte) { b.dataset.texte = texte; b.innerHTML = `<kbd data-key="KeyE">E</kbd> : ${texte}`; }
+  const cr = canvas.getBoundingClientRect();
+  b.style.left = `${cr.left + ((x - rendu.cam.x) / rendu.vue.w) * cr.width}px`;
+  b.style.top = `${cr.top + ((y - rendu.cam.y) / rendu.vue.h) * cr.height}px`;
+};
+
+// L'adresse du niveau : le code du groupe (l'hôte le lance, les amis le suivent) et l'expérience de la run.
+export function adresse(chemin, { code = '', hote = false, progression = null } = {}) {
+  const q = new URLSearchParams({ aventure: AVENTURE.id, niveau: String(chemin?.niveau ?? 1) });
+  if (code) { q.set('groupe', code); if (hote) q.set('hote', ''); }
+  if (progression && !chemin?.neuf) { q.set('xp', String(progression.xp)); q.set('nh', String(progression.niveau)); }
+  return `./entrainement.html?${q}`;
+}
+
+function appliquer(e, moi) {
+  if (!panneau) return;
+  if (!e || e.phase === 'parti') { panneau.hidden = !e; if (e) panneau.replaceChildren(el('strong', {}, 'Le groupe part !')); if (drapeau) drapeau.hidden = true; return; }
+  const mien = e.partants.some((p) => p.id === moi), ch = e.chemin;
+  const lignes = [el('strong', {}, ch ? `Départ : ${ch.nom}` : 'Le départ : préparez-vous')];
+  if (!ch) lignes.push(el('span', {}, mien ? 'Rendez-vous à la grande porte (E) pour choisir le chemin.' : 'Le groupe prépare le départ.'));
+  else {
+    lignes.push(el('span', {}, `Au bout du chemin : ${e.arrives.length}/${e.partants.length}`), el('span', {}, `Prêts : ${e.prets.length}/${e.partants.length}`));
+    if (e.phase === 'compte') lignes.push(el('b', { class: 'compte' }, `Départ dans ${Math.ceil(e.restant ?? 0)}…`));
+    lignes.push(el('small', {}, e.partants.map((p) => `${e.prets.includes(p.id) ? '✓' : e.arrives.includes(p.id) ? '…' : '·'} ${p.nom}`).join('  ')));
+  }
+  panneau.replaceChildren(...lignes); panneau.hidden = false;
+  drapeau.hidden = !ch;
+}
+
+export function init(g, options = {}) {
+  game = g;
+  ({ rendu, canvas, heros, run, vote, sauvegarde, synchro, visite, nom: nomDe = (id) => id } = options);
+  party = options.party ?? (() => null);
+  if (visite) return api;
+  panneau = el('div', { id: 'depart-panneau', hidden: true, role: 'status' });
+  bullePorte = el('a', { class: 'bulle-panneau bulle-depart', hidden: true, href: '#' });
+  bulleBout = el('a', { class: 'bulle-panneau bulle-depart', hidden: true, href: '#' });
+  drapeau = el('div', { id: 'depart-bout', hidden: true }, el('i', {}), el('span', {}, 'Fin du chemin'));
+  for (const b of [bullePorte, bulleBout]) b.addEventListener('click', (e) => { e.preventDefault(); toucher(b); });
+  document.body.append(panneau, bullePorte, bulleBout, drapeau);
+  game.input.bindings.consulter ??= ['KeyE'];
+  ctrl = creerDepart({ party, nom: nomDe, emettre: (n, d) => game.bus.emit(n, d), vue: { appliquer }, liste: () => chemins(run()?.courante?.etat ?? null) });
+  arrets = [
+    game.bus.on('contrat:accepte', (d) => ctrl.ouvrir(d.partants)),
+    // un seul chemin (et pas « Recommencer ») : rien à voter ; sinon, le vote entre ceux qui partent
+    game.bus.on('depart:vote', ({ options: o, electeurs }) => { if ((o.length === 1 && !o[0].neuf) || !vote?.controleur?.demarrer(o, electeurs)) ctrl.cheminChoisi(o[0]?.id); }),
+    game.bus.on('vote:fin', ({ i, options: o }) => { const c = o?.[i]; if (c?.id?.startsWith('chemin:')) ctrl.cheminChoisi(c.id); }),
+    game.bus.on('party:game', (d) => ctrl.ecouter('game', d)),
+    game.bus.on('party:leave', (d) => ctrl.ecouter('leave', d)),
+    game.bus.on('depart:lancer', ({ chemin }) => partir(chemin)),
+  ];
+  const q = new URLSearchParams(location.search);
+  if (q.get('retour') === 'victoire' && !q.has('test')) setTimeout(() => retourDeMission(q), 0);
+  return api;
+}
+
+// La mission : l'hôte (ou celui qui joue seul) tient la run ; les amis y vont avec le code du groupe.
+function partir(chemin) {
+  const p = party(), hote = !p?.active || p.hosting, r = run();
+  if (hote && chemin) {
+    const c = r?.courante;
+    if (chemin.neuf || !c || !['salle', 'choix'].includes(c.phase)) r?.nouvelle({ gabarit: gabarit(), heros: HEROS_RUN, joueurs: synchro?.joueurs?.() ?? [], reelle: true }).partir();
+  }
+  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null });
+  annoncer('Le groupe entre sur le chemin…');
+  if (delai) setTimeout(() => naviguer(url), delai); else naviguer(url);
+}
+function annoncer(texte) { if (!panneau) return; panneau.replaceChildren(el('strong', {}, texte)); panneau.hidden = false; }
+
+// Le niveau est fini (?retour=victoire&xp=&nh=) : l'hôte reprend la run sauvegardée, et lui rend l'expérience du groupe.
+export function retourDeMission(q) {
+  const p = party();
+  if (p?.active && !p.hosting) return false;
+  const xp = Number(q.get('xp')), niveau = Number(q.get('nh'));
+  const r = run();
+  if (!r?.courante || r.courante.phase === 'camp') sauvegarde?.reprendre?.();
+  const c = r?.courante;
+  for (const k of ['retour', 'xp', 'nh', 'niveau']) q.delete(k);
+  try { history.replaceState(null, '', `${location.pathname}${q.size ? `?${q}` : ''}${location.hash}`); } catch { /* rien à faire */ }
+  if (!c || c.phase !== 'salle') return false;
+  return c.finirSalle('victoire', null, { xp, niveau });
+}
+
+function toucher(b) {
+  if (!ctrl) return;
+  if (b === bullePorte) ctrl.demanderChemin();
+  else if (ctrl.etat?.phase === 'marche' || ctrl.etat?.phase === 'compte') ctrl.pret(!ctrl.etat.prets.includes(party()?.id ?? 'me'));
+}
+export function update(dt) {
+  if (!ctrl || visite) return;
+  ctrl.avancer(dt);
+  const e = ctrl.etat, h = heros.heros, moi = party()?.id ?? 'me', mien = ctrl.partant(moi), libre = h.controle !== false;
+  const enRoute = !!e && ['marche', 'compte'].includes(e.phase);
+  // le bout du chemin : chacun dit s'il y est
+  const la = enRoute && mien && auBout(h);
+  if (enRoute && mien && la !== enBout) { enBout = la; ctrl.arrive(la); }
+  if (!enRoute) enBout = null;
+  const prochePorte = !!e && e.phase === 'preparation' && !e.vote && mien && libre && dansPorte(h);
+  const procheBout = la && libre;
+  bullePorte.hidden = !prochePorte; bulleBout.hidden = !procheBout;
+  if (prochePorte) bulle(bullePorte, 'choisir le chemin du départ', PORTE.x, PORTE.y - 0.4 * T);
+  if (procheBout) bulle(bulleBout, e.prets.includes(moi) ? `plus prêt (${e.prets.length}/${e.partants.length})` : `je suis prêt (${e.prets.length}/${e.partants.length})`, BOUT.x, BOUT.y - 0.6 * T);
+  if (e?.chemin && !drapeau.hidden) {
+    const cr = canvas.getBoundingClientRect();
+    drapeau.style.left = `${cr.left + ((BOUT.x - rendu.cam.x) / rendu.vue.w) * cr.width}px`;
+    drapeau.style.top = `${cr.top + ((BOUT.y - rendu.cam.y) / rendu.vue.h) * cr.height}px`;
+  }
+  if ((prochePorte || procheBout) && game.input.take('consulter')) toucher(prochePorte ? bullePorte : bulleBout);
+}
+export function dispose() { arrets.forEach((f) => f()); arrets = []; for (const n of [panneau, bullePorte, bulleBout, drapeau]) n?.remove(); ctrl = null; }
+export const api = {
+  get controleur() { return ctrl; },
+  get panneau() { return panneau; },
+  get bulles() { return { porte: bullePorte, bout: bulleBout, drapeau }; },
+  retourDeMission,
+  // pour les tests : où l'on serait allé, au lieu d'y aller
+  testerNavigation(f) { naviguer = f ?? ((url) => { location.href = url; }); delai = f ? 0 : 700; },
+};
+
+// Les vérifications (?test) : dans un fichier à part (63_tests_depart.js), chargé à la demande.
+export async function selfTest(t) { return (await import("./63_tests_depart.js")).testsDepart(t); }

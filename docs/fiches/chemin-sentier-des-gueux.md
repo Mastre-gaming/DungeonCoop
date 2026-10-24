@@ -1,14 +1,14 @@
-# FICHE : le sentier F (chemin de la tour, tronçon 1, niveau 1)
+# FICHE : le sentier des Gueux (chemin de la tour, tronçon 1, niveau 1)
 
-**Renommé le 23 oct** (propriétaire) : « la lisière » devient **« le sentier F »**, le nom du sentier du plan du camp d'où l'on part, pour ne pas se confondre avec la salle « lisière » de Fraps (`fraps/salles-route`, PR #265).
+**Renommé le 23 oct** (propriétaire) : « la lisière » devient **« le sentier des Gueux »**, le nom du sentier du plan du camp d'où l'on part, pour ne pas se confondre avec la salle « lisière » de Fraps (`fraps/salles-route`, PR #265).
 
 ## 0. Repensé le 23 oct : le premier tronçon de la grande carte
-Le chemin de la tour devient **une seule carte qu'on explore à pied, de gauche à droite** (`chemin-de-la-tour.md` §2 à §7). Le sentier F en est le premier tronçon, et le premier construit (porte T). Ce qui change ici ; le reste de la fiche (le combo, le foin, le brasero, les ennemis, le score) tient toujours.
+Le chemin de la tour devient **une seule carte qu'on explore à pied, de gauche à droite** (`chemin-de-la-tour.md` §2 à §7). Le sentier des Gueux en est le premier tronçon, et le premier construit (porte T). Ce qui change ici ; le reste de la fiche (le combo, le foin, le brasero, les ennemis, le score) tient toujours.
 - **Le tronçon :** environ 30 x 24 cases (45 x 36 m). On entre à l'ouest par le sentier qui vient du camp ; le sentier longe l'orée du bois (deux rangs d'arbres au nord, des bosquets au sud, de l'herbe haute) et traverse la **clairière du combat** (l'un des trois gabarits du §2) ; il ressort à l'est vers la fourche du tronçon 2. Les arbres bloquent le pas et la vue ; le sentier et l'herbe haute sont du décor.
 - **On marche avant de combattre :** chacun déplace son héros, en temps réel ; les héros sans joueur suivent l'hôte. Avant la clairière : le coin du bûcheron (une souche, sa hache, du bois coupé) et **une cachette** (de la Caillasse, trouvée sur un d20 de perception lancé par un joueur : le premier d20 hors combat, avant celui du combat). Les textes sont à l'équipe.
 - **Le combat se déclenche sur place** quand un ennemi voit un héros (son champ de vue est montré au sol), ou quand un héros frappe le premier sans être vu : les ennemis sont alors **Surpris** et perdent leur premier tour. On combat **là où chacun se tient**.
 - **Le combo reste visible avant le combat :** le brasero est au bord de la clairière, côté sentier ; un héros peut s'en approcher avant d'être vu. L'aperçu (survol du brasero) marche aussi en marchant.
-- **Le dé de la graine** se lance au départ du chemin, plus à l'entrée du sentier F (l'hôte choisit qui lance).
+- **Le dé de la graine** se lance au départ du chemin, plus à l'entrée du sentier des Gueux (l'hôte choisit qui lance).
 - **Le validateur** vérifie désormais que le brasero est atteignable au tour 1 depuis l'orée de la clairière (là où les ennemis voient les héros arriver), plus depuis des places de départ fixes.
 
 Brouillon du 22 oct 2026, **validé par le propriétaire le 22 oct** (réponses en §7) ; aucun code avant le feu vert d'implémentation. Première salle du chemin (`chemin-de-la-tour.md`, cadre validé), même format que `salle-combat-caves.md`. Règles : `FIGHT_RULES.md`. Ennemis : `ENNEMIS.fr.md` (worktree niveaux). Distances en mètres. Les noms, textes et histoires restent à l'équipe : tout nom ci-dessous est provisoire.
@@ -83,7 +83,7 @@ Règle de la salle : **un combo possible avec n'importe quel groupe de quatre cl
 ## 4. Le contenu tiré au sort
 **Graine :** à l'entrée, **l'hôte choisit qui lance le dé** (pas de vote, décidé le 22 oct ; jamais automatique) ; ce d20 donne la graine (mot de 5 lettres comme le code de partie), et tout le monde reconstruit la même salle. Même graine, même salle.
 
-**Le pool du sentier F** (tiré de `ENNEMIS.fr.md`, bandits, archers et bêtes simples) :
+**Le pool du sentier des Gueux** (tiré de `ENNEMIS.fr.md`, bandits, archers et bêtes simples) :
 | Ennemi | Rang | Coût | Habitude | Pourquoi ici |
 |---|---|---|---|---|
 | Bandit | sbire | 1 | lâche | le corps à corps lisible (cf. question 4) |
@@ -124,22 +124,22 @@ Pas de nouvel état, pas de nouvelle règle de combat.
 | 4 | Le bandit **lâche** (fuit sous 30 %) et **vole une potion** : trop piégeux pour le premier combat ? | en salle 1 : il ne vole pas et ne fuit pas |
 | 5 | Le vote : seulement « qui lance le dé » (proposé), ou aussi un second petit vote avant le combat | un seul ; un second vote (approche de front ou par le flanc) serait une règle de plus, au parc d'idées |
 | 6 | Une récompense de combat en plus de la Caillasse (choix d'une capacité, comme aux caves) ? | non sur le chemin : la Caillasse seule |
-| 7 | L'ambiance et le nom du sentier F | à l'équipe |
+| 7 | L'ambiance et le nom du sentier des Gueux | à l'équipe |
 
 ### Réponses du propriétaire (22 oct) : fiche validée
 1. 3 à 4 ennemis (une nuée compte pour un) : **oui**. 2. Les trois gabarits : **oui**. 3. Foin qui brûle et Renverser : **oui**. 4. Bandit sans vol ni fuite en salle 1 : **oui**. 5. Un seul vote, celui du dé : **oui**. 6. La Caillasse seule : **oui**.
-7. **Nom : « le sentier F ».** L'ambiance suit le nom : l'orée d'un bois, herbe, foin et brasero de passage, lumière de jour. Seul le cadre visuel est fixé ici ; les textes et l'histoire restent à l'équipe.
+7. **Nom : « le sentier des Gueux ».** L'ambiance suit le nom : l'orée d'un bois, herbe, foin et brasero de passage, lumière de jour. Seul le cadre visuel est fixé ici ; les textes et l'histoire restent à l'équipe.
 
 ## 8. Ce que ça demande en code (pas avant le « oui »)
-Trois `content/salles/camp-des-mastres/sentier-f-*.json` et trois `content/rencontres/camp-des-mastres/sentier-f-*.json`, la surface Foin, l'interaction Renverser, l'aperçu de zone, le vote « qui lance le dé » et le tirage avec graine (déjà prévu pour les caves). Une salle jouée et notée avant d'en faire d'autres (porte T).
+Trois `content/salles/camp-des-mastres/sentier-des-gueux-*.json` et trois `content/rencontres/camp-des-mastres/sentier-des-gueux-*.json`, la surface Foin, l'interaction Renverser, l'aperçu de zone, le vote « qui lance le dé » et le tirage avec graine (déjà prévu pour les caves). Une salle jouée et notée avant d'en faire d'autres (porte T).
 
 ## 9. Fait au terrain d'entraînement (22 oct, branche histoire/lisiere, à ton contrôle)
 - `?aventure=camp-des-mastres` : l'hôte choisit qui lance le dé, le d20 donne la graine, la salle et la rencontre sont tirées.
 - Les trois gabarits, les trois rencontres avec les ennemis du chemin (bandit, arbalétrier qui recharge, loup en meute, nuées de trois rats).
 - Le foin, « Renverser le brasero », l'aperçu du feu au survol, et le combo de secours : un ennemi poussé contre le brasero prend le feu et le brasero tombe sur le foin.
-- La planche du brasero : `public/assets/lpc/brasero_sentier_f.png` (4 images de flamme, puis renversé).
+- La planche du brasero : `public/assets/lpc/brasero_sentier_gueux.png` (4 images de flamme, puis renversé).
 - Reste : le tirage partagé à plusieurs (aujourd'hui chacun tire le sien), l'accès depuis le camp, les cartes des nouveaux ennemis dans les Archives.
-- **23 oct, le tronçon :** `?aventure=camp-des-mastres` ouvre le tronçon du sentier F (`content/salles/camp-des-mastres/sentier-f-troncon.json`, 32 x 26 cases) : on marche à pied (un clic, les autres suivent), les champs de vue des ennemis sont au sol, être vu déclenche le combat là où l'on se tient, frapper ou renverser le brasero sans être vu donne la surprise (les ennemis perdent leur premier tour), la souche creuse se fouille sur un d20 de perception. Reste : l'exploration à plusieurs, la sortie à l'est vers la fourche, la sauvegarde entre les combats.
-- **23 oct, le départ :** la carte s'étend vers l'ouest jusqu'à la porte du camp (67 x 26 cases) : la zone 0 (la sortie par la grande porte, l'allée, une souche à fouiller, des traces de bandits vers l'est, aucun ennemi), puis le sentier F, 34 cases plus loin. La caméra cadre au plus 32 cases de large et suit le groupe.
-- **23 oct, confirmé par le propriétaire** après son essai en local : le départ et le sentier F (l'exploration, la détection, la surprise, la fouille, la victoire qui rend la route, la défaite qui ramène au début du chemin).
-- **23 oct, le départ déplacé (propriétaire) :** on ne sort plus par la grande porte du sud mais par **la porte est** : le chemin commence au bord de la clairière de l'est du nouveau plan du camp (l'étang, la ferme : meule, épouvantail, charrette, clôture) et prend **le sentier F**, qui s'enfonce dans une forêt serrée jusqu'au sentier F. Le raccord avec la carte du camp (sortir par le sentier F et arriver ici) viendra quand le plan agrandi sera dans main.
+- **23 oct, le tronçon :** `?aventure=camp-des-mastres` ouvre le tronçon du sentier des Gueux (`content/salles/camp-des-mastres/sentier-des-gueux-troncon.json`, 32 x 26 cases) : on marche à pied (un clic, les autres suivent), les champs de vue des ennemis sont au sol, être vu déclenche le combat là où l'on se tient, frapper ou renverser le brasero sans être vu donne la surprise (les ennemis perdent leur premier tour), la souche creuse se fouille sur un d20 de perception. Reste : l'exploration à plusieurs, la sortie à l'est vers la fourche, la sauvegarde entre les combats.
+- **23 oct, le départ :** la carte s'étend vers l'ouest jusqu'à la porte du camp (67 x 26 cases) : la zone 0 (la sortie par la grande porte, l'allée, une souche à fouiller, des traces de bandits vers l'est, aucun ennemi), puis le sentier des Gueux, 34 cases plus loin. La caméra cadre au plus 32 cases de large et suit le groupe.
+- **23 oct, confirmé par le propriétaire** après son essai en local : le départ et le sentier des Gueux (l'exploration, la détection, la surprise, la fouille, la victoire qui rend la route, la défaite qui ramène au début du chemin).
+- **23 oct, le départ déplacé (propriétaire) :** on ne sort plus par la grande porte du sud mais par **la porte est** : le chemin commence au bord de la clairière de l'est du nouveau plan du camp (l'étang, la ferme : meule, épouvantail, charrette, clôture) et prend **le sentier des Gueux**, qui s'enfonce dans une forêt serrée jusqu'au sentier des Gueux. Le raccord avec la carte du camp (sortir par le sentier des Gueux et arriver ici) viendra quand le plan agrandi sera dans main.

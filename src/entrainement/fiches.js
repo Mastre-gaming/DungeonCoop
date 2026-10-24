@@ -17,7 +17,7 @@ const ICONES = {
   arc: 'tirRapide', machoires: 'fracas', glu: 'vase', collet: 'liane', lecher: 'soin', mordre: 'dague', rabattre: 'pousser',
   pasOmbre: 'pasOmbre', coupDos: 'coupDos', coupDos3: 'coupDos', desengager: 'desengager',
   marteau: 'marteau', chuteEnclume: 'enclume', lameArdente: 'lameArdente', trempe: 'trempe', tenailles: 'tenailles',
-  renverser: 'fleche',      // (le brasero du sentier F)
+  renverser: 'fleche',      // (le brasero du sentier des Gueux)
   batonNoue: 'baton', mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
   crocs: 'crocs', bond: 'bond', curee: 'curee', poing: 'poing', etreinte: 'liane', devorer: 'devorer',
   braise: 'etincelle', embrasement: 'embrasement', armesArdentes: 'lameArdente',

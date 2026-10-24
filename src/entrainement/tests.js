@@ -1,6 +1,7 @@
 // Les vérifications du terrain d'entraînement (?test) : la géométrie sans cases, chaque règle reprise du kit, des
 // combats entiers dans les deux modes de tour, et l'interface pilotée comme un joueur (vrais clics sur le terrain).
 import { arbitrerExploration } from './explo.js';
+import * as PROG from './progression.js';
 import { creerCombat, CAPACITES, HEROS, CLASSES_ESSAI, EQUIPE_KIT, FORMES, equipeDepuis, peutJouer, classesPour, equipePour, capacitesDe } from './regles.js';
 import * as AVENTURE from './aventure.js';
 import { cinematiques, remplir } from './cinema.js';
@@ -1141,13 +1142,13 @@ export async function selfTest(t, game) {
     V.basculerPlaques('e', avant.e); V.basculerPlaques('h', avant.h);
   }
 
-  // --- Le sentier F (Le camp des mastres, niveau 1) : le foin, le brasero, la graine, l'entrée ----------------------------
-  t.group('le sentier F : le contenu, la graine, le foin et le brasero');
+  // --- Le sentier des Gueux (Le camp des mastres, niveau 1) : le foin, le brasero, la graine, l'entrée ----------------------------
+  t.group('le sentier des Gueux : le contenu, la graine, le foin et le brasero');
   {   // (un bloc à part : ses noms ne se mêlent pas à ceux des autres vérifications)
   const problemes = AVENTURE.valider();
   t.ok(problemes.length === 0, `le contenu de l’aventure tient (fichiers cités, départs, budget, brasero à portée du plus lent)${problemes.length ? ` : ${problemes.slice(0, 3).join(' | ')}` : ''}`);
   const av = AVENTURE.aventure('camp-des-mastres'), niv1 = AVENTURE.niveauDe(av, 1);
-  t.ok(av?.niveaux.length === 6 && niv1.salles.length === 3 && niv1.rencontres.length === 3, 'l’aventure a ses 6 niveaux du chemin ; le sentier F, 3 salles et 3 rencontres');
+  t.ok(av?.niveaux.length === 6 && niv1.salles.length === 3 && niv1.rencontres.length === 3, 'l’aventure a ses 6 niveaux du chemin ; le sentier des Gueux, 3 salles et 3 rencontres');
   t.eq(JSON.stringify(AVENTURE.tirer(niv1, 'KLMNP')), JSON.stringify(AVENTURE.tirer(niv1, 'KLMNP')), 'même graine, même salle');
   const mots = Array.from({ length: 40 }, (_, k) => AVENTURE.tirer(niv1, AVENTURE.motAleatoire(graine(k + 1))));
   t.ok(new Set(mots.map((m) => m.salle)).size === 3 && new Set(mots.map((m) => m.rencontre)).size === 3 && mots.some((m) => m.miroir) && mots.some((m) => !m.miroir), 'quarante graines : les trois salles, les trois rencontres et le miroir sortent');
@@ -1155,7 +1156,7 @@ export async function selfTest(t, game) {
   t.ok(AVENTURE.deDeLaGraine('ABCDE') === AVENTURE.deDeLaGraine('ABCDE') && mots.every((m) => { const d = AVENTURE.deDeLaGraine(m.mot); return d >= 1 && d <= 20; }), 'le d20 montré se déduit de la graine : tout le monde voit le même');
 
   const lis = (o = {}) => {
-    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-f-a', rencontre: 'camp-des-mastres/sentier-f-bandits', miroir: false, ...o });
+    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-des-gueux-a', rencontre: 'camp-des-mastres/sentier-des-gueux-bandits', miroir: false, ...o });
     const sl = prep.plan.salle();
     return creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, alea: graine(5), horloge: () => 0 });
   };
@@ -1163,7 +1164,7 @@ export async function selfTest(t, game) {
   const foinN = () => Object.values(CL.mailles()).filter((s) => s.t === 'foin').length;
   t.ok(foinN() > 20 && CL.S.braseros.length === 1 && CL.S.ennemis.length === 4 && CL.S.objectif === 'vaincre-tous', 'la clairière : du foin, un brasero, 4 ennemis, « vaincre tous »');
   t.ok(['bd1', 'bd2', 'bd3'].every((id) => CL.U(id)?.type === 'bandit') && CL.U('ar1')?.type === 'arbaletrier', 'les bandits : trois bandits et un arbalétrier');
-  const rod = lis({ rencontre: 'camp-des-mastres/sentier-f-rodeurs' });
+  const rod = lis({ rencontre: 'camp-des-mastres/sentier-des-gueux-rodeurs' });
   t.ok(rod.U('lp1')?.type === 'loup' && rod.S.unites.filter((u) => u.type === 'rat').length === 6 && rod.U('ar1'), 'les rôdeurs : un loup, deux nuées de trois rats, un arbalétrier');
   CL.commencer(); CL.S.evenements.length = 0;
   const [lh1, lh2] = ['h1', 'h2'].map((id) => CL.U(id));
@@ -1200,7 +1201,7 @@ export async function selfTest(t, game) {
   // le miroir et les deux autres gabarits
   const miroir = lis({ miroir: true });
   t.ok(miroir.S.braseros[0].y === 10 && miroir.U('h1').y > miroir.U('h4').y, 'le miroir retourne la salle de haut en bas (les héros en ordre inverse)');
-  const gb = lis({ salle: 'camp-des-mastres/sentier-f-b' }), gc = lis({ salle: 'camp-des-mastres/sentier-f-c' });
+  const gb = lis({ salle: 'camp-des-mastres/sentier-des-gueux-b' }), gc = lis({ salle: 'camp-des-mastres/sentier-des-gueux-c' });
   t.ok(gb.S.braseros.length === 1 && Object.values(gb.mailles()).filter((s) => s.t === 'foin').length > 30 && gc.S.braseros.length === 2, 'la meule (un brasero, un grand tas) et le champ fauché (deux braseros)');
 
   // le combo de secours : poussé contre le brasero, l'ennemi prend le feu et le brasero tombe sur le foin
@@ -1209,7 +1210,7 @@ export async function selfTest(t, game) {
   pc.x = 6.0; pc.y = 10; pb.x = 7.1; pb.y = 10;
   t.ok(CL.utiliser(pc, 'pousser', { id: 'bd1' }) && pb.st.brulure && CL.S.braseros[0].renverse && Object.values(CL.mailles()).some((x) => x.t === 'feu'), 'poussé contre le brasero : il brûle, le brasero tombe et le foin prend');
   // les habitudes : l'arbalétrier recharge entre deux tirs ; le loup mord celui que les siens attaquent déjà
-  CL = lis({ rencontre: 'camp-des-mastres/sentier-f-braconniers' }); CL.commencer(); CL.S.evenements.length = 0;
+  CL = lis({ rencontre: 'camp-des-mastres/sentier-des-gueux-braconniers' }); CL.commencer(); CL.S.evenements.length = 0;
   const arb = CL.U('ar1'), cibleA = CL.U('h1');
   arb.x = 14; arb.y = 5; cibleA.x = 8; cibleA.y = 5;
   arb.t = { mv: 0, action: true, bonus: true, reaction: true };
@@ -1224,7 +1225,7 @@ export async function selfTest(t, game) {
   t.ok(CL.S.evenements.some((e) => e.type === 'attaque' && e.de === 'lp1' && e.vers === 'h2'), 'le loup va mordre le héros que le bandit attaque déjà, pas le plus proche');
 
   // l'entrée : l'hôte choisit qui lance le dé, puis le d20 et la graine
-  const attente = demanderLancer({ titre: 'Le sentier F', noms: ['A', 'B', 'C', 'D'], alea: graine(9) });
+  const attente = demanderLancer({ titre: 'Le sentier des Gueux', noms: ['A', 'B', 'C', 'D'], alea: graine(9) });
   t.ok(entree.ouvert && document.querySelector('.entree-terrain') && document.querySelector('.entree-lancer').hidden, 'l’entrée demande qui lance le dé, et rien ne part tout seul');
   await pause(600);
   t.ok(entree.etat().choisi === -1 && document.querySelector('.entree-terrain'), 'sans choix de l’hôte, le temps qui passe ne lance rien');
@@ -1235,10 +1236,10 @@ export async function selfTest(t, game) {
   t.ok(lance.qui === 2 && /^[A-Z]{5}$/.test(lance.mot) && lance.de === AVENTURE.deDeLaGraine(lance.mot) && !entree.ouvert && !document.querySelector('.entree-terrain'), 'le d20 donne une graine de 5 lettres, et l’entrée se ferme');
 
 
-  // le tronçon (chemin-sentier-f.md §0) : on marche, on est vu ou on surprend, on fouille
-  t.group('le sentier F : le tronçon à explorer');
+  // le tronçon (chemin-sentier-des-gueux.md §0) : on marche, on est vu ou on surprend, on fouille
+  t.group('le sentier des Gueux : le tronçon à explorer');
   const tro = (o = {}) => {
-    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-f-a', rencontre: 'camp-des-mastres/sentier-f-bandits', miroir: false, troncon: 'camp-des-mastres/sentier-f-troncon', ...o });
+    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-des-gueux-a', rencontre: 'camp-des-mastres/sentier-des-gueux-bandits', miroir: false, troncon: 'camp-des-mastres/sentier-des-gueux-troncon', ...o });
     const sl = prep.plan.salle(), C = creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, alea: graine(5), horloge: () => 0 });
     C.explorer(); C.S.evenements.length = 0;
     return C;
@@ -1246,7 +1247,7 @@ export async function selfTest(t, game) {
   let EX = tro();
   const eh = EX.U('h1');
   t.ok(EX.S.phase === 'exploration' && EX.peutAgir(eh) && EX.S.cachettes.some((c) => c.id === 'souche-du-depart') && EX.S.cachettes.some((c) => c.id === 'souche-creuse') && !EX.quiVoit(eh), 'le début du chemin : on part à pied de la clairière de l’est du camp, sans être vu, des cachettes à trouver');
-  t.ok(EX.deplacer(eh, 47, 13.2, EX.portee(eh)) && EX.S.phase === 'exploration' && !EX.S.repere && Math.abs(eh.x - 47) < 0.3, 'on marche (sans téléporter) de la clairière de l’est, par le sentier dans la forêt, jusqu’au brasero du sentier F, sans être vu');
+  t.ok(EX.deplacer(eh, 47, 13.2, EX.portee(eh)) && EX.S.phase === 'exploration' && !EX.S.repere && Math.abs(eh.x - 47) < 0.3, 'on marche (sans téléporter) de la clairière de l’est, par le sentier dans la forêt, jusqu’au brasero du sentier des Gueux, sans être vu');
   EX.deplacer(eh, 55, 9.5, EX.portee(eh));
   t.ok(EX.S.repere?.h === 'h1' && eh.x < 54.9, 'en entrant dans le champ de vue d’un bandit, le héros s’arrête là où il est vu');
   EX.engager(false);
@@ -1263,7 +1264,7 @@ export async function selfTest(t, game) {
   const fh = EX.U('h3'), cc = EX.S.cachettes.find((c) => c.id === 'souche-creuse');
   EX.deplacer(fh, cc.x + 1.1, cc.y, EX.portee(fh));
   t.ok(EX.fouiller(fh, cc.id) && !EX.fouiller(fh, cc.id) && EX.S.evenements.some((e) => e.type === 'fouille') && (cc.trouvee ? EX.S.caillasse >= cc.caillasse[0] : EX.S.caillasse === 0), 'fouiller la souche creuse : un d20 de perception, une fois par héros');
-  t.ok(AVENTURE.tirer(niv1, 'KLMNP').troncon === 'camp-des-mastres/sentier-f-troncon', 'le sentier F se joue dans son tronçon');
+  t.ok(AVENTURE.tirer(niv1, 'KLMNP').troncon === 'camp-des-mastres/sentier-des-gueux-troncon', 'le sentier des Gueux se joue dans son tronçon');
   // après la victoire : pas de fiche de mesure, la Caillasse de la rencontre, le feu s'éteint, on reprend la marche
   EX = tro();
   const vh = EX.U('h2');
@@ -1524,7 +1525,7 @@ export async function selfTest(t, game) {
   t.ok(Math.abs(ronde.x - x0R) > 0.5 && ronde.regard != null && EX.S.evenements.some((e) => e.type === 'marche' && e.id === ronde.id), 'les loups du canal font leur ronde quand le groupe marche ; leur regard suit leur pas');
   }
   // --- L'exploration à plusieurs : l'hôte arbitre la marche, les gestes et les choix du groupe ---------------------------
-  t.group('le sentier F à plusieurs : l’hôte arbitre l’exploration');
+  t.group('le sentier des Gueux à plusieurs : l’hôte arbitre l’exploration');
   {
     const P = tro(), L = { phase: 'combat', equipe: ['brute', 'chevalier', 'voleur', 'druide'], proprio: ['host', 'ana', 'host', 'host'], pret: [], absents: {} };
     const libreAutour = (C, id) => { const h = C.U(id); for (const [dx, dy] of [[1.5, 0], [0, 1.5], [-1.5, 0], [0, -1.5], [1, 1], [-1, -1], [2.5, 0], [0, 2.5]]) if (C.apercuMarche(h, h.x + dx, h.y + dy, C.portee(h)).ok) return { x: h.x + dx, y: h.y + dy }; return null; };
@@ -1544,6 +1545,40 @@ export async function selfTest(t, game) {
     const L2 = { ...L, proprio: ['ana', 'ben', 'ana', 'ben'] };
     const d3 = libreAutour(P, 'h3');
     t.ok(d3 && arbitrerExploration(P, L2, 'ana', { type: 'explo', op: 'marche', id: 'h3', x: d3.x, y: d3.y }, { joueurs: 3 }), 'à plusieurs, chacun mène les siens même si l’hôte n’a aucun héros');
+  }
+  // --- L'expérience et les niveaux : le plan de l'aventure, les compétences qui s'ouvrent --------------------------------
+  t.group('l’XP et les niveaux du chemin de la tour');
+  {
+    const plan = PROG.planDe(AVENTURE.aventure('camp-des-mastres'));
+    const prep = AVENTURE.preparer({ mot: 'TESTS', salle: 'camp-des-mastres/sentier-des-gueux-a', rencontre: 'camp-des-mastres/sentier-des-gueux-bandits', miroir: false, troncon: 'camp-des-mastres/sentier-des-gueux-troncon' });
+    const sl = prep.plan.salle();
+    const XP = (prog = { xp: 0, niveau: 1 }) => { const C = creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, equipe: ['brute', 'mage', 'voleur', 'gardien'], progression: { plan, ...prog }, alea: graine(5), horloge: () => 0 }); C.explorer(); C.S.evenements.length = 0; return C; };
+    t.ok(plan.niveauMax === 6 && plan.xpParNiveau === 100 && plan.combats.gue === 100 && plan.fourche === 100, 'le plan du chemin : 6 niveaux, 100 XP chacun, un combat ou une étape en vaut un');
+    t.eq([PROG.niveauPour(0, plan), PROG.niveauPour(99, plan), PROG.niveauPour(100, plan), PROG.niveauPour(9999, plan)], [1, 1, 2, 6], 'le niveau suit l’XP, plafonné au niveau maximum');
+    t.eq(PROG.depart(plan, { xp: 'abc', niveau: 99 }), { xp: 0, niveau: 6 }, 'un départ abîmé : bornes sûres');
+    let C = XP();
+    const base = C.U('h1').pvMax;
+    t.ok(!C.peutUtiliser(C.U('h3'), CAPACITES.fioleCible) && !capacitesDe(C.S, 'mage').includes('foudre') && capacitesDe(C.S, 'mage').includes('etincelle'), 'niveau 1 : la Foudre et la Fiole ciblée ne sont pas encore apprises, l’Étincelle si');
+    t.ok(!C.utiliser(C.U('h2'), 'foudre', { id: 'x' }), 'une compétence pas encore apprise ne se lance pas');
+    const f = C.S.fourches[0];
+    C.choisir(f.id, f.branches[0].id);
+    const evs = C.S.evenements.splice(0);
+    t.ok(C.S.progression.xp === 100 && C.S.progression.niveau === 2 && evs.some((e) => e.type === 'xp' && e.n === 100) && evs.some((e) => e.type === 'niveau' && e.niveau === 2), 'choisir le chemin vaut 100 XP : niveau 2');
+    t.ok(C.U('h1').pvMax === base + 5 && C.U('h1').pv === base + 5, 'chaque niveau donne +5 PV à chaque héros');
+    t.ok(capacitesDe(C.S, 'mage').includes('eclaboussure') && C.peutUtiliser(C.U('h3'), CAPACITES.fioleCible) && evs.find((e) => e.type === 'niveau').appris.some((a) => a.h === 'h2' && a.cap === 'eclaboussure'), 'le niveau 2 ouvre l’Éclaboussure et la Fiole ciblée, et le dit');
+    C.S.progression.xp = 395; C.S.progression.niveau = 4;
+    const tv = C.S.trouvailles.find((o) => !o.fait); const hh = C.U('h1'); hh.x = tv.x - 1; hh.y = tv.y;
+    t.ok(C.cueillir(hh, tv.id) && C.S.progression.xp === 400 && C.S.progression.niveau === 5, 'une trouvaille vaut 5 XP (ici, elle fait passer au niveau 5)');
+    C.S.resultat = 'victoire'; C.S.groupeActif = 'gue'; C.reprendre?.();
+    t.ok(C.S.progression.xp === 500 && C.S.progression.niveau === 6, 'le combat du gué gagné : 100 XP, niveau 6 (le groupe arrive à la porte au niveau 6)');
+    C.S.progression.xp = 1000; C.gagnerXp?.(100, 'test');
+    t.ok(C.S.progression.niveau === 6, 'le niveau 6 est le maximum du plan');
+    C = XP({ xp: 250, niveau: 3 });
+    t.ok(C.S.progression.niveau === 3 && C.U('h1').pvMax === base + 10 && capacitesDe(C.S, 'brute').includes('projection') && !capacitesDe(C.S, 'brute').includes('projection20'), 'une run reprise au niveau 3 : +10 PV, les compétences de niveau 2 ouvertes, pas celles du niveau 4');
+    const libre = neuf({ equipe: ['brute', 'mage', 'voleur', 'gardien'] });
+    t.ok(!libre.S.progression && capacitesDe(libre.S, 'mage').includes('foudre') && libre.U('h2').pvMax === HEROS.mage.pv, 'au terrain d’entraînement, sans plan d’aventure : tout est ouvert, pas d’XP');
+    const saufEnsemble = HEROS.brute.capacites.concat(HEROS.mage.capacites).every((c) => CAPACITES[c]);
+    t.ok(saufEnsemble && Object.entries(PROG.DEBLOQUE).every(([cl, o]) => Object.keys(o).every((c) => HEROS[cl].capacites.includes(c))), 'chaque compétence verrouillée existe bien chez sa classe');
   }
   }
   // --- Le ressenti des coups : arrêt sur image, secousse, éclair, recul, gros chiffres ------------------------
