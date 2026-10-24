@@ -556,7 +556,8 @@ export function update() {
   if (ui.arrivee && libre && dom.arrivee.hidden && !ui.arriveeJouee) { ui.arriveeJouee = true; if (cine) { cine.jouer('arrivee', {}).then(() => { ui.arriveeVue = true; ui.sale = true; }); } else ui.arriveeVue = true; }
   if (ui.arrivee && ui.arriveeVue && libre && dom.arrivee.hidden && !cine?.actif()) {
     const S = combat.S;
-    dom.arriveeTexte.textContent = `Le groupe a passé la porte de la tour avec ${S.caillasse} Caillasse et ${S.stats.combos.length} combo${S.stats.combos.length > 1 ? 's' : ''} entre héros. La suite du camp des mastres est à écrire.`;
+    dom.arriveeTexte.textContent = `Le groupe a passé la porte de la tour avec ${S.caillasse} Caillasse et ${S.stats.combos.length} combo${S.stats.combos.length > 1 ? 's' : ''} entre héros. ${S.progression ? `Le groupe est au niveau ${S.progression.niveau} (${S.progression.xp} XP). ` : ''}La suite du camp des mastres est à écrire.`;
+    dom.arrivee.querySelector('a.retour-camp').href = adresseRetour();
     dom.arrivee.hidden = false;
   }
   if (!ui.sale) return;
@@ -929,6 +930,13 @@ function banniere(texte, genre = '') {
   clearTimeout(minuterieBanniere); minuterieBanniere = setTimeout(() => { dom.banniere.hidden = true; }, 1300);
 }
 // Une aventure : la victoire rend la route (la Caillasse, puis l'exploration) ; la défaite ramène au début du chemin.
+// Où « Retour au camp » mène : au bout du chemin, vers la grande porte, avec l'expérience du groupe (le camp la rend à la run) ;
+// sinon, devant le terrain d'entraînement comme avant.
+function adresseRetour() {
+  const P = combat.S.progression;
+  if (!ui.aventure || !combat.S.arrivee || !P) return RETOUR_CAMP;
+  return `./index.html?spot=porte&retour=victoire&niveau=${new URLSearchParams(location.search).get('niveau') ?? '1'}&xp=${P.xp}&nh=${P.niveau}`;
+}
 function finAventure() {
   if (combat.S.resultat === 'victoire') {
     const g = combat.S.groupeActif ?? 'principal';
@@ -998,7 +1006,7 @@ function pointeur() {
 }
 
 export const api = {
-  basculerFiche, ui, dom, majCurseur, finAventure, demanderChemin, demanderIncident, commencer, mancheSuivante, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
+  basculerFiche, ui, dom, majCurseur, adresseRetour, finAventure, demanderChemin, demanderIncident, commencer, mancheSuivante, choisirHeros, choisirCapacite, cliquer, finPhase, annuler, montrerFin, remplacer, pointeur, banniere, accueil, lance, rejouer,
   get selection() { return ui.sel; },
   get reseau() { return reseau; },
   // multi.js : à plusieurs, puis de nouveau seul (l'hôte est parti : tous les héros sont à moi)

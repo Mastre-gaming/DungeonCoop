@@ -283,7 +283,7 @@ function rejouer() {
   ihm.accueil();
   envoyerSalon();
 }
-const adresseCamp = () => `./index.html?spot=combat&${hote ? 'hote' : 'code'}=${code}`;
+const adresseCamp = () => `${ihm.adresseRetour?.() ?? './index.html?spot=combat'}&${hote ? 'hote' : 'code'}=${code}`;      // (au bout du chemin : vers la grande porte, avec l'XP du groupe)
 
 // --- Chaque image : les pointeurs des amis -------------------------------------------------------------------------
 export function update(dt) {

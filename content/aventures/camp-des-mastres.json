@@ -30,7 +30,11 @@
         "salle": "camp-des-mastres/sentier-des-gueux-a",
         "rencontre": "camp-des-mastres/sentier-des-gueux-bandits"
       },
-      "troncon": "camp-des-mastres/sentier-des-gueux-troncon"
+      "troncon": "camp-des-mastres/sentier-des-gueux-troncon",
+      "apercu": {
+        "gain": "De l’expérience, de la Caillasse, la route vers la tour",
+        "cout": "Des PV, des potions, des choix"
+      }
     },
     {
       "n": 2,

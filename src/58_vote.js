@@ -25,7 +25,7 @@ const RAISONS = {
 // --- Le vote (pur) -----------------------------------------------------------------------------------------------------
 export function creerVote({ options, electeurs, hote, duree = DUREE, delaiFin = DELAI_FIN }) {
   const v = {
-    options: options.map(({ id, nom, type }) => ({ id, nom, type })), electeurs: [...electeurs], votes: {},
+    options: options.map(({ id, nom, type, gain, cout }) => ({ id, nom, type, gain, cout })), electeurs: [...electeurs], votes: {},
     restant: electeurs.length > 1 ? duree : null, fini: null,
   };
   const voix = () => v.options.map((_, i) => Object.values(v.votes).filter((x) => x === i).length);
@@ -107,9 +107,10 @@ export function creerControleur({ party = () => null, run = () => null, nom = (i
     get ouvert() { return !!affiche; },
     get vote() { return vote; },
     // Le groupe arrive à un embranchement. Seul l'hôte (ou celui qui joue seul) compte les voix.
-    demarrer(options) {
+    // `qui` : les seuls à voter (le départ de l'aventure : ceux qui partent) ; sinon, tout le groupe.
+    demarrer(options, qui = null) {
       if (!estHote() || vote) return false;
-      n += 1; vote = creerVote({ options, electeurs: electeurs(), hote: moi() });
+      n += 1; vote = creerVote({ options, electeurs: qui?.length ? qui : electeurs(), hote: moi() });
       diffuser();
       emettre('vote:debut', { options });
       return true;
@@ -186,7 +187,7 @@ function creerEcran({ voter }) {
         const ap = APERCU[o.type] ?? {}, qui = a.electeurs.filter((e) => a.votes[e.id] === i);
         return el('button', { type: 'button', class: `carte${mien === i ? ' mien' : ''}${a.fini ? (gagne === i ? ' gagne' : ' perdu') : ''}`, onclick: () => voter(i) },
           el('span', { class: 'touche' }, `[${i + 1}]`), el('strong', {}, o.nom),
-          el('div', { class: 'ligne' }, el('b', {}, 'Rapporte : '), ap.gain ?? ''), el('div', { class: 'ligne' }, el('b', {}, 'Coûte : '), ap.cout ?? ''),
+          el('div', { class: 'ligne' }, el('b', {}, 'Rapporte : '), o.gain ?? ap.gain ?? ''), el('div', { class: 'ligne' }, el('b', {}, 'Coûte : '), o.cout ?? ap.cout ?? ''),
           el('div', { class: 'votes' }, qui.map((e) => el('span', {}, e.nom))));
       });
       const tous = a.electeurs.length > 1 && a.electeurs.every((e) => e.id in a.votes);
