@@ -16,7 +16,7 @@ const RAMPE = {
   R: ['#ff8a3d', '#e8590c', '#a33a10'], Y: ['#fff0a0', '#ffd35a', '#c9932a'], B: ['#8ec2ff', '#3d74c9', '#1f4a8c'],
   C: ['#f0fbff', '#a8e8ff', '#5aa8d0'], H: ['#ff8a8a', '#d63333', '#8a1a1a'], S: ['#f0f4fa', '#c0cad6', '#8a96a8'],
   W: ['#c08a52', '#8f5e33', '#5a3b22'], G: ['#fff0a0', '#e2b848', '#a07028'], O: ['#8a74a8', '#4a3866', '#241a36'],
-  N: ['#ffffff', '#d8e0ea', '#9aa6b8'],
+  N: ['#ffffff', '#d8e0ea', '#9aa6b8'], F: ['#f2b8a8', '#c97a6c', '#7e3a36'],
 };
 // teintes fixes : les reflets
 const FIXE = { w: '#ffffff', p: '#c9a8ff', y: '#fff7c8' };
@@ -136,6 +136,27 @@ const G = {
     '.GSSSSG.',
     '..GSSG..',
     '...GG...'],
+  // Enserré (l'Étreinte et le Festin de la Cosa) : des anneaux de chair cousue serrés les uns sur les autres
+  enserre: [
+    '.FFFFFF.',
+    'F.w..w.F',
+    '.FFFFFF.',
+    '..F..F..',
+    '.FFFFFF.',
+    'F.w..w.F',
+    '.FFFFFF.',
+    '..F..F..'],
+  // Mutilé (Dévorer) : un os arraché qui saigne
+  mutile: [
+    '......SS',
+    '.....SSS',
+    '....SSS.',
+    '...SSS..',
+    '..HHS...',
+    '.HHHH...',
+    '.HHH....',
+    '..H.....',
+    '.H..H...'],
 };
 
 const images = {};

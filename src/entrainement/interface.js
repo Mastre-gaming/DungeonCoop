@@ -361,7 +361,7 @@ function choisirCapacite(id) {
   if (id && (!h || !utilisable(h, CAPACITES[id]))) return false;
   ui.cap = id && ui.cap !== id ? id : null;
   // une capacité sans cible (la potion) se lance tout de suite
-  if (ui.cap && ['potion', 'mue', 'quitterForme'].includes(CAPACITES[ui.cap].type)) { agir({}); return true; }
+  if (ui.cap && ['potion', 'mue', 'quitterForme', 'festin'].includes(CAPACITES[ui.cap].type)) { agir({}); return true; }
   ui.sale = true;
   return true;
 }
@@ -501,7 +501,7 @@ function cliquer(p) {
   if (lv) { if (actionnerLevier(h, lv)) return; }
   if (ui.cap) {
     const cap = CAPACITES[ui.cap];
-    if (cap.type === 'zone') return void agir({ x: p.x, y: p.y });
+    if (cap.type === 'zone' || cap.type === 'soleil') return void agir({ x: p.x, y: p.y });
     if (dessous && combat.cibles(h, cap).some((c) => c.id === dessous)) return void agir({ id: dessous });
     if (cap.type === 'enclume') return void agir({ x: p.x, y: p.y });          // la Chute d'Enclume sur le sol
     if (cap.el === 'feu' && combat.huileVisable(h, cap, p)) return void agir({ x: p.x, y: p.y });
@@ -585,6 +585,7 @@ export function update() {
       m.cibles = combat.cibles(h, cap).map((c) => c.id);
       if (ui.survol) {
         if (cap.type === 'zone') m.zone = { x: ui.survol.x, y: ui.survol.y, r: cap.rayon, surf: cap.surf, ok: combat.zonePossible(h, cap, ui.survol) };
+        if (cap.type === 'soleil') m.zone = { x: ui.survol.x, y: ui.survol.y, r: cap.rayon, surf: 'feu', ok: combat.zonePossible(h, cap, ui.survol) };
         const d = vue.sous(ui.survol.x, ui.survol.y);
         if (cap.type === 'enclume' && !(d && m.cibles.includes(d))) m.zone = { x: ui.survol.x, y: ui.survol.y, r: 0.45, surf: 'enclume', ok: combat.zonePossible(h, cap, ui.survol) };
         if (d && m.cibles.includes(d)) { m.survolCible = d; info = combat.apercu(h, ui.cap, d); }
@@ -645,13 +646,16 @@ function joueurFiche(id) {
 // sinon celle qu'on a choisie.
 const RESULTATS = ['rate', 'eraflure', 'touche', 'critique'];
 // Le Pas dans l’ombre de Shadow n’a de sens qu’avec un ennemi tenu par un allié : sans cible, on le montre indisponible.
-const sansCible = (h, cap) => (cap.type === 'ombre' || cap.type === 'bond' || cap.type === 'ardent' || cap.devorer) && !combat.cibles(h, cap).length;
+const sansCible = (h, cap) => (cap.type === 'ombre' || cap.type === 'bond' || cap.type === 'ardent' || cap.type === 'chasse' || cap.type === 'festin' || cap.devorer) && !combat.cibles(h, cap).length;
 const utilisable = (h, cap) => combat.peutUtiliser(h, cap) && !sansCible(h, cap);
 function pourquoiPas(h, cap) {
   if (cap.slot === 'action' && !h.t.action) return 'Son action est déjà dépensée ce tour.';
   if (cap.slot === 'bonus' && !h.t.bonus) return 'Son action bonus est déjà dépensée ce tour.';
   if (cap.type === 'ombre' && combat.trahiParLaLumiere(h)) return 'La lumière le trahit : Brûlant ou dans le feu, pas de Pas dans l’ombre.';
   if (cap.type === 'enclume' && h.enclumeTombee) return 'Son enclume est déjà tombée : une fois par combat.';
+  if (cap.ultime && h.ultimes?.[cap.type]) return `${cap.nom} : déjà lancé, une fois par combat.`;
+  if (cap.type === 'festin' && !combat.cibles(h, cap).length) return 'Aucun ennemi à 4,5 m pour ses tentacules.';
+  if (cap.type === 'chasse' && !combat.cibles(h, cap).length) return 'Aucune proie à 9 m où bondir.';
   if (cap.type === 'forge' && !combat.presDeLEnclume(h)) return combat.S.enclume ? 'Loin de son enclume : il doit être à son contact pour forger.' : 'Pas d’enclume : la Chute d’Enclume d’abord.';
   if (cap.type === 'bond' && combat.trahiParLaLumiere(h)) return 'La Bête brûle (Brûlure, ou dans le feu) : plus de Bond.';
   if (cap.forme === 'illumine' && (h.st.trempe || combat.surfaceA(h)?.t === 'eau')) return 'Trempé ou dans l’eau : l’Illuminé s’éteindrait aussitôt.';

@@ -44,9 +44,11 @@ const COULEURS = {
 const LIGNES_CHIEN = { haut: 0, gauche: 1, bas: 2, droite: 3 };
 const VITESSE_CHIEN = 9 * T;
 const NOM_PIEGE = { machoires: 'Mâchoires !', glu: 'Glu !', collet: 'Collet !' };
-// Les trois formes du Changepeau de Mope (public/assets/lpc/entrainement/formes/, réduites des planches de design/classes/changepeau/formes/) :
-// une image debout par face (bas, gauche, haut, droite), animée par le jeu (elle respire, marche, bondit, frappe en se jetant en avant).
-const FACES_FORME = { bas: 0, gauche: 1, haut: 2, droite: 3 };
+// Les trois formes du Changepeau de Mope (public/assets/lpc/entrainement/formes/*-anim.png, faites par
+// design/classes/changepeau/outil/maquettes/planches_jeu.py) : des planches LPC (rangées haut / gauche / bas / droite), avec le
+// saut (la Bête) et le plongeon du Soleil noir (l'Illuminé, rangée 30 : 0-3 vers la droite, 4-7 vers la gauche). L'Illuminé
+// passe au bleu quand il attaque (sa deuxième planche). Validé par Mope le 24 oct. 2026 (la page « Formes du changepeau »).
+const ANIM_FORME = { sort: [0, 7], estoc: [4, 8], marche: [8, 9], attaque: [12, 6], blesse: [20, 6], repos: [22, 2], saut: [26, 5] };
 const NOMS_FORME = { bete: 'La Bête !', cosa: 'La Cosa !', illumine: 'L’Illuminé !' };
 
 let game, rendu, images, combat, salle, canvas, niveauPlan, pont, saison, des = null;
@@ -176,7 +178,7 @@ export function init(g, options) {
   window.addEventListener('resize', () => ajusterCamera());
   cam.cx = W / 2; cam.cy = H / 2;
   ajusterCamera(true);
-  redessinerSurfaces();
+  taches = null; redessinerSurfaces();
   return api;
 }
 
@@ -196,7 +198,7 @@ function peupler() {
       id: u.id, type: u.type, camp: u.camp, x: u.x * T, y: u.y * T, dir: u.camp === 'h' ? 'droite' : u.camp === 'p' ? 'bas' : 'gauche', anim: 'repos', t: Math.random(),
       pv: u.pv, ko: u.ko, mort: u.mort, cache: false, enfonce: 0, s64, grand, meta, ombre: rendu.ombre(20 * (meta.echelle ?? 1), 5 * (meta.echelle ?? 1)),
       pvMax: u.pvMax, plaque: creerPlaque(u), chien,
-      formes: u.type === 'changepeau' ? Object.fromEntries(['bete', 'cosa', 'illumine'].map((f) => { const sp = rendu.sprite(images[`forme_${f}`], `forme-${f}`, 64, 64); sp.cacher(true); return [f, sp]; })) : null,
+      formes: u.type === 'changepeau' ? Object.fromEntries(['bete', 'cosa', 'illumine', 'illumineBleu'].map((f) => { const sp = rendu.sprite(images[`forme_${f}`], `forme-${f}`, 64, 64); sp.cacher(true); return [f, sp]; })) : null,
       forme: u.forme?.id ?? null, formePv: u.forme?.pv ?? 0, formeMax: u.forme?.max ?? 0,
     });
   }
@@ -217,7 +219,7 @@ export function remplacer(nouveau) {
   combat = nouveau;
   peupler();
   VIE.dispose(); VIE.init({ rendu, images, combat, plan: niveauPlan, heros: herosVus, saison });
-  redessinerSurfaces();
+  taches = null; redessinerSurfaces();
   dessinerMarques({});
 }
 
@@ -305,11 +307,15 @@ function blocsLPC() {                                // chaque bloc dans sa prop
   }
   return blocs;
 }
+// Les taches que la vue montre : celles du combat quand la file est vide ; pendant une scène, celles d'avant (le feu du Soleil
+// noir n'apparaît qu'à son impact, avec l'événement « surfaces »)
+let taches = null;
+const maillesVues = () => taches ?? combat.mailles();
 function redessinerSurfaces(flammes = 0) {
   const W = fondSurfaces.width, H = fondSurfaces.height, M = combat.MAILLE * T;
   const img = ctxSurfaces.createImageData(W, H), p = img.data, P = pixelsPlanche();
   const nx = Math.ceil(W / M), ny = Math.ceil(H / M), grille = new Uint8Array(nx * ny);
-  for (const [k, s] of Object.entries(combat.mailles())) {
+  for (const [k, s] of Object.entries(maillesVues())) {
     const [i, j] = k.split(',').map(Number);
     if (i >= 0 && j >= 0 && i < nx && j < ny) grille[j * nx + i] = Math.max(0, TYPES.indexOf(s.t));      // (les pièges : dessinés à part, plus bas)
   }
@@ -372,7 +378,7 @@ function redessinerSurfaces(flammes = 0) {
     for (const [, sx, sy, sw, sh, x, y] of poses) ctxSurfaces.drawImage(images.surfaces, sx, sy, sw, sh, x, y, sw, sh);
   }
   // les pièges du Traqueur (une tache de la couleur du fer, de l'ambre ou de la corde, au contour plus sombre)
-  for (const [k, s] of Object.entries(combat.mailles())) {
+  for (const [k, s] of Object.entries(maillesVues())) {
     if (s.t !== 'piege') continue;
     const [i, j] = k.split(',').map(Number), c = COULEURS[`piege-${s.v}`] ?? COULEURS['piege-machoires'], r = M * 0.72;
     ctxSurfaces.fillStyle = `rgb(${c[3].join(',')})`; ctxSurfaces.beginPath(); ctxSurfaces.arc((i + 0.5) * M, (j + 0.5) * M, r, 0, Math.PI * 2); ctxSurfaces.fill();
@@ -380,7 +386,7 @@ function redessinerSurfaces(flammes = 0) {
   }
   texSurfaces.needsUpdate = true;
 }
-const feuPresent = () => Object.values(combat.mailles()).some((s) => s.t === 'feu');
+const feuPresent = () => Object.values(maillesVues()).some((s) => s.t === 'feu');
 
 // --- Les marques de jeu ----------------------------------------------------------------------------------------
 // marques = { selection: id, portee: carte|null, mv, chemin: [pts], survolCible: id, cibles: [ids], cercle: {x,y,r}, zone: {x,y,r,surf}, menace: {x,y,r}, actif: id }
@@ -537,6 +543,7 @@ function scene(e) {
   const a = e.id ? aff.get(e.id) : null;
   switch (e.type) {
     case 'marche': {
+      if (e.saut && a.formes && a.forme) return sceneRecul(e, a);
       const pts = e.chemin.map((p) => ({ x: p.x * T, y: p.y * T }));
       const segs = []; let tot = 0, prec = { x: a.x, y: a.y };
       for (const p of pts) { const l = Math.hypot(p.x - prec.x, p.y - prec.y); segs.push({ a: prec, b: p, l, d: tot }); tot += l; prec = p; }
@@ -612,7 +619,8 @@ function scene(e) {
       if (e.type === 'attaque' && !e.jetMontre) pourEcouteurs({ ...e, type: 'de' });
       // l'effet de la capacité : la scène dure jusqu'à ce que le coup arrive (les dégâts s'affichent après)
       const genre = att.camp === 'e' ? (e.anim === 'tir' ? 'tir' : ['brt', 'chef'].includes(att.type) ? 'lourd' : 'taille') : null;
-      const d = e.type === 'attaque' ? effetsAttaque(fx, e.cap, att, cible, genre) : effetsLance(fx, e.cap, att, cible, e.cap === 'fioleCible' ? cible : null);
+      const cp = att.formes && att.forme ? coupForme(e, att, cible) : null;      // le Changepeau en forme : ses poses et ses effets à lui
+      const d = cp ? cp.d : e.type === 'attaque' ? effetsAttaque(fx, e.cap, att, cible, genre) : effetsLance(fx, e.cap, att, cible, e.cap === 'fioleCible' ? cible : null);
       // (effetsAttaque rend la fin de l'effet : l'impact est 0,05 s avant)
       const quand = Math.max(0.12, d - 0.05);
       let porte = e.type !== 'attaque';
@@ -625,7 +633,7 @@ function scene(e) {
         impact(cible, att, suite.n, e.resultat, suite.pv <= 0);
         chiffre(cible, suite.n, e.resultat);
       };
-      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d), maj(t) { if (!porte && t >= quand) toucher(); }, fin() { if (!porte) toucher(); att.anim = 'repos'; } };
+      return { duree: Math.max(e.type === 'attaque' ? 0.6 : 0.45, d, cp?.duree ?? 0), maj(t) { cp?.maj(t); if (!porte && t >= quand) toucher(); }, fin() { if (!porte) toucher(); att.anim = 'repos'; cp?.fin(); } };
     }
     case 'degats': {
       if (a.type === 'riff-ossel' && e.pv > 0) jouerSynthese('blesse');
@@ -650,20 +658,44 @@ function scene(e) {
       fx.jouer('colonne-doree', { x: a.x, y: a.y }); fx.jouer('croix-soin', { x: a.x, y: a.y, retard: 0.2 });
       return { duree: 0.5 };
     case 'releve': flottant(a, 'debout', 'info'); return { duree: 0.15 };
-    // la Mue du Changepeau (ou la chute, ou quitter sa forme) : un éclat, un nuage de poussière, et l'autre corps
-    case 'mue':
-      fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-dore', { x: a.x, y: a.y - 30 });
-      a.eclair = 1; a.anim = 'repos'; a.t = 0;
-      return { duree: 0.4, maj(t, k) { if (k >= 0.35 && a.forme !== (e.forme ?? null)) { a.forme = e.forme ?? null; if (e.forme) { a.formePv = e.pv; a.formeMax = e.max; flottant(a, NOMS_FORME[e.forme], 'info'); } } },
-        fin() { a.forme = e.forme ?? null; if (e.forme) { a.formePv = e.pv; a.formeMax = e.max; } } };
-    case 'forme': a.formePv = e.pv; flottant(a, `+${e.n} forme`, 'soin'); return { duree: 0.25 };
-    // le Bond de la Bête : un saut en cloche jusqu'au contact de sa cible, de la poussière à l'arrivée
-    case 'bond': {
-      const dep = { x: a.x, y: a.y }, arr = { x: e.x * T, y: e.y * T }, c = aff.get(e.vers);
-      tourner(a, c ?? arr); a.anim = 'attaque'; a.t = 0;
-      return { duree: 0.42, maj(t, k) { a.x = dep.x + (arr.x - dep.x) * k; a.y = dep.y + (arr.y - dep.y) * k; a.saut = Math.sin(Math.PI * k) * 26; viser(a.x, a.y); },
-        fin() { a.x = arr.x; a.y = arr.y; a.saut = 0; a.anim = 'repos'; fx.jouer('poussiere', { x: arr.x, y: arr.y }); if (c) { c.anim = 'blesse'; c.t = 0; fx.jouer('impact-etoile', { x: c.x, y: c.y - 24 }); } } };
+    // la Mue du Changepeau : l'orc se tord (la Bête : plié de douleur, le poil jaillit, il rugit ; la Cosa : bras écartés, la
+    // chair gonfle, les coutures craquent ; l'Illuminé : bras levés, une colonne de flammes monte) ; la chute et « quitter » : un éclat
+    case 'mue': {
+      if (!e.forme || a.forme) {
+        fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-dore', { x: a.x, y: a.y - 30 });
+        a.eclair = 1; a.anim = 'repos'; a.t = 0; a.pose = null; a.bleu = false;
+        return { duree: 0.4, maj(t, k) { if (k >= 0.35 && a.forme !== (e.forme ?? null)) { a.forme = e.forme ?? null; if (e.forme) { a.formePv = e.pv; a.formeMax = e.max; flottant(a, NOMS_FORME[e.forme], 'info'); } } },
+          fin() { a.forme = e.forme ?? null; if (e.forme) { a.formePv = e.pv; a.formeMax = e.max; } } };
+      }
+      const f = e.forme, BASCULE = 0.62, orc = f === 'bete' ? 'blesse' : 'sort';
+      viser(a.x, a.y);
+      if (f === 'bete') fx.jouer('cp-mue-poil', { x: a.x, y: a.y - 22, retard: 0.3 });
+      if (f === 'cosa') fx.jouer('cp-mue-chair', { x: a.x, y: a.y - 22, retard: 0.2 });
+      if (f === 'illumine') fx.jouer('cp-mue-flammes', { x: a.x, y: a.y + 2, retard: 0.1 });
+      let passe = false;
+      return { duree: 1.05, maj(t) {
+        if (t < BASCULE) { a.anim = 'film'; a.film = { anim: orc, i: Math.min(f === 'bete' ? 3 : 5, Math.floor(t / BASCULE * (f === 'bete' ? 4 : 6))), dx: 0 }; return; }
+        if (!passe) { passe = true; a.forme = f; a.formePv = e.pv; a.formeMax = e.max; a.eclair = 1; a.anim = 'repos'; a.film = null; flottant(a, NOMS_FORME[f], 'info'); if (!calme) { secousse.a = Math.max(secousse.a, 4); secousse.t = 0; } }
+        a.pose = { anim: 'sort', col: f === 'cosa' ? 4 + Math.min(2, Math.floor((t - BASCULE) * 8)) : 5 + (Math.floor((t - BASCULE) * 6) % 2) };
+      }, fin() { a.forme = f; a.formePv = e.pv; a.formeMax = e.max; a.pose = null; a.film = null; a.anim = 'repos'; } };
     }
+    case 'forme': a.formePv = e.pv; flottant(a, `+${e.n} forme`, 'soin'); return { duree: 0.25 };
+    // le Bond de la Bête (et chaque bond de la Grande Chasse) : accroupie, elle saute les pieds devant, en cloche, jusqu'au
+    // contact de sa proie ; la Chasse laisse une traînée d'ombre rouge
+    case 'bond': case 'chasse': return sceneBond(e, a);
+    case 'ultime': {
+      flottant(a, e.nom, 'critique-titre', 14); a.eclair = 1.5; viser(a.x, a.y);
+      if (!calme) { secousse.a = Math.max(secousse.a, 5); secousse.t = 0; }
+      return { duree: 0.45 };
+    }
+    case 'festin': return sceneFestin(e, a);
+    case 'gueule': {
+      const c = aff.get(e.vers); if (c) tourner(a, c);
+      fx.jouer('cp-festin-gueule', { x: a.x, y: a.y - 30 });
+      return { duree: 0.7, maj(t) { a.pose = { anim: 'estoc', col: 3 + Math.min(4, Math.floor(t * 8)) }; }, fin() { a.pose = null; } };
+    }
+    case 'soleil': return sceneSoleil(e, a);
+    case 'mutile': return { duree: 0 };
     case 'chute': return { duree: 0.45, maj(t, k) { a.enfonce = k; }, fin() { if (a.mort || combat.U(a.id)?.mort) a.cache = true; a.enfonce = 0; } };
     case 'place': a.x = e.x * T; a.y = e.y * T; return { duree: 0.1 };
     // le Pas dans l’ombre de Shadow : il s’enfonce dans son ombre, et en ressort derrière la cible
@@ -757,7 +789,7 @@ function scene(e) {
     case 'trouvaille': VIE.cueilli(e.id); return { duree: 0.3 };
     case 'charge': viser(((e.x0 + e.x1) / 2) * T, ((e.y0 + e.y1) / 2) * T); pourEcouteurs(e); return { duree: 0.7 };
     case 'brasero': { const b = braseros.get(e.id); if (b) { b.renverse = true; fx.jouer('poussiere', { x: b.x, y: b.y }); } return { duree: 0.3 }; }
-    case 'surfaces': redessinerSurfaces(temps); return { duree: 0.05 };
+    case 'surfaces': taches = { ...combat.mailles() }; redessinerSurfaces(temps); return { duree: 0.05 };
     case 'piege': flottant(a, NOM_PIEGE[e.v] ?? 'Piège !', 'info'); fx.jouer('poussiere', { x: a.x, y: a.y }); fx.jouer('impact-lourd', { x: a.x, y: a.y }); return { duree: 0.35 };
     case 'limier': {
       // le limier court au contact de la cible d'un ordre, puis revient à sa place (à côté de son maître)
@@ -802,6 +834,158 @@ function testDe(e) {
   return { titre: 'Jet de perception', sous: 'fouiller', dd: e.dd, ok: `+${e.n} Caillasse`, ko: 'Rien trouvé' };
 }
 function pourEcouteurs(e) { for (const f of ecouteurs) f(e); }
+
+// --- Le Changepeau en forme : ses poses et ses effets (validés par Mope le 24 oct. 2026) ---------------------------
+// Une suite de poses : [[anim, [colonnes], durée], …] ; la pose de l'instant t (la dernière tient).
+function suite(a, t, etapes) {
+  let t0 = 0;
+  for (const [anim, cols, d] of etapes) {
+    if (t < t0 + d) { a.pose = { anim, col: cols[Math.min(cols.length - 1, Math.floor(((t - t0) / d) * cols.length))] }; return; }
+    t0 += d;
+  }
+  const [anim, cols] = etapes[etapes.length - 1]; a.pose = { anim, col: cols[cols.length - 1] };
+}
+const sensDe = (a) => (a.dir === 'gauche' ? -1 : a.dir === 'droite' ? 1 : 0);
+// la paume tendue (l'estoc, bras en avant) et la panse (la gueule de la Cosa), selon la face
+const paume = (a) => ({ droite: { x: a.x + 25, y: a.y - 18 }, gauche: { x: a.x - 25, y: a.y - 18 }, bas: { x: a.x + 3, y: a.y - 12 }, haut: { x: a.x - 3, y: a.y - 40 } }[a.dir] ?? { x: a.x, y: a.y - 20 });
+const panse = (a) => ({ x: a.x + sensDe(a) * 5, y: a.y - 24 });
+// des bouffées semées le long d'un vol (la traînée de la Braise, du Soleil noir, l'ombre rouge de la Chasse)
+function semer(id, p, q, retard, duree, n, arc = 0) {
+  for (let i = 0; i <= n; i++) {
+    const k = i / n; fx.jouer(id, { x: p.x + (q.x - p.x) * k, y: p.y + (q.y - p.y) * k - arc * 4 * k * (1 - k), retard: retard + duree * k });
+  }
+}
+// un tentacule de chair cousue, de p à q : des anneaux qui sortent un à un (de sortie à sortie + 0,25 s), puis se rétractent
+// depuis le bout quand la proie est tirée (rentre : à partir de quand, et en combien de temps)
+function tentacule(p, q, sortie, rentre, tire, graine = 0) {
+  const l = Math.hypot(q.x - p.x, q.y - p.y), n = Math.max(3, Math.round(l / 7)), nx = -(q.y - p.y) / (l || 1), ny = (q.x - p.x) / (l || 1);
+  for (let i = 0; i <= n; i++) {
+    const k = i / n, ond = Math.sin(k * 7 + graine) * 4 * Math.sin(k * Math.PI), r = sortie + k * 0.25;
+    fx.jouer('cp-chair', { x: p.x + (q.x - p.x) * k + nx * ond, y: p.y + (q.y - p.y) * k + ny * ond, retard: r, duree: rentre + tire * (1 - k) - r });
+  }
+}
+// le coup d'une forme (l'événement « attaque » ou « lance ») : { d (le coup porte), duree, maj(t), fin() } ; null : la scène ordinaire
+function coupForme(e, a, c) {
+  const f = a.forme, cap = e.cap, sx = c.x >= a.x ? 1 : -1, miroir = sx < 0, t = { x: c.x, y: c.y - 24 };
+  const fin = () => { a.pose = null; a.bleu = false; };
+  if (cap === 'braise') {
+    // le bras se tend, l'énergie converge dans la paume, la boule grossit, part avec sa longue traînée, et explose
+    a.bleu = true;
+    const m = paume(a), CHARGE = 0.24, PART = 0.72, vol = Math.max(0.2, Math.hypot(t.x - m.x, t.y - m.y) / 380);
+    fx.jouer('cp-braise-charge', { ...m, retard: CHARGE, duree: PART - CHARGE });
+    fx.jouer('cp-braise-boule', { ...m, vers: t, retard: PART, duree: vol, miroir });
+    semer('cp-braise-trainee', m, t, PART, vol, Math.max(8, Math.round(vol / 0.015)));
+    fx.jouer('cp-braise-explosion', { ...t, retard: PART + vol });
+    return { d: PART + vol + 0.05, duree: PART + vol + 0.5, maj(x) { suite(a, x, [['estoc', [0, 1, 2, 3], CHARGE], ['estoc', [4], 0.2], ['estoc', [5], PART - CHARGE - 0.2 + vol], ['estoc', [6, 7], 0.3]]); }, fin };
+  }
+  if (cap === 'embrasement') {
+    a.bleu = true;
+    const m = { x: a.x, y: a.y - 52 }, p = { x: c.x, y: c.y }, vol = Math.max(0.25, Math.hypot(p.x - m.x, p.y - m.y) / 340);
+    fx.jouer('cp-braise-charge', { ...m, retard: 0.15, duree: 0.3 });
+    fx.jouer('cp-braise-boule', { ...m, vers: p, retard: 0.45, duree: vol, arc: 24, miroir });
+    semer('cp-braise-trainee', m, p, 0.45, vol, Math.max(8, Math.round(vol / 0.018)), 24);
+    fx.jouer('cp-braise-explosion', { x: p.x, y: p.y - 26, retard: 0.45 + vol });
+    return { d: 0.45 + vol + 0.1, duree: 0.45 + vol + 0.4, maj(x) { suite(a, x, [['sort', [0, 1, 2, 3, 4, 5], 0.45], ['sort', [6], 1]]); }, fin };
+  }
+  if (cap === 'armesArdentes') {
+    a.bleu = true;
+    const d = effetsLance(fx, cap, a, c, c);
+    return { d, duree: d + 0.2, maj(x) { suite(a, x, [['sort', [0, 1, 2, 3, 4, 5, 6], 0.45]]); }, fin };
+  }
+  if (cap === 'soleilNoir') { a.bleu = true; fx.jouer('impact-feu', { ...t, retard: 0.05 }); return { d: 0.12, duree: 0.3, maj() { a.pose = { anim: 'sort', col: 6 }; }, fin }; }
+  if (cap === 'crocs' || cap === 'grandeChasse') {
+    // la gueule en avant : la mâchoire se referme sur la tête, le sang gicle
+    fx.jouer('cp-machoire', { x: c.x, y: c.y - 40, retard: cap === 'crocs' ? 0.12 : 0.02 });
+    fx.jouer('cp-sang', { x: c.x, y: c.y - 34, retard: cap === 'crocs' ? 0.26 : 0.14 });
+    const d0 = cap === 'crocs' ? 0.28 : 0.16;
+    return { d: d0, duree: d0 + 0.3, maj(x) { suite(a, x, cap === 'crocs' ? [['estoc', [0, 1, 2, 3, 4, 5, 6, 7], 0.45]] : [['estoc', [4, 5, 6, 7], 0.3]]); }, fin };
+  }
+  if (cap === 'curee') {
+    // trois vrais coups de griffes (taille, trois fois), puis le saut en arrière (la marche « saut » qui suit)
+    for (let k = 0; k < 3; k++) fx.jouer('cp-griffes', { ...t, retard: 0.12 + k * 0.24, miroir: k % 2 ? !miroir : miroir });
+    fx.jouer('cp-sang', { x: c.x, y: c.y - 30, retard: 0.62 });
+    return { d: 0.66, duree: 0.8, maj(x) { suite(a, x, [['attaque', [0, 1, 2, 3, 4, 5], 0.24], ['attaque', [0, 1, 2, 3, 4, 5], 0.24], ['attaque', [0, 1, 2, 3, 4, 5], 0.24]]); }, fin };
+  }
+  if (cap === 'poing') {
+    fx.jouer('impact-lourd', { x: c.x, y: c.y, retard: 0.22 });
+    return { d: 0.27, duree: 0.45, maj(x) { suite(a, x, [['attaque', [0, 1, 2, 3, 4, 5], 0.4]]); }, fin };
+  }
+  if (cap === 'devorer') {
+    // elle tend le bras, saisit, arrache le bras de sa proie (le sang gicle) ; le bras vole jusqu'à la gueule de sa panse, qui mâche
+    const ep = { x: c.x - sx * 6, y: c.y - 32 }, g = panse(a);
+    fx.jouer('cp-sang', { ...ep, retard: 0.52 });
+    fx.jouer('cp-bras', { ...ep, vers: g, retard: 0.5, duree: 0.34, arc: 14 });
+    fx.jouer('cp-gueule', { ...g, retard: 0.7 });
+    fx.jouer('cp-sang', { x: g.x, y: g.y + 4, retard: 0.95 });
+    return { d: 0.55, duree: 1.4, maj(x) {
+      if (x < 0.85) suite(a, x, [['estoc', [0, 1, 2, 3, 4, 5], 0.35], ['estoc', [5], 0.12], ['attaque', [5, 4, 3, 2, 1, 0], 0.38]]);
+      else a.pose = { anim: 'marche', col: Math.floor(x * 8) % 2 ? 0 : 1 };           // elle mâche
+    }, fin };
+  }
+  if (cap === 'festin' && e.type === 'lance') return { d: 0, duree: 0.1, maj() {}, fin() {} };     // (les bras s'écartent dans la scène « festin »)
+  if (cap === 'festin') {
+    fx.jouer('cp-sang', { x: c.x, y: c.y - 30, retard: 0.12 });
+    return { d: 0.18, duree: 0.4, maj(x) { suite(a, x, [['estoc', [4, 5, 6, 7], 0.3]]); }, fin };
+  }
+  if (cap === 'etreinte') {
+    // le bras jeté en avant, des tentacules de chair cousue jaillissent, saisissent, et la tirent (la poussée qui suit)
+    const m = paume(a), q = { x: c.x, y: c.y - 22 }, l = Math.hypot(c.x - a.x, c.y - a.y);
+    const tire = Math.min(0.6, 0.12 + Math.max(0, l - 1.05 * T) / (12 * T));
+    tentacule(m, q, 0.24, 0.62, tire, 0); tentacule({ x: m.x, y: m.y + 4 }, { x: q.x, y: q.y + 8 }, 0.28, 0.62, tire, 2.1);
+    return { d: 0.55, duree: 0.62, maj(x) { suite(a, x, [['estoc', [0, 1, 2, 3], 0.24], ['estoc', [4, 5, 6, 7], 0.3]]); }, fin };
+  }
+  return null;
+}
+function sceneBond(e, a) {
+  const dep = { x: a.x, y: a.y }, arr = { x: e.x * T, y: e.y * T }, c = aff.get(e.vers), chasse = e.type === 'chasse';
+  tourner(a, c ?? arr); a.anim = 'repos'; a.t = 0;
+  const ACC = chasse ? 0.08 : 0.14, VOL = chasse ? 0.32 : 0.38, haut = chasse ? 22 : 28;
+  if (chasse) semer('cp-ombre-rouge', dep, arr, ACC, VOL, 6, haut / 2);
+  let pose = false;
+  return { duree: ACC + VOL + (chasse ? 0.02 : 0.2), maj(t) {
+    if (t < ACC) { suite(a, t, [['saut', [0, 1], ACC]]); return; }
+    const k = Math.min(1, (t - ACC) / VOL);
+    a.x = dep.x + (arr.x - dep.x) * k; a.y = dep.y + (arr.y - dep.y) * k; a.saut = Math.sin(Math.PI * k) * haut; viser(a.x, a.y);
+    if (k < 1) { a.pose = { anim: 'saut', col: 2 + Math.min(2, Math.floor(k * 3)) }; return; }
+    if (!pose) { pose = true; a.saut = 0; fx.jouer('poussiere', { x: arr.x, y: arr.y }); if (c && !chasse) { c.anim = 'blesse'; c.t = 0; fx.jouer('impact-etoile', { x: c.x, y: c.y - 24 }); } }
+    suite(a, t - ACC - VOL, [['estoc', [4, 5, 6, 7], 0.2]]);
+  }, fin() { a.x = arr.x; a.y = arr.y; a.saut = 0; a.pose = null; a.anim = 'repos'; } };
+}
+// le saut en arrière de la Curée : face à sa proie, elle rebondit de 3 m
+function sceneRecul(e, a) {
+  const dep = { x: a.x, y: a.y }, q = e.chemin[e.chemin.length - 1], arr = { x: q.x * T, y: q.y * T };
+  return { duree: 0.34, maj(t, k) { a.x = dep.x + (arr.x - dep.x) * k; a.y = dep.y + (arr.y - dep.y) * k; a.saut = Math.sin(Math.PI * k) * 16; a.pose = { anim: 'saut', col: k < 0.5 ? 2 : 4 }; },
+    fin() { a.x = arr.x; a.y = arr.y; a.saut = 0; a.pose = null; a.anim = 'repos'; fx.jouer('poussiere', { x: arr.x, y: arr.y }); } };
+}
+// le Festin : bras écartés, ses tentacules jaillissent vers chaque proie (les poussées qui suivent les tirent à son contact)
+function sceneFestin(e, a) {
+  const proies = e.proies.map((id) => aff.get(id)).filter(Boolean);
+  const m = { x: a.x, y: a.y - 26 }, tire = 0.5 * proies.length + 0.3;
+  proies.forEach((c, i) => { tentacule(m, { x: c.x, y: c.y - 22 }, 0.3, 0.7 + tire, 0.3, i * 1.7); });
+  viser(a.x, a.y);
+  return { duree: 0.7, maj(t) { suite(a, t, [['sort', [0, 1, 2, 3, 4, 5, 6], 0.5]]); }, fin() { a.pose = { anim: 'sort', col: 6 }; } };
+}
+// le Soleil noir : il s'élève, les deux bras levés au ciel, le soleil noir grossit au-dessus de ses mains ; puis il plonge comme
+// Superman, un bras devant lui, le corps à l'horizontale, une traînée de feu bleu derrière lui ; et s'écrase
+function sceneSoleil(e, a) {
+  const dep = { x: a.x, y: a.y }, arr = { x: e.x * T, y: e.y * T }, MONTE = 0.95, PLONGE = Math.max(0.3, Math.min(0.5, Math.hypot(arr.x - dep.x, arr.y - dep.y) / 520)), HAUT = 36;
+  const gauche = arr.x < dep.x - 2;
+  a.bleu = true; a.dir = 'bas'; viser(a.x, a.y - 30);
+  fx.jouer('cp-soleil-charge', { x: dep.x, y: dep.y - 64, vers: { x: dep.x, y: dep.y - 64 - HAUT }, duree: MONTE });
+  semer('cp-braise-trainee', { x: dep.x, y: dep.y - 30 - HAUT }, { x: arr.x, y: arr.y - 20 }, MONTE, PLONGE, 24);
+  fx.jouer('cp-soleil-explosion', { x: arr.x, y: arr.y, retard: MONTE + PLONGE });
+  let boum = false;
+  return { duree: MONTE + PLONGE + 0.35, maj(t) {
+    if (t < MONTE) { const k = t / MONTE; a.saut = HAUT * k * k * (3 - 2 * k); suite(a, t, [['sort', [0, 1, 2, 3, 4], MONTE * 0.6], ['sort', [5], 1]]); return; }
+    const k = Math.min(1, (t - MONTE) / PLONGE);
+    a.x = dep.x + (arr.x - dep.x) * k; a.y = dep.y + (arr.y - dep.y) * k; a.saut = HAUT * (1 - k); viser(a.x, a.y);
+    if (k < 1) { a.pose = { anim: 'plonge', gauche, col: Math.floor(t * 16) }; return; }
+    if (!boum) {
+      boum = true; a.saut = 0; a.pose = { anim: 'sort', col: 6 }; a.eclair = 1;
+      if (!calme) { secousse.a = Math.max(secousse.a, 14); secousse.t = 0; }
+    }
+  }, fin() { a.x = arr.x; a.y = arr.y; a.saut = 0; a.pose = null; a.bleu = false; a.anim = 'repos'; } };
+}
 
 // --- Baba Brisenclume : ses animations validées (films.js) -----------------------------------------------------------
 // Chaque capacité joue sa scène verrouillée ; la file reprend quand le coup porte (l'image « impact »), le film continue.
@@ -1068,6 +1252,7 @@ export function update(dtReel) {
     if (!cachee) enclume.s.poser(enclume.x - ENCLUME_FILM.w / 2, enclume.y - ENCLUME_FILM.h, enclume.y);
   }
   // les états en boucle sur les créatures : relus quand la file est vide (ils apparaissent quand le coup a porté)
+  if (!occupe()) taches = { ...combat.mailles() };
   if (!occupe()) etatsVus = new Map(combat.S.unites.filter((u) => !u.mort).map((u) => [u.id, ETATS.filter(([k]) => (k === 'expose' ? u.expose : u.st[k]))]));
   for (const [id, liste] of etatsVus) {
     const a = aff.get(id); if (!a || a.cache || a.mort) continue;
@@ -1131,18 +1316,21 @@ function poserPerso(a) {
   a.ombre.cacher(a.enfonce > 0.3 || (a.plonge ?? 0) > 0.2); a.ombre.poser(a.x, a.y - 1);
 }
 
-// Une forme du Changepeau : sa face selon la direction ; elle respire au repos, rebondit en marchant, se jette en avant
-// pour frapper, tremble quand elle est touchée.
+// Une forme du Changepeau : sa planche LPC, comme l'orc. a.pose (les scènes de ses capacités) force l'image : { anim, col } ;
+// sinon elle marche, respire, encaisse, et frappe avec la rangée de l'animation demandée.
 function poserForme(a) {
-  const sp = a.formes[a.forme];
+  const bleu = a.forme === 'illumine' && a.bleu, sp = a.formes[bleu ? 'illumineBleu' : a.forme];
+  if (a.forme === 'illumine') a.formes[bleu ? 'illumine' : 'illumineBleu'].cacher(true);
   a.s64.cacher(true); a.grand?.cacher(true); sp.cacher(false);
-  const v = { haut: [0, -1], bas: [0, 1], gauche: [-1, 0], droite: [1, 0] }[a.dir] ?? [0, 1];
-  let dx = 0, dy = 0;
-  if (a.anim === 'marche') dy = -Math.abs(Math.sin(a.t * 10)) * 3;
-  else if (a.anim === 'blesse') dx = Math.sin(a.t * 60) * 2 * Math.max(0, 1 - a.t * 3);
-  else if (a.anim === 'repos') dy = Math.round(Math.sin(a.t * 2.4));
-  else { const k = Math.min(1, a.t / 0.45), l = Math.sin(Math.PI * Math.min(1, k * 1.6)) * 9; dx = v[0] * l; dy = v[1] * l * 0.6; }
-  sp.poser(Math.round(a.x - 32 + dx), Math.round(a.y - 60 + dy - (a.saut ?? 0) + a.enfonce * 26), a.y, FACES_FORME[a.dir] * 64, 0);
+  const ligne = DIR[a.dir] ?? 2;
+  let rang, col;
+  if (a.pose?.anim === 'plonge') { rang = 30; col = (a.pose.gauche ? 4 : 0) + (a.pose.col % 4); }
+  else if (a.pose) { const [r0, n] = ANIM_FORME[a.pose.anim] ?? ANIM_FORME.sort; rang = r0 + (a.pose.anim === 'blesse' ? 0 : ligne); col = Math.min(n - 1, a.pose.col); }
+  else if (a.anim === 'marche') { rang = ANIM_FORME.marche[0] + ligne; col = 1 + (Math.floor(a.t * 10) % 8); }
+  else if (a.anim === 'blesse') { rang = ANIM_FORME.blesse[0]; col = Math.min(2, Math.floor(a.t * 10)); }
+  else if (a.anim === 'repos') { rang = ANIM_FORME.repos[0] + ligne; col = Math.floor(a.t * 1.6) % 2; }
+  else { const [r0, n] = ANIM_FORME[a.anim] ?? ANIM_FORME.attaque; rang = r0 + ligne; col = Math.min(n - 1, Math.floor(a.t * n / 0.45)); }
+  sp.poser(Math.round(a.x - 32), Math.round(a.y - 60 - (a.saut ?? 0) + a.enfonce * 26), a.y, col * 64, rang * 64);
   const m = sp.mesh.material, b = 1 + Math.max(0, a.eclair ?? 0) * 3.5;
   if (m.userData.teinte !== b) { m.color.setScalar(b); m.userData.teinte = b; }
   a.ombre.cacher(a.enfonce > 0.3); a.ombre.poser(a.x, a.y - 1);

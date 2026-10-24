@@ -21,6 +21,7 @@ const ICONES = {
   batonNoue: 'baton', mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
   crocs: 'crocs', bond: 'bond', curee: 'curee', poing: 'poing', etreinte: 'liane', devorer: 'devorer',
   braise: 'etincelle', embrasement: 'embrasement', armesArdentes: 'lameArdente',
+  grandeChasse: 'grandeChasse', festin: 'festin', soleilNoir: 'soleilNoir',          // (les trois ultimes du Changepeau)
   riff: 'tirRapide', ballade: 'soin', courseEffrenee: 'chant', powerChord: 'ralliement', solo: 'fracas',          // (en attendant leurs icônes à eux)
 };
 // La sorte de chaque capacité, pour la barre des sorts (les sortes de CLASS_TEMPLATE.fr.md, plus le familier et le commun).
@@ -41,6 +42,7 @@ const SORTE = {
   pousser: 'commun', potion: 'commun', relever: 'commun',
   bond: 'preparation', etreinte: 'preparation', embrasement: 'preparation',     // (le Changepeau : la fiche de Mope)
   curee: 'exploitation', devorer: 'exploitation', armesArdentes: 'soutien',
+  grandeChasse: 'exploitation', festin: 'exploitation', soleilNoir: 'exploitation',
   mueBete: 'mue', mueCosa: 'mue', mueIllumine: 'mue', quitterForme: 'mue',
 };
 export function sorteDe(id, cap) {
@@ -57,7 +59,7 @@ export function ordreBarre(ids, CAPACITES) {
 }
 // Les touches de la barre, dans l'ordre : 1 à 9, puis 0, - et = (une classe qui a plus de sorts, comme le Traqueur)
 export const TOUCHES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='];
-export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×', renverser: 'FEU', mueBete: 'BÊTE', mueCosa: 'COSA', mueIllumine: 'FEU', quitterForme: 'ORC' };
+export const TAMPONS = { projection20: '20', ouverture2: 'CRIT', coupDos3: 'CRIT', fioleCible: 'CIBLE', givre3: '3', chuteEnclume: '1×', renverser: 'FEU', mueBete: 'BÊTE', mueCosa: 'COSA', mueIllumine: 'FEU', quitterForme: 'ORC', grandeChasse: 'ULTI', festin: 'ULTI', soleilNoir: 'ULTI' };
 export const icone = (id) => `./assets/lpc/icones/enseigne-${ICONES[id] ?? 'epee'}.png`;
 
 // une attaque contre une cible ordinaire : raté sur 1, critique sur 20, éraflure jusqu'à d20 + bonus = 9 (12 contre un coriace)
@@ -80,9 +82,9 @@ export function resultats(cap) {
 export function caracteristiques(cap, ressource) {
   const c = [];
   if (cap.type === 'potion') c.push('Sur soi');
-  else if (cap.type === 'soinZone') c.push(`Autour de toi : ${metres(cap.rayon)} m`);
+  else if (cap.type === 'soinZone' || cap.type === 'festin') c.push(`Autour de toi : ${metres(cap.rayon)} m`);
   else if (cap.portee != null) c.push(cap.portee === CONTACT ? 'Au contact' : `Portée ${metres(cap.portee)} m`);
-  if (cap.type === 'zone') c.push(`Zone de ${metres(cap.rayon)} m`);
+  if (cap.type === 'zone' || cap.type === 'soleil') c.push(`Zone de ${metres(cap.rayon)} m`);
   if (cap.longueur) c.push(`${['attraction', 'tenailles'].includes(cap.type) ? 'Attire' : 'Pousse'} de ${metres(cap.longueur)} m`);
   c.push(cap.cout ? `${cap.cout} ${ressource}` : 'Sans coût');
   if (cap.base != null && !cap.auto) c.push(`d20 +${cap.mod}`);

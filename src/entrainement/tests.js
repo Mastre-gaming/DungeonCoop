@@ -639,7 +639,7 @@ export async function selfTest(t, game) {
     c.res.v = 50;
     const pv = c.pv;
     t.ok(C.utiliser(c, 'mueBete', {}) && c.forme?.id === 'bete' && c.forme.pv === 40 && c.res.v === 30, 'la Mue : 20 Rage, la Bête et ses 40 PV de forme');
-    t.eq(capacitesDe(c).slice(0, 4), ['crocs', 'bond', 'curee', 'quitterForme'], 'en Bête, ses capacités : Crocs, Bond, Curée, Quitter la forme');
+    t.eq(capacitesDe(c).slice(0, 5), ['crocs', 'bond', 'curee', 'grandeChasse', 'quitterForme'], 'en Bête, ses capacités : Crocs, Bond, Curée, la Grande Chasse, Quitter la forme');
     C._.blesser(c, 15, s.id, { sansMult: true });
     t.ok(c.forme.pv === 25 && c.pv === pv, 'les coups vident la forme d’abord : 15 sur la Bête, l’orc intact');
     C._.blesser(c, 40, s.id, { sansMult: true });
@@ -793,7 +793,7 @@ export async function selfTest(t, game) {
     const { C, c, b, m, s } = mope();
     c.res.v = 20; C.utiliser(c, 'mueIllumine', {}); c.t.bonus = true;
     poser(C, 'br', 9, 12);
-    t.ok(C.utiliser(c, 'embrasement', { x: 9, y: 12 }) && C.surfaceA({ x: 9, y: 12 })?.t === 'feu' && s.st.brulure, 'l’Embrasement : une zone de feu à 7,5 m, la Brute ennemie dedans a la Brûlure');
+    t.ok(C.utiliser(c, 'embrasement', { x: 9, y: 12 }) && C.surfaceA({ x: 9, y: 12 })?.t === 'feu' && s.st.brulure, 'l’Embrasement : une zone de feu à 9 m, la Brute ennemie dedans a la Brûlure');
     t.ok(C.utiliser(c, 'armesArdentes', { id: b.id }) && b.st.ardent?.n === 2, 'les Armes ardentes : l’arme de la Brute brûle 2 tours');
     const e = poser(C, 's1', b.x + 1, b.y);
     C._.attaquer(b, e, { ...C._.attaqueHeros(CAPACITES.fracas), id: 'fracas' });
@@ -802,6 +802,58 @@ export async function selfTest(t, game) {
     t.ok(!c.forme && c.st.aTerre, 'Trempé, l’Illuminé s’éteint : la chute');
     c.t.bonus = true; c.res.v = 50;
     t.ok(!C.peutUtiliser(c, CAPACITES.mueIllumine) && C.peutUtiliser(c, CAPACITES.mueBete), 'dans l’eau, il ne peut pas redevenir l’Illuminé (les autres formes, oui)');
+  }
+
+  {
+    // les règles validées par Mope le 24 oct. : la Braise à 12 m, l'Embrasement à 9 m ; l'Étreinte Enserre, Dévorer Mutile
+    t.ok(CAPACITES.braise.portee * 1.5 === 12 && CAPACITES.embrasement.portee * 1.5 === 9, 'la Braise porte à 12 m, l’Embrasement à 9 m');
+    const { C, c, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueCosa', {}); c.t.bonus = true;
+    poser(C, c.id, 5, 10);
+    t.ok(C.utiliser(c, 'etreinte', { id: s.id }) && s.st.enserre, 'l’Étreinte : la cible est Enserrée');
+    C._.debutTour(s);
+    t.ok(s.t.mv === 0, 'Enserrée, elle ne peut pas bouger à son tour');
+    C._.finTour(s);
+    t.ok(!s.st.enserre, 'à la fin de son tour, elle se dégage');
+    s.st.attire = { par: c.id }; s.pv = s.pvMax;
+    t.ok(C.utiliser(c, 'devorer', { id: s.id }) && s.st.mutile && C.S.evenements.some((e) => e.type === 'mutile'), 'Dévorer lui arrache un bras : Mutilée');
+    t.ok(C._.calculer(s, c, { nom: 'Charge', mod: 0, dmod: 0, base: 8, de: 4, melee: true }).av === -1, 'Mutilée : ses attaques ont le désavantage');
+  }
+  {
+    // la Grande Chasse : de proie en proie (3 au plus, 9 m entre deux) ; la dernière À terre ; une fois par combat
+    const { C, c, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueBete', {});
+    poser(C, c.id, 4, 10); const s2 = poser(C, 's1', 10, 10), s3 = poser(C, 's2', 12, 12);
+    t.ok(C.cibles(c, CAPACITES.grandeChasse).some((x) => x.id === s.id), 'la Grande Chasse vise la Brute ennemie');
+    C.S.evenements.length = 0;
+    t.ok(C.utiliser(c, 'grandeChasse', { id: s.id }), 'la Bête lance la Grande Chasse');
+    const bonds = C.S.evenements.filter((e) => e.type === 'chasse');
+    t.ok(bonds.length === 3 && C.S.evenements.filter((e) => e.type === 'attaque' && e.cap === 'grandeChasse').length === 3, `trois bonds, trois morsures (${bonds.length})`);
+    const der = [s, s2, s3].find((u) => u.id === bonds[bonds.length - 1].vers);
+    t.ok(der.mort || der.st.aTerre, 'la dernière proie est À terre');
+    c.t.action = true;
+    t.ok(!C.peutUtiliser(c, CAPACITES.grandeChasse), 'une fois par combat');
+  }
+  {
+    // le Festin : tous les ennemis à 4,5 m tirés à son contact, Enserrés ; le plus blessé dévoré, la forme se repaît
+    const { C, c, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueCosa', {});
+    poser(C, c.id, 6, 10); poser(C, s.id, 8, 10); const s2 = poser(C, 's1', 6, 12.5);
+    s2.pv = Math.ceil(s2.pvMax / 3); c.forme.pv = 20;
+    t.ok(C.cibles(c, CAPACITES.festin).length === 1 && C.utiliser(c, 'festin', {}), 'le Festin, sans cible à choisir');
+    t.ok([s, s2].every((u) => u.mort || (u.st.enserre && dist(c, u) <= CONTACT + 0.05)), 'ses proies sont tirées à son contact, Enserrées');
+    t.ok(C.S.evenements.some((e) => e.type === 'gueule' && e.vers === s2.id), 'la gueule dévore la plus blessée');
+    t.ok(c.forme.pv > 20, `sa forme se repaît (${c.forme.pv} PV de forme)`);
+  }
+  {
+    // le Soleil noir : il plonge sur le point visé (12 m), les ennemis à 4,5 m brûlent, le sol reste en feu, ses alliés épargnés
+    const { C, c, b, s } = mope();
+    c.res.v = 20; C.utiliser(c, 'mueIllumine', {});
+    poser(C, c.id, 3, 10); poser(C, s.id, 11, 10); poser(C, b.id, 12, 11.2);
+    const pv = s.pv, pvb = b.pv;
+    t.ok(C.zonePossible(c, CAPACITES.soleilNoir, { x: 10.5, y: 11.5 }) && C.utiliser(c, 'soleilNoir', { x: 10.5, y: 11.5 }), 'le Soleil noir, sur un point à 12 m au plus');
+    t.ok(Math.hypot(c.x - 10.5, c.y - 11.5) < 1.7 && s.pv < pv && (s.mort || s.st.brulure), 'il s’y écrase : la Brute ennemie prend le coup et la Brûlure');
+    t.ok(b.pv === pvb && !b.st.brulure && C.surfaceA({ x: 10.5, y: 11.5 })?.t === 'feu', 'son allié n’est pas touché par l’explosion ; le sol reste en feu');
   }
 
   t.group('les attaques d’opportunité (#231)');
