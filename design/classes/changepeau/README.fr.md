@@ -45,10 +45,26 @@ Le cadre prévoit 3 capacités par classe ; le changepeau en a 2 + 3 kits de for
 
 ![L'orc qui marche](captures/orc-marche.gif) ![L'Illuminé qui vacille](captures/illumine-vacille.gif)
 
-Au camp, Mope l'incarne en orc dans son onglet. Les formes n'ont pour l'instant que leurs planches de design (quatre faces, debout) : leurs planches animées viendront avec leurs règles au terrain d'entraînement.
+Au camp, Mope l'incarne en orc dans son onglet. Au terrain d'entraînement, chaque forme a sa planche animée (toutes les poses LPC) : ses bras et son corps bougent quand elle frappe, lance ou bondit.
+
+## Les animations et les ultimes (validés par Mope le 24 oct. 2026)
+- **Les mues :** la Bête, l'orc plié de douleur, le poil qui jaillit, le rugissement ; la Cosa, bras écartés, la chair qui gonfle et les coutures qui craquent ; l'Illuminé, bras levés, une colonne de flammes.
+- **La Braise (12 m) :** le bras se tend, l'énergie converge dans la paume, une boule de feu bleu grossit, part avec une longue traînée, et explose (éclair blanc, langues bleues, onde, feu orange). **L'Embrasement** porte à 9 m.
+- **L'Étreinte :** des tentacules de chair cousue jaillissent, saisissent, tirent : l'ennemi est **Enserré** (il ne bouge plus jusqu'à la fin de son prochain tour).
+- **Dévorer :** la Cosa arrache un bras, la gueule de sa panse le mange : l'ennemi est **Mutilé** (désavantage à ses attaques, tout le combat).
+- **La Bête :** le Bond (accroupie, les pieds devant, en cloche), la Curée (trois vrais coups de griffes, puis le saut en arrière), les Crocs (la mâchoire qui se referme).
+- **Les trois ultimes (une fois par combat chacun, une action) :**
+  - **La Grande Chasse (la Bête) :** de proie en proie, jusqu'à 3 ennemis à 9 m l'un de l'autre, 14 + d6 + 2 chaque morsure, la dernière À terre, sans attaque d'opportunité ; une traînée d'ombre rouge.
+  - **Le Festin (la Cosa) :** tous les ennemis à 4,5 m tirés à son contact, Enserrés ; la gueule dévore le plus blessé (18 + d8 + 2) ; ses PV de forme regagnent tous ces dégâts.
+  - **Le Soleil noir (l'Illuminé) :** il s'élève les deux bras levés (le soleil noir grossit au-dessus de ses mains), puis plonge comme Superman, un bras devant lui, jusqu'à 12 m : une zone de 4,5 m, 18 + d8 + 2 et la Brûlure aux ennemis ; le sol reste en feu (il brûle tout le monde) ; ses alliés ne prennent pas l'explosion.
+
+Les maquettes validées : la page « Formes du changepeau ». Les photos en jeu : `captures/terrain-*.png`.
 
 ## Refaire les images
 - `python3 design/classes/changepeau/outil/orc.py` : la planche de l'orc et ses crédits. Les pièces du générateur LPC sont lues depuis son dépôt GitHub et gardées dans `dl/` ; les retouches suivent la tête et les manchettes image par image (skill lpc-sprite-mods).
+- `python3 design/classes/changepeau/outil/maquettes/planches_jeu.py` : les planches animées des formes pour le jeu (`public/assets/lpc/entrainement/formes/*-anim.png`), dans toutes les poses LPC (`poses.py` recale les retouches sur la tête, image par image).
+- `python3 design/classes/changepeau/outil/effets.py` : les 19 effets (`public/assets/lpc/effets/changepeau/`) et leur liste, `src/entrainement/effets-changepeau.json` ; `icones_ultimes.py` : les enseignes des trois ultimes.
+- `npm run build && node tools/capture-changepeau-terrain.mjs` : les photos en jeu.
 - `outil/maquettes/` : les scripts des planches des formes (ils lisent les pièces rangées par nom de calque dans un dossier `lpc/` à côté d'eux, et les palettes du générateur).
 
 ## Sous-classes (idées, à écrire)

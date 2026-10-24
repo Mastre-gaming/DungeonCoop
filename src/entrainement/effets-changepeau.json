@@ -1,0 +1,367 @@
+{
+ "cp-braise-charge": {
+  "nom": "Braise : la charge",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-braise-charge.png",
+  "w": 64,
+  "h": 64,
+  "images": 10,
+  "fps": 16,
+  "boucle": false,
+  "ancre": [
+   32,
+   32
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Braise"
+  ],
+  "description": "L’énergie converge vers la paume ouverte de l’Illuminé, la boule de feu bleu grossit."
+ },
+ "cp-braise-boule": {
+  "nom": "Braise : la boule",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-braise-boule.png",
+  "w": 72,
+  "h": 72,
+  "images": 6,
+  "fps": 14,
+  "boucle": true,
+  "ancre": [
+   36,
+   36
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Braise"
+  ],
+  "description": "Une boule de feu bleu qui déborde d’énergie : aura, langues de flamme, éclats qui tournent."
+ },
+ "cp-braise-trainee": {
+  "nom": "Braise : la traînée",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-braise-trainee.png",
+  "w": 40,
+  "h": 40,
+  "images": 8,
+  "fps": 16,
+  "boucle": false,
+  "ancre": [
+   20,
+   20
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Braise",
+   "Soleil noir"
+  ],
+  "description": "Une bouffée de feu bleu qui s’éteint en lâchant des étincelles : semée tout le long du vol."
+ },
+ "cp-braise-explosion": {
+  "nom": "Braise : l’impact",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-braise-explosion.png",
+  "w": 112,
+  "h": 112,
+  "images": 14,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   56,
+   46
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Braise"
+  ],
+  "description": "Éclair blanc, langues de feu bleu dans tous les sens, onde au sol, puis le feu orange."
+ },
+ "cp-chair": {
+  "nom": "Tentacule : un anneau de chair",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-chair.png",
+  "w": 16,
+  "h": 16,
+  "images": 4,
+  "fps": 20,
+  "boucle": false,
+  "ancre": [
+   8,
+   8
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Étreinte",
+   "Le Festin"
+  ],
+  "description": "Un bout de tentacule de chair cousue : semé de la Cosa jusqu’à sa proie."
+ },
+ "cp-anneaux": {
+  "nom": "Enserré",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-anneaux.png",
+  "w": 40,
+  "h": 48,
+  "images": 4,
+  "fps": 6,
+  "boucle": true,
+  "ancre": [
+   20,
+   44
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Enserré"
+  ],
+  "description": "Les tentacules enroulés autour d’un ennemi : il ne peut plus bouger."
+ },
+ "cp-gueule": {
+  "nom": "La gueule du ventre",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-gueule.png",
+  "w": 40,
+  "h": 40,
+  "images": 10,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   20,
+   20
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Dévorer"
+  ],
+  "description": "La gueule cousue qui s’ouvre dans la panse de la Cosa et mord."
+ },
+ "cp-bras": {
+  "nom": "Le bras arraché",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-bras.png",
+  "w": 24,
+  "h": 24,
+  "images": 8,
+  "fps": 16,
+  "boucle": true,
+  "ancre": [
+   12,
+   12
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Dévorer"
+  ],
+  "description": "Le bras arraché qui tournoie jusqu’à la gueule."
+ },
+ "cp-sang": {
+  "nom": "Gerbe de sang",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-sang.png",
+  "w": 48,
+  "h": 48,
+  "images": 10,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   24,
+   18
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Dévorer",
+   "Crocs"
+  ],
+  "description": "Du sang qui gicle et retombe."
+ },
+ "cp-mutile": {
+  "nom": "Mutilé",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-mutile.png",
+  "w": 16,
+  "h": 24,
+  "images": 6,
+  "fps": 6,
+  "boucle": true,
+  "ancre": [
+   8,
+   3
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Mutilé"
+  ],
+  "description": "Le moignon qui saigne, goutte à goutte."
+ },
+ "cp-festin-gueule": {
+  "nom": "Le Festin : la grande gueule",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-festin-gueule.png",
+  "w": 96,
+  "h": 96,
+  "images": 14,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   48,
+   48
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Le Festin"
+  ],
+  "description": "Une gueule immense qui s’ouvre, des dents tout autour, et se referme d’un coup."
+ },
+ "cp-griffes": {
+  "nom": "Griffures",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-griffes.png",
+  "w": 48,
+  "h": 48,
+  "images": 8,
+  "fps": 16,
+  "boucle": false,
+  "ancre": [
+   24,
+   24
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Curée"
+  ],
+  "description": "Trois griffures qui s’ouvrent en sang puis s’effacent."
+ },
+ "cp-machoire": {
+  "nom": "Mâchoire",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-machoire.png",
+  "w": 40,
+  "h": 40,
+  "images": 7,
+  "fps": 16,
+  "boucle": false,
+  "ancre": [
+   20,
+   20
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Crocs",
+   "La Grande Chasse"
+  ],
+  "description": "Deux rangées de crocs qui se referment."
+ },
+ "cp-ombre-rouge": {
+  "nom": "Ombre rouge",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-ombre-rouge.png",
+  "w": 40,
+  "h": 40,
+  "images": 8,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   20,
+   26
+  ],
+  "calque": "dessus",
+  "usage": [
+   "La Grande Chasse"
+  ],
+  "description": "La traînée d’ombre rouge que la Bête laisse en bondissant."
+ },
+ "cp-soleil-charge": {
+  "nom": "Soleil noir : la charge",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-soleil-charge.png",
+  "w": 64,
+  "h": 64,
+  "images": 12,
+  "fps": 12,
+  "boucle": false,
+  "ancre": [
+   32,
+   32
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Le Soleil noir"
+  ],
+  "description": "Un soleil noir cerclé de feu bleu qui grossit entre ses mains levées."
+ },
+ "cp-soleil-explosion": {
+  "nom": "Soleil noir : l’impact",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-soleil-explosion.png",
+  "w": 192,
+  "h": 144,
+  "images": 16,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   96,
+   84
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Le Soleil noir"
+  ],
+  "description": "Le soleil noir qui frappe, l’explosion, les colonnes de feu et l’onde qui balaie la zone."
+ },
+ "cp-mue-poil": {
+  "nom": "Mue : la Bête",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-mue-poil.png",
+  "w": 64,
+  "h": 64,
+  "images": 12,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   32,
+   40
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Muer : la Bête"
+  ],
+  "description": "Le poil noir qui jaillit, puis le rugissement."
+ },
+ "cp-mue-chair": {
+  "nom": "Mue : la Cosa",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-mue-chair.png",
+  "w": 64,
+  "h": 64,
+  "images": 12,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   32,
+   40
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Muer : la Cosa"
+  ],
+  "description": "La chair qui gonfle, les coutures qui craquent."
+ },
+ "cp-mue-flammes": {
+  "nom": "Mue : l’Illuminé",
+  "famille": "Changepeau",
+  "fichier": "changepeau/cp-mue-flammes.png",
+  "w": 48,
+  "h": 96,
+  "images": 12,
+  "fps": 14,
+  "boucle": false,
+  "ancre": [
+   24,
+   92
+  ],
+  "calque": "dessus",
+  "usage": [
+   "Muer : l’Illuminé"
+  ],
+  "description": "Une colonne de flammes qui monte du sol et l’engloutit."
+ }
+}

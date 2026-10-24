@@ -3,7 +3,9 @@
 // des personnages (calque « dessus ») ou juste sous eux (« sol »). Une brique peut attendre (retard), voler d'un point
 // à un autre (vers, en cloche avec arc), se retourner (miroir) et tenir en boucle (les états, tant qu'ils durent).
 // Ce que joue chaque capacité : effetsAttaque / effetsLance, plus bas.
-import BRIQUES from './effets.json';
+import BRIQUES_BIBLIO from './effets.json';
+import BRIQUES_CHANGEPEAU from './effets-changepeau.json';     // (les effets du Changepeau : design/classes/changepeau/outil/effets.py)
+const BRIQUES = { ...BRIQUES_BIBLIO, ...BRIQUES_CHANGEPEAU };
 
 // les planches à charger avec les autres (main.js)
 export const PLANCHES = Object.fromEntries(Object.keys(BRIQUES).map((id) => [`effet_${id}`, `effets/${BRIQUES[id].fichier}`]));
@@ -156,4 +158,5 @@ export function effetsLance(fx, cap, a, p, u) {
 export const ETATS = [
   ['brulure', 'etat-en-feu', 0], ['huile', 'etat-huile', 0], ['trempe', 'etat-trempe', 0], ['gele', 'etat-gele', -50],
   ['aTerre', 'etat-a-terre', -30], ['inspire', 'etat-inspire', 0], ['expose', 'etat-expose', 0],
+  ['enserre', 'cp-anneaux', 0], ['mutile', 'cp-mutile', -40],
 ];

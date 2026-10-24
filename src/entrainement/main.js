@@ -73,7 +73,7 @@ async function demarrer() {
   const niveau = query.has('aventure') ? await entrerNiveau(equipe) : null;
   const MONDE = niveau ? niveau.plan : SALLE;                 // le module de la salle : D1 (salle.js) ou un fichier de l'aventure
   const planches = {
-    limier: 'compagnons/limier.png', forme_bete: 'entrainement/formes/bete.png', forme_cosa: 'entrainement/formes/cosa.png', forme_illumine: 'entrainement/formes/illumine.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
+    limier: 'compagnons/limier.png', forme_bete: 'entrainement/formes/bete-anim.png', forme_cosa: 'entrainement/formes/cosa-anim.png', forme_illumine: 'entrainement/formes/illumine-anim.png', forme_illumineBleu: 'entrainement/formes/illumine-bleu-anim.png', herbe: 'grass.png', terre: 'dirt.png', eau: 'water.png', trou: 'hole.png', roche: 'rock.png', cimes: 'treetop.png', troncs: 'trunk.png', douves: 'douves.png', montagnes: 'mountains.png', tonneau: 'barrel.png', deco: 'decorations-medieval.png',
     brasero: 'brasero_sentier_gueux.png', haute: 'herbe_haute.png', surfaces: 'surfaces.png', surfaces_lpc: 'surfaces_lpc.png', chemin: 'chemin.png', etal: 'etal.png',   // (le chemin de la tour)
     ...PLANCHES_SALLES,           // le château et le donjon (les salles de l'atelier des niveaux)
     ...Object.fromEntries(Object.keys(PERSOS).map((id) => [`perso_${id}`, `entrainement/${id}.png`])),
