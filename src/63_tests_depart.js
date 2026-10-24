@@ -35,6 +35,8 @@ export async function testsDepart(t) {
   t.ok(chemins(enCours.etat)[0].cout.includes('perdue') && enCours.progression.xp === 120, 'recommencer dit ce que ça coûte ; l’XP de la run est gardée');
   t.eq(adresse({ niveau: 1 }, { code: 'ABCDE', hote: true, progression: { xp: 120, niveau: 2 } }), './entrainement.html?aventure=camp-des-mastres&niveau=1&groupe=ABCDE&hote=&xp=120&nh=2', 'l’hôte : le code du groupe, et l’XP de la run');
   t.eq(adresse({ niveau: 1 }, { code: 'ABCDE' }), './entrainement.html?aventure=camp-des-mastres&niveau=1&groupe=ABCDE', 'un ami : le code, sans « hote »');
+  t.eq(adresse({ niveau: 1 }, { progression: { xp: 120, niveau: 2 }, pv: [1, 0.5, 1, 0.25] }), './entrainement.html?aventure=camp-des-mastres&niveau=1&xp=120&nh=2&pv=1%2C0.5%2C1%2C0.25', 'les PV de chacun, en fraction du maximum, partent avec le groupe');
+  t.ok(!adresse({ niveau: 1 }, { pv: [1, 1, 1, 1] }).includes('pv=') && !adresse({ niveau: 1, neuf: true }, { pv: [0.5, 1, 1, 1] }).includes('pv='), 'tous au maximum, ou en recommençant : pas de PV dans l’adresse');
   t.eq(adresse({ niveau: 1, neuf: true }, { progression: { xp: 120, niveau: 2 } }), './entrainement.html?aventure=camp-des-mastres&niveau=1', 'seul, et en recommençant : ni code ni XP (niveau 1)');
   t.ok(dansPorte({ x: PORTE.x, y: PORTE.y }) && !dansPorte({ x: PORTE.x, y: PORTE.y + 6 * T }) && auBout({ x: BOUT.x, y: BOUT.y }) && !auBout({ x: BOUT.x, y: BOUT.y - 5 * T }), 'la grande porte et le bout du chemin sont deux zones distinctes');
 

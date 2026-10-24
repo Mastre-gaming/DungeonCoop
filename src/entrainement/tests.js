@@ -1575,6 +1575,8 @@ export async function selfTest(t, game) {
     t.ok(C.S.progression.niveau === 6, 'le niveau 6 est le maximum du plan');
     C = XP({ xp: 250, niveau: 3 });
     t.ok(C.S.progression.niveau === 3 && C.U('h1').pvMax === base + 10 && capacitesDe(C.S, 'brute').includes('projection') && !capacitesDe(C.S, 'brute').includes('projection20'), 'une run reprise au niveau 3 : +10 PV, les compétences de niveau 2 ouvertes, pas celles du niveau 4');
+    const PV = creerCombat({ trame: creerTrame(sl), salle: sl, ...prep.options, equipe: ['brute', 'mage', 'voleur', 'gardien'], progression: { plan, xp: 300, niveau: 4 }, pvDepart: [0.5, 1, 0, null], alea: graine(5), horloge: () => 0 });
+    t.ok(PV.U('h1').pvMax === 145 + 15 && PV.U('h1').pv === Math.round(0.5 * (145 + 15)) && PV.U('h2').pv === PV.U('h2').pvMax && PV.U('h3').pv === 1 && PV.U('h4').pv === PV.U('h4').pvMax, 'les PV gardés par la run : la moitié du maximum du niveau 4 (+15 PV), plein, 1 PV au plus bas, plein sans fraction');
     const libre = neuf({ equipe: ['brute', 'mage', 'voleur', 'gardien'] });
     t.ok(!libre.S.progression && capacitesDe(libre.S, 'mage').includes('foudre') && libre.U('h2').pvMax === HEROS.mage.pv, 'au terrain d’entraînement, sans plan d’aventure : tout est ouvert, pas d’XP');
     const saufEnsemble = HEROS.brute.capacites.concat(HEROS.mage.capacites).every((c) => CAPACITES[c]);
