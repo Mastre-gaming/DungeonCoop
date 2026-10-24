@@ -219,7 +219,7 @@ const bulle = (b, texte, x, y) => {
 // Qui va au niveau : celui qui part (le contrat), et l'hôte (c'est lui qui tient le niveau) ; un ami qui est resté au camp, non.
 export const vaAuNiveau = (partants, moi, hote) => !!hote || !partants?.length || partants.some((p) => p.id === moi);
 
-export function adresse(chemin, { code = '', hote = false, progression = null, pv = null, potions = null, caillasse = 0, mot = '', equipe = null } = {}) {
+export function adresse(chemin, { code = '', hote = false, progression = null, pv = null, potions = null, caillasse = 0, mot = '', equipe = null, joueurs = 0, place = -1 } = {}) {
   const q = new URLSearchParams({ aventure: AVENTURE.id, niveau: String(chemin?.niveau ?? 1) });
   if (code) { q.set('groupe', code); if (hote) q.set('hote', ''); }
   if (progression && !chemin?.neuf) { q.set('xp', String(progression.xp)); q.set('nh', String(progression.niveau)); }
@@ -228,6 +228,8 @@ export function adresse(chemin, { code = '', hote = false, progression = null, p
   if (pv?.length && !chemin?.neuf && pv.some((f) => f < 1)) q.set('pv', pv.join(','));      // (les PV gardés par la run, en fraction du maximum : le maximum suit le niveau)
   if (mot) q.set('mot', mot);      // (la graine est tirée au camp : tout le groupe joue le même niveau)
   if (equipe?.length === 4) q.set('equipe', equipe.join(','));      // (les héros choisis par les joueurs, complétés par le kit)
+  if (code && joueurs > 0) q.set('n', String(joueurs));            // (à plusieurs : combien viennent, et ma place dans l'équipe : le niveau part sans lobby)
+  if (code && place >= 0) q.set('place', String(place));
   return `./entrainement.html?${q}`;
 }
 
@@ -324,7 +326,7 @@ function partir(chemin, partants = [], mot = '', equipe = null) {
     const c = r?.courante;
     if (chemin.neuf || !c || !['salle', 'choix'].includes(c.phase)) r?.nouvelle({ gabarit: gabarit(), heros: HEROS_RUN, joueurs: synchro?.joueurs?.() ?? [], reelle: true, depart: { pvMax: 100, potions: 2 } }).partir();      // (100 : les PV de la run sont des pourcentages, le maximum réel dépend de la classe et du niveau)
   }
-  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, mot, equipe, pv: pvDeLaRun(), potions: run()?.courante?.etat.heros.map((h) => h.potions) ?? null, caillasse: run()?.courante?.etat.caillasse ?? 0 });
+  const url = adresse(chemin, { code: p?.active ? p.code : '', hote: !!p?.hosting, progression: run()?.courante?.progression ?? null, mot, equipe, joueurs: partants.length, place: partants.findIndex((x) => x.id === (p?.id ?? 'host')), pv: pvDeLaRun(), potions: run()?.courante?.etat.heros.map((h) => h.potions) ?? null, caillasse: run()?.courante?.etat.caillasse ?? 0 });
   annoncer('Le groupe entre sur le chemin…');
   if (delai) setTimeout(() => naviguer(url), delai); else naviguer(url);
 }

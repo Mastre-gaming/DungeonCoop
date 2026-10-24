@@ -1620,6 +1620,40 @@ export async function selfTest(t, game) {
     const d3 = libreAutour(P, 'h3');
     t.ok(d3 && arbitrerExploration(P, L2, 'ana', { type: 'explo', op: 'marche', id: 'h3', x: d3.x, y: d3.y }, { joueurs: 3 }), 'à plusieurs, chacun mène les siens même si l’hôte n’a aucun héros');
   }
+  // --- Le pas libre (retour des joueurs, 25 oct. : « le mouvement comme au camp ») : un petit pas, les rencontres de la marche ----
+  t.group('le sentier des Gueux : le pas libre (comme au camp)');
+  {
+    const C = tro(), h = C.U('h1'), x0 = h.x, y0 = h.y;
+    t.ok(C.pasLibre(h, x0 + 0.1, y0).ok && Math.abs(h.x - (x0 + 0.1)) < 1e-9, 'un petit pas : il y va, sans chemin à calculer');
+    let mur = null;
+    for (let r = 0.5; r < 6 && !mur; r += 0.25) for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) if (!C.libreA(h, h.x + dx * r, h.y + dy * r)) { mur = { x: h.x + dx * r, y: h.y + dy * r }; break; }
+    const ici = { x: h.x, y: h.y };
+    t.ok(mur && !C.pasLibre(h, mur.x, mur.y).ok && h.x === ici.x && h.y === ici.y, 'dans un obstacle : il ne passe pas (il reste où il est)');
+    const cache = C.S.unites.find((u) => u.camp === 'e' && u.cache && !u.mort);
+    t.ok(!cache || C.libreA(h, cache.x + 0.01, cache.y), 'un bandit caché dans les blés ne barre pas le passage (on ne le voit pas)');
+    // la fourche : loin du poteau (au bord du chemin, hors de son rayon), la ligne du panneau arrête quand même le groupe
+    const F = tro(), f = F.S.fourches[0], g = F.U('h1');
+    let y = null;
+    for (const dy of [-6, 6, -5, 5, -4, 4, -7, 7]) if (F.libreA(g, f.poteau[0] - 0.15, f.poteau[1] + dy) && F.libreA(g, f.poteau[0] + 0.05, f.poteau[1] + dy)) { y = f.poteau[1] + dy; break; }
+    g.x = f.poteau[0] - 0.15; g.y = y;
+    const r1 = F.pasLibre(g, f.poteau[0] + 0.05, y);
+    t.ok(y !== null && Math.hypot(g.x - f.poteau[0], y - f.poteau[1]) > f.rayon && r1.stop && F.S.question?.fourche === f.id, `au bord du chemin (à ${Math.abs(y - f.poteau[1])} cases du poteau), passer la ligne du panneau ouvre la question du chemin`);
+    const xq = g.x;
+    t.ok(!F.pasLibre(g, xq + 0.1, y).ok && g.x === xq && !F.pasLibre(F.U('h2'), F.U('h2').x + 0.1, F.U('h2').y).ok, 'tant que le groupe n’a pas choisi, personne ne marche');
+    // repéré au pas libre : le combat commence, comme après une marche
+    const V = tro(), e = V.ennemisVivants().find((o) => !o.cache), m = V.U('h1');
+    let vu = null;
+    for (let d = 2; d < 6 && !vu; d += 0.5) if (V.libreA(m, e.x - d, e.y) && V.libreA(m, e.x - d + 0.1, e.y)) vu = { x: e.x - d, y: e.y };
+    if (vu) { m.x = vu.x; m.y = vu.y; V.pasLibre(m, vu.x + 0.1, vu.y); }
+    t.ok(vu && V.S.phase !== 'exploration', 'repéré au pas libre (droit dans le regard d’un ennemi) : le combat commence');
+    // le terrain changé (l'éboulis de la fourche) : chez un ami aussi, qui reçoit l'état de l'hôte (sa trame à lui)
+    const H = tro(), A = tro(), fh = H.S.fourches[0], b0 = fh.branches[0].id;
+    const roc = fh.branches.find((b) => b.id !== b0).tombe[0], centre = { x: (roc.x0 + roc.x1) / 2, y: (roc.y0 + roc.y1) / 2 };
+    const avant = A.libreA(A.U('h1'), centre.x, centre.y);
+    H.S.question = { fourche: fh.id }; H.choisir(fh.id, b0);
+    A.restaurer(H.instantane());
+    t.ok(avant && !A.libreA(A.U('h1'), centre.x, centre.y) && !H.libreA(H.U('h1'), centre.x, centre.y), 'l’éboulis qui ferme l’autre chemin est aussi chez l’ami (avant, il passait au travers)');
+  }
   // --- L'expérience et les niveaux : le plan de l'aventure, les compétences qui s'ouvrent --------------------------------
   t.group('l’XP et les niveaux du chemin de la tour');
   {
@@ -1919,6 +1953,31 @@ export async function selfTest(t, game) {
     hub.transports.at(-2).frozen = true; jouer(16);
     t.ok(multi.actif && multi.statut === 'En attente de l’hôte…', `l’hôte se tait avant de l’accueillir : il réessaie (« ${multi.statut} »)`);
     multi.debrancherTest();
+  }
+
+  // --- L'aventure à plusieurs (retour des joueurs, 25 oct.) : pas d'écran d'accueil ; chacun sa place du camp ; l'hôte rejoue les pas
+  t.group('l’aventure à plusieurs : on part sans lobby, et l’on se mène comme au camp');
+  {
+    const POS = ['x', 'y', 'h', 'c', 'v', 'a1', 'b1', 'a2', 'b2', 'a3', 'b3', 'a4', 'b4'];
+    const bea = { recus: [], etat: { x: -1, y: -1, h: 0, c: 0, v: 0, a1: -1, b1: -1, a2: -1, b2: -1, a3: -1, b3: -1, a4: -1, b4: -1 } };
+    bea.party = createParty({ transport: () => hub.transport(), fields: POS, me: () => bea.etat, name: () => 'Béa', now: () => hub.time, on: (type, d) => { if (type === 'game') bea.recus.push(d.m); } });
+    amis.push(bea);
+    ihm.rejouer();
+    const hP = multi.brancherTest(hub, { comme: 'hote', avec: 'AVNTR', aller: (u) => allees.push(u), av: true, n: 2, place: 0 });
+    jouer(0.2);
+    t.ok(multi.L.phase === 'lobby' && hP.hosting, 'l’hôte ouvre le niveau et attend le groupe venu du camp (2 joueurs)');
+    bea.party.join('AVNTR'); jouer(0.3);
+    bea.party.toHost({ t: 'moi', github: null, place: 2 }); jouer(1.3);
+    t.ok(multi.L.phase === 'combat' && multi.L.proprio[2] === bea.party.id && multi.L.proprio[0] === 'host', 'Béa arrive et dit sa place du camp : l’hôte lance tout seul (pas d’écran d’accueil), Béa a le héros qu’elle avait choisi');
+    t.ok(document.querySelector('#accueil').hidden, 'personne ne passe par l’écran d’accueil du terrain');
+    // l'exploration : Béa mène son héros chez elle ; l'hôte rejoue ses pas par les règles
+    const C6 = game.dbg.combat; C6.explorer(); C6.S.evenements.length = 0;
+    const h3 = C6.U('h3'), x0 = h3.x, y0 = h3.y;
+    bea.etat.a3 = x0 + 1; bea.etat.b3 = y0; jouer(0.4);
+    t.ok(Math.abs(h3.x - (x0 + 1)) < 0.15 && Math.abs(h3.y - y0) < 0.15, `Béa avance son héros d’une case chez elle : chez l’hôte aussi (${(h3.x - x0).toFixed(2)})`);
+    t.ok(!multi.aMoi('h3') && multi.aMoi('h1'), 'ce héros reste à elle (l’hôte ne le mène pas) ; l’hôte mène le sien');
+    multi.debrancherTest();
+    ihm.rejouer();
   }
 
   // --- Les réglages du combat : le panneau (R), les trois premiers boutons, le bilan -------------------------------------------
@@ -2233,6 +2292,49 @@ export async function selfTest(t, game) {
       'sa fiche montre les PV de la Bête, sa barre ses capacités');
     t.ok(A.plaque.el.classList.contains('forme') && A.plaque.chiffre.textContent === `${ch.forme.pv}/${ch.forme.max}`, 'la barre sous ses pieds : les PV de la forme, en violet');
     try { if (garde === null) localStorage.removeItem(CLE); else localStorage.setItem(CLE, garde); } catch {}
+  }
+  // --- Le pas libre à l'écran, et le menu Échap (retour des joueurs, 25 oct.) ------------------------------------------------
+  t.group('le pas libre à l’écran, et le menu Échap');
+  {
+    const P5 = game.dbg.pieton, M5 = game.dbg.menu;
+    ihm.rejouer();
+    const C5 = game.dbg.combat;
+    C5.explorer(); C5.S.evenements.length = 0;
+    ihm.choisirHeros('h1');
+    const h = C5.U('h1'), x0 = h.x, s0 = C5.U('h2').x;
+    t.ok(P5.actif() && P5.meneur()?.id === 'h1', 'en exploration, on mène son héros choisi');
+    P5.touches.add('KeyD');
+    for (let k = 0; k < 60; k++) game.dbg.advance(1 / 60);
+    P5.touches.delete('KeyD');
+    const fait = h.x - x0;
+    t.ok(Math.abs(fait - 74 / 32) < 0.25, `D (ou la flèche droite) tenue 1 s : il marche ${fait.toFixed(2)} cases, la vitesse du camp`);
+    for (let k = 0; k < 30; k++) game.dbg.advance(1 / 60);
+    t.ok(C5.U('h2').x > s0 + 0.5 && C5.U('h2').x < h.x, 'ses autres héros le suivent en file, derrière lui');
+    P5.touches.add('KeyD'); P5.touches.add('Shift');
+    const x1 = h.x;
+    for (let k = 0; k < 30; k++) game.dbg.advance(1 / 60);
+    P5.touches.delete('KeyD'); P5.touches.delete('Shift');
+    t.ok(Math.abs((h.x - x1) - 138 / 64) < 0.25, `Maj : il court (${(h.x - x1).toFixed(2)} cases en une demi-seconde)`);
+    // le clic tenu : il va vers le pointeur
+    const but = { x: h.x, y: h.y + 1.5 };
+    t.ok(P5.tenir(but), 'le clic tenu sur le sol : il part vers le pointeur');
+    for (let k = 0; k < 60; k++) game.dbg.advance(1 / 60);
+    P5.lacher(); for (let k = 0; k < 30; k++) game.dbg.advance(1 / 60);
+    t.ok(Math.hypot(h.x - but.x, h.y - but.y) < 0.3, 'et il arrive');
+    // Échap : le menu ; ouvert, on ne marche plus ; la musique se règle (les réglages du camp, annoncés au moteur son)
+    let garde = null; try { garde = localStorage.getItem('dungeoncoop:reglages'); } catch {}
+    let annonce = null; const off = game.bus.on('reglages:maj', (r) => { annonce = r; });
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));
+    t.ok(M5.ouvert && document.querySelector('.menu-echap [type=range]#menu-musique'), 'Échap ouvre le menu : la musique, les effets, les touches, reprendre, le camp');
+    const x2 = h.x; P5.touches.add('KeyD'); for (let k = 0; k < 20; k++) game.dbg.advance(1 / 60); P5.touches.delete('KeyD');
+    t.ok(h.x === x2 && !P5.actif(), 'menu ouvert : il ne marche pas');
+    const curseur = document.querySelector('#menu-musique'); curseur.value = '25'; curseur.dispatchEvent(new Event('input'));
+    t.ok(annonce?.musique === 0.25 && JSON.parse(localStorage.getItem('dungeoncoop:reglages')).musique === 0.25, 'la musique à 25 % : gardée pour ce navigateur, et le moteur son l’apprend');
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));
+    t.ok(!M5.ouvert && P5.actif(), 'Échap de nouveau : le menu se ferme, on reprend');
+    off?.();
+    try { if (garde === null) localStorage.removeItem('dungeoncoop:reglages'); else localStorage.setItem('dungeoncoop:reglages', garde); } catch {}
+    ihm.rejouer();
   }
   ihm.rejouer();
 }

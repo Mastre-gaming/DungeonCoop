@@ -38,6 +38,7 @@ const pct = (x) => `${Math.round(x * 100)} %`;
 const duree = (ms) => { const s = Math.round(Math.max(0, ms) / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
 let cine = null, game, combat, vue, canvas, nouveauCombat, reseau = null;
+let pieton = null, menu = null;     // le pas libre de l'exploration (pieton.js) et le menu Échap (menu.js), branchés par main.js
 // la fiche de la capacité, montrée ou cachée (F, ou le bouton au-dessus de la barre) : ce navigateur s'en souvient
 const CLE_FICHE = 'dungeoncoop:fiche-capacite';
 const ui = { ficheCachee: (() => { try { return localStorage.getItem(CLE_FICHE) === 'cachee'; } catch { return false; } })(), sel: null, cap: null, capSurvol: null, survol: null, annuler: [], portee: null, fini: false, sale: true, horloge: Date.now };
@@ -60,7 +61,14 @@ export function init(g, options) {
   if (options.infini) dom.infiniCase.checked = true;
   if (options.demarrer) commencer();
   vue.surEvenement(surEvenement);
-  canvas.addEventListener('pointermove', (e) => { ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.capSurvol = null; ui.sale = true; });
+  canvas.addEventListener('pointermove', (e) => {
+    ui.survol = vue.versMonde(e.clientX, e.clientY); ui.client = { x: e.clientX, y: e.clientY }; ui.capSurvol = null;
+    if (e.buttons & 1) pieton?.viserTenu(ui.survol);
+    // en exploration, rien ne suit la souris pas à pas (plus d'aperçu de chemin) : on redessine au plus dix fois par seconde
+    const t = performance.now();
+    if (combat.S.phase !== 'exploration' || t >= (ui.survolProchain ?? 0)) { ui.survolProchain = t + 100; ui.sale = true; }
+  });
+  window.addEventListener('pointerup', (e) => { if (e.button === 0) pieton?.lacher(); });
   canvas.addEventListener('pointerleave', () => { ui.survol = null; ui.sale = true; });
   canvas.addEventListener('pointerdown', (e) => { if (cine?.actif()) return void cine.suivant(); if (e.button === 0) cliquer(vue.versMonde(e.clientX, e.clientY)); else if (e.button === 2) choisirCapacite(null); });
   window.addEventListener('keydown', clavier);
@@ -107,7 +115,7 @@ function construire() {
   dom.banniere = el('div', { class: 'banniere-terrain', hidden: true });
   dom.info = el('div', { class: 'carte-cible bois', hidden: true });
   dom.distance = el('div', { class: 'distance-survol', hidden: true });
-  dom.aide = el('p', { class: 'aide-terrain plaque' }, 'Clic : choisir, marcher, viser · ', el('kbd', {}, '1'), '–', el('kbd', {}, '9'), ' capacités · ',
+  dom.aide = el('p', { class: 'aide-terrain plaque' }, el('kbd', {}, 'ZQSD'), ' ou flèches : marcher (hors combat) · ', el('kbd', {}, 'Maj'), ' courir · ', el('kbd', {}, 'Échap'), ' menu · Clic : choisir, marcher, viser · ', el('kbd', {}, '1'), '–', el('kbd', {}, '9'), ' capacités · ',
     el('kbd', {}, 'Tab'), ' héros suivant · ', el('kbd', {}, 'Échap'), ' annuler · ', el('kbd', {}, 'V'), ' vie des ennemis · ', el('kbd', {}, 'F'), ' fiche · ', el('kbd', {}, 'I'), ' intentions · ', el('kbd', {}, 'Maj'), '+', el('kbd', {}, 'V'),
     ' des alliés · molette : zoom · clic droit glissé : la vue');
   dom.accueil = el('div', { class: 'fond-terrain', id: 'accueil' }, el('section', { class: 'cadre-terrain' },
@@ -398,7 +406,8 @@ function apresChoixChemin(f, brancheId, evs) {
   if (cine) cine.jouer('fourche-apres', { 'branche-perdue': r ? { x: (r.x0 + r.x1) / 2 + 3, y: (r.y0 + r.y1) / 2 } : null, eboulis }).then(eboulis); else eboulis();
 }
 // L'exploration : le héros choisi marche où l'on clique, les autres le suivent en file ; repéré en route, le combat commence.
-function explorerVers(h, p) {
+function explorerVers(h, p, puis = null) {
+  if (pieton) return pieton.allerA(p, puis);
   if (!combat.apercuMarche(h, p.x, p.y, portee(h)).ok) return false;
   ui.portee = null;
   if (reseau) { reseau.agir({ type: 'explo', op: 'marche', id: h.id, x: p.x, y: p.y }); return true; }      // l'hôte arbitre, et montre à tous
@@ -408,6 +417,22 @@ function explorerVers(h, p) {
   if (combat.S.question?.fourche) demanderChemin();
   if (combat.S.question?.incident) demanderIncident();
   return true;
+}
+// Après un pas libre (pieton.js) : les événements des règles, une question (la fourche, l'embuscade), la scène d'une zone ; et,
+// tant qu'on marche, les marques (les champs de vue qu'on approche) quelques fois par seconde. Chez un ami, l'hôte décide.
+function apresPas(h, bouge) {
+  const S = combat.S, t = performance.now();
+  if (bouge && t >= (ui.pasProchain ?? 0)) { ui.pasProchain = t + 150; ui.sale = true; }
+  if (reseau && !reseau.hote) return;
+  const cle = `${S.phase}|${S.question?.fourche ?? ''}|${S.question?.incident ?? ''}|${S.repere ? 1 : 0}|${S.arrivee ? 1 : 0}`;
+  if (S.evenements.length || cle !== ui.clePas) {
+    ui.clePas = cle;
+    if (reseau) reseau.diffuserPas(); else vider();
+    if (S.question?.fourche) demanderChemin();
+    if (S.question?.incident) demanderIncident();
+  }
+  const scene = sceneDeZone(h);
+  if (scene) { reseau?.montrerScene(scene); cine.jouer(scene, {}); }
 }
 // L'étal du colporteur : une potion, ou le tonneau d'huile (une fois), payés en Caillasse.
 function ouvrirEtal(h, id) {
@@ -459,7 +484,7 @@ function demanderChemin() {
 }
 function cliquer(p) {
   if (cine?.actif()) return void cine.suivant();
-  if (vue.occupe() || ui.fini || !['heros', 'exploration'].includes(combat.S.phase)) return;
+  if ((vue.occupe() && !(pieton && combat.S.phase === 'exploration')) || ui.fini || !['heros', 'exploration'].includes(combat.S.phase)) return;
   if (combat.S.phase === 'exploration' && !ui.cap) {
     const h = herosChoisi(), dessous = vue.sous(p.x, p.y);
     if (dessous && choisirHeros(dessous)) return;
@@ -473,7 +498,7 @@ function cliquer(p) {
       if (ok) vider(); else banniere(objet.sorte === 'colporteur' ? `Une potion : ${objet.prix} Caillasse` : 'Déjà fait');
       return;
     }
-    if (objet) { const l = dist(h, objet), q = { x: objet.x + ((h.x - objet.x) / l) * 1.2, y: objet.y + ((h.y - objet.y) / l) * 1.2 }; explorerVers(h, q); return; }
+    if (objet) { const l = dist(h, objet), q = { x: objet.x + ((h.x - objet.x) / l) * 1.2, y: objet.y + ((h.y - objet.y) / l) * 1.2 }; explorerVers(h, q, () => cliquer(p)); return; }
     const lv = combat.S.leviers.find((l) => !l.fait && dist(l, p) < 1.2);
     if (lv && actionnerLevier(h, lv)) return;
     const cu = combat.S.curiosites.find((o) => (o.fuit ? o.couronne : !o.parti) && dist(o, p) < ({ canard: 3, loup: 1.3 }[o.sorte] ?? 0.9));   // (le canard nage autour de sa place ; la statue se clique sur tout son corps)
@@ -481,19 +506,19 @@ function cliquer(p) {
       const loin = cu.fuit ? CONTACT + 0.8 : cu.portee;
       if (dist(h, cu) <= loin) { if (geste('curiosite', h, cu.id)) vider(); return; }
       const l = dist(h, cu), q = { x: cu.x + ((h.x - cu.x) / l) * (loin - 0.4), y: cu.y + ((h.y - cu.y) / l) * (loin - 0.4) };
-      if (!explorerVers(h, q)) banniere('Trop loin : approche-toi');
+      if (!explorerVers(h, q, () => cliquer(p))) banniere('Trop loin : approche-toi');
       return;
     }
     const tv = combat.S.trouvailles.find((o) => !o.fait && dist(o, p) < (o.sorte === 'pommier' ? 1.6 : 0.9));
     if (tv) {
       if (dist(h, tv) <= CONTACT + 0.8) { if (geste('cueillir', h, tv.id)) vider(); return; }
       const l = dist(h, tv), q = { x: tv.x + ((h.x - tv.x) / l) * 1.2, y: tv.y + ((h.y - tv.y) / l) * 1.2 };
-      explorerVers(h, q); return;
+      explorerVers(h, q, () => cliquer(p)); return;
     }
     const c = combat.S.cachettes.find((o) => !o.trouvee && o.reperee && dist(o, p) < 0.9);
     if (c && dist(h, c) <= CONTACT + 0.3) { if (geste('fouiller', h, c.id)) vider(); else banniere('Déjà fouillé par ce héros'); return; }
-    if (c) { const l = dist(h, c), q = { x: c.x + ((h.x - c.x) / l) * 1.1, y: c.y + ((h.y - c.y) / l) * 1.1 }; explorerVers(h, q); return; }
-    explorerVers(h, p);
+    if (c) { const l = dist(h, c), q = { x: c.x + ((h.x - c.x) / l) * 1.1, y: c.y + ((h.y - c.y) / l) * 1.1 }; explorerVers(h, q, () => cliquer(p)); return; }
+    if (pieton) pieton.tenir(p); else explorerVers(h, p);       // (le sol : il y va, et suit le pointeur tant qu'on tient le clic)
     return;
   }
   const h = herosChoisi(), dessous = vue.sous(p.x, p.y);
@@ -522,7 +547,8 @@ function cliquer(p) {
 function clavier(e) {
   if (e.target.closest?.('input, textarea')) return;
   if (cine?.actif()) { if (e.key === 'Escape') cine.passer(); else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); cine.suivant(); } return; }
-  if (e.key === 'Escape') { if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; return; }
+  if (e.key === 'Escape') { if (menu?.ouvert) menu.fermer(); else if (ui.cap) choisirCapacite(null); else if (!dom.fin.hidden && !ui.fini) dom.fin.hidden = true; else menu?.ouvrir(); return; }
+  if (menu?.ouvert) return;                      // (le menu ouvert : les autres touches attendent)
   if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !e.altKey) { basculerFiche(); return; }
   if (e.code === 'KeyI' && !e.ctrlKey && !e.metaKey && !e.altKey) {
     const oui = vue.basculerIntentions();
@@ -592,7 +618,7 @@ export function update() {
       }
     } else {
       if (combat.S.phase !== 'exploration') { m.portee = portee(h).carte; m.mv = h.t.mv; }
-      if (ui.survol && !vue.sous(ui.survol.x, ui.survol.y)) {
+      if (ui.survol && !vue.sous(ui.survol.x, ui.survol.y) && combat.S.phase !== 'exploration') {
         const a = combat.apercuMarche(h, ui.survol.x, ui.survol.y, portee(h));
         if (a.pts.length) {
           // une attaque d'opportunité sur ce chemin (#231) : il passe en rouge, et dit qui frappera, ses chances et ses dégâts
@@ -1042,6 +1068,9 @@ export const api = {
   },
   // multi.js : ce que l'hôte montre à tous (une scène de zone, l'éboulis du chemin choisi)
   sceneDeZone(h) { return sceneDeZone(h); },
+  apresPas,
+  brancherPieton(p) { pieton = p; },
+  brancherMenu(m) { menu = m; },
   jouerScene(scene, opts = {}) { return cine ? cine.jouer(scene, opts) : Promise.resolve(); },
   apresChoixChemin(fourche, branche, evs) { const f = combat.S.fourches.find((o) => o.id === fourche); if (f) apresChoixChemin(f, branche, evs); else vue.jouer(evs); },
 };

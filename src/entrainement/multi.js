@@ -122,6 +122,8 @@ let naviguer = partir, delai = 400;   // (le temps que le dernier message parte 
 let L = null;
 let suivie = false;                 // (on part déjà vers la salle de l'hôte : une seule fois)
 let calque = null;
+// L'aventure à plusieurs (?aventure=…) : pas de lobby. ?n= : combien viennent du camp ; ?place= : ma place dans l'équipe du camp.
+let aventure = false, placeDuCamp = -1, attendus2 = 1, ouvertDepuis = 0, rondesDans = 0;
 const curseurs = new Map();       // id → le pointeur d'un ami : l'arme de son héros, et ce qu'il prépare
 
 export function init(g, options) {
@@ -131,6 +133,8 @@ export function init(g, options) {
   REG.surChangement(() => { if (hote && party) party.toAll({ t: 'reglages', R: REG.instantane() }); });   // l'hôte règle en plein combat : tous suivent
   const q = new URLSearchParams(location.search);
   code = (q.get('groupe') ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  aventure = q.has('aventure'); placeDuCamp = Number.isInteger(Number(q.get('place'))) && q.get('place') !== null ? Number(q.get('place')) : -1;
+  attendus2 = Math.max(1, Math.min(4, Number(q.get('n')) || 1));
   if (code.length === 5 && !q.has('test')) {
     hote = q.has('hote');
     brancher(() => partyNet.createPeerTransport({ prefix: PREFIXE }));
@@ -149,7 +153,7 @@ function brancher(transport) {
   suivie = false;
   if (hote) L.salle = maSalle();
   const ce = party = partyNet.createParty({
-    transport, fields: ['x', 'y', 'h', 'c', 'v'], me: () => ihm.pointeur(), name: monNom,
+    transport, fields: ['x', 'y', 'h', 'c', 'v', 'a1', 'b1', 'a2', 'b2', 'a3', 'b3', 'a4', 'b4'], me: () => ({ ...ihm.pointeur(), ...mesPlaces() }), name: monNom,
     settings: { snap: 6 },
     ...(horloge ? { now: horloge } : {}),
     on: (type, d) => {
@@ -158,7 +162,7 @@ function brancher(transport) {
       else if (type === 'game') surMessage(d.from, d.m);
       else if (type === 'join' && hote) { arrivee(L, d.id); envoyerSalon(); if (L.phase === 'combat') party.to(d.id, { t: 'debut', L, R: REG.instantane(), copie: combat.instantane(), evs: [], rejoint: true }); }
       else if (type === 'leave' && hote) { depart(L, d.id); verifierPrets(); envoyerSalon(); }
-      else if (type === 'welcome') { relie = true; if (!hote && monGithub()) party?.toHost?.({ t: 'moi', github: monGithub() }); }
+      else if (type === 'welcome') { relie = true; if (!hote && (monGithub() || placeDuCamp >= 0)) party?.toHost?.({ t: 'moi', github: monGithub(), place: placeDuCamp }); }
       ihm.redessiner();
     },
   });
@@ -166,7 +170,84 @@ function brancher(transport) {
   ihm.brancher(api);
   ouvrir();
 }
-function ouvrir() { if (hote) { party.host(code); arrivee(L, HOTE, monGithub()); } else party.join(code); }
+function ouvrir() {
+  ouvertDepuis = 0;
+  if (hote) { party.host(code); arrivee(L, HOTE, monGithub()); placer(HOTE, placeDuCamp); } else party.join(code);
+}
+// La place qu'on avait dans l'équipe du camp (l'ordre des partants : l'hôte d'abord) : on la reprend si elle est libre, ou si
+// l'hôte la tient pour un absent (on arrive en retard). Vrai si le lobby a changé.
+function placer(qui, k) {
+  if (!aventure || !(k >= 0 && k < PLACES.length)) return false;
+  const tenue = L.proprio[k];
+  if (tenue === qui || !(tenue === null || (tenue === HOTE && qui !== HOTE && L.phase === 'combat'))) return false;
+  const vieille = L.proprio.indexOf(qui);
+  if (vieille >= 0 && L.phase === 'lobby') L.proprio[vieille] = null;
+  L.proprio[k] = qui;
+  return true;
+}
+// Ma part de l'état envoyé (12 fois par seconde) : la place de mes héros pendant l'exploration (−1 sinon).
+function mesPlaces() {
+  const o = {};
+  PLACES.forEach((id, k) => {
+    const u = combat?.S.phase === 'exploration' && party && api.aMoi(id) ? combat.U(id) : null;
+    o[`a${k + 1}`] = u ? Math.round(u.x * 100) / 100 : -1; o[`b${k + 1}`] = u ? Math.round(u.y * 100) / 100 : -1;
+  });
+  return o;
+}
+// Les héros des amis, là où ils les mènent. L'hôte rejoue leurs pas par les règles (repéré, la fourche, une cachette…) et montre
+// ce qui arrive à tous ; un ami les pose tels quels (c'est l'hôte qui décide). Leurs familiers les suivent.
+function suivreAmis() {
+  let bouge = false;
+  for (const o of party.others.values()) {
+    const siennes = PLACES.flatMap((id, k) => (L.proprio[k] === o.id ? [k] : []));
+    siennes.forEach((k, rang) => {
+      const u = combat.U(PLACES[k]), x = Number(o.state?.[`a${k + 1}`]), y = Number(o.state?.[`b${k + 1}`]);
+      if (!u || u.ko || !(x >= 0 && y >= 0) || Math.hypot(x - u.x, y - u.y) < 0.02) return;
+      if (hote) { rejouerPas(u, x, y, rang === 0); bouge = true; } else { u.x = x; u.y = y; }
+    });
+  }
+  for (const f of combat.S.unites.filter((u) => u.familier && !u.ko && !api.aMoi(u.maitre))) {
+    const m = combat.U(f.maitre), l = m ? Math.hypot(m.x - f.x, m.y - f.y) : 0;
+    if (l > 1.6) { f.x += (m.x - f.x) * (1 - 1.3 / l); f.y += (m.y - f.y) * (1 - 1.3 / l); }
+  }
+  if (bouge) apresPasAmis();
+}
+// L'hôte : un ami a mené son héros de là où on le croyait jusqu'en (x, y) : par petits pas, par les règles. Trop loin (un ami
+// qui revient, un à-coup du réseau) : on le pose là où il dit, si la place est libre.
+function rejouerPas(u, x, y, meneur) {
+  const l = Math.hypot(x - u.x, y - u.y);
+  if (l > 3) { if (combat.libreA(u, x, y)) { u.x = x; u.y = y; } return; }
+  const part = 1 / Math.max(1, joueurs().length);
+  for (let i = 0; i < 40; i++) {
+    const r = Math.hypot(x - u.x, y - u.y); if (r < 1e-3) break;
+    const pas = Math.min(0.1, r), d = { x: (x - u.x) / r, y: (y - u.y) / r };
+    const ok = combat.pasLibre(u, u.x + d.x * pas, u.y + d.y * pas, { meneur: meneur ? part : false });
+    if (!ok.ok || ok.stop) break;
+  }
+}
+// L'hôte, après les pas des amis : ce que les règles ont fait (un jet, une question, un combat), et la scène d'une zone franchie.
+let clePasAmis = '';
+function apresPasAmis() {
+  const S = combat.S, cle = `${S.phase}|${S.question?.fourche ?? ''}|${S.question?.incident ?? ''}|${S.repere ? 1 : 0}|${S.arrivee ? 1 : 0}`;
+  if (S.evenements.length || cle !== clePasAmis) { clePasAmis = cle; diffuser(true); }
+  for (const id of S.heros) {
+    if (api.aMoi(id)) continue;
+    const scene = ihm.sceneDeZone(combat.U(id));
+    if (scene) { party.toAll({ t: 'scene', scene }); ihm.jouerScene(scene, {}); }
+  }
+}
+// Les rondes (les loups le long du canal, le gardien devant sa porte) avancent chez l'hôte : il dit à tous où elles sont.
+function envoyerRondes() {
+  const p = combat.S.unites.filter((e) => e.camp === 'e' && !e.mort && e.ronde).map((e) => [e.id, Math.round(e.x * 100) / 100, Math.round(e.y * 100) / 100, Math.round((e.regard ?? Math.PI) * 100) / 100, Math.round(e.ronde.t * 1000) / 1000, e.ronde.sens]);
+  if (p.length) party.toAll({ t: 'rondes', p });
+}
+function recevoirRondes(p) {
+  if (!Array.isArray(p)) return;
+  for (const [id, x, y, regard, t, sens] of p) {
+    const e = combat.U(id); if (!e || e.camp !== 'e' || !Number.isFinite(x) || !Number.isFinite(y)) continue;
+    e.x = x; e.y = y; e.regard = regard; if (e.ronde) { e.ronde.t = t; e.ronde.sens = sens; }
+  }
+}
 
 // Ouvert, raté (on réessaie un peu : l'hôte n'est peut-être pas encore là), ou perdu (on continue seul).
 function surStatut({ status }) {
@@ -200,7 +281,10 @@ function surMessage(de, m) {
   if (!m || typeof m !== 'object') return;
   if (hote) {
     if (['prendre', 'rendre', 'classe', 'mode', 'infini'].includes(m.t)) { if (regler(L, de, m)) envoyerSalon(); }
-    else if (m.t === 'moi') { if (moi(L, de, typeof m.github === 'string' ? m.github.slice(0, 40) : null)) envoyerSalon(); }
+    else if (m.t === 'moi') {
+      const change = placer(de, Number(m.place)) || moi(L, de, typeof m.github === 'string' ? m.github.slice(0, 40) : null);
+      if (change) { envoyerSalon(); if (L.phase === 'combat') diffuser(); }
+    }
     else if (m.t === 'commencer' && de === HOTE) lancer();
     else if (m.t === 'rejouer' && de === HOTE) rejouer();
     else if (m.t === 'suite' && de === HOTE) suivante();
@@ -233,7 +317,7 @@ function surMessage(de, m) {
   else if (m.t === 'reglages-refus') ihm.banniere('L’hôte a fermé les réglages : lui seul les change');
   else if (m.t === 'salon') {
     Object.assign(L, m.L);
-    if (L.phase === 'lobby' && combat.S.phase !== 'preparation') { combat = nouveauCombat(L.equipe); ihm.accueil(); }
+    if (L.phase === 'lobby' && combat.S.phase !== 'preparation') { combat = nouveauCombat(L.equipe); if (!aventure) ihm.accueil(); }
   } else if (m.t === 'debut' || (m.t === 'etat' && combat.S.phase === 'preparation')) {
     Object.assign(L, m.L);
     combat = nouveauCombat(L.equipe, m.copie);
@@ -242,24 +326,28 @@ function surMessage(de, m) {
     if (combat.S.phase === 'exploration' && m.t === 'debut' && !m.rejoint) ihm.jouerScene('depart', {});
   } else if (m.t === 'etat') {
     Object.assign(L, m.L);
+    const garder = combat.S.phase === 'exploration' ? combat.S.heros.filter((id) => api.aMoi(id)).map((id) => combat.U(id)).filter(Boolean).map((u) => ({ id: u.id, x: u.x, y: u.y })) : [];
     combat.restaurer(m.copie);
+    if (combat.S.phase === 'exploration' && !combat.S.question && !combat.S.repere && !m.recale) for (const g of garder) { const u = combat.U(g.id); if (u) { u.x = g.x; u.y = g.y; } }
     vue.jouer(m.evs ?? []);
     ihm.etatRecu();
   } else if (m.t === 'refus') ihm.banniere('Action impossible : la situation a changé entre-temps');
   else if (m.t === 'camp') naviguer(adresseCamp());
   else if (m.t === 'scene') ihm.jouerScene(m.scene, m.opts ?? {});
+  else if (m.t === 'rondes' && combat.S.phase === 'exploration') { recevoirRondes(m.p); ihm.redessiner(); }
   else if (m.t === 'chemin') ihm.apresChoixChemin(m.fourche, m.branche, m.evs ?? []);
   ihm.redessiner();
 }
 function envoyerSalon() { party?.toAll({ t: 'salon', L, R: REG.instantane() }); ihm.redessiner(); }
 // L'hôte : les événements du combat à montrer ici, et à tous avec l'état.
-function diffuser() {
+function diffuser(depuisPas = false) {
   // le réglage « finir la phase quand plus personne n'a rien à faire »
   if (hote && L.phase === 'combat' && combat.S.phase === 'heros' && REG.oui('phase.autoFin') && combat.rienAFaire()) { L.pret = []; combat.finPhaseHeros(); }
   const evs = combat.S.evenements.splice(0);
   vue.jouer(evs);
   ihm.etatRecu();
-  party?.toAll({ t: 'etat', L, R: REG.instantane(), copie: combat.instantane(), evs });
+  const recale = depuisPas && (combat.S.phase !== 'exploration' || !!combat.S.question || !!combat.S.repere);
+  party?.toAll({ t: 'etat', L, R: REG.instantane(), copie: combat.instantane(), evs, recale });
 }
 // L'hôte : une action d'exploration d'un joueur (ou la sienne). Les scènes et l'éboulis du chemin choisi sont joués chez tous.
 function explorer(qui, a) {
@@ -287,6 +375,7 @@ function verifierPrets() {
   return true;
 }
 function lancer() {
+  if (L.phase !== 'lobby') return;
   L.proprio = L.proprio.map((p) => p ?? HOTE);   // les héros sans joueur : l'hôte les joue
   L.phase = 'combat'; L.pret = []; L.absents = {};
   combat = nouveauCombat(L.equipe, null, L.infini ? DEBUT_INFINI : null);
@@ -332,6 +421,16 @@ const adresseCamp = () => `${ihm.adresseRetour?.() ?? './index.html?spot=combat'
 export function update(dt) {
   if (!party) return;
   party.update(dt);
+  // l'aventure sans lobby : l'hôte lance dès que ceux qui viennent du camp sont là (ou au bout de 8 s : les autres prendront
+  // leur place en arrivant) ; il laisse une seconde aux arrivants pour dire leur place
+  if (aventure && hote && L.phase === 'lobby' && party.active) {
+    ouvertDepuis += dt;
+    if ((joueurs().length >= attendus2 && ouvertDepuis >= 1) || ouvertDepuis >= 8) lancer();
+  }
+  if (L.phase === 'combat' && combat.S.phase === 'exploration') {
+    suivreAmis();
+    if (hote && (rondesDans -= dt) <= 0) { rondesDans = 0.2; envoyerRondes(); }
+  }
   // le minuteur de la phase des héros (réglage) : l'hôte finit la phase quand le temps est écoulé
   const limite = REG.lire('phase.minuteur') * 1000;
   if (hote && limite > 0 && L.phase === 'combat' && combat.S.phase === 'heros' && combat.S.debutPhase && !horloge && Date.now() - combat.S.debutPhase >= limite) { L.pret = []; combat.finPhaseHeros(); diffuser(); }
@@ -396,6 +495,9 @@ export const api = {
   joueurs, couleurDe,
   nomDe(id) { if (!party) return ''; if (id === party.id) return monNom(); return party.others.get(id)?.name ?? 'parti'; },
   aMoi(idHeros) { return !party || L.proprio[PLACES.indexOf(idHeros)] === party.id; },
+  diffuserPas: () => diffuser(true),
+  montrerScene: (scene) => party?.toAll({ t: 'scene', scene }),
+  get aventure() { return aventure; },
   prendre: (k) => party?.toHost({ t: 'prendre', k, github: monGithub() }),
   rendre: (k) => party?.toHost({ t: 'rendre', k }),
   classe: (k, type) => party?.toHost({ t: 'classe', k, type, github: monGithub() }),
@@ -423,10 +525,11 @@ export const api = {
     if (delai) setTimeout(aller, delai); else aller();
   },
   remplacer(c) { combat = c; },
-  brancherTest(hub, { comme = 'hote', avec = 'KXQZB', aller = () => {} } = {}) {
+  brancherTest(hub, { comme = 'hote', avec = 'KXQZB', aller = () => {}, av = false, n = 1, place = -1 } = {}) {
     hote = comme === 'hote'; code = avec; naviguer = aller; delai = 0; horloge = () => hub.time;
+    aventure = av; attendus2 = n; placeDuCamp = place;
     brancher(() => hub.transport());
     return party;
   },
-  debrancherTest() { seul(''); hote = false; code = ''; horloge = null; delai = 400; naviguer = partir; },
+  debrancherTest() { seul(''); hote = false; code = ''; horloge = null; delai = 400; aventure = false; attendus2 = 1; placeDuCamp = -1; naviguer = partir; },
 };
