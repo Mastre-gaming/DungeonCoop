@@ -26,7 +26,9 @@ export const PREFIXE = 'dungeoncoop-terrain-';
 const HOTE = 'host';                              // l'identifiant de l'hôte chez party-net
 const CLE_NOM = 'dungeoncoop:nom-dev';            // le nom de dev donné à la sentinelle du camp
 const COULEURS = ['#7ce0ff', '#ffb35a', '#b8f07a', '#f39ae0'];
-const ESSAIS = { hote: 8, invite: 45 };           // toutes les 2 s : un code encore pris, un hôte pas encore arrivé
+const ESSAIS = { hote: 40, invite: 45 };          // toutes les 2 s : un code encore pris (le serveur peut le garder une minute), un hôte pas encore arrivé
+// ce qui ne s'arrange pas en réessayant (un ami qui n'est pas encore accueilli réessaie pour tout le reste : l'hôte recharge peut-être sa page)
+const DEFINITIFS = ['That room is full', "This browser can't make direct connections"];
 
 // --- Le lobby (des données seulement : l'hôte le tient et l'envoie à tous) -----------------------------------------
 // proprio : le joueur de chaque place (null : libre) · pret : ceux qui ont fini leur phase · absents : les places de
@@ -109,7 +111,14 @@ export function arbitrer(combat, L, qui, a) {
 // --- Le module ---------------------------------------------------------------------------------------------------
 let game, combat, vue, ihm, nouveauCombat, horloge = null;
 let party = null, code = '', hote = false, relie = false, statut = '', essais = 0, minuterie = 0;
-let naviguer = (url) => { location.href = url; }, delai = 400;   // (le temps que le dernier message parte avant la page)
+// Quitter la page (changer de salle, rentrer au camp) : rendre d'abord le code du groupe au serveur, sinon la page suivante le
+// trouve encore pris et attend (« Le terrain se libère… ») pendant que les amis frappent à une porte fermée ; puis y aller.
+const partir = (url) => {
+  const p = party; if (!p) { location.href = url; return; }
+  clearTimeout(minuterie); party = null; p.dispose?.();
+  setTimeout(() => { location.href = url; }, 150);
+};
+let naviguer = partir, delai = 400;   // (le temps que le dernier message parte avant la page)
 let L = null;
 let suivie = false;                 // (on part déjà vers la salle de l'hôte : une seule fois)
 let calque = null;
@@ -242,15 +251,16 @@ function recevoirRondes(p) {
 
 // Ouvert, raté (on réessaie un peu : l'hôte n'est peut-être pas encore là), ou perdu (on continue seul).
 function surStatut({ status }) {
+  if (!party) return;                               // (un groupe déjà quitté : ses derniers messages ne comptent plus)
   if (status === 'Give your friends the code' || status === 'Joined') { relie = relie || hote; statut = ''; return; }
   if (!status || status === 'Opening a room...' || status === 'Joining...') return;
-  const attendre = !relie && (hote ? status === 'That code is taken, try again' : status === 'No room with that code');
+  const attendre = !relie && (hote ? status === 'That code is taken, try again' : !DEFINITIFS.includes(status));
   if (attendre && ++essais < (hote ? ESSAIS.hote : ESSAIS.invite)) {
     statut = hote ? 'Le terrain se libère…' : 'En attente de l’hôte…';
     clearTimeout(minuterie); minuterie = setTimeout(() => { if (party && !party.active) ouvrir(); }, 2000);
     return;
   }
-  if (relie || attendre) seul(relie ? `${fr(status)}. Tu continues seul.` : `${fr(status)} : tu joues seul.`);
+  seul(relie ? `${fr(status)}. Tu continues seul.` : `${fr(status)} : tu joues seul.`);     // (jamais bloqué sur « Connexion au groupe… »)
 }
 // Plus de groupe : tous les héros sont à moi, et mes règles décident (le combat continue là où il en était).
 function seul(texte) {
@@ -521,5 +531,5 @@ export const api = {
     brancher(() => hub.transport());
     return party;
   },
-  debrancherTest() { seul(''); hote = false; code = ''; horloge = null; delai = 400; aventure = false; attendus2 = 1; placeDuCamp = -1; naviguer = (url) => { location.href = url; }; },
+  debrancherTest() { seul(''); hote = false; code = ''; horloge = null; delai = 400; aventure = false; attendus2 = 1; placeDuCamp = -1; naviguer = partir; },
 };

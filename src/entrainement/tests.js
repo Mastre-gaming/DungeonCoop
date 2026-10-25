@@ -1931,6 +1931,30 @@ export async function selfTest(t, game) {
   t.eq(game.dbg.combat.S.round, 2, 'et nos règles décident : fin de phase, les ennemis, le round 2');
   multi.debrancherTest();
 
+  // --- Changer de salle à plusieurs : chaque page se recharge, et le groupe doit se retrouver ---------------------------------
+  t.group('à plusieurs : changer de salle, se retrouver');
+  {
+    // l'ami recharge sa page avant l'hôte : il frappe à l'ancienne page de l'hôte, qui se ferme sous lui (« L'hôte a fermé le
+    // groupe ») ; il ne reste pas bloqué : il attend, et retrouve l'hôte quand sa nouvelle page rouvre le terrain
+    const vieux = ami('Dé'); vieux.party.host('RLDXZ'); jouer(0.1);
+    multi.brancherTest(hub, { comme: 'invite', avec: 'RLDXZ', aller: (u) => allees.push(u) });
+    vieux.party.leave(); jouer(0.5);
+    t.ok(multi.actif && multi.statut === 'En attente de l’hôte…', `l’ancienne page de l’hôte se ferme sous lui : il attend l’hôte (« ${multi.statut} »)`);
+    const neuf2 = ami('Dé'); neuf2.party.host('RLDXZ'); jouer(0.1);
+    await pause(2300); jouer(0.6);
+    t.ok(multi.party?.active && neuf2.party.others.size === 1, 'la nouvelle page de l’hôte rouvre le terrain : l’ami le retrouve');
+    neuf2.party.leave(); jouer(0.3);
+    multi.debrancherTest();
+  }
+  {
+    // l'hôte se tait (sa page part) avant que l'ami soit accueilli : l'ami réessaie au lieu de rester sur « Connexion au groupe… »
+    const muet = ami('Él'); muet.party.host('MPQRS'); jouer(0.1);
+    multi.brancherTest(hub, { comme: 'invite', avec: 'MPQRS', aller: (u) => allees.push(u) });
+    hub.transports.at(-2).frozen = true; jouer(16);
+    t.ok(multi.actif && multi.statut === 'En attente de l’hôte…', `l’hôte se tait avant de l’accueillir : il réessaie (« ${multi.statut} »)`);
+    multi.debrancherTest();
+  }
+
   // --- L'aventure à plusieurs (retour des joueurs, 25 oct.) : pas d'écran d'accueil ; chacun sa place du camp ; l'hôte rejoue les pas
   t.group('l’aventure à plusieurs : on part sans lobby, et l’on se mène comme au camp');
   {
